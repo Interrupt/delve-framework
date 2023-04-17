@@ -34,10 +34,14 @@ pub fn init(luaFileString: [:0]const u8) !void {
     std.debug.print("Lua: loaded file {s}\n", .{luaFileString});
 }
 
+pub fn openModule(comptime name: [:0]const u8, comptime open_func: ziglua.ZigFn) void {
+    lua.requireF(name, ziglua.wrap(open_func), true);
+}
+
 pub fn openModules() void {
     // Open all of the custom modules here
-    draw_module.openModule(lua);
-    mouse_module.openModule(lua);
+    openModule("draw", draw_module.makeLib);
+    openModule("input.mouse", mouse_module.makeLib);
 }
 
 pub fn callFunction(func_name: [:0]const u8) !void {

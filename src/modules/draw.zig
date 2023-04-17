@@ -3,7 +3,7 @@ const ziglua = @import("ziglua");
 
 const Lua = ziglua.Lua;
 
-fn makeLib(lua: *Lua) i32 {
+pub fn makeLib(lua: *Lua) i32 {
     const funcs = [_]ziglua.FnReg{
         .{ .name = "clear", .func = ziglua.wrap(clear) },
         .{ .name = "line", .func = ziglua.wrap(line) },
@@ -13,17 +13,13 @@ fn makeLib(lua: *Lua) i32 {
     return 1;
 }
 
-pub fn openModule(lua: *Lua) void {
-    lua.requireF("draw", ziglua.wrap(makeLib), true);
-}
-
-pub fn clear(lua: *Lua) i32 {
+fn clear(lua: *Lua) i32 {
     var color_idx = lua.toNumber(1) catch 0;
     std.debug.print("Draw Module: clear {d}\n", .{color_idx});
     return 1;
 }
 
-pub fn line(lua: *Lua) i32 {
+fn line(lua: *Lua) i32 {
     var start_x = lua.toNumber(1) catch 0;
     var start_y = lua.toNumber(2) catch 0;
     var end_x = lua.toNumber(3) catch 0;

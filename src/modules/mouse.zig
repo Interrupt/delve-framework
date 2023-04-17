@@ -3,17 +3,13 @@ const ziglua = @import("ziglua");
 
 const Lua = ziglua.Lua;
 
-fn makeLib(lua: *Lua) i32 {
+pub fn makeLib(lua: *Lua) i32 {
     const funcs = [_]ziglua.FnReg{
         .{ .name = "position", .func = ziglua.wrap(position) },
     };
 
     lua.newLib(&funcs);
     return 1;
-}
-
-pub fn openModule(lua: *Lua) void {
-    lua.requireF("input.mouse", ziglua.wrap(makeLib), true);
 }
 
 // Get Mouse Position
