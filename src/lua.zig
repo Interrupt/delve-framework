@@ -13,8 +13,8 @@ var lua_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 // Global Lua state
 var lua: *Lua = undefined;
 
-pub fn initLua(luaFileString: [:0]const u8) !void {
-    std.debug.print("Lua system starting up\n", .{});
+pub fn init(luaFileString: [:0]const u8) !void {
+    std.debug.print("Lua: system starting up!\n", .{});
 
     // Create an allocator
     const allocator = lua_gpa.allocator();
@@ -27,11 +27,11 @@ pub fn initLua(luaFileString: [:0]const u8) !void {
 
     // Load and run the file
     lua.doFile(luaFileString) catch |err| {
-        std.debug.print("Lua doFile error! output: {!s} {}\n", .{lua.toString(-1), err});
+        std.debug.print("Lua: doFile error! output: {!s} {}\n", .{lua.toString(-1), err});
         return err;
     };
 
-    std.debug.print("Lua system: loaded file {s}\n", .{luaFileString});
+    std.debug.print("Lua: loaded file {s}\n", .{luaFileString});
 }
 
 pub fn openModules() void {
@@ -41,21 +41,21 @@ pub fn openModules() void {
 }
 
 pub fn callFunction(func_name: [:0]const u8) !void {
-    std.debug.print("Lua system: calling {s}\n", .{func_name});
+    std.debug.print("Lua: calling {s}\n", .{func_name});
 
     _ = lua.getGlobal(func_name) catch |err| {
-        std.debug.print("Lua getGlobal error! output: {!s} {}\n", .{lua.toString(-1), err});
+        std.debug.print("Lua: getGlobal error! output: {!s} {}\n", .{lua.toString(-1), err});
         return err;
     };
 
     lua.protectedCall(0, 0, 0) catch |err| {
-        std.debug.print("Lua pCall error! output: {!s} {}\n", .{lua.toString(-1), err});
+        std.debug.print("Lua: pCall error! output: {!s} {}\n", .{lua.toString(-1), err});
         return err;
     };
 }
 
-pub fn deinitLua() void {
-    std.debug.print("Lua system shutdown\n", .{});
+pub fn deinit() void {
+    std.debug.print("Lua: shutting down\n", .{});
 
     // Close the Lua state
     lua.close();

@@ -7,8 +7,8 @@ pub fn main() !void {
     std.debug.print("Brass Emulator Starting\n", .{});
 
     // Start up Lua
-    try lua.initLua("main.lua");
-    defer lua.deinitLua();
+    try lua.init("main.lua");
+    defer lua.deinit();
 
     // First, call the init function
     try lua.callFunction("_init");
