@@ -2,8 +2,8 @@ const ziglua = @import("ziglua");
 const std = @import("std");
 
 // Modules
-const draw_module = @import("draw.zig");
-const mouse_module = @import("mouse.zig");
+const draw_module = @import("modules/draw.zig");
+const mouse_module = @import("modules/mouse.zig");
 
 const Lua = ziglua.Lua;
 
