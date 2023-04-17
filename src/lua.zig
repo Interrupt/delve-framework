@@ -56,6 +56,11 @@ pub fn callFunction(func_name: [:0]const u8) !void {
 
 pub fn deinitLua() void {
     std.debug.print("Lua system shutdown\n", .{});
+
+    // Close the Lua state
+    lua.close();
+
+    // Now we can deinit
     _ = lua.deinit();
     _ = lua_gpa.deinit();
 }
