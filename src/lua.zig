@@ -7,12 +7,14 @@ const mouse_module = @import("mouse.zig");
 
 const Lua = ziglua.Lua;
 
-// LUA VM allocator
+// Allocator for the Lua VM
 var lua_gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
+// Global Lua state
 var lua: *Lua = undefined;
 
 pub fn initLua(luaFileString: [:0]const u8) !void {
-    std.debug.print("Lua module starting up\n", .{});
+    std.debug.print("Lua system starting up\n", .{});
 
     // Create an allocator
     const allocator = lua_gpa.allocator();
@@ -20,34 +22,40 @@ pub fn initLua(luaFileString: [:0]const u8) !void {
     // Initialize the Lua VM!
     lua = @constCast(&(try Lua.init(allocator)));
 
-    // Open the standard libraries
-    lua.openLibs();
+    lua.openLibs(); // open standard libs
+    openModules();  // open custom modules
 
-    draw_module.registerModule(lua);
-    mouse_module.registerModule(lua);
-
-    // Load the file into lua
-    //try lua.loadFile(luaFileString, ziglua.Mode.text);
+    // Load and run the file
     lua.doFile(luaFileString) catch |err| {
-        std.debug.print("lua error! output: {!s} {}\n", .{lua.toString(-1), err});
+        std.debug.print("Lua doFile error! output: {!s} {}\n", .{lua.toString(-1), err});
         return err;
     };
 
-    std.debug.print("Loaded lua file {s}\n", .{luaFileString});
+    std.debug.print("Lua system: loaded file {s}\n", .{luaFileString});
 }
 
-pub fn runInit() !void {
-    std.debug.print("Lua: Running _init\n", .{});
+pub fn openModules() void {
+    // Open all of the custom modules here
+    draw_module.openModule(lua);
+    mouse_module.openModule(lua);
+}
 
-    // Call the "_main" function!
-    _ = try lua.getGlobal("_init");
-    lua.call(0, 0);
-    
-    std.debug.print("lua error! output: {!s}\n", .{lua.toString(-1)});
+pub fn callFunction(func_name: [:0]const u8) !void {
+    std.debug.print("Lua system: calling {s}\n", .{func_name});
+
+    _ = lua.getGlobal(func_name) catch |err| {
+        std.debug.print("Lua getGlobal error! output: {!s} {}\n", .{lua.toString(-1), err});
+        return err;
+    };
+
+    lua.protectedCall(0, 0, 0) catch |err| {
+        std.debug.print("Lua pCall error! output: {!s} {}\n", .{lua.toString(-1), err});
+        return err;
+    };
 }
 
 pub fn deinitLua() void {
-    std.debug.print("Lua module shutdown\n", .{});
+    std.debug.print("Lua system shutdown\n", .{});
     _ = lua.deinit();
     _ = lua_gpa.deinit();
 }
