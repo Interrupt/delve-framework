@@ -30,6 +30,24 @@ pub fn build(b: *std.Build) void {
     // Add modules
     exe.addModule("ziglua", ziglua.compileAndCreateModule(b, exe, .{}));
 
+    // Add SDL2 (OSX only version, install via Homebrew)
+    exe.addIncludePath("/usr/local/include/SDL2");
+    //exe.addLibraryPath("/usr/lib");
+    exe.linkSystemLibrary("sdl2");
+    exe.linkLibC();
+
+    //exe.linkFramework("IOKit");
+    //exe.linkFramework("Cocoa");
+    //exe.linkFramework("CoreAudio");
+    //exe.linkFramework("Carbon");
+    //exe.linkFramework("Metal");
+    //exe.linkFramework("QuartzCore");
+    //exe.linkFramework("AudioToolbox");
+    //exe.linkFramework("ForceFeedback");
+    //exe.linkFramework("GameController");
+    //exe.linkFramework("CoreHaptics");
+    //exe.linkSystemLibrary("iconv");
+
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
