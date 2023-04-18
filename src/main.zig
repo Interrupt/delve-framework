@@ -1,12 +1,18 @@
 const std = @import("std");
 const lua = @import("lua.zig");
 const sdl = @import("sdl.zig");
+const gif = @import("gif.zig");
 
 var isRunning = true;
 var numTicks: u64 = 0;
 
+pub var palette: gif.GifImage = undefined;
+
 pub fn main() !void {
     std.debug.print("Brass Emulator Starting\n", .{});
+
+    palette = try gif.loadFile("assets/palette.gif");
+    defer palette.destroy();
 
     // Start up SDL2
     try sdl.init();
