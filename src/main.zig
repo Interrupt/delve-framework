@@ -11,7 +11,7 @@ pub var palette: gif.GifImage = undefined;
 pub fn main() !void {
     std.debug.print("Brass Emulator Starting\n", .{});
 
-    palette = try gif.loadFile("assets/palette.gif");
+    palette = try gif.loadFile("palette.gif");
     defer palette.destroy();
 
     // Start up SDL2
@@ -19,7 +19,7 @@ pub fn main() !void {
     defer sdl.deinit();
 
     // Start up Lua
-    try lua.init("assets/main.lua");
+    try lua.init("main.lua");
     defer lua.deinit();
 
     // First, call the init function

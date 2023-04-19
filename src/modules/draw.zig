@@ -15,6 +15,7 @@ pub fn makeLib(lua: *Lua) i32 {
     const funcs = [_]ziglua.FnReg{
         .{ .name = "clear", .func = ziglua.wrap(clear) },
         .{ .name = "line", .func = ziglua.wrap(line) },
+        .{ .name = "filled_circle", .func = ziglua.wrap(filled_circle) },
     };
 
     lua.newLib(&funcs);
@@ -61,6 +62,36 @@ fn line(lua: *Lua) i32 {
     const renderer = zigsdl.getRenderer();
     _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF );
     _ = sdl.SDL_RenderDrawLine(renderer, start_x, start_y, end_x, end_y);
+
+    return 0;
+}
+
+fn filled_circle(lua: *Lua) i32 {
+    var x = @floatToInt(c_int, lua.toNumber(1) catch 0);
+    var y = @floatToInt(c_int, lua.toNumber(2) catch 0);
+    var radius = @floatToInt(c_int, lua.toNumber(3) catch 0);
+    var color_idx = @floatToInt(u32, lua.toNumber(4) catch 0);
+
+    // Four bytes per color
+    color_idx *= main.palette.channels;
+
+    if(color_idx >= main.palette.height * main.palette.pitch)
+        color_idx = 0;
+    
+    const r = main.palette.raw[color_idx];
+    const g = main.palette.raw[color_idx + 1];
+    const b = main.palette.raw[color_idx + 2];
+
+    const renderer = zigsdl.getRenderer();
+    _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF );
+
+    var x_idx: c_int = -radius;
+    while(x_idx < radius) : (x_idx += 1) {
+        var y_idx: c_int = -radius;
+        while(y_idx < radius) : (y_idx += 1) {
+            _ = sdl.SDL_RenderDrawPoint(renderer, x + x_idx, y + y_idx);
+        }
+    }
 
     return 0;
 }
