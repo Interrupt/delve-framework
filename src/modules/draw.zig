@@ -27,6 +27,9 @@ fn clear(lua: *Lua) i32 {
     if(enable_debug_logging)
         std.debug.print("Draw: clear {d}\n", .{color_idx});
 
+    // Four bytes per color
+    color_idx *= 4;
+
     const r = main.palette.raw[color_idx];
     const g = main.palette.raw[color_idx + 1];
     const b = main.palette.raw[color_idx + 2];
@@ -48,6 +51,9 @@ fn line(lua: *Lua) i32 {
 
     if(enable_debug_logging)
         std.debug.print("Draw: line({d},{d},{d},{d},{d})\n", .{start_x, start_y, end_x, end_y, color_idx});
+
+    // Four bytes per color
+    color_idx *= 4;
     
     const r = main.palette.raw[color_idx];
     const g = main.palette.raw[color_idx + 1];

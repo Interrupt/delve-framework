@@ -8,6 +8,8 @@ const sdl = @cImport({
 var window: *sdl.SDL_Window = undefined;
 var renderer: *sdl.SDL_Renderer = undefined;
 
+pub const render_scale = 3;
+
 pub fn init() !void {
     // Initialize SDL2
     sdl.SDL_LogSetAllPriority(sdl.SDL_LOG_PRIORITY_VERBOSE);
@@ -21,14 +23,16 @@ pub fn init() !void {
         "Brass Emulator",
         sdl.SDL_WINDOWPOS_UNDEFINED,
         sdl.SDL_WINDOWPOS_UNDEFINED,
-        640,
-        400,
+        320 * render_scale,
+        200 * render_scale,
         sdl.SDL_WINDOW_SHOWN) orelse sdlPanic();
 
     renderer = sdl.SDL_CreateRenderer(
         window,
         -1,
         sdl.SDL_RENDERER_SOFTWARE | sdl.SDL_RENDERER_PRESENTVSYNC) orelse sdlPanic();
+
+    _ = sdl.SDL_RenderSetScale(renderer, render_scale, render_scale);
 }
 
 pub fn deinit() void {
