@@ -1,4 +1,5 @@
 const std = @import("std");
+const math = std.math;
 const ziglua = @import("ziglua");
 const zigsdl = @import("../sdl.zig");
 const main = @import("../main.zig");
@@ -67,9 +68,9 @@ fn line(lua: *Lua) i32 {
 }
 
 fn filled_circle(lua: *Lua) i32 {
-    var x = @floatToInt(c_int, lua.toNumber(1) catch 0);
-    var y = @floatToInt(c_int, lua.toNumber(2) catch 0);
-    var radius = @floatToInt(c_int, lua.toNumber(3) catch 0);
+    var x = lua.toNumber(1) catch 0;
+    var y = lua.toNumber(2) catch 0;
+    var radius = lua.toNumber(3) catch 0;
     var color_idx = @floatToInt(u32, lua.toNumber(4) catch 0);
 
     // Four bytes per color
@@ -85,11 +86,22 @@ fn filled_circle(lua: *Lua) i32 {
     const renderer = zigsdl.getRenderer();
     _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF );
 
-    var x_idx: c_int = -radius;
+    // In the easy case, just plot a pixel
+    if (radius <= 1) {
+        _ = sdl.SDL_RenderDrawPoint(renderer, @floatToInt(c_int, x), @floatToInt(c_int, y));
+        return 0;
+    }
+
+    // Harder case, draw the circle in vertical strips
+    // Can figure out the height of the strip based on the xpos via good old pythagoros
+    // Y = 2 * sqrt(R^2 - X^2)
+    var x_idx: f64 = -radius;
     while(x_idx < radius) : (x_idx += 1) {
-        var y_idx: c_int = -radius;
-        while(y_idx < radius) : (y_idx += 1) {
-            _ = sdl.SDL_RenderDrawPoint(renderer, x + x_idx, y + y_idx);
+        var offset = math.sqrt(math.pow(f64,radius,2) - math.pow(f64,x_idx,2));
+        var y_idx: f64 = -offset;
+
+        while(y_idx < offset) : (y_idx += 1) {
+            _ = sdl.SDL_RenderDrawPoint(renderer, @floatToInt(c_int, x + x_idx), @floatToInt(c_int, y + y_idx));
         }
     }
 

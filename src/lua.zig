@@ -19,7 +19,7 @@ var enable_debug_logging = false;
 
 pub fn init(luaFileString: [:0]const u8) !void {
     std.debug.print("Lua: system starting up!\n", .{});
-
+    std.debug.print("Lua: opening file {s}\n", .{luaFileString});
 
     // Initialize the Lua VM!
     lua = try Lua.init(lua_allocator);
