@@ -10,6 +10,7 @@ pub const GifImage = struct {
     width: u32,
     height: u32,
     pitch: u32,
+    channels: u8,
     raw: []u8,
 
     pub fn destroy(gi: *GifImage) void {
@@ -45,6 +46,7 @@ pub const GifImage = struct {
 
         gi.pitch = gi.width * bits_per_channel * channel_count / 8;
         gi.raw = image_data[0 .. gi.height * gi.pitch];
+        gi.channels = channel_count;
 
         std.debug.print("gif loaded: {d} {d} {d}\n", .{gi.width, gi.height, gi.pitch});
 

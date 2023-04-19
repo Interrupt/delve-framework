@@ -28,12 +28,11 @@ fn clear(lua: *Lua) i32 {
         std.debug.print("Draw: clear {d}\n", .{color_idx});
 
     // Four bytes per color
-    color_idx *= 4;
+    color_idx *= main.palette.channels;
 
     const r = main.palette.raw[color_idx];
     const g = main.palette.raw[color_idx + 1];
     const b = main.palette.raw[color_idx + 2];
-    //std.debug.print("Palette color: {d}\n", .{palette_color});
 
     const renderer = zigsdl.getRenderer();
     _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF );
@@ -53,12 +52,11 @@ fn line(lua: *Lua) i32 {
         std.debug.print("Draw: line({d},{d},{d},{d},{d})\n", .{start_x, start_y, end_x, end_y, color_idx});
 
     // Four bytes per color
-    color_idx *= 4;
+    color_idx *= main.palette.channels;
     
     const r = main.palette.raw[color_idx];
     const g = main.palette.raw[color_idx + 1];
     const b = main.palette.raw[color_idx + 2];
-    //std.debug.print("Palette color: {d}{d}{d}\n", .{r,g,b});
 
     const renderer = zigsdl.getRenderer();
     _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF );
