@@ -19,7 +19,7 @@ pub fn main() !void {
     var args = try std.process.argsAlloc(args_allocator);
 
     // Get the path to the assets
-    assets_path = if(args.len >= 2) args[1] else "assets";
+    assets_path = if(args.len >= 2) args[1] else ".";
     std.debug.print("Assets Path: {s}\n", .{assets_path});
 
     // Technically not needed? Will be freed after program exits
