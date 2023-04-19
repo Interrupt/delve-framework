@@ -46,7 +46,7 @@ pub const GifImage = struct {
         gi.pitch = gi.width * bits_per_channel * channel_count / 8;
         gi.raw = image_data[0 .. gi.height * gi.pitch];
 
-        std.debug.print("gif loaded: {d} {d}\n", .{width, height});
+        std.debug.print("gif loaded: {d} {d} {d}\n", .{gi.width, gi.height, gi.pitch});
 
         return gi;
     }
