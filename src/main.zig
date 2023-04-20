@@ -3,6 +3,8 @@ const lua = @import("lua.zig");
 const sdl = @import("sdl.zig");
 const gif = @import("gif.zig");
 
+const Allocator = std.mem.Allocator;
+
 var args_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var args_allocator = args_gpa.allocator();
 
@@ -16,17 +18,20 @@ pub fn main() !void {
     std.debug.print("Brass Emulator Starting\n", .{});
 
     // Get arguments
-    var args = try std.process.argsAlloc(args_allocator);
+    const args = try std.process.argsAlloc(args_allocator);
+    defer _ = args_gpa.deinit();
 
     // Get the path to the assets
-    assets_path = if(args.len >= 2) args[1] else ".";
+    assets_path = if(args.len >= 2) try args_allocator.dupeZ(u8, args[1]) else "assets";
+    std.process.argsFree(args_allocator, args);
+
     std.debug.print("Assets Path: {s}\n", .{assets_path});
 
-    // Technically not needed? Will be freed after program exits
-    //defer std.process.argsFree(args_allocator, args);
-    //defer _ = args_gpa.deinit();
+    // Load the palette
+    const palette_path = try getAssetPath("palette.gif", args_allocator);
+    defer args_allocator.free(palette_path);
 
-    palette = try gif.loadFile(try getAssetPath("palette.gif"));
+    palette = try gif.loadFile(palette_path);
     defer palette.destroy();
 
     // Start up SDL2
@@ -34,7 +39,10 @@ pub fn main() !void {
     defer sdl.deinit();
 
     // Start up Lua
-    try lua.init("main.lua");
+    const main_lua_path = try getAssetPath("main.lua", args_allocator);
+    defer args_allocator.free(main_lua_path);
+
+    try lua.init(main_lua_path);
     defer lua.deinit();
 
     // First, call the init function
@@ -50,13 +58,14 @@ pub fn main() !void {
 
         sdl.present();
     }
+    
+    std.debug.print("Brass Emulator Stopping\n", .{});
 }
 
-pub fn getAssetPath(file_path: []const u8) ![:0]const u8 {
-    var path: [100]u8 = undefined;
-    const concat_path = try std.fmt.bufPrintZ(&path, "{s}/{s}", .{ assets_path, file_path });
-    std.debug.print("Generated Asset Path: {s}\n", .{concat_path});
-    return concat_path;
+pub fn getAssetPath(file_path: []const u8, allocator: Allocator) ![:0]const u8 {
+    const total_size = assets_path.len + file_path.len + 2;
+    var path: []u8 = try allocator.alloc(u8, total_size);
+    return try std.fmt.bufPrintZ(path, "{s}/{s}", .{ assets_path, file_path });
 }
 
 pub fn stop() void {
