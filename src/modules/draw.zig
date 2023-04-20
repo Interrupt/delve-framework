@@ -87,8 +87,12 @@ fn filled_circle(lua: *Lua) i32 {
     const renderer = zigsdl.getRenderer();
     _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF );
 
+    // Dissapear when too small
+    if(radius <= 0.25)
+        return 0;
+
     // In the easy case, just plot a pixel
-    if (radius <= 1) {
+    if (radius <= 0.5) {
         _ = sdl.SDL_RenderDrawPoint(renderer, @floatToInt(c_int, x), @floatToInt(c_int, y));
         return 0;
     }
@@ -97,12 +101,19 @@ fn filled_circle(lua: *Lua) i32 {
     // Can figure out the height of the strip based on the xpos via good old pythagoros
     // Y = 2 * sqrt(R^2 - X^2)
     var x_idx: f64 = -radius;
-    while(x_idx < radius) : (x_idx += 1) {
+    while(x_idx < 1) : (x_idx += 1) {
         var offset = math.sqrt(math.pow(f64,radius,2) - math.pow(f64,x_idx,2));
         var y_idx: f64 = -offset;
+        if(offset <= 0.5)
+            continue;
 
+        offset = std.math.round(offset);
+
+        // Draw mirrored sides!
         while(y_idx < offset) : (y_idx += 1) {
             _ = sdl.SDL_RenderDrawPoint(renderer, @floatToInt(c_int, x + x_idx), @floatToInt(c_int, y + y_idx));
+            if(x + x_idx != x - x_idx && x_idx <= 0)
+                _ = sdl.SDL_RenderDrawPoint(renderer, @floatToInt(c_int, x - x_idx), @floatToInt(c_int, y + y_idx));
         }
     }
 
