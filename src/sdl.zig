@@ -59,6 +59,10 @@ pub fn getRenderer() *sdl.SDL_Renderer {
     return renderer;
 }
 
+pub fn getWindow() *sdl.SDL_Window {
+    return window;
+}
+
 pub fn present() void {
     // Swap the buffers, update the screen
     sdl.SDL_RenderPresent(renderer);

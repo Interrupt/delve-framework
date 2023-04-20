@@ -57,13 +57,18 @@ pub fn callFunction(func_name: [:0]const u8) !void {
     if(enable_debug_logging)
         std.debug.print("Lua: calling {s}\n", .{func_name});
 
-    _ = lua.getGlobal(func_name) catch |err| {
-        std.debug.print("Lua: getGlobal error! output: {!s} {}\n", .{lua.toString(-1), err});
+    _ = lua.getGlobal(func_name) catch {
+        if(enable_debug_logging)
+            std.debug.print("Lua: no global {s} found to call\n", .{func_name});
+
+        lua.pop(1);
         return;
     };
 
     if(!lua.isFunction(1)) {
-        std.debug.print("Lua: no function {s} found\n", .{func_name});
+        if(enable_debug_logging)
+            std.debug.print("Lua: no function {s} found to call\n", .{func_name});
+
         lua.pop(1);
         return;
     }

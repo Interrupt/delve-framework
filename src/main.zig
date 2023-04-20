@@ -11,6 +11,7 @@ var args_allocator = args_gpa.allocator();
 var isRunning = true;
 var numTicks: u64 = 0;
 
+const fallback_assets_path = "assets";
 pub var assets_path: [:0]const u8 = undefined;
 pub var palette: gif.GifImage = undefined;
 
@@ -20,18 +21,21 @@ pub fn main() !void {
     // Get arguments
     const args = try std.process.argsAlloc(args_allocator);
     defer _ = args_gpa.deinit();
+    defer std.process.argsFree(args_allocator, args);
 
     // Get the path to the assets
-    assets_path = if(args.len >= 2) try args_allocator.dupeZ(u8, args[1]) else "assets";
-    std.process.argsFree(args_allocator, args);
+    assets_path = switch(args.len >= 2) {
+        true => try args_allocator.dupeZ(u8, args[1]),
+        else => try args_allocator.dupeZ(u8, fallback_assets_path),
+    };
+    defer args_allocator.free(assets_path);
 
+    // Change the working dir to where the assets are
     std.debug.print("Assets Path: {s}\n", .{assets_path});
+    try std.os.chdirZ(assets_path);
 
     // Load the palette
-    const palette_path = try getAssetPath("palette.gif", args_allocator);
-    defer args_allocator.free(palette_path);
-
-    palette = try gif.loadFile(palette_path);
+    palette = try gif.loadFile("palette.gif");
     defer palette.destroy();
 
     // Start up SDL2
@@ -39,10 +43,7 @@ pub fn main() !void {
     defer sdl.deinit();
 
     // Start up Lua
-    const main_lua_path = try getAssetPath("main.lua", args_allocator);
-    defer args_allocator.free(main_lua_path);
-
-    try lua.init(main_lua_path);
+    try lua.init("main.lua");
     defer lua.deinit();
 
     // First, call the init function
