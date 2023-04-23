@@ -43,10 +43,13 @@ pub fn main() !void {
     defer sdl.deinit();
 
     // Start up Lua
-    try lua.init("main.lua");
+    try lua.init();
     defer lua.deinit();
 
-    // First, call the init function
+    // Load and run the main script
+    try lua.runFile("main.lua");
+
+    // Call the init lifecycle function
     try lua.callFunction("_init");
 
     // Kick off the game loop!
@@ -59,7 +62,7 @@ pub fn main() !void {
 
         sdl.present();
     }
-    
+
     std.debug.print("Brass Emulator Stopping\n", .{});
 }
 
@@ -70,6 +73,5 @@ pub fn getAssetPath(file_path: []const u8, allocator: Allocator) ![:0]const u8 {
 }
 
 pub fn stop() void {
-    isRunning = false;   
+    isRunning = false;
 }
-

@@ -17,37 +17,39 @@ var lua: Lua = undefined;
 // Enable for extra logging
 var enable_debug_logging = false;
 
-pub fn init(luaFileString: [:0]const u8) !void {
+pub fn init() !void {
     std.debug.print("Lua: system starting up!\n", .{});
-    std.debug.print("Lua: opening file {s}\n", .{luaFileString});
 
     // Initialize the Lua VM!
     lua = try Lua.init(lua_allocator);
 
     // Turn on to get lua debug output
-    //setDebugHook();
+    if(enable_debug_logging)
+        setDebugHook();
 
     lua.openLibs(); // open standard libs
     openModules();  // open custom modules
 
-    // Load and run the file
-    lua.doFile(luaFileString) catch |err| {
-        std.debug.print("Lua: doFile error! output: {!s} {}\n", .{lua.toString(-1), err});
+    std.debug.print("Lua: ready to go!\n", .{});
+}
+
+pub fn runFile(lua_filename: [:0]const u8) !void {
+    std.debug.print("Lua: running file {s}\n", .{lua_filename});
+
+    defer lua.setTop(0);
+    lua.doFile(lua_filename) catch |err| {
+        std.debug.print("Lua: runFile error in {s}: {!s} {}\n", .{lua_filename, lua.toString(-1), err});
         return err;
     };
-
-    // Clear stack after running
-    lua.setTop(0);
-
-    std.debug.print("Lua: loaded file {s}\n", .{luaFileString});
 }
 
-pub fn openModule(comptime name: [:0]const u8, comptime open_func: ziglua.ZigFn) void {
+fn openModule(comptime name: [:0]const u8, comptime open_func: ziglua.ZigFn) void {
     lua.requireF(name, ziglua.wrap(open_func), true);
+    std.debug.print("Lua: registered module '{s}'\n", .{name});
 }
 
-pub fn openModules() void {
-    // Open all of the custom modules here
+fn openModules() void {
+    // Open all of the custom modules here!
     openModule("draw", draw_module.makeLib);
     openModule("input.mouse", mouse_module.makeLib);
 }
@@ -72,7 +74,7 @@ pub fn callFunction(func_name: [:0]const u8) !void {
         lua.pop(1);
         return;
     }
-    
+
     lua.protectedCall(0, 0, 0) catch |err| {
         std.debug.print("Lua: pCall error! output: {!s} {}\n", .{lua.toString(-1), err});
         return err;
@@ -84,9 +86,9 @@ pub fn setDebugHook() void {
     const hook = struct {
         fn inner(l: *Lua, event: ziglua.Event, i: *ziglua.DebugInfo) void {
             var type_name = switch (event) {
-                .call => "call", 
+                .call => "call",
                 .line => "line",
-                .ret => "ret", 
+                .ret => "ret",
                 else => unreachable,
             };
 
@@ -98,7 +100,7 @@ pub fn setDebugHook() void {
     lua.setHook(ziglua.wrap(hook), .{ .call = true, .line = true, .ret = true }, 0);
 }
 
-pub fn printDebug() void {
+fn printDebug() void {
     var lua_debug = lua.getStack(1);
     if(lua_debug) |debug| {
         std.debug.print("Lua: stack debug: {?s} {?s}.\n", .{debug.source, debug.name});

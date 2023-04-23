@@ -56,7 +56,7 @@ fn line(lua: *Lua) i32 {
 
     // Four bytes per color
     color_idx *= main.palette.channels;
-    
+
     const r = main.palette.raw[color_idx];
     const g = main.palette.raw[color_idx + 1];
     const b = main.palette.raw[color_idx + 2];
@@ -79,7 +79,7 @@ fn filled_circle(lua: *Lua) i32 {
 
     if(color_idx >= main.palette.height * main.palette.pitch)
         color_idx = 0;
-    
+
     const r = main.palette.raw[color_idx];
     const g = main.palette.raw[color_idx + 1];
     const b = main.palette.raw[color_idx + 2];
@@ -112,7 +112,7 @@ fn filled_circle(lua: *Lua) i32 {
         // Draw mirrored sides!
         while(y_idx < offset) : (y_idx += 1) {
             _ = sdl.SDL_RenderDrawPoint(renderer, @floatToInt(c_int, x + x_idx), @floatToInt(c_int, y + y_idx));
-            if(x + x_idx != x - x_idx && x_idx <= 0)
+            if(x + x_idx != x - x_idx and x_idx <= 0)
                 _ = sdl.SDL_RenderDrawPoint(renderer, @floatToInt(c_int, x - x_idx), @floatToInt(c_int, y + y_idx));
         }
     }
@@ -130,7 +130,7 @@ fn set_resolution(lua: *Lua) i32 {
 
     res_x *= @floatToInt(c_int, scale_x);
     res_y *= @floatToInt(c_int, scale_y);
-    
+
     const window = zigsdl.getWindow();
     _ = sdl.SDL_SetWindowSize(window, res_x, res_y);
 
