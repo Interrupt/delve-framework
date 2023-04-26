@@ -45,7 +45,7 @@ function _draw()
     local x, y = mouse.position()
     mouse.button(0)
     mouse.button(2)
-    draw.clear(1)
+    draw.clear(black)
 
     text.draw("hello zig!", 0, 0, red)
 
