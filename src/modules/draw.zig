@@ -17,7 +17,6 @@ pub fn makeLib(lua: *Lua) i32 {
         .{ .name = "clear", .func = ziglua.wrap(clear) },
         .{ .name = "line", .func = ziglua.wrap(line) },
         .{ .name = "filled_circle", .func = ziglua.wrap(filled_circle) },
-        .{ .name = "set_resolution", .func = ziglua.wrap(set_resolution) },
     };
 
     lua.newLib(&funcs);
@@ -116,23 +115,6 @@ fn filled_circle(lua: *Lua) i32 {
                 _ = sdl.SDL_RenderDrawPoint(renderer, @floatToInt(c_int, x - x_idx), @floatToInt(c_int, y + y_idx));
         }
     }
-
-    return 0;
-}
-
-fn set_resolution(lua: *Lua) i32 {
-    var res_x = @floatToInt(c_int, lua.toNumber(1) catch 0);
-    var res_y = @floatToInt(c_int, lua.toNumber(2) catch 0);
-
-    var scale_x: f32 = 0;
-    var scale_y: f32 = 0;
-    _ = sdl.SDL_RenderGetScale(zigsdl.getRenderer(), &scale_x, &scale_y);
-
-    res_x *= @floatToInt(c_int, scale_x);
-    res_y *= @floatToInt(c_int, scale_y);
-
-    const window = zigsdl.getWindow();
-    _ = sdl.SDL_SetWindowSize(window, res_x, res_y);
 
     return 0;
 }

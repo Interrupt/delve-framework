@@ -2,6 +2,7 @@
 
 local draw = require("draw")
 local mouse = require("input.mouse")
+local text = require("text")
 
 function _init()
     black = 0
@@ -28,12 +29,12 @@ function _init()
 
     points = {}
 
-    ramp = {0,5,4,9,10,15,7,7}
+    ramp = { 0, 5, 4, 9, 10, 15, 7, 7 }
 end
 
 function _update()
     local x, y = mouse.position()
-    table.insert(points, {x=x, y=y})
+    table.insert(points, { x = x, y = y })
 
     if #points > 200 then
         table.remove(points, 1)
@@ -42,7 +43,11 @@ end
 
 function _draw()
     local x, y = mouse.position()
-    draw.clear(0)
+    mouse.button(0)
+    mouse.button(2)
+    draw.clear(1)
+
+    text.draw("hello zig!", 0, 0, red)
 
     if #points < 11 then
         return
@@ -50,7 +55,7 @@ function _draw()
 
     for i = 1, #points - 10, 1 do
         local p0 = points[i]
-        local p1 = points[i+10]
+        local p1 = points[i + 10]
         local c = i / (#points - 10)
         draw.line(p0.x, p0.y, p1.x, p1.y, shade(c))
     end
@@ -58,5 +63,5 @@ end
 
 function shade(t)
     local i = t * (#ramp - 1) + 1
-    return ramp[i//1]
+    return ramp[i // 1]
 end

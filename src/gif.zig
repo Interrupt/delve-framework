@@ -39,7 +39,7 @@ pub const GifImage = struct {
         const bits_per_channel = 8;
         const channel_count = 4;
 
-        stb_image.stbi_set_flip_vertically_on_load(1);
+        // stb_image.stbi_set_flip_vertically_on_load(1);
         const image_data = stb_image.stbi_load_from_memory(compressed_bytes.ptr, @intCast(c_int, compressed_bytes.len), &width, &height, null, channel_count);
 
         if (image_data == null) return error.NoMem;
@@ -64,11 +64,14 @@ pub fn loadFile(file_path: [:0]const u8) !GifImage {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     var allocator = gpa.allocator();
 
-    const file_size = (try file.stat()).size; 
+    const file_size = (try file.stat()).size;
 
-    const contents = try file.reader().readAllAlloc(allocator, file_size); 
+    const contents = try file.reader().readAllAlloc(allocator, file_size);
     defer allocator.free(contents);
 
     return GifImage.create(contents);
 }
 
+pub fn loadBytes(gif_bytes: []const u8) !GifImage {
+    return GifImage.create(gif_bytes);
+}

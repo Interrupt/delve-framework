@@ -1,10 +1,6 @@
 const ziglua = @import("ziglua");
 const std = @import("std");
 
-// Modules
-const draw_module = @import("modules/draw.zig");
-const mouse_module = @import("modules/mouse.zig");
-
 const Lua = ziglua.Lua;
 
 // Allocator for the Lua VM
@@ -49,9 +45,12 @@ fn openModule(comptime name: [:0]const u8, comptime open_func: ziglua.ZigFn) voi
 }
 
 fn openModules() void {
-    // Open all of the custom modules here!
-    openModule("draw", draw_module.makeLib);
-    openModule("input.mouse", mouse_module.makeLib);
+    // Open all of the API modules here!
+    openModule("assets", @import("modules/assets.zig").makeLib);
+    openModule("display", @import("modules/display.zig").makeLib);
+    openModule("draw", @import("modules/draw.zig").makeLib);
+    openModule("input.mouse", @import("modules/mouse.zig").makeLib);
+    openModule("text", @import("modules/text.zig").makeLib);
 }
 
 pub fn callFunction(func_name: [:0]const u8) !void {
