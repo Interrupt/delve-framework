@@ -44,19 +44,19 @@ pub fn makeLib(lua: *Lua) i32 {
 
 fn text(lua: *Lua) i32 {
     var text_string = lua.toString(1) catch "";
-    var x_pos = @floatToInt(u32, lua.toNumber(2) catch 0);
-    var y_pos = @floatToInt(u32, lua.toNumber(3) catch 0);
-    //var color_idx = @floatToInt(u32, lua.toNumber(4) catch 0);
+    var x_pos = lua.toNumber(2) catch 0;
+    var y_pos = lua.toNumber(3) catch 0;
+    var color_idx = @floatToInt(u32, lua.toNumber(4) catch 0);
 
     // std.debug.print("Text: {s} at {d},{d}\n", .{text_string, x_pos, y_pos});
-    drawText(text_string, x_pos, y_pos);
+    drawText(text_string, @floatToInt(i32, x_pos), @floatToInt(i32, y_pos), color_idx);
 
     return 0;
 }
 
-pub fn drawText(text_string: [*:0]const u8, x: u32, y: u32) void {
-    var x_offset: u32 = 0;
-    var y_offset: u32 = 0;
+pub fn drawText(text_string: [*:0]const u8, x: i32, y: i32, color: u32) void {
+    var x_offset: i32 = 0;
+    var y_offset: i32 = 0;
 
     var idx: u32 = 0;
 
@@ -76,11 +76,11 @@ pub fn drawText(text_string: [*:0]const u8, x: u32, y: u32) void {
 
         x_offset += 8;
 
-        drawGlyph(char, x + x_offset, y + y_offset);
+        drawGlyph(char, x + x_offset, y + y_offset, color);
     }
 }
 
-pub fn drawGlyph(char: u8, x: u32, y: u32) void {
+pub fn drawGlyph(char: u8, x: i32, y: i32, color: u32) void {
     const renderer = zigsdl.getRenderer();
     const draw_width = 8;
     const draw_height = 8;
@@ -90,8 +90,23 @@ pub fn drawGlyph(char: u8, x: u32, y: u32) void {
     const picked_column = char % sheet_columns;
     const picked_row = char / sheet_columns;
 
-    const char_x_offset: u32 = picked_column * draw_width;
-    const char_y_offset: u32 = picked_row * draw_height;
+    const char_x_offset = picked_column * draw_width;
+    const char_y_offset = picked_row * draw_height;
+
+    var res_x: c_int = 0;
+    var res_y: c_int = 0;
+    _ = sdl.SDL_GetRendererOutputSize(renderer, &res_x, &res_y);
+
+    // Four bytes per color
+    var color_idx = color * main.palette.channels;
+
+    if(color_idx >= main.palette.height * main.palette.pitch)
+        color_idx = 0;
+
+    const pal_r = main.palette.raw[color_idx];
+    const pal_g = main.palette.raw[color_idx + 1];
+    const pal_b = main.palette.raw[color_idx + 2];
+    _ = sdl.SDL_SetRenderDrawColor(renderer, pal_r, pal_g, pal_b, 0xFF );
 
     for (char_x_offset .. char_x_offset + draw_width) |x_pos| {
         for (char_y_offset .. char_y_offset + draw_height) |y_pos| {
@@ -104,10 +119,14 @@ pub fn drawGlyph(char: u8, x: u32, y: u32) void {
             if(r == 0 and g == 0 and b == 0)
                 continue;
 
-            _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF );
-            _ = sdl.SDL_RenderDrawPoint(renderer,
-                @intCast(c_int, x + x_pos - char_x_offset),
-                @intCast(c_int, y + y_pos - char_y_offset));
+            const x_pixel = x + @intCast(i32, x_pos - char_x_offset);
+            const y_pixel = y + @intCast(i32, y_pos - char_y_offset);
+
+            if(x_pixel < 0 or y_pixel < 0 or x_pixel > res_x or y_pixel > res_y)
+                continue;
+
+            // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF );
+            _ = sdl.SDL_RenderDrawPoint(renderer, @intCast(c_int, x_pixel), @intCast(c_int, y_pixel));
         }
     }
 }
