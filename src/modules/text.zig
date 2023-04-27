@@ -74,9 +74,8 @@ pub fn drawText(text_string: [*:0]const u8, x: i32, y: i32, color: u32) void {
             continue;
         }
 
-        x_offset += 8;
-
         drawGlyph(char, x + x_offset, y + y_offset, color);
+        x_offset += 8;
     }
 }
 

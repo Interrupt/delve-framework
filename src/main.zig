@@ -2,6 +2,7 @@ const std = @import("std");
 const lua = @import("lua.zig");
 const sdl = @import("sdl.zig");
 const gif = @import("gif.zig");
+const console = @import("console.zig");
 
 const Allocator = std.mem.Allocator;
 
@@ -17,6 +18,8 @@ pub var palette: gif.GifImage = undefined;
 
 pub fn main() !void {
     std.debug.print("Brass Emulator Starting\n", .{});
+    console.init();
+    defer console.deinit();
 
     // Get arguments
     const args = try std.process.argsAlloc(args_allocator);
@@ -58,9 +61,11 @@ pub fn main() !void {
 
         try lua.callFunction("_update");
         try lua.callFunction("_draw");
-        numTicks += 1;
+
+        console.updateAndDraw();
 
         sdl.present();
+        numTicks += 1;
     }
 
     std.debug.print("Brass Emulator Stopping\n", .{});
