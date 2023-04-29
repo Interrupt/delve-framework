@@ -17,6 +17,7 @@ pub fn makeLib(lua: *Lua) i32 {
         .{ .name = "clear", .func = ziglua.wrap(clear) },
         .{ .name = "line", .func = ziglua.wrap(line) },
         .{ .name = "filled_circle", .func = ziglua.wrap(filled_circle) },
+        .{ .name = "filled_rectangle", .func = ziglua.wrap(filled_rectangle_lua) },
     };
 
     lua.newLib(&funcs);
@@ -117,4 +118,34 @@ fn filled_circle(lua: *Lua) i32 {
     }
 
     return 0;
+}
+
+fn filled_rectangle_lua(lua: *Lua) i32 {
+    var start_x = @floatToInt(i32, lua.toNumber(1) catch 0);
+    var start_y = @floatToInt(i32, lua.toNumber(2) catch 0);
+    var width = @floatToInt(i32, lua.toNumber(3) catch 0);
+    var height = @floatToInt(i32, lua.toNumber(4) catch 0);
+    var color_idx = @floatToInt(u32, lua.toNumber(4) catch 0);
+
+    filled_rectangle(start_x, start_y, width, height, color_idx);
+
+    return 0;
+}
+
+pub fn filled_rectangle(start_x: i32, start_y: i32, width: i32, height: i32, color: u32) void {
+    // Four bytes per color
+    var color_idx = color * main.palette.channels;
+
+    if(color_idx >= main.palette.height * main.palette.pitch)
+        color_idx = 0;
+
+    const r = main.palette.raw[color_idx];
+    const g = main.palette.raw[color_idx + 1];
+    const b = main.palette.raw[color_idx + 2];
+
+    const renderer = zigsdl.getRenderer();
+    _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF );
+
+    const rect = sdl.SDL_Rect {.x = start_x, .y = start_y, .w = width, .h = height};
+    _ = sdl.SDL_RenderFillRect(renderer, &rect);
 }
