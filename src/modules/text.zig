@@ -4,6 +4,7 @@ const ziglua = @import("ziglua");
 const zigsdl = @import("../sdl.zig");
 const main = @import("../main.zig");
 const gif = @import("../gif.zig");
+const debug = @import("../debug.zig");
 
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
@@ -21,7 +22,7 @@ pub fn makeLib(lua: *Lua) i32 {
     };
 
     text_gif = gif.loadBytes(text_asset) catch {
-        std.debug.print("Text: Error loading builtin font.\n", .{});
+        debug.log("Text: Error loading builtin font.\n", .{});
         return 0;
     };
 
@@ -36,7 +37,7 @@ pub fn makeLib(lua: *Lua) i32 {
         0x00ff0000,                                 // blue mask
         0);                                         // alpha mask
 
-    std.debug.print("Text: Loaded builtin font: {d}kb\n", .{text_asset.len / 1000});
+    debug.log("Text: Loaded builtin font: {d}kb\n", .{text_asset.len / 1000});
 
     lua.newLib(&funcs);
     return 1;
@@ -48,7 +49,6 @@ fn text(lua: *Lua) i32 {
     var y_pos = lua.toNumber(3) catch 0;
     var color_idx = @floatToInt(u32, lua.toNumber(4) catch 0);
 
-    // std.debug.print("Text: {s} at {d},{d}\n", .{text_string, x_pos, y_pos});
     drawText(text_string, @floatToInt(i32, x_pos), @floatToInt(i32, y_pos), color_idx);
 
     return 0;

@@ -1,5 +1,6 @@
 const ziglua = @import("ziglua");
 const std = @import("std");
+const debug = @import("debug.zig");
 
 const Lua = ziglua.Lua;
 
@@ -14,7 +15,7 @@ var lua: Lua = undefined;
 var enable_debug_logging = false;
 
 pub fn init() !void {
-    std.debug.print("Lua: system starting up!\n", .{});
+    debug.log("Lua: system starting up!\n", .{});
 
     // Initialize the Lua VM!
     lua = try Lua.init(lua_allocator);
@@ -26,22 +27,22 @@ pub fn init() !void {
     lua.openLibs(); // open standard libs
     openModules();  // open custom modules
 
-    std.debug.print("Lua: ready to go!\n", .{});
+    debug.log("Lua: ready to go!\n", .{});
 }
 
 pub fn runFile(lua_filename: [:0]const u8) !void {
-    std.debug.print("Lua: running file {s}\n", .{lua_filename});
+    debug.log("Lua: running file {s}\n", .{lua_filename});
 
     defer lua.setTop(0);
     lua.doFile(lua_filename) catch |err| {
-        std.debug.print("Lua: runFile error in {s}: {!s} {}\n", .{lua_filename, lua.toString(-1), err});
+        debug.log("Lua: runFile error in {s}: {!s} {}\n", .{lua_filename, lua.toString(-1), err});
         return err;
     };
 }
 
 fn openModule(comptime name: [:0]const u8, comptime open_func: ziglua.ZigFn) void {
     lua.requireF(name, ziglua.wrap(open_func), true);
-    std.debug.print("Lua: registered module '{s}'\n", .{name});
+    debug.log("Lua: registered module '{s}'\n", .{name});
 }
 
 fn openModules() void {
@@ -56,11 +57,11 @@ fn openModules() void {
 pub fn callFunction(func_name: [:0]const u8) !void {
 
     if(enable_debug_logging)
-        std.debug.print("Lua: calling {s}\n", .{func_name});
+        debug.log("Lua: calling {s}\n", .{func_name});
 
     _ = lua.getGlobal(func_name) catch {
         if(enable_debug_logging)
-            std.debug.print("Lua: no global {s} found to call\n", .{func_name});
+            debug.log("Lua: no global {s} found to call\n", .{func_name});
 
         lua.pop(1);
         return;
@@ -68,14 +69,14 @@ pub fn callFunction(func_name: [:0]const u8) !void {
 
     if(!lua.isFunction(1)) {
         if(enable_debug_logging)
-            std.debug.print("Lua: no function {s} found to call\n", .{func_name});
+            debug.log("Lua: no function {s} found to call\n", .{func_name});
 
         lua.pop(1);
         return;
     }
 
     lua.protectedCall(0, 0, 0) catch |err| {
-        std.debug.print("Lua: pCall error! output: {!s} {}\n", .{lua.toString(-1), err});
+        debug.log("Lua: pCall error! output: {!s} {}\n", .{lua.toString(-1), err});
         return err;
     };
 }
@@ -92,7 +93,7 @@ pub fn setDebugHook() void {
             };
 
             l.getInfo(.{ .l = true, .r = true, .n = true, .S = true, }, i);
-            std.debug.print("LuaDebug: {s} ({s}:{?d} {?s} {})\n", .{type_name, i.source, i.current_line, i.name, i.what});
+            debug.log("LuaDebug: {s} ({s}:{?d} {?s} {})\n", .{type_name, i.source, i.current_line, i.name, i.what});
         }
     }.inner;
 
@@ -101,15 +102,15 @@ pub fn setDebugHook() void {
 
 fn printDebug() void {
     var lua_debug = lua.getStack(1);
-    if(lua_debug) |debug| {
-        std.debug.print("Lua: stack debug: {?s} {?s}.\n", .{debug.source, debug.name});
+    if(lua_debug) |stack| {
+        debug.log("Lua: stack debug: {?s} {?s}.\n", .{stack.source, stack.name});
     } else |err| {
-        std.debug.print("Lua: stack is empty {}.\n", .{err});
+        debug.log("Lua: stack is empty {}.\n", .{err});
     }
 }
 
 pub fn deinit() void {
-    std.debug.print("Lua: shutting down\n", .{});
+    debug.log("Lua: shutting down\n", .{});
 
     // Close the Lua state and free memory
     lua.deinit();

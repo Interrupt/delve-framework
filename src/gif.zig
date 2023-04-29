@@ -1,4 +1,5 @@
 const std = @import("std");
+const debug = @import("debug.zig");
 
 const stb_image = @cImport({
     @cDefine("STBI_ONLY_GIF", "");
@@ -48,7 +49,7 @@ pub const GifImage = struct {
         gi.raw = image_data[0 .. gi.height * gi.pitch];
         gi.channels = channel_count;
 
-        std.debug.print("gif loaded: {d} {d} {d}\n", .{gi.width, gi.height, gi.pitch});
+        debug.log("gif loaded: {d}x{d}:{d}\n", .{gi.width, gi.height, gi.pitch});
 
         return gi;
     }

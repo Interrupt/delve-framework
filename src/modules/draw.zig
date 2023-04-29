@@ -3,6 +3,7 @@ const math = std.math;
 const ziglua = @import("ziglua");
 const zigsdl = @import("../sdl.zig");
 const main = @import("../main.zig");
+const debug = @import("../debug.zig");
 
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
@@ -28,7 +29,7 @@ fn clear(lua: *Lua) i32 {
     var color_idx = @floatToInt(u32, lua.toNumber(1) catch 0);
 
     if(enable_debug_logging)
-        std.debug.print("Draw: clear {d}\n", .{color_idx});
+        debug.log("Draw: clear {d}\n", .{color_idx});
 
     // Four bytes per color
     color_idx *= main.palette.channels;
@@ -52,7 +53,7 @@ fn line(lua: *Lua) i32 {
     var color_idx = @floatToInt(u32, lua.toNumber(5) catch 0);
 
     if(enable_debug_logging)
-        std.debug.print("Draw: line({d},{d},{d},{d},{d})\n", .{start_x, start_y, end_x, end_y, color_idx});
+        debug.log("Draw: line({d},{d},{d},{d},{d})\n", .{start_x, start_y, end_x, end_y, color_idx});
 
     // Four bytes per color
     color_idx *= main.palette.channels;

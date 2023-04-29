@@ -17,9 +17,10 @@ pub var assets_path: [:0]const u8 = undefined;
 pub var palette: gif.GifImage = undefined;
 
 pub fn main() !void {
-    std.debug.print("Brass Emulator Starting\n", .{});
     debug.init();
     defer debug.deinit();
+
+    debug.log("Brass Emulator Starting\n", .{});
 
     // Get arguments
     const args = try std.process.argsAlloc(args_allocator);
@@ -34,7 +35,7 @@ pub fn main() !void {
     defer args_allocator.free(assets_path);
 
     // Change the working dir to where the assets are
-    std.debug.print("Assets Path: {s}\n", .{assets_path});
+    debug.log("Assets Path: {s}\n", .{assets_path});
     try std.os.chdirZ(assets_path);
 
     // Load the palette
@@ -68,7 +69,7 @@ pub fn main() !void {
         numTicks += 1;
     }
 
-    std.debug.print("Brass Emulator Stopping\n", .{});
+    debug.log("Brass Emulator Stopping\n", .{});
 }
 
 pub fn getAssetPath(file_path: []const u8, allocator: Allocator) ![:0]const u8 {

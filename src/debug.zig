@@ -29,24 +29,6 @@ const log_history_max_len = 100;
 pub fn init() void {
     log_history_list = text_array.init(allocator);
     cmd_history_list = text_array.init(allocator);
-
-    var log_line: u32 = 0;
-    log("Brass Emulator Starting", .{});
-
-    log("Hello Zig! {d}", .{log_line});
-    log_line += 1;
-    log("Hello Zig! {d}", .{log_line});
-    log_line += 1;
-    log("Hello Zig! {d}", .{log_line});
-    log_line += 1;
-    log("Hello Zig! {d}", .{log_line});
-    log_line += 1;
-    log("Hello Zig! {d}", .{log_line});
-    log_line += 1;
-    log("Hello Zig! {d}", .{log_line});
-    log_line += 1;
-    log("Hello Zig! {d}", .{log_line});
-    log_line += 1;
 }
 
 pub fn deinit() void {
@@ -69,7 +51,7 @@ pub fn log(comptime fmt: []const u8, args: anytype) void {
 
     // Log to std out
     const written = fbs.getWritten();
-    std.debug.print("{s}\n", .{written});
+    std.debug.print("{s}", .{written});
 
     // Alloc some memory to keep a copy of this log line in the history
     const memory = allocator.alloc(u8, written.len) catch { return; };
@@ -87,6 +69,7 @@ pub fn log(comptime fmt: []const u8, args: anytype) void {
         return;
 
     const removed = log_history_list.orderedRemove(0);
+    std.debug.print("Removing: {s}\n", .{removed});
     allocator.free(removed);
 }
 
@@ -112,11 +95,16 @@ pub fn drawConsole() void {
     if(log_history_list.items.len > console_num_to_show)
         start_index = log_history_list.items.len - console_num_to_show;
 
+    const end_index = log_history_list.items.len;
+    const line_count = end_index - start_index;
+
     text_module.drawText("> ", 0, y_pos, white_pal_idx);
     y_pos -= 8;
 
-    for(start_index .. log_history_list.items.len) |idx| {
-        const line = log_history_list.items[log_history_list.items.len - 1 - idx];
+    //std.debug.print("Start line: {}\n", .{start_index});
+
+    for(0 .. line_count) |idx| {
+        const line = log_history_list.items[end_index - 1 - idx];
         text_module.drawText(line, 0, y_pos, white_pal_idx);
         y_pos -= 8;
         count += 1;

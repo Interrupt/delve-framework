@@ -1,5 +1,6 @@
 const std = @import("std");
 const main = @import("main.zig");
+const debug = @import("debug.zig");
 
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
@@ -17,7 +18,7 @@ pub fn init() !void {
         sdlPanic();
     }
 
-    std.debug.print("Initialized SDL\n", .{});
+    debug.log("Initialized SDL\n", .{});
 
     window = sdl.SDL_CreateWindow(
         "Brass Emulator",
@@ -46,7 +47,7 @@ pub fn processEvents() void {
     while (sdl.SDL_PollEvent(&sdl_event) != 0) {
         switch (sdl_event.type) {
             sdl.SDL_QUIT => {
-                std.debug.print("SDL: asked for exit.\n", .{});
+                debug.log("SDL: asked for exit.\n", .{});
                 main.stop();
                 break;
             },
