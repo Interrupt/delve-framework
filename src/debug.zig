@@ -31,21 +31,21 @@ pub fn init() void {
     cmd_history_list = text_array.init(allocator);
 
     var log_line: u32 = 0;
-    logLine("Brass Emulator Starting", .{});
+    log("Brass Emulator Starting", .{});
 
-    logLine("Hello Zig! {d}", .{log_line});
+    log("Hello Zig! {d}", .{log_line});
     log_line += 1;
-    logLine("Hello Zig! {d}", .{log_line});
+    log("Hello Zig! {d}", .{log_line});
     log_line += 1;
-    logLine("Hello Zig! {d}", .{log_line});
+    log("Hello Zig! {d}", .{log_line});
     log_line += 1;
-    logLine("Hello Zig! {d}", .{log_line});
+    log("Hello Zig! {d}", .{log_line});
     log_line += 1;
-    logLine("Hello Zig! {d}", .{log_line});
+    log("Hello Zig! {d}", .{log_line});
     log_line += 1;
-    logLine("Hello Zig! {d}", .{log_line});
+    log("Hello Zig! {d}", .{log_line});
     log_line += 1;
-    logLine("Hello Zig! {d}", .{log_line});
+    log("Hello Zig! {d}", .{log_line});
     log_line += 1;
 }
 
@@ -58,7 +58,7 @@ pub fn deinit() void {
     _ = gpa.deinit();
 }
 
-pub fn logLine(comptime fmt: []const u8, args: anytype) void {
+pub fn log(comptime fmt: []const u8, args: anytype) void {
     // Make an output stream for the console log line formatting
     var buf: [256:0]u8 = undefined;
     var fbs = std.io.fixedBufferStream(&buf);
@@ -94,7 +94,8 @@ pub fn drawConsole() void {
     if(!console_visible)
         return;
 
-    const height_pixels = @intCast(i32, (console_num_to_show + 1) * 8);
+    const white_pal_idx = 7;
+    const height_pixels = @intCast(i32, (console_num_to_show + 1) * 8) + 2;
 
     var res_w: c_int = 0;
     var res_h: c_int = 0;
@@ -111,12 +112,12 @@ pub fn drawConsole() void {
     if(log_history_list.items.len > console_num_to_show)
         start_index = log_history_list.items.len - console_num_to_show;
 
-    text_module.drawText("> ", 0, y_pos, 1);
+    text_module.drawText("> ", 0, y_pos, white_pal_idx);
     y_pos -= 8;
 
     for(start_index .. log_history_list.items.len) |idx| {
         const line = log_history_list.items[log_history_list.items.len - 1 - idx];
-        text_module.drawText(line, 0, y_pos, 1);
+        text_module.drawText(line, 0, y_pos, white_pal_idx);
         y_pos -= 8;
         count += 1;
 
