@@ -88,9 +88,9 @@ pub fn drawConsole() void {
     draw_module.filled_rectangle(0, 0, res_w, height_pixels, 0);
     draw_module.filled_rectangle(0, height_pixels, res_w, 1, 1);
 
-    var y_pos: i32 = @intCast(i32, console_num_to_show * 8);
-    var count: u32 = 0;
+    var y_draw_pos: i32 = @intCast(i32, console_num_to_show * 8);
 
+    // How many lines should we draw?
     var start_index: usize = 0;
     if(log_history_list.items.len > console_num_to_show)
         start_index = log_history_list.items.len - console_num_to_show;
@@ -98,19 +98,13 @@ pub fn drawConsole() void {
     const end_index = log_history_list.items.len;
     const line_count = end_index - start_index;
 
-    text_module.drawText("> ", 0, y_pos, white_pal_idx);
-    y_pos -= 8;
-
-    //std.debug.print("Start line: {}\n", .{start_index});
+    text_module.drawText("> ", 0, y_draw_pos, white_pal_idx);
+    y_draw_pos -= 8;
 
     for(0 .. line_count) |idx| {
         const line = log_history_list.items[end_index - 1 - idx];
-        text_module.drawText(line, 0, y_pos, white_pal_idx);
-        y_pos -= 8;
-        count += 1;
-
-        if(count >= console_num_to_show)
-            break;
+        text_module.drawText(line, 0, y_draw_pos, white_pal_idx);
+        y_draw_pos -= 8;
     }
 }
 
