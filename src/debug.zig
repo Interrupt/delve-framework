@@ -7,8 +7,10 @@ const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
 });
 
+const log_history_max_len = 100;
+const console_num_to_show: u32 = 5;
+
 var console_visible = true;
-var console_num_to_show: u32 = 5;
 
 // Manage our own memory!
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -16,19 +18,16 @@ var allocator = gpa.allocator();
 
 // Lists of log history and command history
 const text_array = std.ArrayList([:0]const u8);
+const char_array = std.ArrayList(u8);
+
 var log_history_list: std.ArrayListAligned([:0]const u8, null) = undefined;
 var cmd_history_list: std.ArrayListAligned([:0]const u8, null) = undefined;
-
-// Our next pending command
-var cmd_buf: [512]u8 = undefined;
-var cmd_fbs = std.io.fixedBufferStream(&cmd_buf);
-const cmd_stream = cmd_fbs.writer();
-
-const log_history_max_len = 100;
+var pending_cmd: std.ArrayListAligned(u8, null) = undefined;
 
 pub fn init() void {
     log_history_list = text_array.init(allocator);
     cmd_history_list = text_array.init(allocator);
+    pending_cmd = char_array.init(allocator);
 }
 
 pub fn deinit() void {
@@ -37,6 +36,8 @@ pub fn deinit() void {
 
     for(cmd_history_list.items) |line| { allocator.free(line); }
     cmd_history_list.deinit();
+
+    pending_cmd.deinit();
     _ = gpa.deinit();
 }
 
@@ -77,8 +78,11 @@ pub fn drawConsole() void {
     if(!console_visible)
         return;
 
+    // Push text away from the top and left sides
+    const padding = 2;
+
     const white_pal_idx = 7;
-    const height_pixels = @intCast(i32, (console_num_to_show + 1) * 8) + 2;
+    const height_pixels = @intCast(i32, (console_num_to_show + 1) * 8) + padding * 2;
 
     var res_w: c_int = 0;
     var res_h: c_int = 0;
@@ -88,7 +92,7 @@ pub fn drawConsole() void {
     draw_module.filled_rectangle(0, 0, res_w, height_pixels, 0);
     draw_module.filled_rectangle(0, height_pixels, res_w, 1, 1);
 
-    var y_draw_pos: i32 = @intCast(i32, console_num_to_show * 8);
+    var y_draw_pos: i32 = @intCast(i32, console_num_to_show * 8) + padding;
 
     // How many lines should we draw?
     var start_index: usize = 0;
@@ -98,20 +102,80 @@ pub fn drawConsole() void {
     const end_index = log_history_list.items.len;
     const line_count = end_index - start_index;
 
-    text_module.drawText("> ", 0, y_draw_pos, white_pal_idx);
-    y_draw_pos -= 8;
+    // Draw the pending command text
+    text_module.drawText("> ", padding, y_draw_pos, white_pal_idx);
+    var pending_cmd_idx: i32 = 0;
+    for(pending_cmd.items) |char| {
+        pending_cmd_idx += 1;
+        text_module.drawGlyph(char, padding + pending_cmd_idx * 8, y_draw_pos, white_pal_idx);
+    }
 
+    // Draw the indicator
+    pending_cmd_idx += 1;
+    text_module.drawGlyph(221, padding + pending_cmd_idx * 8, y_draw_pos, white_pal_idx);
+
+    y_draw_pos -= 8;
     for(0 .. line_count) |idx| {
         const line = log_history_list.items[end_index - 1 - idx];
-        text_module.drawText(line, 0, y_draw_pos, white_pal_idx);
+        text_module.drawText(line, padding, y_draw_pos, white_pal_idx);
         y_draw_pos -= 8;
     }
 }
 
 pub fn setConsoleVisible(is_visible: bool) void {
+    if(console_visible == is_visible)
+        return;
+
     console_visible = is_visible;
+
+    if(is_visible) {
+        sdl.SDL_StartTextInput();
+        return;
+    }
+
+    sdl.SDL_StopTextInput();
 }
 
-pub fn handleConsoleInput(char: u8) void {
-    cmd_stream.print("{c}", char);
+pub fn isConsoleVisible() bool {
+    return console_visible;
+}
+
+pub fn handleKeyboardTextInput(char: u8) void {
+    pending_cmd.append(char) catch {};
+}
+
+pub fn handleKeyboardBackspace() void {
+    pending_cmd.orderedRemove(0);
+}
+
+pub fn runPendingCommand() void {
+    // Run the lua command!
+    log("{s}", .{pending_cmd.items});
+
+    pending_cmd.clearAndFree();
+}
+
+pub fn handleSDLInputEvent(sdl_event: sdl.SDL_Event) bool {
+    switch (sdl_event.type) {
+        sdl.SDL_KEYDOWN => {
+            switch(sdl_event.key.keysym.sym) {
+                sdl.SDLK_RETURN => {
+                    runPendingCommand();
+                    return true;
+                },
+                sdl.SDLK_BACKSPACE => {
+                    _ = pending_cmd.pop();
+                    return true;
+                },
+                else => {},
+            }
+        },
+        sdl.SDL_TEXTINPUT => {
+            handleKeyboardTextInput(sdl_event.text.text[0]);
+            return true;
+        },
+        else => {},
+    }
+
+    return false;
 }

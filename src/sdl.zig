@@ -45,11 +45,26 @@ pub fn deinit() void {
 pub fn processEvents() void {
     var sdl_event: sdl.SDL_Event = undefined;
     while (sdl.SDL_PollEvent(&sdl_event) != 0) {
+        if(debug.isConsoleVisible()) {
+            if(debug.handleSDLInputEvent(sdl_event))
+                continue;
+        }
+
         switch (sdl_event.type) {
             sdl.SDL_QUIT => {
                 debug.log("SDL: asked for exit.\n", .{});
                 main.stop();
                 break;
+            },
+            sdl.SDL_KEYDOWN => {
+            },
+            sdl.SDL_KEYUP => {
+            },
+            sdl.SDL_TEXTINPUT => {
+                // debug.handleKeyboardTextInput(sdl_event.text.text[0]);
+            },
+            sdl.SDL_TEXTEDITING => {
+                debug.log("SDL: text editing started.\n", .{});
             },
             else => {},
         }
