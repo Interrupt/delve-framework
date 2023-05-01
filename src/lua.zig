@@ -40,6 +40,22 @@ pub fn runFile(lua_filename: [:0]const u8) !void {
     };
 }
 
+pub fn runLine(lua_string: [:0]const u8) !void {
+    // Compile the new line
+    lua.loadString(lua_string) catch |err| {
+        debug.log("{s}\n", .{ try lua.toString(-1) } );
+        lua.pop(1);
+        return err;
+    };
+
+    // Execute the new line
+    lua.protectedCall(0, 0, 0) catch |err| {
+        debug.log("{s}\n", .{ try lua.toString(-1) } );
+        lua.pop(1);
+        return err;
+    };
+}
+
 fn openModule(comptime name: [:0]const u8, comptime open_func: ziglua.ZigFn) void {
     lua.requireF(name, ziglua.wrap(open_func), true);
     debug.log("Lua: registered module '{s}'\n", .{name});

@@ -1,5 +1,6 @@
 const std = @import("std");
 const zigsdl = @import("sdl.zig");
+const lua = @import("lua.zig");
 const text_module = @import("modules/text.zig");
 const draw_module = @import("modules/draw.zig");
 
@@ -8,9 +9,11 @@ const sdl = @cImport({
 });
 
 const log_history_max_len = 100;
-const console_num_to_show: u32 = 5;
+const cmd_history_max_len = 100;
+const console_num_to_show: u32 = 8;
 
 var console_visible = true;
+var cmd_history_item: u32 = 0;
 
 // Manage our own memory!
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -28,6 +31,9 @@ pub fn init() void {
     log_history_list = text_array.init(allocator);
     cmd_history_list = text_array.init(allocator);
     pending_cmd = char_array.init(allocator);
+
+    // Put a blank at the beginning of the history
+    trackCommand("");
 }
 
 pub fn deinit() void {
@@ -70,8 +76,60 @@ pub fn log(comptime fmt: []const u8, args: anytype) void {
         return;
 
     const removed = log_history_list.orderedRemove(0);
-    std.debug.print("Removing: {s}\n", .{removed});
     allocator.free(removed);
+}
+
+pub fn trackCommand(command: [:0]const u8) void {
+    // Alloc some memory to keep a copy of this command in the history
+    const memory = allocator.alloc(u8, command.len + 1) catch { return; };
+    std.mem.copy(u8, memory, command);
+
+    // Add the sentinel back
+    memory[command.len] = 0x00;
+
+
+    // Now append the log line to the history
+    cmd_history_list.append(memory[0..memory.len-1 :0]) catch |err| {
+        std.debug.print("Console command history append error: {}\n", .{err});
+    };
+
+
+    // Update the command history picked item
+    defer cmd_history_item = @intCast(u32, cmd_history_list.items.len);
+
+    // Compact the history if growing out of bounds
+    if(cmd_history_list.items.len <= cmd_history_max_len)
+        return;
+
+    const removed = cmd_history_list.orderedRemove(0);
+    allocator.free(removed);
+}
+
+pub fn scrollCommandFromHistory(direction: i32) void {
+    if(cmd_history_list.items.len == 0)
+        return;
+
+    // Reset the pending command
+    pending_cmd.clearAndFree();
+
+    // Use the blank command for out of the lower bounds
+    if(direction < 0 and cmd_history_item == 0)
+        return;
+
+    // Scroll up and down
+    if(direction < 0)
+        cmd_history_item -= 1;
+    if(direction > 0)
+        cmd_history_item += 1;
+
+    // Out of upper bounds?
+    if(cmd_history_item > cmd_history_list.items.len - 1) {
+        cmd_history_item = @intCast(u32, cmd_history_list.items.len);
+        return;
+    }
+
+    // Within bounds, use the old command
+    pending_cmd.appendSlice(cmd_history_list.items[cmd_history_item]) catch {};
 }
 
 pub fn drawConsole() void {
@@ -151,8 +209,14 @@ pub fn handleKeyboardBackspace() void {
 pub fn runPendingCommand() void {
     // Run the lua command!
     log("{s}", .{pending_cmd.items});
+    defer pending_cmd.clearAndFree();
 
-    pending_cmd.clearAndFree();
+    // Ensure there is a sentinel at the end
+    pending_cmd.append(0x00) catch {};
+
+    const final_command = pending_cmd.items[0..pending_cmd.items.len-1 :0];
+    lua.runLine(final_command) catch {};
+    trackCommand(final_command);
 }
 
 pub fn handleSDLInputEvent(sdl_event: sdl.SDL_Event) bool {
@@ -164,13 +228,28 @@ pub fn handleSDLInputEvent(sdl_event: sdl.SDL_Event) bool {
                     return true;
                 },
                 sdl.SDLK_BACKSPACE => {
-                    _ = pending_cmd.pop();
+                    if(pending_cmd.items.len > 0)
+                        _ = pending_cmd.pop();
+                    return true;
+                },
+                sdl.SDLK_UP => {
+                    scrollCommandFromHistory(-1);
+                    return true;
+                },
+                sdl.SDLK_DOWN => {
+                    scrollCommandFromHistory(1);
                     return true;
                 },
                 else => {},
             }
         },
         sdl.SDL_TEXTINPUT => {
+            // Hide when tilde is pressed!
+            if(sdl_event.text.text[0] == '~') {
+                setConsoleVisible(!console_visible);
+                return true;
+            }
+
             handleKeyboardTextInput(sdl_event.text.text[0]);
             return true;
         },

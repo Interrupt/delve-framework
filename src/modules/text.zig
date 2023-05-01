@@ -89,8 +89,8 @@ pub fn drawGlyph(char: u8, x: i32, y: i32, color: u32) void {
     const picked_column = char % sheet_columns;
     const picked_row = char / sheet_columns;
 
-    const char_x_offset = picked_column * draw_width;
-    const char_y_offset = picked_row * draw_height;
+    const char_x_offset: u32 = picked_column * draw_width;
+    const char_y_offset: u32 = picked_row * draw_height;
 
     var res_x: c_int = 0;
     var res_y: c_int = 0;

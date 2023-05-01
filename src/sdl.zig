@@ -45,6 +45,7 @@ pub fn deinit() void {
 pub fn processEvents() void {
     var sdl_event: sdl.SDL_Event = undefined;
     while (sdl.SDL_PollEvent(&sdl_event) != 0) {
+
         if(debug.isConsoleVisible()) {
             if(debug.handleSDLInputEvent(sdl_event))
                 continue;
@@ -57,11 +58,14 @@ pub fn processEvents() void {
                 break;
             },
             sdl.SDL_KEYDOWN => {
+                // Toggle console on backquote
+                if(sdl_event.key.keysym.sym == sdl.SDLK_BACKQUOTE) {
+                    debug.setConsoleVisible(!debug.isConsoleVisible());
+                }
             },
             sdl.SDL_KEYUP => {
             },
             sdl.SDL_TEXTINPUT => {
-                // debug.handleKeyboardTextInput(sdl_event.text.text[0]);
             },
             sdl.SDL_TEXTEDITING => {
                 debug.log("SDL: text editing started.\n", .{});
