@@ -12,7 +12,7 @@ const log_history_max_len = 100;
 const cmd_history_max_len = 100;
 const console_num_to_show: u32 = 8;
 
-var console_visible = true;
+var console_visible = false;
 var cmd_history_item: u32 = 0;
 
 // Manage our own memory!
@@ -232,6 +232,13 @@ pub fn handleSDLInputEvent(sdl_event: sdl.SDL_Event) bool {
                         _ = pending_cmd.pop();
                     return true;
                 },
+                sdl.SDLK_BACKQUOTE => {
+                    if(sdl.SDL_GetModState() & sdl.KMOD_SHIFT == 1) {
+                        // Hide on tilde
+                        setConsoleVisible(false);
+                        return true;
+                    }
+                },
                 sdl.SDLK_UP => {
                     scrollCommandFromHistory(-1);
                     return true;
@@ -244,11 +251,9 @@ pub fn handleSDLInputEvent(sdl_event: sdl.SDL_Event) bool {
             }
         },
         sdl.SDL_TEXTINPUT => {
-            // Hide when tilde is pressed!
-            if(sdl_event.text.text[0] == '~') {
-                setConsoleVisible(!console_visible);
-                return true;
-            }
+            // Ignore tildes. Easiest way to handle toggle
+            if(sdl_event.text.text[0] == '~')
+                return false;
 
             handleKeyboardTextInput(sdl_event.text.text[0]);
             return true;
