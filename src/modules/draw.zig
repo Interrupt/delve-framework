@@ -29,7 +29,7 @@ fn clear(lua: *Lua) i32 {
     var color_idx = @floatToInt(u32, lua.toNumber(1) catch 0);
 
     if(enable_debug_logging)
-        debug.log("Draw: clear {d}\n", .{color_idx});
+        debug.log("Draw: clear {d}", .{color_idx});
 
     // Four bytes per color
     color_idx *= main.palette.channels;
@@ -53,7 +53,7 @@ fn line(lua: *Lua) i32 {
     var color_idx = @floatToInt(u32, lua.toNumber(5) catch 0);
 
     if(enable_debug_logging)
-        debug.log("Draw: line({d},{d},{d},{d},{d})\n", .{start_x, start_y, end_x, end_y, color_idx});
+        debug.log("Draw: line({d},{d},{d},{d},{d})", .{start_x, start_y, end_x, end_y, color_idx});
 
     // Four bytes per color
     color_idx *= main.palette.channels;

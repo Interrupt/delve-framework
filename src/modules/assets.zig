@@ -23,7 +23,7 @@ pub fn makeLib(lua: *Lua) i32 {
 fn loadGif(lua: *Lua) i32 {
     var filename_arg= lua.toString(1) catch "";
 
-    debug.log("Load Gif: {s}\n", .{filename_arg});
+    debug.log("Load Gif: {s}", .{filename_arg});
 
     return 0;
 }

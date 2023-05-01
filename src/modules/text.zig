@@ -22,7 +22,7 @@ pub fn makeLib(lua: *Lua) i32 {
     };
 
     text_gif = gif.loadBytes(text_asset) catch {
-        debug.log("Text: Error loading builtin font.\n", .{});
+        debug.log("Text: Error loading builtin font.", .{});
         return 0;
     };
 
@@ -37,7 +37,7 @@ pub fn makeLib(lua: *Lua) i32 {
         0x00ff0000,                                 // blue mask
         0);                                         // alpha mask
 
-    debug.log("Text: Loaded builtin font: {d}kb\n", .{text_asset.len / 1000});
+    debug.log("Text: Loaded builtin font: {d}kb", .{text_asset.len / 1000});
 
     lua.newLib(&funcs);
     return 1;

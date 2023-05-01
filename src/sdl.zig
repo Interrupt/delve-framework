@@ -18,7 +18,7 @@ pub fn init() !void {
         sdlPanic();
     }
 
-    debug.log("Initialized SDL\n", .{});
+    debug.log("Initialized SDL", .{});
 
     window = sdl.SDL_CreateWindow(
         "Brass Emulator",
@@ -54,7 +54,7 @@ pub fn processEvents() void {
 
         switch (sdl_event.type) {
             sdl.SDL_QUIT => {
-                debug.log("SDL: asked for exit.\n", .{});
+                debug.log("SDL: asked for exit.", .{});
                 main.stop();
                 break;
             },
@@ -70,7 +70,7 @@ pub fn processEvents() void {
             sdl.SDL_TEXTINPUT => {
             },
             sdl.SDL_TEXTEDITING => {
-                debug.log("SDL: text editing started.\n", .{});
+                debug.log("SDL: text editing started.", .{});
             },
             else => {},
         }

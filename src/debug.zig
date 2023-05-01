@@ -58,7 +58,7 @@ pub fn log(comptime fmt: []const u8, args: anytype) void {
 
     // Log to std out
     const written = fbs.getWritten();
-    std.debug.print("{s}", .{written});
+    std.debug.print("{s}\n", .{written});
 
     // Alloc some memory to keep a copy of this log line in the history
     const memory = allocator.alloc(u8, written.len) catch { return; };

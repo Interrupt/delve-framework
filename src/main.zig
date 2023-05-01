@@ -20,7 +20,7 @@ pub fn main() !void {
     debug.init();
     defer debug.deinit();
 
-    debug.log("Brass Emulator Starting\n", .{});
+    debug.log("Brass Emulator Starting", .{});
 
     // Get arguments
     const args = try std.process.argsAlloc(args_allocator);
@@ -35,7 +35,7 @@ pub fn main() !void {
     defer args_allocator.free(assets_path);
 
     // Change the working dir to where the assets are
-    debug.log("Assets Path: {s}\n", .{assets_path});
+    debug.log("Assets Path: {s}", .{assets_path});
     try std.os.chdirZ(assets_path);
 
     // Load the palette
@@ -69,7 +69,7 @@ pub fn main() !void {
         numTicks += 1;
     }
 
-    debug.log("Brass Emulator Stopping\n", .{});
+    debug.log("Brass Emulator Stopping", .{});
 }
 
 pub fn getAssetPath(file_path: []const u8, allocator: Allocator) ![:0]const u8 {

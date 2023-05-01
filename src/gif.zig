@@ -49,7 +49,7 @@ pub const GifImage = struct {
         gi.raw = image_data[0 .. gi.height * gi.pitch];
         gi.channels = channel_count;
 
-        debug.log("gif loaded: {d}x{d}:{d}\n", .{gi.width, gi.height, gi.pitch});
+        debug.log("gif loaded: {d}x{d}:{d}", .{gi.width, gi.height, gi.pitch});
 
         return gi;
     }
