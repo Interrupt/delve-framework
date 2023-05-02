@@ -172,11 +172,12 @@ pub fn drawConsole() void {
     pending_cmd_idx += 1;
     text_module.drawGlyph(221, padding + pending_cmd_idx * 8, y_draw_pos, white_pal_idx);
 
-    y_draw_pos -= 8;
     for(0 .. line_count) |idx| {
         const line = log_history_list.items[end_index - 1 - idx];
-        text_module.drawText(line, padding, y_draw_pos, white_pal_idx);
-        y_draw_pos -= 8;
+        const text_height = text_module.getTextHeight(line, 252);
+        text_module.drawTextWrapped(line, padding, y_draw_pos - text_height, 252, white_pal_idx);
+
+        y_draw_pos -= text_height;
     }
 }
 
