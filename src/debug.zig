@@ -180,7 +180,7 @@ pub fn drawConsole() void {
     const padding = 2;
 
     const white_pal_idx = 7;
-    const height_pixels = @intCast(i32, (console_num_to_show + 1) * 8) + padding * 2;
+    const height_pixels = @intCast(i32, (console_num_to_show + 1) * 8) + padding;
 
     var res_w: c_int = 0;
     var res_h: c_int = 0;
@@ -190,7 +190,7 @@ pub fn drawConsole() void {
     draw_module.filled_rectangle(0, 0, res_w, height_pixels, 0);
     draw_module.filled_rectangle(0, height_pixels, res_w, 1, 1);
 
-    var y_draw_pos: i32 = @intCast(i32, console_num_to_show * 8) + padding;
+    var y_draw_pos: i32 = (height_pixels - 8) - padding;
 
     // Draw the pending command text
     text_module.drawText("> ", padding, y_draw_pos, white_pal_idx);
