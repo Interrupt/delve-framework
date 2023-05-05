@@ -5,6 +5,9 @@ local mouse = require("input.mouse")
 local text = require("text")
 
 function _init()
+    -- initial resolution
+    display.set_resolution(256, 128)
+
     black = 0
     dark_blue = 1
     dark_purple = 2
@@ -41,13 +44,15 @@ function _update()
     end
 end
 
+clear_color = black
+
 function _draw()
     local x, y = mouse.position()
     mouse.button(0)
     mouse.button(2)
-    draw.clear(black)
+    draw.clear(clear_color)
 
-    text.draw("hello zig!", 0, 0, red)
+    text.draw("hello zig!", 0, 0)
 
     if #points < 11 then
         return
