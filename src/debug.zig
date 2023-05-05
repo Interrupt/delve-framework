@@ -8,41 +8,104 @@ const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
 });
 
-const log_history_max_len = 100;
-const cmd_history_max_len = 100;
 const console_num_to_show: u32 = 8;
-
 var console_visible = false;
-var cmd_history_item: u32 = 0;
 
 // Manage our own memory!
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = gpa.allocator();
 
-// Lists of log history and command history
-const text_array = std.ArrayList([:0]const u8);
+// List types
+const StringLinkedList = std.TailQueue([:0]const u8);
 const char_array = std.ArrayList(u8);
 
-var log_history_list: std.ArrayListAligned([:0]const u8, null) = undefined;
-var cmd_history_list: std.ArrayListAligned([:0]const u8, null) = undefined;
+// Lists for log history and command history
+var log_history_list: LogList = undefined;
+var cmd_history_list: LogList = undefined;
+
+// Keep track of a specific command for scrolling through history
+var cmd_history_item: ?*StringLinkedList.Node = undefined;
+var cmd_history_last_direction: i32 = 0;
+
 var pending_cmd: std.ArrayListAligned(u8, null) = undefined;
 
-pub fn init() void {
-    log_history_list = text_array.init(allocator);
-    cmd_history_list = text_array.init(allocator);
-    pending_cmd = char_array.init(allocator);
+/// A Linked List that can manage its own memory
+const LogList = struct {
+    items: StringLinkedList = StringLinkedList{},
+    log_allocator: std.mem.Allocator = undefined,
+    max_len: usize = 100,
 
-    // Put a blank at the beginning of the history
-    trackCommand("");
+    /// Creates a new LogList
+    pub fn init(in_allocator: std.mem.Allocator) LogList {
+        return LogList{
+            .log_allocator = in_allocator,
+        };
+    }
+
+    /// Add a log string to the end of the list
+    pub fn push(self: *LogList, log_string: [:0]const u8) void {
+        const log_mem = self.log_allocator.alloc(u8, log_string.len + 1) catch {
+            return;
+        };
+        std.mem.copy(u8, log_mem, log_string);
+        log_mem[log_mem.len - 1] = 0x00; // Ensure the sentinel
+
+        var node: *StringLinkedList.Node = self.log_allocator.create(StringLinkedList.Node) catch {
+            return;
+        };
+
+        node.data = log_mem[0 .. log_mem.len - 1 :0];
+        self.items.append(node);
+
+        // Never go over max!
+        if (self.items.len > self.max_len) {
+            self.removeFirst();
+        }
+    }
+
+    /// Remove the first item from the list, cleaning up data
+    pub fn removeFirst(self: *LogList) void {
+        var node = self.items.popFirst();
+        self.log_allocator.free(node.?.data);
+        self.log_allocator.destroy(node.?);
+    }
+
+    /// Free all memory
+    pub fn deinit(self: *LogList) void {
+        var cur = self.items.first;
+        while (cur) |node| {
+            // First, free the node's data
+            self.log_allocator.free(node.data);
+            var to_delete = node;
+            cur = node.next;
+
+            // Finally, clean up the node itself
+            self.log_allocator.destroy(to_delete);
+        }
+    }
+
+    pub fn first(self: *LogList) ?*StringLinkedList.Node {
+        return self.items.first;
+    }
+
+    pub fn last(self: *LogList) ?*StringLinkedList.Node {
+        return self.items.last;
+    }
+
+    pub fn len(self: *LogList) usize {
+        return self.items.len;
+    }
+};
+
+pub fn init() void {
+    log_history_list = LogList.init(allocator);
+    cmd_history_list = LogList.init(allocator);
+    pending_cmd = char_array.init(allocator);
 }
 
 pub fn deinit() void {
-    for(log_history_list.items) |line| { allocator.free(line); }
     log_history_list.deinit();
-
-    for(cmd_history_list.items) |line| { allocator.free(line); }
     cmd_history_list.deinit();
-
     pending_cmd.deinit();
     _ = gpa.deinit();
 }
@@ -53,87 +116,64 @@ pub fn log(comptime fmt: []const u8, args: anytype) void {
     var fbs = std.io.fixedBufferStream(&buf);
     const stream = fbs.writer();
 
-    stream.print(fmt, args) catch { return; };
-    stream.print("\x00", .{}) catch { return; };
+    stream.print(fmt, args) catch {
+        return;
+    };
+    stream.print("\x00", .{}) catch {
+        return;
+    };
 
     // Log to std out
     const written = fbs.getWritten();
     std.debug.print("{s}\n", .{written});
 
-    // Alloc some memory to keep a copy of this log line in the history
-    const memory = allocator.alloc(u8, written.len) catch { return; };
-    std.mem.copy(u8, memory, written);
-
-
-    // Now append the log line to the history
-    log_history_list.append(memory[0..memory.len-1 :0]) catch |err| {
-        std.debug.print("Log append error: {}\n", .{err});
-    };
-
-
-    // Compact the history if growing out of bounds
-    if(log_history_list.items.len <= log_history_max_len)
-        return;
-
-    const removed = log_history_list.orderedRemove(0);
-    allocator.free(removed);
+    // Keep the line in the console log
+    log_history_list.push(written[0 .. written.len - 1 :0]);
 }
 
 pub fn trackCommand(command: [:0]const u8) void {
-    // Alloc some memory to keep a copy of this command in the history
-    const memory = allocator.alloc(u8, command.len + 1) catch { return; };
-    std.mem.copy(u8, memory, command);
+    // Append the command to the history
+    cmd_history_list.push(command);
 
-    // Add the sentinel back
-    memory[command.len] = 0x00;
-
-
-    // Now append the log line to the history
-    cmd_history_list.append(memory[0..memory.len-1 :0]) catch |err| {
-        std.debug.print("Console command history append error: {}\n", .{err});
-    };
-
-
-    // Update the command history picked item
-    defer cmd_history_item = @intCast(u32, cmd_history_list.items.len);
-
-    // Compact the history if growing out of bounds
-    if(cmd_history_list.items.len <= cmd_history_max_len)
-        return;
-
-    const removed = cmd_history_list.orderedRemove(0);
-    allocator.free(removed);
+    // Reset the history picked item
+    cmd_history_item = null;
+    cmd_history_last_direction = 0;
 }
 
 pub fn scrollCommandFromHistory(direction: i32) void {
-    if(cmd_history_list.items.len == 0)
+    if (cmd_history_list.len() == 0)
         return;
+
+    // Keep track of this direction for the next scroll
+    defer cmd_history_last_direction = direction;
 
     // Reset the pending command
     pending_cmd.clearAndFree();
 
-    // Use the blank command for out of the lower bounds
-    if(direction < 0 and cmd_history_item == 0)
-        return;
-
-    // Scroll up and down
-    if(direction < 0)
-        cmd_history_item -= 1;
-    if(direction > 0)
-        cmd_history_item += 1;
-
-    // Out of upper bounds?
-    if(cmd_history_item > cmd_history_list.items.len - 1) {
-        cmd_history_item = @intCast(u32, cmd_history_list.items.len);
-        return;
+    if (cmd_history_item == null) {
+        // If off the list, pick the start or end
+        if (direction < 0 and cmd_history_last_direction >= 0)
+            cmd_history_item = cmd_history_list.last();
+        if (direction > 0 and cmd_history_last_direction <= 0)
+            cmd_history_item = cmd_history_list.first();
+    } else {
+        // In the list, scroll up and down
+        if (direction < 0)
+            cmd_history_item = cmd_history_item.?.prev;
+        if (direction > 0)
+            cmd_history_item = cmd_history_item.?.next;
     }
 
+    // If there is no history item, show nothing!
+    if (cmd_history_item == null)
+        return;
+
     // Within bounds, use the old command
-    pending_cmd.appendSlice(cmd_history_list.items[cmd_history_item]) catch {};
+    pending_cmd.appendSlice(cmd_history_item.?.data) catch {};
 }
 
 pub fn drawConsole() void {
-    if(!console_visible)
+    if (!console_visible)
         return;
 
     // Push text away from the top and left sides
@@ -152,18 +192,10 @@ pub fn drawConsole() void {
 
     var y_draw_pos: i32 = @intCast(i32, console_num_to_show * 8) + padding;
 
-    // How many lines should we draw?
-    var start_index: usize = 0;
-    if(log_history_list.items.len > console_num_to_show)
-        start_index = log_history_list.items.len - console_num_to_show;
-
-    const end_index = log_history_list.items.len;
-    const line_count = end_index - start_index;
-
     // Draw the pending command text
     text_module.drawText("> ", padding, y_draw_pos, white_pal_idx);
     var pending_cmd_idx: i32 = 0;
-    for(pending_cmd.items) |char| {
+    for (pending_cmd.items) |char| {
         pending_cmd_idx += 1;
         text_module.drawGlyph(char, padding + pending_cmd_idx * 8, y_draw_pos, white_pal_idx);
     }
@@ -172,22 +204,26 @@ pub fn drawConsole() void {
     pending_cmd_idx += 1;
     text_module.drawGlyph(221, padding + pending_cmd_idx * 8, y_draw_pos, white_pal_idx);
 
-    for(0 .. line_count) |idx| {
-        const line = log_history_list.items[end_index - 1 - idx];
+    var cur = log_history_list.last();
+    while (cur) |node| : (cur = node.prev) {
+        // Stop drawing if off the screen!
+        if (y_draw_pos <= 0)
+            break;
+
+        const line = node.data;
         const text_height = text_module.getTextHeight(line, 252);
         text_module.drawTextWrapped(line, padding, y_draw_pos - text_height, 252, white_pal_idx);
-
         y_draw_pos -= text_height;
     }
 }
 
 pub fn setConsoleVisible(is_visible: bool) void {
-    if(console_visible == is_visible)
+    if (console_visible == is_visible)
         return;
 
     console_visible = is_visible;
 
-    if(is_visible) {
+    if (is_visible) {
         sdl.SDL_StartTextInput();
         return;
     }
@@ -215,7 +251,7 @@ pub fn runPendingCommand() void {
     // Ensure there is a sentinel at the end
     pending_cmd.append(0x00) catch {};
 
-    const final_command = pending_cmd.items[0..pending_cmd.items.len-1 :0];
+    const final_command = pending_cmd.items[0 .. pending_cmd.items.len - 1 :0];
     lua.runLine(final_command) catch {};
     trackCommand(final_command);
 }
@@ -223,18 +259,18 @@ pub fn runPendingCommand() void {
 pub fn handleSDLInputEvent(sdl_event: sdl.SDL_Event) bool {
     switch (sdl_event.type) {
         sdl.SDL_KEYDOWN => {
-            switch(sdl_event.key.keysym.sym) {
+            switch (sdl_event.key.keysym.sym) {
                 sdl.SDLK_RETURN => {
                     runPendingCommand();
                     return true;
                 },
                 sdl.SDLK_BACKSPACE => {
-                    if(pending_cmd.items.len > 0)
+                    if (pending_cmd.items.len > 0)
                         _ = pending_cmd.pop();
                     return true;
                 },
                 sdl.SDLK_BACKQUOTE => {
-                    if(sdl.SDL_GetModState() & sdl.KMOD_SHIFT == 1) {
+                    if (sdl.SDL_GetModState() & sdl.KMOD_SHIFT == 1) {
                         // Hide on tilde
                         setConsoleVisible(false);
                         return true;
@@ -253,7 +289,7 @@ pub fn handleSDLInputEvent(sdl_event: sdl.SDL_Event) bool {
         },
         sdl.SDL_TEXTINPUT => {
             // Ignore tildes. Easiest way to handle toggle
-            if(sdl_event.text.text[0] == '~')
+            if (sdl_event.text.text[0] == '~')
                 return false;
 
             handleKeyboardTextInput(sdl_event.text.text[0]);
