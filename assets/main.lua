@@ -3,6 +3,7 @@
 local draw = require("draw")
 local mouse = require("input.mouse")
 local text = require("text")
+local graphics = require("graphics")
 
 function _init()
     -- initial resolution
@@ -33,6 +34,8 @@ function _init()
     points = {}
 
     ramp = { 0, 5, 4, 9, 10, 15, 7, 7 }
+
+    textures = assets.get_texture("font.gif")
 end
 
 function _update()
@@ -53,6 +56,8 @@ function _draw()
     draw.clear(clear_color)
 
     text.draw("hello zig!", 0, 0)
+    graphics.blit(textures, 8, 0, 8, 8, x + 8, y + 8)
+    graphics.blit(textures, 16, 0, 16, 16, x + 24, y + 24)
 
     if #points < 11 then
         return

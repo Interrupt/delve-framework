@@ -21,11 +21,11 @@ pub fn init() !void {
     lua = try Lua.init(lua_allocator);
 
     // Turn on to get lua debug output
-    if(enable_debug_logging)
+    if (enable_debug_logging)
         setDebugHook();
 
     lua.openLibs(); // open standard libs
-    openModules();  // open custom modules
+    openModules(); // open custom modules
 
     debug.log("Lua: ready to go!", .{});
 }
@@ -35,7 +35,7 @@ pub fn runFile(lua_filename: [:0]const u8) !void {
 
     defer lua.setTop(0);
     lua.doFile(lua_filename) catch |err| {
-        debug.log("Lua: runFile error in {s}: {!s} {}", .{lua_filename, lua.toString(-1), err});
+        debug.log("Lua: runFile error in {s}: {!s} {}", .{ lua_filename, lua.toString(-1), err });
         return err;
     };
 }
@@ -43,14 +43,14 @@ pub fn runFile(lua_filename: [:0]const u8) !void {
 pub fn runLine(lua_string: [:0]const u8) !void {
     // Compile the new line
     lua.loadString(lua_string) catch |err| {
-        debug.log("{s}", .{ try lua.toString(-1) } );
+        debug.log("{s}", .{try lua.toString(-1)});
         lua.pop(1);
         return err;
     };
 
     // Execute the new line
     lua.protectedCall(0, 0, 0) catch |err| {
-        debug.log("{s}", .{ try lua.toString(-1) } );
+        debug.log("{s}", .{try lua.toString(-1)});
         lua.pop(1);
         return err;
     };
@@ -68,23 +68,23 @@ fn openModules() void {
     openModule("draw", @import("modules/draw.zig").makeLib);
     openModule("input.mouse", @import("modules/mouse.zig").makeLib);
     openModule("text", @import("modules/text.zig").makeLib);
+    openModule("graphics", @import("modules/graphics.zig").makeLib);
 }
 
 pub fn callFunction(func_name: [:0]const u8) !void {
-
-    if(enable_debug_logging)
+    if (enable_debug_logging)
         debug.log("Lua: calling {s}", .{func_name});
 
     _ = lua.getGlobal(func_name) catch {
-        if(enable_debug_logging)
+        if (enable_debug_logging)
             debug.log("Lua: no global {s} found to call", .{func_name});
 
         lua.pop(1);
         return;
     };
 
-    if(!lua.isFunction(1)) {
-        if(enable_debug_logging)
+    if (!lua.isFunction(1)) {
+        if (enable_debug_logging)
             debug.log("Lua: no function {s} found to call", .{func_name});
 
         lua.pop(1);
@@ -92,7 +92,7 @@ pub fn callFunction(func_name: [:0]const u8) !void {
     }
 
     lua.protectedCall(0, 0, 0) catch |err| {
-        debug.log("Lua: pCall error! output: {!s} {}", .{lua.toString(-1), err});
+        debug.log("Lua: pCall error! output: {!s} {}", .{ lua.toString(-1), err });
         return err;
     };
 }
@@ -108,8 +108,13 @@ pub fn setDebugHook() void {
                 else => unreachable,
             };
 
-            l.getInfo(.{ .l = true, .r = true, .n = true, .S = true, }, i);
-            debug.log("LuaDebug: {s} ({s}:{?d} {?s} {})", .{type_name, i.source, i.current_line, i.name, i.what});
+            l.getInfo(.{
+                .l = true,
+                .r = true,
+                .n = true,
+                .S = true,
+            }, i);
+            debug.log("LuaDebug: {s} ({s}:{?d} {?s} {})", .{ type_name, i.source, i.current_line, i.name, i.what });
         }
     }.inner;
 
@@ -118,8 +123,8 @@ pub fn setDebugHook() void {
 
 fn printDebug() void {
     var lua_debug = lua.getStack(1);
-    if(lua_debug) |stack| {
-        debug.log("Lua: stack debug: {?s} {?s}.", .{stack.source, stack.name});
+    if (lua_debug) |stack| {
+        debug.log("Lua: stack debug: {?s} {?s}.", .{ stack.source, stack.name });
     } else |err| {
         debug.log("Lua: stack is empty {}.", .{err});
     }

@@ -27,7 +27,7 @@ var cmd_history_list: LogList = undefined;
 var cmd_history_item: ?*StringLinkedList.Node = undefined;
 var cmd_history_last_direction: i32 = 0;
 
-var pending_cmd: std.ArrayListAligned(u8, null) = undefined;
+var pending_cmd: std.ArrayList(u8) = undefined;
 
 /// A Linked List that can manage its own memory
 const LogList = struct {
