@@ -40,11 +40,11 @@ pub fn makeLib(lua: *Lua) i32 {
     return 1;
 }
 
-fn text(lua: *Lua) i32 {
+pub fn text(lua: *Lua) i32 {
     var text_string = lua.toString(1) catch "";
     var x_pos = lua.toNumber(2) catch 0;
     var y_pos = lua.toNumber(3) catch 0;
-    var color_idx = @floatToInt(u32, lua.toNumber(4) catch 0);
+    var color_idx = @floatToInt(u32, lua.toNumber(4) catch 1);
 
     drawText(text_string, @floatToInt(i32, x_pos), @floatToInt(i32, y_pos), color_idx);
 

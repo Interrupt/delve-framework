@@ -10,7 +10,7 @@ const Lua = ziglua.Lua;
 
 pub fn makeLib(lua: *Lua) i32 {
     const funcs = [_]ziglua.FnReg{
-        .{ .name = "pressed", .func = ziglua.wrap(isKeyPressed) },
+        .{ .name = "key", .func = ziglua.wrap(isKeyPressed) },
     };
 
     lua.newLib(&funcs);
