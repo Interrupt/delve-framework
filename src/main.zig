@@ -28,7 +28,7 @@ pub fn main() !void {
     defer std.process.argsFree(args_allocator, args);
 
     // Get the path to the assets
-    assets_path = switch(args.len >= 2) {
+    assets_path = switch (args.len >= 2) {
         true => try args_allocator.dupeZ(u8, args[1]),
         else => try args_allocator.dupeZ(u8, fallback_assets_path),
     };
@@ -51,13 +51,15 @@ pub fn main() !void {
     defer lua.deinit();
 
     // Load and run the main script
-    try lua.runFile("main.lua");
+    lua.runFile("main.lua") catch {
+        try showErrorScreen("Fatal error during startup!");
+    };
 
     // Call the init lifecycle function
     try lua.callFunction("_init");
 
     // Kick off the game loop!
-    while(isRunning) {
+    while (isRunning) {
         sdl.processEvents();
 
         try lua.callFunction("_update");
@@ -80,4 +82,35 @@ pub fn getAssetPath(file_path: []const u8, allocator: Allocator) ![:0]const u8 {
 
 pub fn stop() void {
     isRunning = false;
+}
+
+pub fn showErrorScreen(error_header: [:0]const u8) !void {
+    // Simple lua function to make the draw function draw an error screen
+    const error_screen_lua =
+        \\ _draw = function()
+        \\ require('draw').clear(2)
+        \\ require('text').draw("{s}", 8, 8, 0)
+        \\ require('text').draw_wrapped([[{s}]], 8, 24, 264, 0)
+        \\ end
+        \\
+        \\ _update = function() end
+    ;
+
+    // Assume that the last log line is what exploded!
+    const log_history = debug.getLogHistory();
+    var error_desc: [:0]const u8 = undefined;
+    if (log_history.last()) |last_log| {
+        error_desc = last_log.data;
+    } else {
+        error_desc = "Something bad happened!";
+    }
+
+    // Only use until the first newline
+    var error_desc_splits = std.mem.split(u8, error_desc, "\n");
+    var first_split = error_desc_splits.first();
+
+    const written = try std.fmt.allocPrintZ(args_allocator, error_screen_lua, .{ error_header, first_split });
+    defer args_allocator.free(written);
+
+    try lua.runLine(written);
 }

@@ -35,7 +35,12 @@ pub fn runFile(lua_filename: [:0]const u8) !void {
 
     defer lua.setTop(0);
     lua.doFile(lua_filename) catch |err| {
-        debug.log("Lua: runFile error in {s}: {!s} {}", .{ lua_filename, lua.toString(-1), err });
+        const lua_error = lua.toString(-1) catch {
+            debug.log("Lua: could not get error string", .{});
+            return err;
+        };
+
+        debug.log("Lua: error running file {s}: {s}", .{ lua_filename, lua_error });
         return err;
     };
 }

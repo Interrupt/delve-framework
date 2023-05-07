@@ -111,24 +111,22 @@ pub fn deinit() void {
 }
 
 pub fn log(comptime fmt: []const u8, args: anytype) void {
-    // Make an output stream for the console log line formatting
-    var buf: [256:0]u8 = undefined;
-    var fbs = std.io.fixedBufferStream(&buf);
-    const stream = fbs.writer();
-
-    stream.print(fmt, args) catch {
+    const written = std.fmt.allocPrintZ(allocator, fmt, args) catch {
+        std.debug.print(fmt ++ "\n", args);
+        std.debug.print("Error logging to console. Out of memory?\n", .{});
         return;
     };
-    stream.print("\x00", .{}) catch {
-        return;
-    };
+    defer allocator.free(written);
 
     // Log to std out
-    const written = fbs.getWritten();
     std.debug.print("{s}\n", .{written});
 
     // Keep the line in the console log
-    log_history_list.push(written[0 .. written.len - 1 :0]);
+    log_history_list.push(written[0..written.len :0]);
+}
+
+pub fn getLogHistory() *LogList {
+    return &log_history_list;
 }
 
 pub fn trackCommand(command: [:0]const u8) void {
