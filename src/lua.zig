@@ -72,6 +72,7 @@ fn openModules() void {
     openModule("display", @import("modules/display.zig").makeLib);
     openModule("draw", @import("modules/draw.zig").makeLib);
     openModule("input.mouse", @import("modules/mouse.zig").makeLib);
+    openModule("input.keyboard", @import("modules/keyboard.zig").makeLib);
     openModule("text", @import("modules/text.zig").makeLib);
     openModule("graphics", @import("modules/graphics.zig").makeLib);
 }
@@ -97,7 +98,8 @@ pub fn callFunction(func_name: [:0]const u8) !void {
     }
 
     lua.protectedCall(0, 0, 0) catch |err| {
-        debug.log("Lua: pCall error! output: {!s} {}", .{ lua.toString(-1), err });
+        debug.log("Lua: error calling func {s}: {!s} {}", .{ func_name, lua.toString(-1), err });
+        lua.pop(1);
         return err;
     };
 }

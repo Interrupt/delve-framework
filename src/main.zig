@@ -56,14 +56,21 @@ pub fn main() !void {
     };
 
     // Call the init lifecycle function
-    try lua.callFunction("_init");
+    lua.callFunction("_init") catch {
+        try showErrorScreen("Fatal error!");
+    };
 
     // Kick off the game loop!
     while (isRunning) {
         sdl.processEvents();
 
-        try lua.callFunction("_update");
-        try lua.callFunction("_draw");
+        lua.callFunction("_update") catch {
+            try showErrorScreen("Fatal error!");
+        };
+
+        lua.callFunction("_draw") catch {
+            try showErrorScreen("Fatal error!");
+        };
 
         debug.drawConsole();
 
@@ -88,7 +95,7 @@ pub fn showErrorScreen(error_header: [:0]const u8) !void {
     // Simple lua function to make the draw function draw an error screen
     const error_screen_lua =
         \\ _draw = function()
-        \\ require('draw').clear(2)
+        \\ require('draw').clear(1)
         \\ require('text').draw("{s}", 8, 8, 0)
         \\ require('text').draw_wrapped([[{s}]], 8, 24, 264, 0)
         \\ end
@@ -112,5 +119,17 @@ pub fn showErrorScreen(error_header: [:0]const u8) !void {
     const written = try std.fmt.allocPrintZ(args_allocator, error_screen_lua, .{ error_header, first_split });
     defer args_allocator.free(written);
 
+    // Reset to an error palette!
+    palette.raw[0] = 0x22;
+    palette.raw[1] = 0x00;
+    palette.raw[2] = 0x00;
+    palette.raw[3] = 0xFF;
+
+    palette.raw[4] = 0x99;
+    palette.raw[5] = 0x00;
+    palette.raw[6] = 0x00;
+    palette.raw[7] = 0xFF;
+
+    std.debug.print("Showing error screen: {s}\n", .{error_header});
     try lua.runLine(written);
 }
