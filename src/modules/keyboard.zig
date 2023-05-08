@@ -1,5 +1,6 @@
 const std = @import("std");
 const zigsdl = @import("../sdl.zig");
+const debug = @import("../debug.zig");
 const ziglua = @import("ziglua");
 
 const sdl = @cImport({
@@ -18,19 +19,16 @@ pub fn makeLib(lua: *Lua) i32 {
 }
 
 fn isKeyPressed(lua: *Lua) i32 {
-    var char: c_int = 0;
-    _ = char;
+    var key_idx = @floatToInt(usize, lua.toNumber(1) catch 0);
 
-    lua.pushBoolean(false);
+    var num_keys: c_int = 0;
+    var state = sdl.SDL_GetKeyboardState(&num_keys);
+
+    var pressed: u8 = 0;
+    if (key_idx < num_keys) {
+        pressed = state[key_idx];
+    }
+
+    lua.pushBoolean(pressed == 1);
     return 1;
 }
-
-// fn button(lua: *Lua) i32 {
-//     var button_idx = @floatToInt(u5, lua.toNumber(1) catch 0);
-//
-//     const button_state: u32 = sdl.SDL_GetMouseState(null, null);
-//     const is_pressed = (button_state & MouseButtons[button_idx]) != 0;
-//
-//     lua.pushBoolean(is_pressed);
-//     return 1;
-// }
