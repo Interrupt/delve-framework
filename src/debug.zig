@@ -178,7 +178,7 @@ pub fn drawConsole() void {
     const padding = 2;
 
     const white_pal_idx = 7;
-    const height_pixels = @intCast(i32, (console_num_to_show + 1) * 8) + padding;
+    const height_pixels = @as(i32, @intCast(((console_num_to_show + 1) * 8) + padding));
 
     var res_w: c_int = 0;
     var res_h: c_int = 0;

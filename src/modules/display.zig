@@ -21,15 +21,15 @@ pub fn makeLib(lua: *Lua) i32 {
 }
 
 fn set_resolution(lua: *Lua) i32 {
-    var res_x = @floatToInt(c_int, lua.toNumber(1) catch 0);
-    var res_y = @floatToInt(c_int, lua.toNumber(2) catch 0);
+    var res_x = @as(c_int, @intFromFloat(lua.toNumber(1) catch 0));
+    var res_y = @as(c_int, @intFromFloat(lua.toNumber(2) catch 0));
 
     var scale_x: f32 = 0;
     var scale_y: f32 = 0;
     _ = sdl.SDL_RenderGetScale(zigsdl.getRenderer(), &scale_x, &scale_y);
 
-    res_x *= @floatToInt(c_int, scale_x);
-    res_y *= @floatToInt(c_int, scale_y);
+    res_x *= @as(c_int, @intFromFloat(scale_x));
+    res_y *= @as(c_int, @intFromFloat(scale_y));
 
     const window = zigsdl.getWindow();
     _ = sdl.SDL_SetWindowSize(window, res_x, res_y);
@@ -38,8 +38,8 @@ fn set_resolution(lua: *Lua) i32 {
 }
 
 fn set_size(lua: *Lua) i32 {
-    var res_x = @floatToInt(c_int, lua.toNumber(1) catch 0);
-    var res_y = @floatToInt(c_int, lua.toNumber(2) catch 0);
+    var res_x = @as(c_int, @intFromFloat(lua.toNumber(1) catch 0));
+    var res_y = @as(c_int, @intFromFloat(lua.toNumber(2) catch 0));
 
     // var scale_x: f32 = 0;
     // var scale_y: f32 = 0;
