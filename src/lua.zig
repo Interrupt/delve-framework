@@ -71,10 +71,10 @@ fn openModules() void {
     openModule("assets", @import("modules/assets.zig").makeLib);
     openModule("display", @import("modules/display.zig").makeLib);
     openModule("draw", @import("modules/draw.zig").makeLib);
-    // openModule("input.mouse", @import("modules/mouse.zig").makeLib);
+    openModule("input.mouse", @import("modules/mouse.zig").makeLib);
     openModule("input.keyboard", @import("modules/keyboard.zig").makeLib);
     openModule("text", @import("modules/text.zig").makeLib);
-    // openModule("graphics", @import("modules/graphics.zig").makeLib);
+    openModule("graphics", @import("modules/graphics.zig").makeLib);
 }
 
 pub fn callFunction(func_name: [:0]const u8) !void {

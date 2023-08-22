@@ -27,12 +27,12 @@ pub fn makeLib(lua: *Lua) i32 {
         return 0;
     };
 
-    text_surface = sdl.SDL_CreateRGBSurfaceFrom(text_gif.raw.ptr, @intCast(text_gif.width), @intCast(text_gif.height), @intCast(text_gif.channels * 8), // depth
-        @intCast(text_gif.pitch), // pitch
-        0x000000ff, // red mask
-        0x0000ff00, // green mask
-        0x00ff0000, // blue mask
-        0); // alpha mask
+    // text_surface = sdl.SDL_CreateRGBSurfaceFrom(text_gif.raw.ptr, @truncate(@as(i64, text_gif.width)), @truncate(@as(i64, text_gif.height)), @truncate(@as(i32, text_gif.channels) * 8), // depth
+    //     @truncate(@as(i64, text_gif.pitch)), // pitch
+    //     0x000000ff, // red mask
+    //     0x0000ff00, // green mask
+    //     0x00ff0000, // blue mask
+    //     0); // alpha mask
 
     debug.log("Text: Loaded builtin font: {d}kb", .{text_asset.len / 1000});
 

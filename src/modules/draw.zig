@@ -52,11 +52,11 @@ fn clear(lua: *Lua) i32 {
 }
 
 fn line(lua: *Lua) i32 {
-    var start_x = @as(c_int, @intFromFloat(lua.toNumber(1) catch 0));
-    var start_y = @as(c_int, @intFromFloat(lua.toNumber(2) catch 0));
-    var end_x = @as(c_int, @intFromFloat(lua.toNumber(3) catch 0));
-    var end_y = @as(c_int, @intFromFloat(lua.toNumber(4) catch 0));
-    var color_idx = @as(u32, @intFromFloat(lua.toNumber(5) catch 0));
+    var start_x: c_int = @intFromFloat(lua.toNumber(1) catch 0);
+    var start_y: c_int = @intFromFloat(lua.toNumber(2) catch 0);
+    var end_x: c_int = @intFromFloat(lua.toNumber(3) catch 0);
+    var end_y: c_int = @intFromFloat(lua.toNumber(4) catch 0);
+    var color_idx: u32 = @intFromFloat(lua.toNumber(5) catch 0);
 
     if (enable_debug_logging)
         debug.log("Draw: line({d},{d},{d},{d},{d})", .{ start_x, start_y, end_x, end_y, color_idx });
@@ -82,7 +82,7 @@ fn filled_circle(lua: *Lua) i32 {
     var x = lua.toNumber(1) catch 0;
     var y = lua.toNumber(2) catch 0;
     var radius = lua.toNumber(3) catch 0;
-    var color_idx = @as(u32, @intFromFloat(lua.toNumber(4) catch 0));
+    var color_idx: u32 = @intFromFloat(lua.toNumber(4) catch 0);
 
     // Four bytes per color
     color_idx *= main.palette.channels;
@@ -131,11 +131,11 @@ fn filled_circle(lua: *Lua) i32 {
 }
 
 fn filled_rectangle_lua(lua: *Lua) i32 {
-    var start_x = @as(c_int, @intFromFloat(lua.toNumber(1) catch 0));
-    var start_y = @as(c_int, @intFromFloat(lua.toNumber(2) catch 0));
-    var width = @as(c_int, @intFromFloat(lua.toNumber(3) catch 0));
-    var height = @as(c_int, @intFromFloat(lua.toNumber(4) catch 0));
-    var color_idx = @as(u32, @intFromFloat(lua.toNumber(4) catch 0));
+    var start_x: c_int = @intFromFloat(lua.toNumber(1) catch 0);
+    var start_y: c_int = @intFromFloat(lua.toNumber(2) catch 0);
+    var width: c_int = @intFromFloat(lua.toNumber(3) catch 0);
+    var height: c_int = @intFromFloat(lua.toNumber(4) catch 0);
+    var color_idx: u32 = @intFromFloat(lua.toNumber(4) catch 0);
 
     filled_rectangle(start_x, start_y, width, height, color_idx);
 
@@ -143,11 +143,11 @@ fn filled_rectangle_lua(lua: *Lua) i32 {
 }
 
 fn rectangle_lua(lua: *Lua) i32 {
-    var start_x = @as(c_int, @intFromFloat(lua.toNumber(1) catch 0));
-    var start_y = @as(c_int, @intFromFloat(lua.toNumber(2) catch 0));
-    var width = @as(c_int, @intFromFloat(lua.toNumber(3) catch 0));
-    var height = @as(c_int, @intFromFloat(lua.toNumber(4) catch 0));
-    var color_idx = @as(u32, @intFromFloat(lua.toNumber(4) catch 0));
+    var start_x: c_int = @intFromFloat(lua.toNumber(1) catch 0);
+    var start_y: c_int = @intFromFloat(lua.toNumber(2) catch 0);
+    var width: c_int = @intFromFloat(lua.toNumber(3) catch 0);
+    var height: c_int = @intFromFloat(lua.toNumber(4) catch 0);
+    var color_idx: u32 = @intFromFloat(lua.toNumber(4) catch 0);
 
     rectangle(start_x, start_y, width, height, color_idx);
 

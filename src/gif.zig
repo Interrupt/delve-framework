@@ -22,35 +22,35 @@ pub const GifImage = struct {
         var gi: GifImage = undefined;
         debug.log("gif loaded: {d}", .{compressed_bytes.len});
 
-        // var width: c_int = undefined;
-        // var height: c_int = undefined;
-        //
-        // if (stb_image.stbi_info_from_memory(compressed_bytes.ptr, @intCast(compressed_bytes.len), &width, &height, null) == 0) {
-        //     return error.NotPngFile;
-        // }
-        //
-        // if (width == 0 or height == 0) return error.NoPixels;
-        // gi.width = @as(u32, width);
-        // gi.height = @as(u32, height);
-        //
-        // // Not validating channel_count because it gets auto-converted to 4
-        //
-        // if (stb_image.stbi_is_16_bit_from_memory(compressed_bytes.ptr, @as(c_int, compressed_bytes.len)) != 0) {
-        //     return error.InvalidFormat;
-        // }
-        // const bits_per_channel = 8;
-        // const channel_count = 4;
-        //
-        // // stb_image.stbi_set_flip_vertically_on_load(1);
-        // const image_data = stb_image.stbi_load_from_memory(compressed_bytes.ptr, @as(c_int, compressed_bytes.len), &width, &height, null, channel_count);
-        //
-        // if (image_data == null) return error.NoMem;
-        //
-        // gi.pitch = gi.width * bits_per_channel * channel_count / 8;
-        // gi.raw = image_data[0 .. gi.height * gi.pitch];
-        // gi.channels = channel_count;
-        //
-        // debug.log("gif loaded: {d}x{d}:{d}", .{gi.width, gi.height, gi.pitch});
+        var width: c_int = undefined;
+        var height: c_int = undefined;
+
+        if (stb_image.stbi_info_from_memory(compressed_bytes.ptr, @intCast(compressed_bytes.len), &width, &height, null) == 0) {
+            return error.NotPngFile;
+        }
+
+        if (width <= 0 or height <= 0) return error.NoPixels;
+        gi.width = @intCast(width);
+        gi.height = @intCast(height);
+
+        // Not validating channel_count because it gets auto-converted to 4
+
+        if (stb_image.stbi_is_16_bit_from_memory(compressed_bytes.ptr, @intCast(compressed_bytes.len)) != 0) {
+            return error.InvalidFormat;
+        }
+        const bits_per_channel = 8;
+        const channel_count = 4;
+
+        // stb_image.stbi_set_flip_vertically_on_load(1);
+        const image_data = stb_image.stbi_load_from_memory(compressed_bytes.ptr, @intCast(compressed_bytes.len), &width, &height, null, channel_count);
+
+        if (image_data == null) return error.NoMem;
+
+        gi.pitch = gi.width * bits_per_channel * channel_count / 8;
+        gi.raw = image_data[0 .. gi.height * gi.pitch];
+        gi.channels = channel_count;
+
+        debug.log("gif loaded: {d}x{d}:{d}", .{gi.width, gi.height, gi.pitch});
 
         return gi;
     }
