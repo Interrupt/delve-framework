@@ -37,8 +37,8 @@ fn position(lua: *Lua) i32 {
     _ = sdl.SDL_RenderGetScale(zigsdl.getRenderer(), &scale_x, &scale_y);
 
     // Scale position based on the render size
-    const mouse_x = @intToFloat(f32, x) / scale_x;
-    const mouse_y = @intToFloat(f32, y) / scale_y;
+    const mouse_x = @as(f32, @floatFromInt(x)) / scale_x;
+    const mouse_y = @as(f32, @floatFromInt(y)) / scale_y;
 
     // Return the x & y positions!
     lua.pushNumber(mouse_x);
@@ -48,7 +48,7 @@ fn position(lua: *Lua) i32 {
 
 // Get Mouse Button Pressed State
 fn button(lua: *Lua) i32 {
-    var button_idx = @floatToInt(u5, lua.toNumber(1) catch 0);
+    var button_idx = @as(u5, @truncate(@as(u32, @intFromFloat(lua.toNumber(1) catch 0))));
 
     const button_state: u32 = sdl.SDL_GetMouseState(null, null);
     const is_pressed = (button_state & MouseButtons[button_idx]) != 0;

@@ -1,7 +1,7 @@
 const std = @import("std");
 
 // ZigLua lib
-const ziglua = @import("libs/ziglua/build.zig");
+// const ziglua = @import("libs/ziglua/build.zig");
 
 // Although this function looks imperative, note that its job is to
 // declaratively construct a build graph that will be executed by an external
@@ -29,21 +29,28 @@ pub fn build(b: *std.Build) void {
 
     exe.linkLibC();
 
+    const ziglua = b.dependency("ziglua", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     // Add modules
-    exe.addModule("ziglua", ziglua.compileAndCreateModule(b, exe, .{}));
+    //exe.addModule("ziglua", ziglua.compileAndCreateModule(b, exe, .{}));
+    exe.addModule("ziglua", ziglua.module("ziglua"));
+    exe.linkLibrary(ziglua.artifact("lua"));
 
     // Add SDL2 (OSX only version, install via Homebrew)
-    exe.addIncludePath("/usr/local/include/SDL2");
+    exe.addIncludePath(.{ .path = "/usr/local/include/SDL2"});
     exe.linkSystemLibrary("sdl2");
 
     // Add sdb_image single header library for GIF support
-    exe.addCSourceFile("libs/stb_image-2.28/stb_image_impl.c", &[_][]const u8{"-std=c99"});
-    exe.addIncludePath("libs/stb_image-2.28");
+    exe.addCSourceFile(.{ .file = .{ .cwd_relative = "libs/stb_image-2.28/stb_image_impl.c"}, .flags = &[_][]const u8{"-std=c99"}});
+    exe.addIncludePath(.{ .path = "libs/stb_image-2.28"});
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
     // step when running `zig build`).
-    const install_exe = b.addInstallArtifact(exe);
+    const install_exe = b.addInstallArtifact(exe, .{});
     b.getInstallStep().dependOn(&install_exe.step);
 
     // This *creates* a RunStep in the build graph, to be executed when another

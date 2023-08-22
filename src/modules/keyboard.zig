@@ -19,7 +19,7 @@ pub fn makeLib(lua: *Lua) i32 {
 }
 
 fn isKeyPressed(lua: *Lua) i32 {
-    var key_idx = @floatToInt(usize, lua.toNumber(1) catch 0);
+    var key_idx = @as(usize, @intFromFloat(lua.toNumber(1) catch 0));
 
     var num_keys: c_int = 0;
     var state = sdl.SDL_GetKeyboardState(&num_keys);

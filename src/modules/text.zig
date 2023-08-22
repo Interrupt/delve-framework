@@ -14,7 +14,6 @@ const Lua = ziglua.Lua;
 
 const text_asset = @embedFile("../static/font.gif");
 var text_gif: gif.GifImage = undefined;
-var text_surface: *sdl.SDL_Surface = undefined;
 
 pub fn makeLib(lua: *Lua) i32 {
     const funcs = [_]ziglua.FnReg{
@@ -27,13 +26,6 @@ pub fn makeLib(lua: *Lua) i32 {
         return 0;
     };
 
-    text_surface = sdl.SDL_CreateRGBSurfaceFrom(text_gif.raw.ptr, @intCast(c_int, text_gif.width), @intCast(c_int, text_gif.height), @intCast(c_int, text_gif.channels * 8), // depth
-        @intCast(c_int, text_gif.pitch), // pitch
-        0x000000ff, // red mask
-        0x0000ff00, // green mask
-        0x00ff0000, // blue mask
-        0); // alpha mask
-
     debug.log("Text: Loaded builtin font: {d}kb", .{text_asset.len / 1000});
 
     lua.newLib(&funcs);
@@ -44,9 +36,9 @@ pub fn text(lua: *Lua) i32 {
     var text_string = lua.toString(1) catch "";
     var x_pos = lua.toNumber(2) catch 0;
     var y_pos = lua.toNumber(3) catch 0;
-    var color_idx = @floatToInt(u32, lua.toNumber(4) catch 1);
+    var color_idx = @as(u32, @intFromFloat(lua.toNumber(4) catch 1));
 
-    drawText(text_string, @floatToInt(i32, x_pos), @floatToInt(i32, y_pos), color_idx);
+    drawText(text_string, @as(i32, @intFromFloat(x_pos)), @as(i32, @intFromFloat(y_pos)), color_idx);
 
     return 0;
 }
@@ -56,9 +48,9 @@ fn text_wrapped(lua: *Lua) i32 {
     var x_pos = lua.toNumber(2) catch 0;
     var y_pos = lua.toNumber(3) catch 0;
     var width = lua.toNumber(4) catch 0;
-    var color_idx = @floatToInt(u32, lua.toNumber(5) catch 0);
+    var color_idx = @as(u32, @intFromFloat(lua.toNumber(5) catch 0));
 
-    drawTextWrapped(text_string, @floatToInt(i32, x_pos), @floatToInt(i32, y_pos), @floatToInt(i32, width), color_idx);
+    drawTextWrapped(text_string, @as(i32, @intFromFloat(x_pos)), @as(i32, @intFromFloat(y_pos)), @as(i32, @intFromFloat(width)), color_idx);
 
     return 0;
 }
@@ -191,14 +183,14 @@ pub fn drawGlyph(char: u8, x: i32, y: i32, color: u32) void {
             if (r == 0 and g == 0 and b == 0)
                 continue;
 
-            const x_pixel = x + @intCast(i32, x_pos - char_x_offset);
-            const y_pixel = y + @intCast(i32, y_pos - char_y_offset);
+            const x_pixel = x + @as(i32, @intCast(x_pos - char_x_offset));
+            const y_pixel = y + @as(i32, @intCast(y_pos - char_y_offset));
 
             if (x_pixel < 0 or y_pixel < 0 or x_pixel > res_x or y_pixel > res_y)
                 continue;
 
             // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF );
-            _ = sdl.SDL_RenderDrawPoint(renderer, @intCast(c_int, x_pixel), @intCast(c_int, y_pixel));
+            _ = sdl.SDL_RenderDrawPoint(renderer, @as(c_int, x_pixel), @as(c_int, y_pixel));
         }
     }
 }
@@ -223,7 +215,7 @@ pub fn drawSprite(x: u32, y: u32) void {
                 continue;
 
             _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
-            _ = sdl.SDL_RenderDrawPoint(renderer, @intCast(c_int, x + x_pos - char_x_offset), @intCast(c_int, y + y_pos - char_y_offset));
+            _ = sdl.SDL_RenderDrawPoint(renderer, @as(c_int, x + x_pos - char_x_offset), @as(c_int, y + y_pos - char_y_offset));
         }
     }
 }

@@ -29,7 +29,7 @@ pub fn makeLib(lua: *Lua) i32 {
 }
 
 fn clear(lua: *Lua) i32 {
-    var color_idx = @floatToInt(u32, lua.toNumber(1) catch 0);
+    var color_idx: u32 = @intFromFloat(lua.toNumber(1) catch 0);
 
     if (enable_debug_logging)
         debug.log("Draw: clear {d}", .{color_idx});
@@ -52,11 +52,11 @@ fn clear(lua: *Lua) i32 {
 }
 
 fn line(lua: *Lua) i32 {
-    var start_x = @floatToInt(c_int, lua.toNumber(1) catch 0);
-    var start_y = @floatToInt(c_int, lua.toNumber(2) catch 0);
-    var end_x = @floatToInt(c_int, lua.toNumber(3) catch 0);
-    var end_y = @floatToInt(c_int, lua.toNumber(4) catch 0);
-    var color_idx = @floatToInt(u32, lua.toNumber(5) catch 0);
+    var start_x: c_int = @intFromFloat(lua.toNumber(1) catch 0);
+    var start_y: c_int = @intFromFloat(lua.toNumber(2) catch 0);
+    var end_x: c_int = @intFromFloat(lua.toNumber(3) catch 0);
+    var end_y: c_int = @intFromFloat(lua.toNumber(4) catch 0);
+    var color_idx: u32 = @intFromFloat(lua.toNumber(5) catch 0);
 
     if (enable_debug_logging)
         debug.log("Draw: line({d},{d},{d},{d},{d})", .{ start_x, start_y, end_x, end_y, color_idx });
@@ -82,7 +82,7 @@ fn filled_circle(lua: *Lua) i32 {
     var x = lua.toNumber(1) catch 0;
     var y = lua.toNumber(2) catch 0;
     var radius = lua.toNumber(3) catch 0;
-    var color_idx = @floatToInt(u32, lua.toNumber(4) catch 0);
+    var color_idx: u32 = @intFromFloat(lua.toNumber(4) catch 0);
 
     // Four bytes per color
     color_idx *= main.palette.channels;
@@ -103,7 +103,7 @@ fn filled_circle(lua: *Lua) i32 {
 
     // In the easy case, just plot a pixel
     if (radius <= 0.5) {
-        _ = sdl.SDL_RenderDrawPoint(renderer, @floatToInt(c_int, x), @floatToInt(c_int, y));
+        _ = sdl.SDL_RenderDrawPoint(renderer, @intFromFloat(x), @intFromFloat(y));
         return 0;
     }
 
@@ -121,9 +121,9 @@ fn filled_circle(lua: *Lua) i32 {
 
         // Draw mirrored sides!
         while (y_idx < offset) : (y_idx += 1) {
-            _ = sdl.SDL_RenderDrawPoint(renderer, @floatToInt(c_int, x + x_idx), @floatToInt(c_int, y + y_idx));
+            _ = sdl.SDL_RenderDrawPoint(renderer, @intFromFloat(x + x_idx), @intFromFloat(y + y_idx));
             if (x + x_idx != x - x_idx and x_idx <= 0)
-                _ = sdl.SDL_RenderDrawPoint(renderer, @floatToInt(c_int, x - x_idx), @floatToInt(c_int, y + y_idx));
+                _ = sdl.SDL_RenderDrawPoint(renderer, @intFromFloat(x - x_idx), @intFromFloat(y + y_idx));
         }
     }
 
@@ -131,11 +131,11 @@ fn filled_circle(lua: *Lua) i32 {
 }
 
 fn filled_rectangle_lua(lua: *Lua) i32 {
-    var start_x = @floatToInt(i32, lua.toNumber(1) catch 0);
-    var start_y = @floatToInt(i32, lua.toNumber(2) catch 0);
-    var width = @floatToInt(i32, lua.toNumber(3) catch 0);
-    var height = @floatToInt(i32, lua.toNumber(4) catch 0);
-    var color_idx = @floatToInt(u32, lua.toNumber(4) catch 0);
+    var start_x: c_int = @intFromFloat(lua.toNumber(1) catch 0);
+    var start_y: c_int = @intFromFloat(lua.toNumber(2) catch 0);
+    var width: c_int = @intFromFloat(lua.toNumber(3) catch 0);
+    var height: c_int = @intFromFloat(lua.toNumber(4) catch 0);
+    var color_idx: u32 = @intFromFloat(lua.toNumber(4) catch 0);
 
     filled_rectangle(start_x, start_y, width, height, color_idx);
 
@@ -143,11 +143,11 @@ fn filled_rectangle_lua(lua: *Lua) i32 {
 }
 
 fn rectangle_lua(lua: *Lua) i32 {
-    var start_x = @floatToInt(i32, lua.toNumber(1) catch 0);
-    var start_y = @floatToInt(i32, lua.toNumber(2) catch 0);
-    var width = @floatToInt(i32, lua.toNumber(3) catch 0);
-    var height = @floatToInt(i32, lua.toNumber(4) catch 0);
-    var color_idx = @floatToInt(u32, lua.toNumber(4) catch 0);
+    var start_x: c_int = @intFromFloat(lua.toNumber(1) catch 0);
+    var start_y: c_int = @intFromFloat(lua.toNumber(2) catch 0);
+    var width: c_int = @intFromFloat(lua.toNumber(3) catch 0);
+    var height: c_int = @intFromFloat(lua.toNumber(4) catch 0);
+    var color_idx: u32 = @intFromFloat(lua.toNumber(4) catch 0);
 
     rectangle(start_x, start_y, width, height, color_idx);
 
