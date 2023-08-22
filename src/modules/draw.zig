@@ -29,7 +29,7 @@ pub fn makeLib(lua: *Lua) i32 {
 }
 
 fn clear(lua: *Lua) i32 {
-    var color_idx = @as(u32, @intFromFloat(lua.toNumber(1) catch 0));
+    var color_idx: u32 = @intFromFloat(lua.toNumber(1) catch 0);
 
     if (enable_debug_logging)
         debug.log("Draw: clear {d}", .{color_idx});
