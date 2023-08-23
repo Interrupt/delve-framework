@@ -2,25 +2,24 @@ const std = @import("std");
 const debug = @import("debug.zig");
 
 const stb_image = @cImport({
-    @cDefine("STBI_ONLY_GIF", "");
+    // @cDefine("STBI_ONLY_GIF", "");
     @cDefine("STBI_NO_STDIO", "");
     @cInclude("stb_image.h");
 });
 
-pub const GifImage = struct {
+pub const Image = struct {
     width: u32,
     height: u32,
     pitch: u32,
     channels: u8,
     raw: []u8,
 
-    pub fn destroy(gi: *GifImage) void {
+    pub fn destroy(gi: *Image) void {
         stb_image.stbi_image_free(gi.raw.ptr);
     }
 
-    pub fn create(compressed_bytes: []const u8) !GifImage {
-        var gi: GifImage = undefined;
-        debug.log("gif loaded: {d}", .{compressed_bytes.len});
+    pub fn create(compressed_bytes: []const u8) !Image {
+        var img: Image = undefined;
 
         var width: c_int = undefined;
         var height: c_int = undefined;
@@ -30,8 +29,8 @@ pub const GifImage = struct {
         }
 
         if (width <= 0 or height <= 0) return error.NoPixels;
-        gi.width = @intCast(width);
-        gi.height = @intCast(height);
+        img.width = @intCast(width);
+        img.height = @intCast(height);
 
         // Not validating channel_count because it gets auto-converted to 4
 
@@ -46,17 +45,17 @@ pub const GifImage = struct {
 
         if (image_data == null) return error.NoMem;
 
-        gi.pitch = gi.width * bits_per_channel * channel_count / 8;
-        gi.raw = image_data[0 .. gi.height * gi.pitch];
-        gi.channels = channel_count;
+        img.pitch = img.width * bits_per_channel * channel_count / 8;
+        img.raw = image_data[0 .. img.height * img.pitch];
+        img.channels = channel_count;
 
-        debug.log("gif loaded: {d}x{d}:{d}", .{gi.width, gi.height, gi.pitch});
+        debug.log("image loaded: {d}x{d}:{d}", .{img.width, img.height, img.pitch});
 
-        return gi;
+        return img;
     }
 };
 
-pub fn loadFile(file_path: [:0]const u8) !GifImage {
+pub fn loadFile(file_path: [:0]const u8) !Image {
     const file = try std.fs.cwd().openFile(
         file_path,
         .{}, // mode is read only by default
@@ -71,9 +70,9 @@ pub fn loadFile(file_path: [:0]const u8) !GifImage {
     const contents = try file.reader().readAllAlloc(allocator, file_size);
     defer allocator.free(contents);
 
-    return GifImage.create(contents);
+    return Image.create(contents);
 }
 
-pub fn loadBytes(gif_bytes: []const u8) !GifImage {
-    return GifImage.create(gif_bytes);
+pub fn loadBytes(image_bytes: []const u8) !Image {
+    return Image.create(image_bytes);
 }

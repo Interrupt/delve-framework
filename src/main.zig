@@ -1,7 +1,7 @@
 const std = @import("std");
 const lua = @import("lua.zig");
 const sdl = @import("sdl.zig");
-const gif = @import("gif.zig");
+const images = @import("images.zig");
 const debug = @import("debug.zig");
 
 const Allocator = std.mem.Allocator;
@@ -14,7 +14,7 @@ var numTicks: u64 = 0;
 
 const fallback_assets_path = "assets";
 pub var assets_path: [:0]const u8 = undefined;
-pub var palette: gif.GifImage = undefined;
+pub var palette: images.Image = undefined;
 
 pub fn main() !void {
     debug.init();
@@ -39,7 +39,7 @@ pub fn main() !void {
     try std.os.chdirZ(assets_path);
 
     // Load the palette
-    palette = try gif.loadFile("palette.gif");
+    palette = try images.loadFile("palette.gif");
     defer palette.destroy();
 
     // Start up SDL2
