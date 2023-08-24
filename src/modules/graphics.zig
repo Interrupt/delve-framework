@@ -5,7 +5,7 @@ const zigsdl = @import("../sdl.zig");
 const main = @import("../main.zig");
 const debug = @import("../debug.zig");
 const assets = @import("assets.zig");
-const gif = @import("../gif.zig");
+const images= @import("../images.zig");
 
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
@@ -44,12 +44,12 @@ pub fn blitTexture(texture_handle: u32, source_x: i32, source_y: i32, source_wid
     const renderer = zigsdl.getRenderer();
 
     // Get the texture to draw!
-    var loaded_gif: ?gif.GifImage = assets.getTextureFromHandle(texture_handle);
-    if (loaded_gif == null)
+    var loaded_img: ?images.Image = assets.getTextureFromHandle(texture_handle);
+    if (loaded_img == null)
         return;
 
     // Found the texture, good to go!
-    const gif_image = loaded_gif.?;
+    const img = loaded_img.?;
 
     // Also make sure not to draw outside the bounds of the screen
     var res_x: c_int = 0;
@@ -61,20 +61,20 @@ pub fn blitTexture(texture_handle: u32, source_x: i32, source_y: i32, source_wid
             const x_pixel_pos = @as(i32, @intCast(x_pos)) + source_x;
             const y_pixel_pos = @as(i32, @intCast(y_pos)) + source_y;
 
-            if (x_pixel_pos < 0 or x_pixel_pos > gif_image.width)
+            if (x_pixel_pos < 0 or x_pixel_pos > img.width)
                 continue;
-            if (y_pixel_pos < 0 or y_pixel_pos > gif_image.height)
+            if (y_pixel_pos < 0 or y_pixel_pos > img.height)
                 continue;
 
-            const index = (x_pixel_pos * gif_image.channels) + (y_pixel_pos * @as(i32, @intCast(gif_image.pitch)));
+            const index = (x_pixel_pos * img.channels) + (y_pixel_pos * @as(i32, @intCast(img.pitch)));
 
             const final_index: usize = @as(usize, @intCast(index));
-            if (index + 2 >= gif_image.width * gif_image.height * gif_image.channels)
+            if (index + 2 >= img.width * img.height * img.channels)
                 continue;
 
-            const r = gif_image.raw[final_index];
-            const g = gif_image.raw[final_index + 1];
-            const b = gif_image.raw[final_index + 2];
+            const r = img.raw[final_index];
+            const g = img.raw[final_index + 1];
+            const b = img.raw[final_index + 2];
 
             // Skip black pixels
             if (r == 0 and g == 0 and b == 0)

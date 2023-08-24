@@ -43,7 +43,7 @@ pub fn build(b: *std.Build) void {
     exe.addIncludePath(.{ .path = "/usr/local/include/SDL2"});
     exe.linkSystemLibrary("sdl2");
 
-    // Add sdb_image single header library for GIF support
+    // Add sdb_image single header library for image file format support
     exe.addCSourceFile(.{ .file = .{ .cwd_relative = "libs/stb_image-2.28/stb_image_impl.c"}, .flags = &[_][]const u8{"-std=c99"}});
     exe.addIncludePath(.{ .path = "libs/stb_image-2.28"});
 

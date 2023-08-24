@@ -3,7 +3,7 @@ const math = std.math;
 const ziglua = @import("ziglua");
 const zigsdl = @import("../sdl.zig");
 const main = @import("../main.zig");
-const gif = @import("../gif.zig");
+const images = @import("../images.zig");
 const debug = @import("../debug.zig");
 
 const sdl = @cImport({
@@ -13,7 +13,7 @@ const sdl = @cImport({
 const Lua = ziglua.Lua;
 
 const text_asset = @embedFile("../static/font.gif");
-var text_gif: gif.GifImage = undefined;
+var text_gif: images.Image = undefined;
 
 pub fn makeLib(lua: *Lua) i32 {
     const funcs = [_]ziglua.FnReg{
@@ -21,7 +21,7 @@ pub fn makeLib(lua: *Lua) i32 {
         .{ .name = "draw_wrapped", .func = ziglua.wrap(text_wrapped) },
     };
 
-    text_gif = gif.loadBytes(text_asset) catch {
+    text_gif = images.loadBytes(text_asset) catch {
         debug.log("Text: Error loading builtin font.", .{});
         return 0;
     };
