@@ -1,5 +1,10 @@
 const std = @import("std");
 
+const bx = @import("build_bx.zig");
+const bimg = @import("build_bimg.zig");
+const bgfx = @import("build_bgfx.zig");
+const sc = @import("build_shader_compiler.zig");
+
 // ZigLua lib
 // const ziglua = @import("libs/ziglua/build.zig");
 
