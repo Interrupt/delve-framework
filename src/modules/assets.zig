@@ -1,14 +1,9 @@
 const std = @import("std");
 const math = std.math;
 const ziglua = @import("ziglua");
-const zigsdl = @import("../sdl.zig");
 const main = @import("../main.zig");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
-
-const sdl = @cImport({
-    @cInclude("SDL2/SDL.h");
-});
 
 const Lua = ziglua.Lua;
 
