@@ -5,6 +5,7 @@ const zigsdl = @import("../sdl.zig");
 const main = @import("../main.zig");
 const debug = @import("../debug.zig");
 const text_module = @import("text.zig");
+const graphics_system = @import("../systems/graphics.zig");
 
 const sdl = @cImport({
     @cInclude("SDL2/SDL.h");
@@ -44,9 +45,16 @@ fn clear(lua: *Lua) i32 {
     const g = main.palette.raw[color_idx + 1];
     const b = main.palette.raw[color_idx + 2];
 
-    const renderer = zigsdl.getRenderer();
-    _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
-    _ = sdl.SDL_RenderClear(renderer);
+    // const renderer = zigsdl.getRenderer();
+    // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
+    // _ = sdl.SDL_RenderClear(renderer);
+
+    const color: graphics_system.Color = graphics_system.Color{
+        .r = @floatFromInt(r),
+        .g = @floatFromInt(g),
+        .b = @floatFromInt(b),
+    };
+    graphics_system.clear(color);
 
     return 0;
 }
@@ -71,9 +79,27 @@ fn line(lua: *Lua) i32 {
     const g = main.palette.raw[color_idx + 1];
     const b = main.palette.raw[color_idx + 2];
 
-    const renderer = zigsdl.getRenderer();
-    _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
-    _ = sdl.SDL_RenderDrawLine(renderer, start_x, start_y, end_x, end_y);
+    // const renderer = zigsdl.getRenderer();
+    // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
+    // _ = sdl.SDL_RenderDrawLine(renderer, start_x, start_y, end_x, end_y);
+
+    const color: graphics_system.Color = graphics_system.Color{
+        .r = @floatFromInt(r),
+        .g = @floatFromInt(g),
+        .b = @floatFromInt(b),
+    };
+
+    const start: graphics_system.Vector2 = graphics_system.Vector2 {
+        .x = @floatFromInt(start_x),
+        .y = @floatFromInt(start_y),
+    };
+
+    const end: graphics_system.Vector2 = graphics_system.Vector2 {
+        .x = @floatFromInt(end_x),
+        .y = @floatFromInt(end_y),
+    };
+
+    graphics_system.line(start, end, color);
 
     return 0;
 }
