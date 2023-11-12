@@ -32,31 +32,20 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    // exe.linkLibC();
-
     const ziglua = b.dependency("ziglua", .{
         .target = target,
         .optimize = optimize,
     });
 
     // Add modules
-    //exe.addModule("ziglua", ziglua.compileAndCreateModule(b, exe, .{}));
     exe.addModule("ziglua", ziglua.module("ziglua"));
     exe.linkLibrary(ziglua.artifact("lua"));
 
 
-    // Add SDL2 (OSX only version, install via Homebrew)
-    // exe.addIncludePath(.{ .path = "/usr/local/include/SDL2"});
-    // exe.linkSystemLibrary("sdl2");
-
+    // Link some platforms
     if (target.isDarwin()){
         // Add SDL2, include path may vary
-        // exe.addIncludePath(.{ .path = "/usr/local/include/SDL2"});
-        // exe.linkSystemLibrary("sdl2");
-
-        // exe.addFrameworkPath(.{ .path = "3rdparty/sdl2/osx"});
         exe.linkSystemLibrary("sdl2");
-        // exe.linkFramework("sdl2");
         exe.linkFramework("Foundation");
         exe.linkFramework("CoreFoundation");
         exe.linkFramework("Cocoa");

@@ -1,3 +1,5 @@
+
+const debug = @import("../debug.zig");
 const zigsdl = @import("../sdl.zig");
 
 const sdl = @cImport({
@@ -21,6 +23,24 @@ pub const Color = struct {
     b: f32,
     a: f32 = 1.0,
 };
+
+pub fn init() !void {
+    debug.log("Graphics subsystem starting", .{});
+    try zigsdl.init();
+}
+
+pub fn deinit() void {
+    debug.log("Graphics subsystem stopping", .{});
+    zigsdl.deinit();
+}
+
+pub fn beginFrame() void {
+
+}
+
+pub fn endFrame() void {
+    zigsdl.present();
+}
 
 pub fn clear(color: Color) void {
     const renderer = zigsdl.getRenderer();

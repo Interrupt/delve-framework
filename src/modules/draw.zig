@@ -45,17 +45,13 @@ fn clear(lua: *Lua) i32 {
     const g = main.palette.raw[color_idx + 1];
     const b = main.palette.raw[color_idx + 2];
 
-    // const renderer = zigsdl.getRenderer();
-    // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
-    // _ = sdl.SDL_RenderClear(renderer);
-
     const color: graphics_system.Color = graphics_system.Color{
         .r = @floatFromInt(r),
         .g = @floatFromInt(g),
         .b = @floatFromInt(b),
     };
-    graphics_system.clear(color);
 
+    graphics_system.clear(color);
     return 0;
 }
 
@@ -79,10 +75,6 @@ fn line(lua: *Lua) i32 {
     const g = main.palette.raw[color_idx + 1];
     const b = main.palette.raw[color_idx + 2];
 
-    // const renderer = zigsdl.getRenderer();
-    // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
-    // _ = sdl.SDL_RenderDrawLine(renderer, start_x, start_y, end_x, end_y);
-
     const color: graphics_system.Color = graphics_system.Color{
         .r = @floatFromInt(r),
         .g = @floatFromInt(g),
@@ -100,7 +92,6 @@ fn line(lua: *Lua) i32 {
     };
 
     graphics_system.line(start, end, color);
-
     return 0;
 }
 

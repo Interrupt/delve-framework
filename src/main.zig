@@ -1,8 +1,11 @@
 const std = @import("std");
 const lua = @import("lua.zig");
-const sdl = @import("sdl.zig");
 const images = @import("images.zig");
 const debug = @import("debug.zig");
+
+// Main systems
+const gfx = @import("systems/graphics.zig");
+const input = @import("systems/input.zig");
 
 const Allocator = std.mem.Allocator;
 
@@ -42,13 +45,9 @@ pub fn main() !void {
     palette = try images.loadFile("palette.gif");
     defer palette.destroy();
 
-    // Start up SDL2
-    try sdl.init();
-    defer sdl.deinit();
-
-    // Start up Lua
-    try lua.init();
-    defer lua.deinit();
+    // Start up the subsystems
+    try startSubsystems();
+    defer stopSubsystems();
 
     // Load and run the main script
     lua.runFile("main.lua") catch {
@@ -62,11 +61,13 @@ pub fn main() !void {
 
     // Kick off the game loop!
     while (isRunning) {
-        sdl.processEvents();
+        input.processInput();
 
         lua.callFunction("_update") catch {
             try showErrorScreen("Fatal error!");
         };
+
+        gfx.beginFrame();
 
         lua.callFunction("_draw") catch {
             try showErrorScreen("Fatal error!");
@@ -74,11 +75,23 @@ pub fn main() !void {
 
         debug.drawConsole();
 
-        sdl.present();
+        gfx.endFrame();
         numTicks += 1;
     }
 
     debug.log("Brass Emulator Stopping", .{});
+}
+
+pub fn startSubsystems() !void {
+    try gfx.init();
+    try input.init();
+    try lua.init();
+}
+
+pub fn stopSubsystems() void {
+    gfx.deinit();
+    input.deinit();
+    lua.deinit();
 }
 
 pub fn getAssetPath(file_path: []const u8, allocator: Allocator) ![:0]const u8 {
