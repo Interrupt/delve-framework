@@ -1,3 +1,12 @@
 [submodule "libs/ziglua"]
 	path = libs/ziglua
 	url = https://github.com/natecraddock/ziglua
+[submodule "3rdparty/bgfx"]
+	path = 3rdparty/bgfx
+	url = https://github.com/bkaradzic/bgfx.git
+[submodule "3rdparty/bx"]
+	path = 3rdparty/bx
+	url = https://github.com/bkaradzic/bx.git
+[submodule "3rdparty/bimg"]
+	path = 3rdparty/bimg
+	url = https://github.com/bkaradzic/bimg.git

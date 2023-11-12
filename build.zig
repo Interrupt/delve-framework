@@ -32,7 +32,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    exe.linkLibC();
+    // exe.linkLibC();
 
     const ziglua = b.dependency("ziglua", .{
         .target = target,
@@ -44,9 +44,48 @@ pub fn build(b: *std.Build) void {
     exe.addModule("ziglua", ziglua.module("ziglua"));
     exe.linkLibrary(ziglua.artifact("lua"));
 
+
     // Add SDL2 (OSX only version, install via Homebrew)
-    exe.addIncludePath(.{ .path = "/usr/local/include/SDL2"});
-    exe.linkSystemLibrary("sdl2");
+    // exe.addIncludePath(.{ .path = "/usr/local/include/SDL2"});
+    // exe.linkSystemLibrary("sdl2");
+
+    if (target.isDarwin()){
+        // Add SDL2, include path may vary
+        // exe.addIncludePath(.{ .path = "/usr/local/include/SDL2"});
+        // exe.linkSystemLibrary("sdl2");
+
+        // exe.addFrameworkPath(.{ .path = "3rdparty/sdl2/osx"});
+        exe.linkSystemLibrary("sdl2");
+        // exe.linkFramework("sdl2");
+        exe.linkFramework("Foundation");
+        exe.linkFramework("CoreFoundation");
+        exe.linkFramework("Cocoa");
+        exe.linkFramework("QuartzCore");
+        exe.linkFramework("OpenGL");
+        exe.linkFramework("IOKit");
+        exe.linkFramework("Metal");
+    }
+    else if (target.isWindows()) {
+        exe.addIncludePath(.{ .path = "3rdparty/sdl2/windows/include"});
+        exe.addLibraryPath(.{ .path = "3rdparty/sdl2/windows/win64"});
+        exe.linkSystemLibrary("sdl2");
+        exe.linkSystemLibrary("opengl32");
+        exe.linkSystemLibrary("gdi32");
+        exe.linkSystemLibrary("winmm");
+        exe.linkSystemLibrary("setupapi");
+        exe.linkSystemLibrary("ole32");
+        exe.linkSystemLibrary("oleaut32");
+        exe.linkSystemLibrary("imm32");
+        exe.linkSystemLibrary("version");
+    }
+
+    exe.linkSystemLibrary("c");
+    exe.linkSystemLibrary("c++");
+
+    // Link the bgfx libs
+    bx.link(exe);
+    bimg.link(exe);
+    bgfx.link(exe);
 
     // Add sdb_image single header library for image file format support
     exe.addCSourceFile(.{ .file = .{ .cwd_relative = "libs/stb_image-2.28/stb_image_impl.c"}, .flags = &[_][]const u8{"-std=c99"}});

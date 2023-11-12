@@ -35,7 +35,7 @@ fn buildLibrary(exe: *std.build.LibExeObjStep) *std.build.LibExeObjStep {
     return bx_lib;
 }
 
-fn addBxIncludes(exe: *std.build.LibExeObjStep) void {
+pub fn addBxIncludes(exe: *std.build.LibExeObjStep) void {
     var compat_include: []const u8 = "";
 
     if (exe.target.isWindows()) {

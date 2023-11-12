@@ -44,7 +44,7 @@ fn buildLibrary(exe: *std.build.LibExeObjStep) *std.build.LibExeObjStep {
         bimg_path ++ "3rdparty/astc-encoder/source/astcenc_partition_tables.cpp",
         bimg_path ++ "3rdparty/astc-encoder/source/astcenc_percentile_tables.cpp",
         bimg_path ++ "3rdparty/astc-encoder/source/astcenc_pick_best_endpoint_format.cpp",
-        bimg_path ++ "3rdparty/astc-encoder/source/astcenc_platform_isa_detection.cpp",
+        // bimg_path ++ "3rdparty/astc-encoder/source/astcenc_platform_isa_detection.cpp",
         bimg_path ++ "3rdparty/astc-encoder/source/astcenc_quantization.cpp",
         bimg_path ++ "3rdparty/astc-encoder/source/astcenc_symbolic_physical.cpp",
         bimg_path ++ "3rdparty/astc-encoder/source/astcenc_weight_align.cpp",
