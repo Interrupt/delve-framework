@@ -1,6 +1,6 @@
 const std = @import("std");
 const ziglua = @import("ziglua");
-const input = @import("../systems/input.zig");
+const input = @import("../backend/input.zig");
 
 
 const Lua = ziglua.Lua;

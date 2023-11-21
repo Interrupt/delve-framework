@@ -4,8 +4,8 @@ const images = @import("images.zig");
 const debug = @import("debug.zig");
 
 // Main systems
-const gfx = @import("systems/graphics.zig");
-const input = @import("systems/input.zig");
+const gfx = @import("backend/graphics.zig");
+const input = @import("backend/input.zig");
 
 const Allocator = std.mem.Allocator;
 

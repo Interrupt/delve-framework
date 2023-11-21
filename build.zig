@@ -4,6 +4,7 @@ const bx = @import("build_bx.zig");
 const bimg = @import("build_bimg.zig");
 const bgfx = @import("build_bgfx.zig");
 const sc = @import("build_shader_compiler.zig");
+const sokol = @import("3rdparty/sokol-zig/build.zig");
 
 // ZigLua lib
 // const ziglua = @import("libs/ziglua/build.zig");
@@ -41,6 +42,8 @@ pub fn build(b: *std.Build) void {
     exe.addModule("ziglua", ziglua.module("ziglua"));
     exe.linkLibrary(ziglua.artifact("lua"));
 
+    const sokol_build = sokol.buildSokol(b, target, optimize, .{}, "3rdparty/sokol-zig/");
+    exe.linkLibrary(sokol_build);
 
     // Link some platforms
     if (target.isDarwin()){
@@ -75,6 +78,8 @@ pub fn build(b: *std.Build) void {
     bx.link(exe);
     bimg.link(exe);
     bgfx.link(exe);
+
+    exe.addAnonymousModule("sokol", .{ .source_file = .{ .path = "3rdparty/sokol-zig/src/sokol/sokol.zig" } });
 
     // Add sdb_image single header library for image file format support
     exe.addCSourceFile(.{ .file = .{ .cwd_relative = "libs/stb_image-2.28/stb_image_impl.c"}, .flags = &[_][]const u8{"-std=c99"}});

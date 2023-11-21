@@ -10,3 +10,6 @@
 [submodule "3rdparty/bimg"]
 	path = 3rdparty/bimg
 	url = https://github.com/bkaradzic/bimg.git
+[submodule "3rdparty/sokol-zig"]
+	path = 3rdparty/sokol-zig
+	url = https://github.com/floooh/sokol-zig.git
