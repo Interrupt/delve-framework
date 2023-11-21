@@ -4,6 +4,7 @@ const images = @import("images.zig");
 const debug = @import("debug.zig");
 
 // Main systems
+const app_backend = @import("backend/app.zig");
 const gfx = @import("backend/graphics.zig");
 const input = @import("backend/input.zig");
 
@@ -36,6 +37,10 @@ pub fn main() !void {
         else => try args_allocator.dupeZ(u8, fallback_assets_path),
     };
     defer args_allocator.free(assets_path);
+
+    // App backend init
+    try app_backend.init();
+    defer app_backend.deinit();
 
     // Change the working dir to where the assets are
     debug.log("Assets Path: {s}", .{assets_path});
