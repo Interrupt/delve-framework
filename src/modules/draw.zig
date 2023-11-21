@@ -1,15 +1,15 @@
 const std = @import("std");
 const math = std.math;
 const ziglua = @import("ziglua");
-const zigsdl = @import("../sdl.zig");
+// const zigsdl = @import("../sdl.zig");
 const main = @import("../main.zig");
 const debug = @import("../debug.zig");
 const text_module = @import("text.zig");
 const graphics_system = @import("../backend/graphics.zig");
 
-const sdl = @cImport({
-    @cInclude("SDL2/SDL.h");
-});
+// const sdl = @cImport({
+//     @cInclude("SDL2/SDL.h");
+// });
 
 const Lua = ziglua.Lua;
 
@@ -101,18 +101,21 @@ fn filled_circle(lua: *Lua) i32 {
     var radius = lua.toNumber(3) catch 0;
     var color_idx: u32 = @intFromFloat(lua.toNumber(4) catch 0);
 
+    _ = x;
+    _ = y;
+
     // Four bytes per color
     color_idx *= main.palette.channels;
 
     if (color_idx >= main.palette.height * main.palette.pitch)
         color_idx = main.palette.pitch - 4;
 
-    const r = main.palette.raw[color_idx];
-    const g = main.palette.raw[color_idx + 1];
-    const b = main.palette.raw[color_idx + 2];
+    // const r = main.palette.raw[color_idx];
+    // const g = main.palette.raw[color_idx + 1];
+    // const b = main.palette.raw[color_idx + 2];
 
-    const renderer = zigsdl.getRenderer();
-    _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
+    // const renderer = zigsdl.getRenderer();
+    // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
 
     // Dissapear when too small
     if (radius <= 0.25)
@@ -120,7 +123,7 @@ fn filled_circle(lua: *Lua) i32 {
 
     // In the easy case, just plot a pixel
     if (radius <= 0.5) {
-        _ = sdl.SDL_RenderDrawPoint(renderer, @intFromFloat(x), @intFromFloat(y));
+        // _ = sdl.SDL_RenderDrawPoint(renderer, @intFromFloat(x), @intFromFloat(y));
         return 0;
     }
 
@@ -134,14 +137,16 @@ fn filled_circle(lua: *Lua) i32 {
         if (offset <= 0.5)
             continue;
 
+        _ = y_idx;
+
         offset = std.math.round(offset);
 
         // Draw mirrored sides!
-        while (y_idx < offset) : (y_idx += 1) {
-            _ = sdl.SDL_RenderDrawPoint(renderer, @intFromFloat(x + x_idx), @intFromFloat(y + y_idx));
-            if (x + x_idx != x - x_idx and x_idx <= 0)
-                _ = sdl.SDL_RenderDrawPoint(renderer, @intFromFloat(x - x_idx), @intFromFloat(y + y_idx));
-        }
+        // while (y_idx < offset) : (y_idx += 1) {
+        //     _ = sdl.SDL_RenderDrawPoint(renderer, @intFromFloat(x + x_idx), @intFromFloat(y + y_idx));
+        //     if (x + x_idx != x - x_idx and x_idx <= 0)
+        //         _ = sdl.SDL_RenderDrawPoint(renderer, @intFromFloat(x - x_idx), @intFromFloat(y + y_idx));
+        // }
     }
 
     return 0;
@@ -172,39 +177,49 @@ fn rectangle_lua(lua: *Lua) i32 {
 }
 
 pub fn rectangle(start_x: i32, start_y: i32, width: i32, height: i32, color: u32) void {
+    _ = start_x;
+    _ = start_y;
+    _ = width;
+    _ = height;
+
     // Four bytes per color
     var color_idx = color * main.palette.channels;
 
     if (color_idx >= main.palette.height * main.palette.pitch)
         color_idx = main.palette.pitch - 4;
 
-    const r = main.palette.raw[color_idx];
-    const g = main.palette.raw[color_idx + 1];
-    const b = main.palette.raw[color_idx + 2];
+    // const r = main.palette.raw[color_idx];
+    // const g = main.palette.raw[color_idx + 1];
+    // const b = main.palette.raw[color_idx + 2];
+    //
+    // const renderer = zigsdl.getRenderer();
+    // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
 
-    const renderer = zigsdl.getRenderer();
-    _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
-
-    const rect = sdl.SDL_Rect{ .x = start_x, .y = start_y, .w = width + 1, .h = height + 1 };
-    _ = sdl.SDL_RenderDrawRect(renderer, &rect);
+    // const rect = sdl.SDL_Rect{ .x = start_x, .y = start_y, .w = width + 1, .h = height + 1 };
+    // _ = sdl.SDL_RenderDrawRect(renderer, &rect);
 }
 
 pub fn filled_rectangle(start_x: i32, start_y: i32, width: i32, height: i32, color: u32) void {
+    _ = start_x;
+    _ = start_y;
+    _ = width;
+    _ = height;
+
     // Four bytes per color
     var color_idx = color * main.palette.channels;
 
     if (color_idx >= main.palette.height * main.palette.pitch)
         color_idx = main.palette.pitch - 4;
 
-    const r = main.palette.raw[color_idx];
-    const g = main.palette.raw[color_idx + 1];
-    const b = main.palette.raw[color_idx + 2];
+    // const r = main.palette.raw[color_idx];
+    // const g = main.palette.raw[color_idx + 1];
+    // const b = main.palette.raw[color_idx + 2];
 
-    const renderer = zigsdl.getRenderer();
-    _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
+    // const renderer = zigsdl.getRenderer();
+    // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
 
-    const rect = sdl.SDL_Rect{ .x = start_x, .y = start_y, .w = width + 1, .h = height + 1 };
-    _ = sdl.SDL_RenderFillRect(renderer, &rect);
+    // const rect = sdl.SDL_Rect{ .x = start_x, .y = start_y, .w = width + 1, .h = height + 1 };
+    // _ = sdl.SDL_RenderFillRect(renderer, &rect);
 }
 
 fn text(lua: *Lua) i32 {

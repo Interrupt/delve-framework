@@ -1,10 +1,10 @@
 const std = @import("std");
 const ziglua = @import("ziglua");
-const zigsdl = @import("../sdl.zig");
-
-const sdl = @cImport({
-    @cInclude("SDL2/SDL.h");
-});
+// const zigsdl = @import("../sdl.zig");
+//
+// const sdl = @cImport({
+//     @cInclude("SDL2/SDL.h");
+// });
 
 const Lua = ziglua.Lua;
 
@@ -24,15 +24,15 @@ fn set_resolution(lua: *Lua) i32 {
     var res_x: c_int = @intFromFloat(lua.toNumber(1) catch 0);
     var res_y: c_int = @intFromFloat(lua.toNumber(2) catch 0);
 
-    var scale_x: f32 = 0;
-    var scale_y: f32 = 0;
-    _ = sdl.SDL_RenderGetScale(zigsdl.getRenderer(), &scale_x, &scale_y);
+    var scale_x: f32 = 1.0;
+    var scale_y: f32 = 1.0;
+    // _ = sdl.SDL_RenderGetScale(zigsdl.getRenderer(), &scale_x, &scale_y);
 
     res_x *= @intFromFloat(scale_x);
     res_y *= @intFromFloat(scale_y);
 
-    const window = zigsdl.getWindow();
-    _ = sdl.SDL_SetWindowSize(window, res_x, res_y);
+    // const window = zigsdl.getWindow();
+    // _ = sdl.SDL_SetWindowSize(window, res_x, res_y);
 
     return 0;
 }
@@ -41,12 +41,15 @@ fn set_size(lua: *Lua) i32 {
     var res_x: c_int = @intFromFloat(lua.toNumber(1) catch 0);
     var res_y: c_int = @intFromFloat(lua.toNumber(2) catch 0);
 
+    _ = res_x;
+    _ = res_y;
+
     // var scale_x: f32 = 0;
     // var scale_y: f32 = 0;
     // _ = sdl.SDL_RenderGetScale(zigsdl.getRenderer(), &scale_x, &scale_y);
 
-    const window = zigsdl.getWindow();
-    _ = sdl.SDL_SetWindowSize(window, res_x, res_y);
+    // const window = zigsdl.getWindow();
+    // _ = sdl.SDL_SetWindowSize(window, res_x, res_y);
 
     return 0;
 }

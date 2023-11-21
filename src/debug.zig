@@ -1,12 +1,12 @@
 const std = @import("std");
-const zigsdl = @import("sdl.zig");
+// const zigsdl = @import("sdl.zig");
 const lua = @import("lua.zig");
 const text_module = @import("modules/text.zig");
 const draw_module = @import("modules/draw.zig");
 
-const sdl = @cImport({
-    @cInclude("SDL2/SDL.h");
-});
+// const sdl = @cImport({
+//     @cInclude("SDL2/SDL.h");
+// });
 
 const console_num_to_show: u32 = 8;
 var console_visible = false;
@@ -180,9 +180,10 @@ pub fn drawConsole() void {
     const white_pal_idx = 7;
     const height_pixels: i32 = @intCast(((console_num_to_show + 1) * 8) + padding);
 
-    var res_w: c_int = 0;
-    var res_h: c_int = 0;
-    _ = sdl.SDL_GetRendererOutputSize(zigsdl.getRenderer(), &res_w, &res_h);
+    var res_w: c_int = 640;
+    var res_h: c_int = 480;
+    _ = res_h;
+    // _ = sdl.SDL_GetRendererOutputSize(zigsdl.getRenderer(), &res_w, &res_h);
 
     // draw a background
     draw_module.filled_rectangle(0, 0, res_w, height_pixels, 0);
@@ -222,11 +223,11 @@ pub fn setConsoleVisible(is_visible: bool) void {
     console_visible = is_visible;
 
     if (is_visible) {
-        sdl.SDL_StartTextInput();
+        // sdl.SDL_StartTextInput();
         return;
     }
 
-    sdl.SDL_StopTextInput();
+    // sdl.SDL_StopTextInput();
 }
 
 pub fn isConsoleVisible() bool {
@@ -254,47 +255,47 @@ pub fn runPendingCommand() void {
     trackCommand(final_command);
 }
 
-pub fn handleSDLInputEvent(sdl_event: sdl.SDL_Event) bool {
-    switch (sdl_event.type) {
-        sdl.SDL_KEYDOWN => {
-            switch (sdl_event.key.keysym.sym) {
-                sdl.SDLK_RETURN => {
-                    runPendingCommand();
-                    return true;
-                },
-                sdl.SDLK_BACKSPACE => {
-                    if (pending_cmd.items.len > 0)
-                        _ = pending_cmd.pop();
-                    return true;
-                },
-                sdl.SDLK_BACKQUOTE => {
-                    if (sdl.SDL_GetModState() & sdl.KMOD_SHIFT == 1) {
-                        // Hide on tilde
-                        setConsoleVisible(false);
-                        return true;
-                    }
-                },
-                sdl.SDLK_UP => {
-                    scrollCommandFromHistory(-1);
-                    return true;
-                },
-                sdl.SDLK_DOWN => {
-                    scrollCommandFromHistory(1);
-                    return true;
-                },
-                else => {},
-            }
-        },
-        sdl.SDL_TEXTINPUT => {
-            // Ignore tildes. Easiest way to handle toggle
-            if (sdl_event.text.text[0] == '~')
-                return false;
-
-            handleKeyboardTextInput(sdl_event.text.text[0]);
-            return true;
-        },
-        else => {},
-    }
-
-    return false;
-}
+// pub fn handleSDLInputEvent(sdl_event: sdl.SDL_Event) bool {
+//     switch (sdl_event.type) {
+//         sdl.SDL_KEYDOWN => {
+//             switch (sdl_event.key.keysym.sym) {
+//                 sdl.SDLK_RETURN => {
+//                     runPendingCommand();
+//                     return true;
+//                 },
+//                 sdl.SDLK_BACKSPACE => {
+//                     if (pending_cmd.items.len > 0)
+//                         _ = pending_cmd.pop();
+//                     return true;
+//                 },
+//                 sdl.SDLK_BACKQUOTE => {
+//                     if (sdl.SDL_GetModState() & sdl.KMOD_SHIFT == 1) {
+//                         // Hide on tilde
+//                         setConsoleVisible(false);
+//                         return true;
+//                     }
+//                 },
+//                 sdl.SDLK_UP => {
+//                     scrollCommandFromHistory(-1);
+//                     return true;
+//                 },
+//                 sdl.SDLK_DOWN => {
+//                     scrollCommandFromHistory(1);
+//                     return true;
+//                 },
+//                 else => {},
+//             }
+//         },
+//         sdl.SDL_TEXTINPUT => {
+//             // Ignore tildes. Easiest way to handle toggle
+//             if (sdl_event.text.text[0] == '~')
+//                 return false;
+//
+//             handleKeyboardTextInput(sdl_event.text.text[0]);
+//             return true;
+//         },
+//         else => {},
+//     }
+//
+//     return false;
+// }

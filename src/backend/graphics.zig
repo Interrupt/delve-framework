@@ -1,10 +1,10 @@
 
 const debug = @import("../debug.zig");
-const zigsdl = @import("../sdl.zig");
-
-const sdl = @cImport({
-    @cInclude("SDL2/SDL.h");
-});
+// const zigsdl = @import("../sdl.zig");
+//
+// const sdl = @cImport({
+//     @cInclude("SDL2/SDL.h");
+// });
 
 pub const Vector2 = struct {
     x: f32,
@@ -26,12 +26,12 @@ pub const Color = struct {
 
 pub fn init() !void {
     debug.log("Graphics subsystem starting", .{});
-    try zigsdl.init();
+    // try zigsdl.init();
 }
 
 pub fn deinit() void {
     debug.log("Graphics subsystem stopping", .{});
-    zigsdl.deinit();
+    // zigsdl.deinit();
 }
 
 pub fn beginFrame() void {
@@ -39,17 +39,21 @@ pub fn beginFrame() void {
 }
 
 pub fn endFrame() void {
-    zigsdl.present();
+    // zigsdl.present();
 }
 
 pub fn clear(color: Color) void {
-    const renderer = zigsdl.getRenderer();
-    _ = sdl.SDL_SetRenderDrawColor(renderer, @intFromFloat(color.r), @intFromFloat(color.g), @intFromFloat(color.b), 0xFF);
-    _ = sdl.SDL_RenderClear(renderer);
+    _ = color;
+    // const renderer = zigsdl.getRenderer();
+    // _ = sdl.SDL_SetRenderDrawColor(renderer, @intFromFloat(color.r), @intFromFloat(color.g), @intFromFloat(color.b), 0xFF);
+    // _ = sdl.SDL_RenderClear(renderer);
 }
 
 pub fn line(start: Vector2, end: Vector2, color: Color) void {
-    const renderer = zigsdl.getRenderer();
-    _ = sdl.SDL_SetRenderDrawColor(renderer, @intFromFloat(color.r), @intFromFloat(color.g), @intFromFloat(color.b), 0xFF);
-    _ = sdl.SDL_RenderDrawLine(renderer, @intFromFloat(start.x), @intFromFloat(start.y), @intFromFloat(end.x), @intFromFloat(end.y));
+    _ = start;
+    _ = end;
+    _ = color;
+    // const renderer = zigsdl.getRenderer();
+    // _ = sdl.SDL_SetRenderDrawColor(renderer, @intFromFloat(color.r), @intFromFloat(color.g), @intFromFloat(color.b), 0xFF);
+    // _ = sdl.SDL_RenderDrawLine(renderer, @intFromFloat(start.x), @intFromFloat(start.y), @intFromFloat(end.x), @intFromFloat(end.y));
 }
