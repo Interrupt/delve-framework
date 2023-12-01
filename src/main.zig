@@ -13,9 +13,6 @@ const Allocator = std.mem.Allocator;
 var args_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var args_allocator = args_gpa.allocator();
 
-var isRunning = true;
-var numTicks: u64 = 0;
-
 const fallback_assets_path = "assets";
 pub var assets_path: [:0]const u8 = undefined;
 pub var palette: images.Image = undefined;
@@ -54,35 +51,8 @@ pub fn main() !void {
     try startSubsystems();
     defer stopSubsystems();
 
-    // Load and run the main script
-    lua.runFile("main.lua") catch {
-        try showErrorScreen("Fatal error during startup!");
-    };
-
-    // Call the init lifecycle function
-    lua.callFunction("_init") catch {
-        try showErrorScreen("Fatal error!");
-    };
-
     // Kick off the game loop!
-    while (isRunning) {
-        input.processInput();
-
-        lua.callFunction("_update") catch {
-            try showErrorScreen("Fatal error!");
-        };
-
-        gfx.beginFrame();
-
-        lua.callFunction("_draw") catch {
-            try showErrorScreen("Fatal error!");
-        };
-
-        debug.drawConsole();
-
-        gfx.endFrame();
-        numTicks += 1;
-    }
+    app_backend.startMainLoop();
 
     debug.log("Brass Emulator Stopping", .{});
 }
@@ -103,10 +73,6 @@ pub fn getAssetPath(file_path: []const u8, allocator: Allocator) ![:0]const u8 {
     const total_size = assets_path.len + file_path.len + 2;
     var path: []u8 = try allocator.alloc(u8, total_size);
     return try std.fmt.bufPrintZ(path, "{s}/{s}", .{ assets_path, file_path });
-}
-
-pub fn stop() void {
-    isRunning = false;
 }
 
 pub fn showErrorScreen(error_header: [:0]const u8) !void {

@@ -1,9 +1,9 @@
 const std = @import("std");
 
-const bx = @import("build_bx.zig");
-const bimg = @import("build_bimg.zig");
-const bgfx = @import("build_bgfx.zig");
-const sc = @import("build_shader_compiler.zig");
+// const bx = @import("build_bx.zig");
+// const bimg = @import("build_bimg.zig");
+// const bgfx = @import("build_bgfx.zig");
+// const sc = @import("build_shader_compiler.zig");
 const sokol = @import("3rdparty/sokol-zig/build.zig");
 
 // ZigLua lib
@@ -46,38 +46,38 @@ pub fn build(b: *std.Build) void {
     exe.linkLibrary(sokol_build);
 
     // Link some platforms
-    if (target.isDarwin()){
-        // Add SDL2, include path may vary
-        exe.linkSystemLibrary("sdl2");
-        exe.linkFramework("Foundation");
-        exe.linkFramework("CoreFoundation");
-        exe.linkFramework("Cocoa");
-        exe.linkFramework("QuartzCore");
-        exe.linkFramework("OpenGL");
-        exe.linkFramework("IOKit");
-        exe.linkFramework("Metal");
-    }
-    else if (target.isWindows()) {
-        exe.addIncludePath(.{ .path = "3rdparty/sdl2/windows/include"});
-        exe.addLibraryPath(.{ .path = "3rdparty/sdl2/windows/win64"});
-        exe.linkSystemLibrary("sdl2");
-        exe.linkSystemLibrary("opengl32");
-        exe.linkSystemLibrary("gdi32");
-        exe.linkSystemLibrary("winmm");
-        exe.linkSystemLibrary("setupapi");
-        exe.linkSystemLibrary("ole32");
-        exe.linkSystemLibrary("oleaut32");
-        exe.linkSystemLibrary("imm32");
-        exe.linkSystemLibrary("version");
-    }
+    // if (target.isDarwin()){
+    //     // Add SDL2, include path may vary
+    //     exe.linkSystemLibrary("sdl2");
+    //     exe.linkFramework("Foundation");
+    //     exe.linkFramework("CoreFoundation");
+    //     exe.linkFramework("Cocoa");
+    //     exe.linkFramework("QuartzCore");
+    //     exe.linkFramework("OpenGL");
+    //     exe.linkFramework("IOKit");
+    //     exe.linkFramework("Metal");
+    // }
+    // else if (target.isWindows()) {
+    //     exe.addIncludePath(.{ .path = "3rdparty/sdl2/windows/include"});
+    //     exe.addLibraryPath(.{ .path = "3rdparty/sdl2/windows/win64"});
+    //     exe.linkSystemLibrary("sdl2");
+    //     exe.linkSystemLibrary("opengl32");
+    //     exe.linkSystemLibrary("gdi32");
+    //     exe.linkSystemLibrary("winmm");
+    //     exe.linkSystemLibrary("setupapi");
+    //     exe.linkSystemLibrary("ole32");
+    //     exe.linkSystemLibrary("oleaut32");
+    //     exe.linkSystemLibrary("imm32");
+    //     exe.linkSystemLibrary("version");
+    // }
 
     exe.linkSystemLibrary("c");
     exe.linkSystemLibrary("c++");
 
     // Link the bgfx libs
-    bx.link(exe);
-    bimg.link(exe);
-    bgfx.link(exe);
+    // bx.link(exe);
+    // bimg.link(exe);
+    // bgfx.link(exe);
 
     exe.addAnonymousModule("sokol", .{ .source_file = .{ .path = "3rdparty/sokol-zig/src/sokol/sokol.zig" } });
 
