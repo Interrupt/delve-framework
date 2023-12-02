@@ -57,6 +57,12 @@ pub fn onKeyUp(keycode: i32) void {
 pub fn onKeyChar(char_code: u32) void {
     if(char_code == '~') {
         debug.setConsoleVisible(!debug.isConsoleVisible());
+        return;
+    }
+
+    if(debug.isConsoleVisible()) {
+        debug.handleKeyboardTextInput(@intCast(char_code));
+        return;
     }
 }
 

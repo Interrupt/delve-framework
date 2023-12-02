@@ -235,11 +235,24 @@ pub fn isConsoleVisible() bool {
 }
 
 pub fn handleKeyboardTextInput(char: u8) void {
+    // Handle some special cases first
+    if(char == 127) {
+        handleKeyboardBackspace();
+        return;
+    } else if(char == 13) {
+        runPendingCommand();
+        return;
+    }
+
     pending_cmd.append(char) catch {};
 }
 
 pub fn handleKeyboardBackspace() void {
-    pending_cmd.orderedRemove(0);
+    const len = pending_cmd.items.len;
+    if(len == 0)
+        return;
+
+    _ = pending_cmd.orderedRemove(len - 1);
 }
 
 pub fn runPendingCommand() void {

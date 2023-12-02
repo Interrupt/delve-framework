@@ -6,6 +6,9 @@ const main = @import("../main.zig");
 const images = @import("../images.zig");
 const debug = @import("../debug.zig");
 
+const gfx = @import("../backend/graphics.zig");
+
+
 // const sdl = @cImport({
 //     @cInclude("SDL2/SDL.h");
 // });
@@ -145,10 +148,12 @@ pub fn getTextHeight(text_string: [*:0]const u8, width: i32) i32 {
 }
 
 pub fn drawGlyph(char: u8, x: i32, y: i32, color: u32) void {
-    _ = char;
-    _ = x;
-    _ = y;
+    // _ = char;
+    // _ = x;
+    // _ = y;
     _ = color;
+
+    gfx.drawDebugTextChar(@floatFromInt(x), @floatFromInt(y), char);
 
     // const renderer = zigsdl.getRenderer();
     // const draw_width = 8;

@@ -105,12 +105,10 @@ pub fn startFrame() void {
     rotx += 0.1;
     roty += 0.5;
 
-    // debug text
+    // debug text frame init
     debugtext.canvas(sapp.widthf() * 0.5, sapp.heightf() * 0.5);
-    debugtext.pos(0.5, 0.5);
-    debugtext.puts("sokol debug text rendering:\n\n");
-    debugtext.puts("  hello world!\n");
 
+    // setup view state
     state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, vec3.zero(), vec3.up());
     const vs_params = computeVsParams(rotx, roty);
 
@@ -260,4 +258,14 @@ fn computeVsParams(rx: f32, ry: f32) shaders.VsParams {
     const aspect = sapp.widthf() / sapp.heightf();
     const proj = mat4.persp(60.0, aspect, 0.01, 10.0);
     return shaders.VsParams{ .mvp = mat4.mul(mat4.mul(proj, state.view), model) };
+}
+
+pub fn drawDebugText(x: f32, y: f32, str: [:0]const u8) void {
+    debugtext.pos(x * 0.125, y * 0.125);
+    debugtext.puts(str);
+}
+
+pub fn drawDebugTextChar(x: f32, y: f32, char: u8) void {
+    debugtext.pos(x * 0.125, y * 0.125);
+    debugtext.putc(char);
 }
