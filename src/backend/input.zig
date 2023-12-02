@@ -1,22 +1,11 @@
 const debug = @import("../debug.zig");
-//const zigsdl = @import("../sdl.zig");
 const gfx = @import("graphics.zig");
-
-// const sdl = @cImport({
-//     @cInclude("SDL2/SDL.h");
-// });
-
-// const MouseButtons = [_]u32 {
-//     sdl.SDL_BUTTON_LMASK,
-//     sdl.SDL_BUTTON_MMASK,
-//     sdl.SDL_BUTTON_RMASK,
-//     sdl.SDL_BUTTON_X1MASK,
-//     sdl.SDL_BUTTON_X2MASK,
-// };
 
 const state = struct {
     var mouse_x: f32 = 0;
     var mouse_y: f32 = 0;
+    var keyboard_state: [512]bool = undefined;
+    var mouse_state: [3]bool = undefined;
 };
 
 pub fn init() ! void {
@@ -27,10 +16,6 @@ pub fn deinit() void {
     debug.log("Input subsystem stopping", .{});
 }
 
-pub fn processInput() void {
-    //zigsdl.processEvents();
-}
-
 pub fn getMousePosition() gfx.Vector2 {
     return gfx.Vector2 {
         .x = state.mouse_x,
@@ -39,29 +24,44 @@ pub fn getMousePosition() gfx.Vector2 {
 }
 
 pub fn isKeyPressed(key_idx: usize) bool {
-    _ = key_idx;
-    // var num_keys: c_int = 0;
-    // var state = sdl.SDL_GetKeyboardState(&num_keys);
-    //
-    // var pressed: bool= false;
-    // if (key_idx < num_keys) {
-    //     pressed = state[key_idx] != 0;
-    // }
-    //
-    // return pressed;
+    if(key_idx >= state.keyboard_state.len)
+        return false;
 
-    return false;
+    return state.keyboard_state[key_idx];
 }
 
 pub fn isMouseButtonPressed(button_idx: usize) bool {
-    _ = button_idx;
-    // const button_state: u32 = sdl.SDL_GetMouseState(null, null);
-    // return (button_state & MouseButtons[button_idx]) != 0;
+    if(button_idx >= state.mouse_state.len)
+        return false;
 
-    return false;
+    return state.mouse_state[button_idx];
 }
 
 pub fn onMouseMoved(x: f32, y: f32) void {
     state.mouse_x = x;
     state.mouse_y = y;
+}
+
+pub fn onKeyDown(keycode: i32) void {
+    if(keycode < state.keyboard_state.len) {
+        state.keyboard_state[@intCast(keycode)] = true;
+    }
+}
+
+pub fn onKeyUp(keycode: i32) void {
+    if(keycode < state.keyboard_state.len) {
+        state.keyboard_state[@intCast(keycode)] = false;
+    }
+}
+
+pub fn onMouseDown(btn: i32) void {
+    if(btn < state.mouse_state.len) {
+        state.mouse_state[@intCast(btn)] = true;
+    }
+}
+
+pub fn onMouseUp(btn: i32) void {
+    if(btn < state.mouse_state.len) {
+        state.mouse_state[@intCast(btn)] = false;
+    }
 }

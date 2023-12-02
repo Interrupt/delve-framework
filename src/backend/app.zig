@@ -74,6 +74,10 @@ export fn sokol_input(event: ?*const sapp.Event) void {
     const ev = event.?;
     if (ev.type == .MOUSE_MOVE) {
         input.onMouseMoved(ev.mouse_x, ev.mouse_y);
+    } else if(ev.type == .KEY_DOWN) {
+        input.onKeyDown(@intFromEnum(ev.key_code));
+    } else if(ev.type == .KEY_UP) {
+        input.onKeyUp(@intFromEnum(ev.key_code));
     }
 }
 
