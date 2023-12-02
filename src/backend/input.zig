@@ -14,6 +14,11 @@ const gfx = @import("graphics.zig");
 //     sdl.SDL_BUTTON_X2MASK,
 // };
 
+const state = struct {
+    var mouse_x: f32 = 0;
+    var mouse_y: f32 = 0;
+};
+
 pub fn init() ! void {
     debug.log("Input subsystem starting", .{});
 }
@@ -27,21 +32,9 @@ pub fn processInput() void {
 }
 
 pub fn getMousePosition() gfx.Vector2 {
-    var x: c_int = 0;
-    var y: c_int = 0;
-    //_ = sdl.SDL_GetMouseState(&x, &y);
-
-    var scale_x: f32 = 1.0;
-    var scale_y: f32 = 1.0;
-    //_ = sdl.SDL_RenderGetScale(zigsdl.getRenderer(), &scale_x, &scale_y);
-
-    // Scale position based on the render size
-    const mouse_x = @as(f32, @floatFromInt(x)) / scale_x;
-    const mouse_y = @as(f32, @floatFromInt(y)) / scale_y;
-
     return gfx.Vector2 {
-        .x = mouse_x,
-        .y = mouse_y,
+        .x = state.mouse_x,
+        .y = state.mouse_y,
     };
 }
 
@@ -66,4 +59,9 @@ pub fn isMouseButtonPressed(button_idx: usize) bool {
     // return (button_state & MouseButtons[button_idx]) != 0;
 
     return false;
+}
+
+pub fn onMouseMoved(x: f32, y: f32) void {
+    state.mouse_x = x;
+    state.mouse_y = y;
 }

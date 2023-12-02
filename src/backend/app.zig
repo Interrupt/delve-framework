@@ -1,7 +1,8 @@
 const std = @import("std");
 const debug = @import("../debug.zig");
-const gfx = @import("graphics.zig");
 const lua = @import("../lua.zig");
+const gfx = @import("graphics.zig");
+const input = @import("input.zig");
 
 const sokol = @import("sokol");
 const slog = sokol.log;
@@ -69,11 +70,19 @@ export fn sokol_frame() void {
     gfx.endFrame();
 }
 
+export fn sokol_input(event: ?*const sapp.Event) void {
+    const ev = event.?;
+    if (ev.type == .MOUSE_MOVE) {
+        input.onMouseMoved(ev.mouse_x, ev.mouse_y);
+    }
+}
+
 pub fn startMainLoop() void {
     sapp.run(.{
         .init_cb = sokol_init,
         .frame_cb = sokol_frame,
         .cleanup_cb = sokol_cleanup,
+        .event_cb = sokol_input,
         .width = 640,
         .height = 480,
         .icon = .{

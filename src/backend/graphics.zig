@@ -39,20 +39,20 @@ pub fn init() !void {
     };
 
     // create vertex buffer with triangle vertices
-    // state.bindings.vertex_buffers[0] = sg.makeBuffer(.{
-    //     .data = sg.asRange(&[_]f32{
-    //         // positions         colors
-    //         0.0,  0.5,  0.5, 1.0, 0.0, 0.0, 1.0,
-    //         0.5,  -0.5, 0.5, 0.0, 1.0, 0.0, 1.0,
-    //         -0.5, -0.5, 0.5, 0.0, 0.0, 1.0, 1.0,
-    //     }),
-    // });
+    state.bindings.vertex_buffers[0] = sg.makeBuffer(.{
+        .data = sg.asRange(&[_]f32{
+            // positions         colors
+            0.0,  0.5,  0.5, 1.0, 0.0, 0.0, 1.0,
+            0.5,  -0.5, 0.5, 0.0, 1.0, 0.0, 1.0,
+            -0.5, -0.5, 0.5, 0.0, 0.0, 1.0, 1.0,
+        }),
+    });
 
     // create a vertex buffer that can be updated
-    state.bindings.vertex_buffers[0] = sg.makeBuffer(.{
-        .usage = .STREAM,
-        .size = 3 * 7 * @sizeOf(f32),
-    });
+    // state.bindings.vertex_buffers[0] = sg.makeBuffer(.{
+    //     .usage = .STREAM,
+    //     .size = 3 * 7 * @sizeOf(f32),
+    // });
 
     // create a shader and pipeline object
     const shader = sg.makeShader(makeDefaultShaderDesc());
@@ -71,13 +71,13 @@ var drawx_offset: f32 = 0.0;
 pub fn startFrame() void {
     drawx_offset += 0.001;
 
-    sg.updateBuffer(state.bindings.vertex_buffers[0], sg.asRange(&[_]f32{
-            // positions         colors
-            0.0 + drawx_offset,  0.5,  0.5, 1.0, 0.0, 0.0, 1.0,
-            0.5 + drawx_offset,  -0.5, 0.5, 0.0, 1.0, 0.0, 1.0,
-            -0.5 + drawx_offset, -0.5, 0.5, 0.0, 0.0, 1.0, 1.0,
-        })
-    );
+    // sg.updateBuffer(state.bindings.vertex_buffers[0], sg.asRange(&[_]f32{
+    //         // positions         colors
+    //         0.0 + drawx_offset,  0.5,  0.5, 1.0, 0.0, 0.0, 1.0,
+    //         0.5 + drawx_offset,  -0.5, 0.5, 0.0, 1.0, 0.0, 1.0,
+    //         -0.5 + drawx_offset, -0.5, 0.5, 0.0, 0.0, 1.0, 1.0,
+    //     })
+    // );
 
     sg.beginDefaultPass(default_pass_action, sapp.width(), sapp.height());
 
@@ -96,27 +96,31 @@ pub fn endFrame() void {
 
 pub fn clear(color: Color) void {
     _ = color;
-
-    // clear_pass_action.colors[0].clear_value.r = color.r;
-    // clear_pass_action.colors[0].clear_value.g = color.g;
-    // clear_pass_action.colors[0].clear_value.b = color.b;
-    // clear_pass_action.colors[0].clear_value.a = 1.0;
-
-    // sg.beginDefaultPass(clear_pass_action, sapp.width(), sapp.height());
-    // sg.endPass();
-    // sg.commit();
 }
 
 pub fn line(start: Vector2, end: Vector2, color: Color) void {
     _ = start;
-    _ = end;
+    // _ = end;
     _ = color;
 
-    // sg.draw(0, 3, 1);
+    const size: f32 = 0.1;
+    var x_offset: f32 = -1.0;
+    var y_offset: f32 = 1.0;
+    x_offset += end.x * (1.0 / 640.0) * 2;
+    y_offset -= end.y * (1.0 / 480.0) * 2;
 
-    // const renderer = zigsdl.getRenderer();
-    // _ = sdl.SDL_SetRenderDrawColor(renderer, @intFromFloat(color.r), @intFromFloat(color.g), @intFromFloat(color.b), 0xFF);
-    // _ = sdl.SDL_RenderDrawLine(renderer, @intFromFloat(start.x), @intFromFloat(start.y), @intFromFloat(end.x), @intFromFloat(end.y));
+    sg.destroyBuffer(state.bindings.vertex_buffers[0]);
+
+    state.bindings.vertex_buffers[0] = sg.makeBuffer(.{
+        .data = sg.asRange(&[_]f32{
+            // positions         colors
+            x_offset, y_offset + size, 0.5, 1.0, 0.0, 0.0, 1.0,
+            x_offset + size, y_offset - size, 0.5, 0.0, 1.0, 0.0, 1.0,
+            x_offset - size, y_offset - size, 0.5, 0.0, 0.0, 1.0, 1.0,
+        }),
+    });
+
+    sg.draw(0, 3, 1);
 }
 
 fn makeDefaultShaderDesc() sg.ShaderDesc {
