@@ -32,18 +32,26 @@ export fn sokol_init() void {
 
     debug.log("Sokol setup backend: {}\n", .{sg.queryBackend()});
 
+    gfx.init() catch {
+        debug.log("Fatal error initializing graphics backend!\n", .{});
+        return;
+    };
+
     // Load and run the main script
     lua.runFile("main.lua") catch {
         showErrorScreen("Fatal error during startup!");
+        return;
     };
 
     // Call the init lifecycle function
     lua.callFunction("_init") catch {
         showErrorScreen("Fatal error!");
     };
+
 }
 
 export fn sokol_cleanup() void {
+    gfx.deinit();
     sg.shutdown();
 }
 
