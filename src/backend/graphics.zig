@@ -5,15 +5,19 @@ const sg = sokol.gfx;
 const sapp = sokol.app;
 const sgapp = sokol.app_gfx_glue;
 
+const shaders = @import("../shaders/texcube.glsl.zig");
+
+const vec3 = @import("../math.zig").Vec3;
+const mat4 = @import("../math.zig").Mat4;
+
+// TODO: Where should the math library stuff live?
+// Look into using a third party math.zig instead of sokol's
+// A vertex struct with position, color and uv-coords
+const Vertex = extern struct { x: f32, y: f32, z: f32, color: u32, u: i16, v: i16 };
+
 pub const Vector2 = struct {
     x: f32,
     y: f32,
-};
-
-pub const Vector3 = struct {
-    x: f32,
-    y: f32,
-    z: f32,
 };
 
 pub const Color = struct {
@@ -26,6 +30,7 @@ pub const Color = struct {
 const state = struct {
     var bindings: sg.Bindings = .{};
     var pipeline: sg.Pipeline = .{};
+    var view: mat4 = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, vec3.zero(), vec3.up());
 };
 
 var default_pass_action: sg.PassAction = .{};
@@ -40,49 +45,66 @@ pub fn init() !void {
 
     // create vertex buffer with triangle vertices
     state.bindings.vertex_buffers[0] = sg.makeBuffer(.{
-        .data = sg.asRange(&[_]f32{
-            // positions         colors
-            0.0,  0.5,  0.5, 1.0, 0.0, 0.0, 1.0,
-            0.5,  -0.5, 0.5, 0.0, 1.0, 0.0, 1.0,
-            -0.5, -0.5, 0.5, 0.0, 0.0, 1.0, 1.0,
+        .data = sg.asRange(&[_]Vertex{
+            .{ .x = 0.0, .y = 0.5, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
+            .{ .x = 0.5, .y = -0.5, .z = 0.0, .color = 0xFFFFFFFF, .u = 32767, .v = 0 },
+            .{ .x = -0.5, .y = -0.5, .z = 0.0, .color = 0xFF111111, .u = 32767, .v = 32767 },
         }),
     });
 
-    // create a vertex buffer that can be updated
-    // state.bindings.vertex_buffers[0] = sg.makeBuffer(.{
-    //     .usage = .STREAM,
-    //     .size = 3 * 7 * @sizeOf(f32),
-    // });
+    // create a small debug checker-board texture
+    var img_desc: sg.ImageDesc = .{
+        .width = 4,
+        .height = 4,
+    };
+    img_desc.data.subimage[0][0] = sg.asRange(&[4 * 4]u32{
+        0xFFFFFFFF, 0xFFFF0000, 0xFFFFFFFF, 0xFF000000,
+        0xFF000000, 0xFFFFFFFF, 0xFF00FF00, 0xFFFFFFFF,
+        0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF0000FF,
+        0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
+    });
+    state.bindings.fs.images[shaders.SLOT_tex] = sg.makeImage(img_desc);
+
+    // ...and a sampler object with default attributes
+    state.bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
 
     // create a shader and pipeline object
-    const shader = sg.makeShader(makeDefaultShaderDesc());
-    var pipe_desc: sg.PipelineDesc = .{ .shader = shader };
-    pipe_desc.layout.attrs[0].format = .FLOAT3;
-    pipe_desc.layout.attrs[1].format = .FLOAT4;
+    const shader = sg.makeShader(shaders.texcubeShaderDesc(sg.queryBackend()));
+    var pipe_desc: sg.PipelineDesc = .{
+        .shader = shader,
+        .depth = .{
+            .compare = .LESS_EQUAL,
+            .write_enabled = true,
+        }
+    };
+    pipe_desc.layout.attrs[shaders.ATTR_vs_pos].format = .FLOAT3;
+    pipe_desc.layout.attrs[shaders.ATTR_vs_color0].format = .UBYTE4N;
+    pipe_desc.layout.attrs[shaders.ATTR_vs_texcoord0].format = .SHORT2N;
     state.pipeline = sg.makePipeline(pipe_desc);
+
+    debug.log("Graphics subsystem started successfully", .{});
 }
 
 pub fn deinit() void {
     debug.log("Graphics subsystem stopping", .{});
 }
 
-var drawx_offset: f32 = 0.0;
+var rotx: f32 = 0.0;
+var roty: f32 = 0.0;
 
 pub fn startFrame() void {
-    drawx_offset += 0.001;
+    rotx += 0.1;
+    roty += 0.5;
 
-    // sg.updateBuffer(state.bindings.vertex_buffers[0], sg.asRange(&[_]f32{
-    //         // positions         colors
-    //         0.0 + drawx_offset,  0.5,  0.5, 1.0, 0.0, 0.0, 1.0,
-    //         0.5 + drawx_offset,  -0.5, 0.5, 0.0, 1.0, 0.0, 1.0,
-    //         -0.5 + drawx_offset, -0.5, 0.5, 0.0, 0.0, 1.0, 1.0,
-    //     })
-    // );
+    state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, vec3.zero(), vec3.up());
+    const vs_params = computeVsParams(rotx, roty);
 
     sg.beginDefaultPass(default_pass_action, sapp.width(), sapp.height());
 
     sg.applyPipeline(state.pipeline);
     sg.applyBindings(state.bindings);
+
+    sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
 
     sg.draw(0, 3, 1);
 }
@@ -99,28 +121,38 @@ pub fn clear(color: Color) void {
 }
 
 pub fn line(start: Vector2, end: Vector2, color: Color) void {
-    _ = start;
+    // _ = start;
     // _ = end;
     _ = color;
 
-    const size: f32 = 0.1;
-    var x_offset: f32 = -1.0;
-    var y_offset: f32 = 1.0;
-    x_offset += end.x * (1.0 / 640.0) * 2;
-    y_offset -= end.y * (1.0 / 480.0) * 2;
+    const translateVec3: vec3 = vec3{.x = -3.5 + end.x * 0.01, .y = 2.5 + end.y * -0.01, .z = 0.0};
 
-    sg.destroyBuffer(state.bindings.vertex_buffers[0]);
+    // Move the view state!
+    state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, vec3.zero(), vec3.up());
+    state.view = mat4.mul(state.view, mat4.translate(translateVec3));
+    const vs_params = computeVsParams(start.x, start.y);
 
-    state.bindings.vertex_buffers[0] = sg.makeBuffer(.{
-        .data = sg.asRange(&[_]f32{
-            // positions         colors
-            x_offset, y_offset + size, 0.5, 1.0, 0.0, 0.0, 1.0,
-            x_offset + size, y_offset - size, 0.5, 0.0, 1.0, 0.0, 1.0,
-            x_offset - size, y_offset - size, 0.5, 0.0, 0.0, 1.0, 1.0,
-        }),
-    });
-
+    sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
     sg.draw(0, 3, 1);
+
+    // const size: f32 = 0.1;
+    // var x_offset: f32 = -1.0;
+    // var y_offset: f32 = 1.0;
+    // x_offset += end.x * (1.0 / 640.0) * 2;
+    // y_offset -= end.y * (1.0 / 480.0) * 2;
+    //
+    // sg.destroyBuffer(state.bindings.vertex_buffers[0]);
+    //
+    // state.bindings.vertex_buffers[0] = sg.makeBuffer(.{
+    //     .data = sg.asRange(&[_]f32{
+    //         // positions         colors
+    //         x_offset, y_offset + size, 0.5, 1.0, 0.0, 0.0, 1.0,
+    //         x_offset + size, y_offset - size, 0.5, 0.0, 1.0, 0.0, 1.0,
+    //         x_offset - size, y_offset - size, 0.5, 0.0, 0.0, 1.0, 1.0,
+    //     }),
+    // });
+    //
+    // sg.draw(0, 3, 1);
 }
 
 fn makeDefaultShaderDesc() sg.ShaderDesc {
@@ -203,4 +235,13 @@ fn makeDefaultShaderDesc() sg.ShaderDesc {
         else => {},
     }
     return desc;
+}
+
+fn computeVsParams(rx: f32, ry: f32) shaders.VsParams {
+    const rxm = mat4.rotate(rx, .{ .x = 1.0, .y = 0.0, .z = 0.0 });
+    const rym = mat4.rotate(ry, .{ .x = 0.0, .y = 1.0, .z = 0.0 });
+    const model = mat4.mul(rxm, rym);
+    const aspect = sapp.widthf() / sapp.heightf();
+    const proj = mat4.persp(60.0, aspect, 0.01, 10.0);
+    return shaders.VsParams{ .mvp = mat4.mul(mat4.mul(proj, state.view), model) };
 }
