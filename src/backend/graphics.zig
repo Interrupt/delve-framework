@@ -10,6 +10,8 @@ const shaders = @import("../shaders/texcube.glsl.zig");
 const vec3 = @import("../math.zig").Vec3;
 const mat4 = @import("../math.zig").Mat4;
 
+const debugtext = sokol.debugtext;
+
 // TODO: Where should the math library stuff live?
 // Look into using a third party math.zig instead of sokol's
 // A vertex struct with position, color and uv-coords
@@ -37,6 +39,13 @@ var default_pass_action: sg.PassAction = .{};
 
 pub fn init() !void {
     debug.log("Graphics subsystem starting", .{});
+
+    // Setup debug text rendering
+    var text_desc: debugtext.Desc = .{
+        .logger = .{ .func = slog.func },
+    };
+    text_desc.fonts[0] = debugtext.fontOric();
+    debugtext.setup(text_desc);
 
     default_pass_action.colors[0] = .{
         .load_action = .CLEAR,
@@ -96,6 +105,12 @@ pub fn startFrame() void {
     rotx += 0.1;
     roty += 0.5;
 
+    // debug text
+    debugtext.canvas(sapp.widthf() * 0.5, sapp.heightf() * 0.5);
+    debugtext.pos(0.5, 0.5);
+    debugtext.puts("sokol debug text rendering:\n\n");
+    debugtext.puts("  hello world!\n");
+
     state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, vec3.zero(), vec3.up());
     const vs_params = computeVsParams(rotx, roty);
 
@@ -111,9 +126,10 @@ pub fn startFrame() void {
 
 pub fn endFrame() void {
     debug.drawConsole();
+    debugtext.draw();
+
     sg.endPass();
     sg.commit();
-
 }
 
 pub fn clear(color: Color) void {

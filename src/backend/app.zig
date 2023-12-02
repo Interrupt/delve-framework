@@ -78,6 +78,8 @@ export fn sokol_input(event: ?*const sapp.Event) void {
         input.onKeyDown(@intFromEnum(ev.key_code));
     } else if(ev.type == .KEY_UP) {
         input.onKeyUp(@intFromEnum(ev.key_code));
+    } else if(ev.type == .CHAR) {
+        input.onKeyChar(ev.char_code);
     }
 }
 

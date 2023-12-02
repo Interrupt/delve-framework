@@ -54,6 +54,12 @@ pub fn onKeyUp(keycode: i32) void {
     }
 }
 
+pub fn onKeyChar(char_code: u32) void {
+    if(char_code == '~') {
+        debug.setConsoleVisible(!debug.isConsoleVisible());
+    }
+}
+
 pub fn onMouseDown(btn: i32) void {
     if(btn < state.mouse_state.len) {
         state.mouse_state[@intCast(btn)] = true;
