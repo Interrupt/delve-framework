@@ -114,6 +114,7 @@ pub fn init() !void {
     state.pipeline = sg.makePipeline(pipe_desc);
 
     pipe_desc.index_type = .UINT16;
+    pipe_desc.depth= .{};
     state.debug_draw_pipeline = sg.makePipeline(pipe_desc);
 
     debug.log("Graphics subsystem started successfully", .{});
@@ -130,8 +131,9 @@ pub fn startFrame() void {
     rotx += 0.1;
     roty += 0.5;
 
-    // debug text frame init
+    // reset debug text
     debugtext.canvas(sapp.widthf() * 0.5, sapp.heightf() * 0.5);
+    debugtext.layer(0);
 
     // setup view state
     state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, vec3.zero(), vec3.up());
@@ -148,10 +150,19 @@ pub fn startFrame() void {
 }
 
 pub fn endFrame() void {
-    debug.drawConsole();
-    debugtext.draw();
 
-    drawDebugRectangle(10.0, 10.0, 25.0, 15.0);
+    // draw console text on a new layer
+    debugtext.layer(1);
+    debug.drawConsole(false);
+
+    // draw any debug text
+    debugtext.drawLayer(0);
+
+    // draw the console text over other text
+    debug.drawConsoleBackground();
+    debugtext.drawLayer(1);
+
+    // drawDebugRectangle(0.0, 0.0, 640.0, 480.0);
 
     sg.endPass();
     sg.commit();
@@ -175,25 +186,6 @@ pub fn line(start: Vector2, end: Vector2, color: Color) void {
 
     sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
     sg.draw(0, 3, 1);
-
-    // const size: f32 = 0.1;
-    // var x_offset: f32 = -1.0;
-    // var y_offset: f32 = 1.0;
-    // x_offset += end.x * (1.0 / 640.0) * 2;
-    // y_offset -= end.y * (1.0 / 480.0) * 2;
-    //
-    // sg.destroyBuffer(state.bindings.vertex_buffers[0]);
-    //
-    // state.bindings.vertex_buffers[0] = sg.makeBuffer(.{
-    //     .data = sg.asRange(&[_]f32{
-    //         // positions         colors
-    //         x_offset, y_offset + size, 0.5, 1.0, 0.0, 0.0, 1.0,
-    //         x_offset + size, y_offset - size, 0.5, 0.0, 1.0, 0.0, 1.0,
-    //         x_offset - size, y_offset - size, 0.5, 0.0, 0.0, 1.0, 1.0,
-    //     }),
-    // });
-    //
-    // sg.draw(0, 3, 1);
 }
 
 fn makeDefaultShaderDesc() sg.ShaderDesc {
@@ -289,8 +281,16 @@ fn computeVsParams(rx: f32, ry: f32) shaders.VsParams {
 
 fn computeOrthoVsParams() shaders.VsParams {
     const model = mat4.identity();
-    const proj = mat4.ortho(0.0, sapp.widthf() / 2.0, 0.0, sapp.heightf() / 2.0, -5.0, 5.0);
+    const proj = mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), -5.0, 5.0);
     return shaders.VsParams{ .mvp = mat4.mul(mat4.mul(proj, state.view), model) };
+}
+
+pub fn setDebugTextColor4f(r: f32, g: f32, b: f32, a: f32) void {
+    debugtext.color4f(r, g, b, a);
+}
+
+pub fn setDebugTextColor4b(r: u8, g: u8, b: u8, a: u8) void {
+    debugtext.color4b(r, g, b, a);
 }
 
 pub fn drawDebugText(x: f32, y: f32, str: [:0]const u8) void {
@@ -305,7 +305,7 @@ pub fn drawDebugTextChar(x: f32, y: f32, char: u8) void {
 
 pub fn drawDebugRectangle(x: f32, y: f32, width: f32, height: f32) void {
     // setup view state
-    const translateVec3: vec3 = vec3{.x = x, .y = y, .z = 0.0};
+    const translateVec3: vec3 = vec3{.x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = 0.0};
     const scaleVec3: vec3 = vec3{.x = width, .y = height, .z = 1.0};
     state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 0.5 }, vec3.zero(), vec3.up());
     state.view = mat4.mul(state.view, mat4.translate(translateVec3));

@@ -166,7 +166,7 @@ pub fn scrollCommandFromHistory(direction: i32) void {
     pending_cmd.appendSlice(cmd_history_item.?.data) catch {};
 }
 
-pub fn drawConsole() void {
+pub fn drawConsole(draw_bg: bool) void {
     if (!console_visible)
         return;
 
@@ -176,13 +176,13 @@ pub fn drawConsole() void {
     const white_pal_idx = 7;
     const height_pixels: i32 = @intCast(((console_num_to_show + 1) * 8) + padding);
 
-    var res_w: i32 = @divFloor(gfx.getDisplayWidth(), 2);
+    var res_w: i32 = gfx.getDisplayWidth();
     var res_h: i32 = gfx.getDisplayHeight();
     _ = res_h;
 
-    // draw a background
-    draw_module.filled_rectangle(0, 0, res_w, height_pixels, 0);
-    draw_module.filled_rectangle(0, height_pixels, res_w, 1, 1);
+    if(draw_bg) {
+        drawConsoleBackground();
+    }
 
     var y_draw_pos: i32 = (height_pixels - 8) - padding;
 
@@ -209,6 +209,23 @@ pub fn drawConsole() void {
         text_module.drawTextWrapped(line, padding, y_draw_pos - text_height, res_w, white_pal_idx);
         y_draw_pos -= text_height;
     }
+}
+
+pub fn drawConsoleBackground() void {
+    if (!console_visible)
+        return;
+
+    // Push text away from the top and left sides
+    const padding = 2;
+    const height_pixels: i32 = @intCast(((console_num_to_show + 1) * 8) + padding);
+
+    var res_w: i32 = gfx.getDisplayWidth();
+    var res_h: i32 = gfx.getDisplayHeight();
+    _ = res_h;
+
+    // draw a background
+    draw_module.filled_rectangle(0, 0, res_w, height_pixels * 2, 0);
+    draw_module.filled_rectangle(0, height_pixels * 2, res_w, 1, 1);
 }
 
 pub fn setConsoleVisible(is_visible: bool) void {
