@@ -233,13 +233,6 @@ pub fn setConsoleVisible(is_visible: bool) void {
         return;
 
     console_visible = is_visible;
-
-    if (is_visible) {
-        // sdl.SDL_StartTextInput();
-        return;
-    }
-
-    // sdl.SDL_StopTextInput();
 }
 
 pub fn isConsoleVisible() bool {
@@ -257,6 +250,14 @@ pub fn handleKeyboardTextInput(char: u8) void {
     }
 
     pending_cmd.append(char) catch {};
+}
+
+pub fn handleKeyDown(keycode: i32) void {
+    if(keycode == 264) { // DOWN
+        scrollCommandFromHistory(1);
+    } else if(keycode == 265) { // UP
+        scrollCommandFromHistory(-1);
+    }
 }
 
 pub fn handleKeyboardBackspace() void {

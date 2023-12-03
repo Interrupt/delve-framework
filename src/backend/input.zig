@@ -46,6 +46,10 @@ pub fn onKeyDown(keycode: i32) void {
     if(keycode < state.keyboard_state.len) {
         state.keyboard_state[@intCast(keycode)] = true;
     }
+
+    if(debug.isConsoleVisible()) {
+        debug.handleKeyDown(keycode);
+    }
 }
 
 pub fn onKeyUp(keycode: i32) void {
@@ -62,7 +66,6 @@ pub fn onKeyChar(char_code: u32) void {
 
     if(debug.isConsoleVisible()) {
         debug.handleKeyboardTextInput(@intCast(char_code));
-        return;
     }
 }
 
