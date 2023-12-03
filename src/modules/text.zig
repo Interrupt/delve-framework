@@ -135,7 +135,7 @@ pub fn getTextHeight(text_string: [*:0]const u8, width: i32) i32 {
         }
 
         // Wrap the text if we've gone over the width bounds
-        if (x_offset + 8 > width) {
+        if (x_offset + 8 > @divFloor(width, 2)) {
             x_offset = 0;
             y_offset += 8;
         }
