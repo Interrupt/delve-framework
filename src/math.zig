@@ -107,6 +107,14 @@ pub const Mat4 = extern struct {
         return res;
     }
 
+    pub fn scale(scaleVec3: Vec3) Mat4 {
+        var res = Mat4.identity();
+        res.m[0][0] = scaleVec3.x;
+        res.m[1][1] = scaleVec3.y;
+        res.m[2][2] = scaleVec3.z;
+        return res;
+    }
+
     pub fn persp(fov: f32, aspect: f32, near: f32, far: f32) Mat4 {
         var res = Mat4.identity();
         const t = math.tan(fov * (math.pi / 360.0));
@@ -116,6 +124,20 @@ pub const Mat4 = extern struct {
         res.m[2][2] = (near + far) / (near - far);
         res.m[3][2] = (2.0 * near * far) / (near - far);
         res.m[3][3] = 0.0;
+        return res;
+    }
+
+    pub fn ortho(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) Mat4 {
+        var res = Mat4.zero();
+        res.m[0][0] = 2.0 / (right - left);
+        res.m[1][1] = 2.0 / (top - bottom);
+        res.m[2][2] = 2.0 / (near - far);
+        res.m[3][3] = 1.0;
+
+        res.m[3][0] = (left + right) / (left - right);
+        res.m[3][1] = (bottom + top) / (bottom - top);
+        res.m[3][2] = (near + far) / (near - far);
+
         return res;
     }
 

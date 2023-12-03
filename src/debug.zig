@@ -1,12 +1,8 @@
 const std = @import("std");
-// const zigsdl = @import("sdl.zig");
 const lua = @import("lua.zig");
+const gfx = @import("backend/graphics.zig");
 const text_module = @import("modules/text.zig");
 const draw_module = @import("modules/draw.zig");
-
-// const sdl = @cImport({
-//     @cInclude("SDL2/SDL.h");
-// });
 
 const console_num_to_show: u32 = 8;
 var console_visible = false;
@@ -180,10 +176,9 @@ pub fn drawConsole() void {
     const white_pal_idx = 7;
     const height_pixels: i32 = @intCast(((console_num_to_show + 1) * 8) + padding);
 
-    var res_w: c_int = 640;
-    var res_h: c_int = 480;
+    var res_w: i32 = @divFloor(gfx.getDisplayWidth(), 2);
+    var res_h: i32 = gfx.getDisplayHeight();
     _ = res_h;
-    // _ = sdl.SDL_GetRendererOutputSize(zigsdl.getRenderer(), &res_w, &res_h);
 
     // draw a background
     draw_module.filled_rectangle(0, 0, res_w, height_pixels, 0);
@@ -210,8 +205,8 @@ pub fn drawConsole() void {
             break;
 
         const line = node.data;
-        const text_height = text_module.getTextHeight(line, 252);
-        text_module.drawTextWrapped(line, padding, y_draw_pos - text_height, 252, white_pal_idx);
+        const text_height = text_module.getTextHeight(line, res_w);
+        text_module.drawTextWrapped(line, padding, y_draw_pos - text_height, res_w, white_pal_idx);
         y_draw_pos -= text_height;
     }
 }

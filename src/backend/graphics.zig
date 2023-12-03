@@ -30,8 +30,12 @@ pub const Color = struct {
 };
 
 const state = struct {
+    var debug_draw_bindings: sg.Bindings = .{};
+    var debug_draw_pipeline: sg.Pipeline = .{};
+
     var bindings: sg.Bindings = .{};
     var pipeline: sg.Pipeline = .{};
+
     var view: mat4 = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, vec3.zero(), vec3.up());
 };
 
@@ -61,6 +65,22 @@ pub fn init() !void {
         }),
     });
 
+    // create vertex buffer with debug quad vertices
+    state.debug_draw_bindings.vertex_buffers[0] = sg.makeBuffer(.{
+        .data = sg.asRange(&[_]Vertex{
+            .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
+            .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 6550, .v = 0 },
+            .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 6550, .v = 6550},
+            .{ .x = 0.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 6550},
+        }),
+    });
+
+    // debug quad index buffer
+    state.debug_draw_bindings.index_buffer = sg.makeBuffer(.{
+        .type = .INDEXBUFFER,
+        .data = sg.asRange(&[_]u16{ 0, 1, 2, 0, 2, 3 }),
+    });
+
     // create a small debug checker-board texture
     var img_desc: sg.ImageDesc = .{
         .width = 4,
@@ -73,9 +93,11 @@ pub fn init() !void {
         0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
     });
     state.bindings.fs.images[shaders.SLOT_tex] = sg.makeImage(img_desc);
+    state.debug_draw_bindings.fs.images[shaders.SLOT_tex] = sg.makeImage(img_desc);
 
     // ...and a sampler object with default attributes
     state.bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
+    state.debug_draw_bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
 
     // create a shader and pipeline object
     const shader = sg.makeShader(shaders.texcubeShaderDesc(sg.queryBackend()));
@@ -90,6 +112,9 @@ pub fn init() !void {
     pipe_desc.layout.attrs[shaders.ATTR_vs_color0].format = .UBYTE4N;
     pipe_desc.layout.attrs[shaders.ATTR_vs_texcoord0].format = .SHORT2N;
     state.pipeline = sg.makePipeline(pipe_desc);
+
+    pipe_desc.index_type = .UINT16;
+    state.debug_draw_pipeline = sg.makePipeline(pipe_desc);
 
     debug.log("Graphics subsystem started successfully", .{});
 }
@@ -125,6 +150,8 @@ pub fn startFrame() void {
 pub fn endFrame() void {
     debug.drawConsole();
     debugtext.draw();
+
+    drawDebugRectangle(0.0, 0.0, 100.0, 100.0);
 
     sg.endPass();
     sg.commit();
@@ -260,6 +287,12 @@ fn computeVsParams(rx: f32, ry: f32) shaders.VsParams {
     return shaders.VsParams{ .mvp = mat4.mul(mat4.mul(proj, state.view), model) };
 }
 
+fn computeOrthoVsParams() shaders.VsParams {
+    const model = mat4.identity();
+    const proj = mat4.ortho(-5.0, 5.0, -5.0, 5.0, -5.0, 5.0);
+    return shaders.VsParams{ .mvp = mat4.mul(mat4.mul(proj, state.view), model) };
+}
+
 pub fn drawDebugText(x: f32, y: f32, str: [:0]const u8) void {
     debugtext.pos(x * 0.125, y * 0.125);
     debugtext.puts(str);
@@ -268,4 +301,39 @@ pub fn drawDebugText(x: f32, y: f32, str: [:0]const u8) void {
 pub fn drawDebugTextChar(x: f32, y: f32, char: u8) void {
     debugtext.pos(x * 0.125, y * 0.125);
     debugtext.putc(char);
+}
+
+pub fn drawDebugRectangle(x: f32, y: f32, width: f32, height: f32) void {
+    _ = x;
+    _ = y;
+    _ = width;
+    _ = height;
+
+    // setup view state
+    const translateVec3: vec3 = vec3{.x = 0.0, .y = 0.0, .z = 0.0};
+    const scaleVec3: vec3 = vec3{.x = 1.0, .y = 1.0, .z = 1.0};
+    state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 0.75 }, vec3.zero(), vec3.up());
+    state.view = mat4.mul(state.view, mat4.translate(translateVec3));
+    state.view = mat4.mul(state.view, mat4.scale(scaleVec3));
+    const vs_params = computeOrthoVsParams();
+
+    // set the debug draw bindings
+    sg.applyPipeline(state.debug_draw_pipeline);
+    sg.applyBindings(state.debug_draw_bindings);
+    sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
+
+    // draw our quad
+    sg.draw(0, 6, 1);
+}
+
+pub fn getDisplayWidth() i32 {
+   return sapp.width();
+}
+
+pub fn getDisplayHeight() i32 {
+   return sapp.height();
+}
+
+pub fn getDisplayDPIScale() f32 {
+    return sapp.dpiScale();
 }
