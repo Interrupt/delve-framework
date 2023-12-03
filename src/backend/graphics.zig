@@ -68,10 +68,10 @@ pub fn init() !void {
     // create vertex buffer with debug quad vertices
     state.debug_draw_bindings.vertex_buffers[0] = sg.makeBuffer(.{
         .data = sg.asRange(&[_]Vertex{
-            .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
-            .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 6550, .v = 0 },
-            .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 6550, .v = 6550},
-            .{ .x = 0.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 6550},
+            .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFF111111, .u = 0, .v = 0 },
+            .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFF111111, .u = 6550, .v = 0 },
+            .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFF111111, .u = 6550, .v = 6550},
+            .{ .x = 0.0, .y = 0.0, .z = 0.0, .color = 0xFF111111, .u = 0, .v = 6550},
         }),
     });
 
@@ -151,7 +151,7 @@ pub fn endFrame() void {
     debug.drawConsole();
     debugtext.draw();
 
-    drawDebugRectangle(0.0, 0.0, 100.0, 100.0);
+    drawDebugRectangle(10.0, 10.0, 25.0, 15.0);
 
     sg.endPass();
     sg.commit();
@@ -289,7 +289,7 @@ fn computeVsParams(rx: f32, ry: f32) shaders.VsParams {
 
 fn computeOrthoVsParams() shaders.VsParams {
     const model = mat4.identity();
-    const proj = mat4.ortho(-5.0, 5.0, -5.0, 5.0, -5.0, 5.0);
+    const proj = mat4.ortho(0.0, sapp.widthf() / 2.0, 0.0, sapp.heightf() / 2.0, -5.0, 5.0);
     return shaders.VsParams{ .mvp = mat4.mul(mat4.mul(proj, state.view), model) };
 }
 
@@ -304,15 +304,10 @@ pub fn drawDebugTextChar(x: f32, y: f32, char: u8) void {
 }
 
 pub fn drawDebugRectangle(x: f32, y: f32, width: f32, height: f32) void {
-    _ = x;
-    _ = y;
-    _ = width;
-    _ = height;
-
     // setup view state
-    const translateVec3: vec3 = vec3{.x = 0.0, .y = 0.0, .z = 0.0};
-    const scaleVec3: vec3 = vec3{.x = 1.0, .y = 1.0, .z = 1.0};
-    state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 0.75 }, vec3.zero(), vec3.up());
+    const translateVec3: vec3 = vec3{.x = x, .y = y, .z = 0.0};
+    const scaleVec3: vec3 = vec3{.x = width, .y = height, .z = 1.0};
+    state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 0.5 }, vec3.zero(), vec3.up());
     state.view = mat4.mul(state.view, mat4.translate(translateVec3));
     state.view = mat4.mul(state.view, mat4.scale(scaleVec3));
     const vs_params = computeOrthoVsParams();

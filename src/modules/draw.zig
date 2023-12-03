@@ -200,10 +200,10 @@ pub fn rectangle(start_x: i32, start_y: i32, width: i32, height: i32, color: u32
 }
 
 pub fn filled_rectangle(start_x: i32, start_y: i32, width: i32, height: i32, color: u32) void {
-    _ = start_x;
-    _ = start_y;
-    _ = width;
-    _ = height;
+    // _ = start_x;
+    // _ = start_y;
+    // _ = width;
+    // _ = height;
 
     // Four bytes per color
     var color_idx = color * main.palette.channels;
@@ -220,6 +220,8 @@ pub fn filled_rectangle(start_x: i32, start_y: i32, width: i32, height: i32, col
 
     // const rect = sdl.SDL_Rect{ .x = start_x, .y = start_y, .w = width + 1, .h = height + 1 };
     // _ = sdl.SDL_RenderFillRect(renderer, &rect);
+
+    graphics_system.drawDebugRectangle(@floatFromInt(start_x), @floatFromInt(start_y), @floatFromInt(width), @floatFromInt(height));
 }
 
 fn text(lua: *Lua) i32 {
