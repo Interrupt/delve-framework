@@ -7,10 +7,14 @@ const sgapp = sokol.app_gfx_glue;
 
 const shaders = @import("../graphics/shaders/texcube.glsl.zig");
 
+const images = @import("../images.zig");
+
 const vec3 = @import("../math.zig").Vec3;
 const mat4 = @import("../math.zig").Mat4;
 
 const debugtext = sokol.debugtext;
+
+const test_asset = @embedFile("../static/test.gif");
 
 // TODO: Where should the math library stuff live?
 // Foster puts everything in places like /Spatial or /Graphics
@@ -70,10 +74,10 @@ pub fn init() !void {
     // create vertex buffer with debug quad vertices
     state.debug_draw_bindings.vertex_buffers[0] = sg.makeBuffer(.{
         .data = sg.asRange(&[_]Vertex{
-            .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFF111111, .u = 0, .v = 0 },
-            .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFF111111, .u = 6550, .v = 0 },
-            .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFF111111, .u = 6550, .v = 6550},
-            .{ .x = 0.0, .y = 0.0, .z = 0.0, .color = 0xFF111111, .u = 0, .v = 6550},
+            .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
+            .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 6550, .v = 0 },
+            .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 6550, .v = 6550},
+            .{ .x = 0.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 6550},
         }),
     });
 
@@ -95,7 +99,18 @@ pub fn init() !void {
         0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
     });
     state.bindings.fs.images[shaders.SLOT_tex] = sg.makeImage(img_desc);
-    state.debug_draw_bindings.fs.images[shaders.SLOT_tex] = sg.makeImage(img_desc);
+
+    // Load a debug texture for testing
+    // var test_image = try images.loadFile("assets/font.gif");
+    var test_image = try images.loadBytes(test_asset);
+    var test_img_desc: sg.ImageDesc = .{
+        .width = @intCast(test_image.width),
+        .height = @intCast(test_image.height),
+        .pixel_format = .RGBA8,
+    };
+    debug.log("Loaded font image successfully: {d}x{d}\n", .{test_image.width, test_image.height});
+    test_img_desc.data.subimage[0][0] = sg.asRange(test_image.raw);
+    state.debug_draw_bindings.fs.images[shaders.SLOT_tex] = sg.makeImage(test_img_desc);
 
     // ...and a sampler object with default attributes
     state.bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
@@ -153,6 +168,9 @@ pub fn startFrame() void {
 
 pub fn endFrame() void {
 
+    // test texture drawing
+    drawDebugRectangle(50.0, 50.0, 100.0, 100.0);
+
     // draw console text on a new layer
     debugtext.layer(1);
     debug.drawConsole(false);
@@ -164,7 +182,6 @@ pub fn endFrame() void {
     debug.drawConsoleBackground();
     debugtext.drawLayer(1);
 
-    // drawDebugRectangle(0.0, 0.0, 640.0, 480.0);
 
     sg.endPass();
     sg.commit();
