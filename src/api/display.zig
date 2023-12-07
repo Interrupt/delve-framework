@@ -1,10 +1,5 @@
 const std = @import("std");
 const ziglua = @import("ziglua");
-// const zigsdl = @import("../sdl.zig");
-//
-// const sdl = @cImport({
-//     @cInclude("SDL2/SDL.h");
-// });
 
 const Lua = ziglua.Lua;
 

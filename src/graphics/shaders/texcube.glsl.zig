@@ -32,7 +32,7 @@ const sg = @import("sokol").gfx;
 //                  Sampler: smp
 //
 //
-const m = @import("../math.zig");
+const m = @import("../../math.zig");
 pub const ATTR_vs_pos = 0;
 pub const ATTR_vs_color0 = 1;
 pub const ATTR_vs_texcoord0 = 2;

@@ -1,7 +1,7 @@
 const std = @import("std");
 const debug = @import("../debug.zig");
 const ziglua = @import("ziglua");
-const input = @import("../backend/input.zig");
+const input = @import("../platform/input.zig");
 
 const Lua = ziglua.Lua;
 

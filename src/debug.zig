@@ -1,8 +1,8 @@
 const std = @import("std");
 const lua = @import("lua.zig");
-const gfx = @import("backend/graphics.zig");
-const text_module = @import("modules/text.zig");
-const draw_module = @import("modules/draw.zig");
+const gfx = @import("platform/graphics.zig");
+const text_module = @import("api/text.zig");
+const draw_module = @import("api/draw.zig");
 
 const console_num_to_show: u32 = 8;
 var console_visible = false;
@@ -280,48 +280,3 @@ pub fn runPendingCommand() void {
     lua.runLine(final_command) catch {};
     trackCommand(final_command);
 }
-
-// pub fn handleSDLInputEvent(sdl_event: sdl.SDL_Event) bool {
-//     switch (sdl_event.type) {
-//         sdl.SDL_KEYDOWN => {
-//             switch (sdl_event.key.keysym.sym) {
-//                 sdl.SDLK_RETURN => {
-//                     runPendingCommand();
-//                     return true;
-//                 },
-//                 sdl.SDLK_BACKSPACE => {
-//                     if (pending_cmd.items.len > 0)
-//                         _ = pending_cmd.pop();
-//                     return true;
-//                 },
-//                 sdl.SDLK_BACKQUOTE => {
-//                     if (sdl.SDL_GetModState() & sdl.KMOD_SHIFT == 1) {
-//                         // Hide on tilde
-//                         setConsoleVisible(false);
-//                         return true;
-//                     }
-//                 },
-//                 sdl.SDLK_UP => {
-//                     scrollCommandFromHistory(-1);
-//                     return true;
-//                 },
-//                 sdl.SDLK_DOWN => {
-//                     scrollCommandFromHistory(1);
-//                     return true;
-//                 },
-//                 else => {},
-//             }
-//         },
-//         sdl.SDL_TEXTINPUT => {
-//             // Ignore tildes. Easiest way to handle toggle
-//             if (sdl_event.text.text[0] == '~')
-//                 return false;
-//
-//             handleKeyboardTextInput(sdl_event.text.text[0]);
-//             return true;
-//         },
-//         else => {},
-//     }
-//
-//     return false;
-// }

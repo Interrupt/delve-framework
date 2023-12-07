@@ -5,7 +5,7 @@ const sg = sokol.gfx;
 const sapp = sokol.app;
 const sgapp = sokol.app_gfx_glue;
 
-const shaders = @import("../shaders/texcube.glsl.zig");
+const shaders = @import("../graphics/shaders/texcube.glsl.zig");
 
 const vec3 = @import("../math.zig").Vec3;
 const mat4 = @import("../math.zig").Mat4;
@@ -13,8 +13,10 @@ const mat4 = @import("../math.zig").Mat4;
 const debugtext = sokol.debugtext;
 
 // TODO: Where should the math library stuff live?
+// Foster puts everything in places like /Spatial or /Graphics
 // Look into using a third party math.zig instead of sokol's
 // A vertex struct with position, color and uv-coords
+// TODO: Stop using packed color and uvs!
 const Vertex = extern struct { x: f32, y: f32, z: f32, color: u32, u: i16, v: i16 };
 
 pub const Vector2 = struct {

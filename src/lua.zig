@@ -68,13 +68,13 @@ fn openModule(comptime name: [:0]const u8, comptime open_func: ziglua.ZigFn) voi
 
 fn openModules() void {
     // Open all of the API modules here!
-    openModule("assets", @import("modules/assets.zig").makeLib);
-    openModule("display", @import("modules/display.zig").makeLib);
-    openModule("draw", @import("modules/draw.zig").makeLib);
-    openModule("input.mouse", @import("modules/mouse.zig").makeLib);
-    openModule("input.keyboard", @import("modules/keyboard.zig").makeLib);
-    openModule("text", @import("modules/text.zig").makeLib);
-    openModule("graphics", @import("modules/graphics.zig").makeLib);
+    openModule("assets", @import("api/assets.zig").makeLib);
+    openModule("display", @import("api/display.zig").makeLib);
+    openModule("draw", @import("api/draw.zig").makeLib);
+    openModule("input.mouse", @import("api/mouse.zig").makeLib);
+    openModule("input.keyboard", @import("api/keyboard.zig").makeLib);
+    openModule("text", @import("api/text.zig").makeLib);
+    openModule("graphics", @import("api/graphics.zig").makeLib);
 }
 
 pub fn callFunction(func_name: [:0]const u8) !void {
