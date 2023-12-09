@@ -32,14 +32,13 @@ pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
         inline for (@typeInfo(module).Struct.decls, 0..) |d, i| {
             // convert the name string to be :0 terminated
             // not sure why @ptrCast doesn't work here
-            var w_name: [d.name.len+1:0]u8 = undefined;
+            var name_len = d.name.len;
+            var w_name: [name_len:0]u8 = undefined;
             for (d.name, 0..) |c, ii| {
                 w_name[ii] = c;
             }
-            w_name[w_name.len-1]=0;
 
             found[i] = wrapFn(&w_name, @field(module, d.name));
-            // found[i] = wrapFn("set_resolution", @field(module, d.name));
         }
         return &found;
     }
