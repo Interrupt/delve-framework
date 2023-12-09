@@ -12,22 +12,38 @@ pub const ScriptFn = struct {
 };
 
 pub fn init() void {
-    // Bind all the libraries!
-    @import("api/display.zig").bindLib();
+    // Bind all the libraries using some meta programming magic at compile time
+    const display_module_fns = comptime findLibraryFunctions(@import("api/display.zig"));
+    bindLibrary("display", display_module_fns);
 }
 
-pub fn deinit() void { }
+pub fn deinit() void {
 
-// This doesn't work. Something about the function names and terminators?
-// pub fn bindAllFunctionsIn(comptime name: [:0]const u8, comptime in: anytype) void {
-//     comptime var funcArray: [@typeInfo(in).Struct.decls.len]ScriptFn = undefined;
-//     comptime {
-//         inline for (@typeInfo(in).Struct.decls, 0..) |d, i| {
-//             funcArray[i] = wrapFn(@ptrCast(d.name), @field(in, d.name));
-//         }
-//     }
-//     bindLibrary(name, &funcArray);
-// }
+}
+
+pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
+    comptime {
+        var found_len = 0;
+        inline for (@typeInfo(module).Struct.decls) |_| {
+            found_len += 1;
+        }
+
+        var found: [found_len]ScriptFn = undefined;
+        inline for (@typeInfo(module).Struct.decls, 0..) |d, i| {
+            // convert the name string to be :0 terminated
+            // not sure why @ptrCast doesn't work here
+            var w_name: [d.name.len+1:0]u8 = undefined;
+            for (d.name, 0..) |c, ii| {
+                w_name[ii] = c;
+            }
+            w_name[w_name.len-1]=0;
+
+            found[i] = wrapFn(&w_name, @field(module, d.name));
+            // found[i] = wrapFn("set_resolution", @field(module, d.name));
+        }
+        return &found;
+    }
+}
 
 pub fn wrapFn(name: [:0]const u8, comptime func: anytype) ScriptFn {
     return ScriptFn {
