@@ -1,5 +1,6 @@
 const std = @import("std");
 const lua = @import("lua.zig");
+const scripting = @import("scripting.zig");
 const images = @import("images.zig");
 const debug = @import("debug.zig");
 
@@ -61,12 +62,14 @@ pub fn startSubsystems() !void {
     // try gfx.init();
     try input.init();
     try lua.init();
+    scripting.init();
 }
 
 pub fn stopSubsystems() void {
     // gfx.deinit();
     input.deinit();
     lua.deinit();
+    scripting.deinit();
 }
 
 pub fn getAssetPath(file_path: []const u8, allocator: Allocator) ![:0]const u8 {

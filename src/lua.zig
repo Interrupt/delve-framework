@@ -61,7 +61,7 @@ pub fn runLine(lua_string: [:0]const u8) !void {
     };
 }
 
-fn openModule(comptime name: [:0]const u8, comptime open_func: ziglua.ZigFn) void {
+pub fn openModule(comptime name: [:0]const u8, comptime open_func: ziglua.ZigFn) void {
     lua.requireF(name, ziglua.wrap(open_func), true);
     debug.log("Lua: registered module '{s}'", .{name});
 }
@@ -69,7 +69,7 @@ fn openModule(comptime name: [:0]const u8, comptime open_func: ziglua.ZigFn) voi
 fn openModules() void {
     // Open all of the API modules here!
     openModule("assets", @import("api/assets.zig").makeLib);
-    openModule("display", @import("api/display.zig").makeLib);
+    //openModule("display", @import("api/display.zig").makeLib);
     openModule("draw", @import("api/draw.zig").makeLib);
     openModule("input.mouse", @import("api/mouse.zig").makeLib);
     openModule("input.keyboard", @import("api/keyboard.zig").makeLib);
