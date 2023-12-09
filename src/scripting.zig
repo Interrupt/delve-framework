@@ -27,10 +27,10 @@ fn isModuleFunction(comptime in_type: anytype) bool {
 
 pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
     comptime {
-        // Get all the public functions in this module
+        // Get all the public declarations in this module
         const decls = @typeInfo(module).Struct.decls;
 
-        // filter out only the public functions
+        // filter out only the functions
         var gen_fields: []const std.builtin.Type.Declaration = &[_]std.builtin.Type.Declaration {};
         inline for (decls) |d| {
             const field = @field(module, d.name);
