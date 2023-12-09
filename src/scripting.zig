@@ -30,18 +30,17 @@ pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
         // Get all the public functions in this module
         const decls = @typeInfo(module).Struct.decls;
 
-        // find length of only public functions
-        var found_len = 0;
+        // filter out only the public functions
+        var gen_fields: []const std.builtin.Type.Declaration = &[_]std.builtin.Type.Declaration {};
         inline for (decls) |d| {
             const field = @field(module, d.name);
             if(isModuleFunction(@TypeOf(field))) {
-                found_len += 1;
+                gen_fields = gen_fields ++ .{d};
             }
         }
 
-        var found: [found_len]ScriptFn = undefined;
-        var idx = 0;
-        inline for (decls) |d| {
+        var found: [gen_fields.len]ScriptFn = undefined;
+        inline for (gen_fields, 0..) |d, i| {
             // convert the name string to be :0 terminated
             // not sure why @ptrCast doesn't work here
             var name_len = d.name.len;
@@ -51,10 +50,7 @@ pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
             }
 
             const field = @field(module, d.name);
-            if(isModuleFunction(@TypeOf(field))) {
-                found[idx] = wrapFn(&w_name, field);
-                idx += 1;
-            }
+            found[i] = wrapFn(&w_name, field);
         }
         return &found;
     }
