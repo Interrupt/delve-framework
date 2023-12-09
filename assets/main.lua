@@ -8,6 +8,7 @@ local graphics = require("graphics")
 function _init()
     -- initial resolution
     display.set_resolution(256, 128)
+    display.set_size(256, 128);
 
     black = 0
     dark_blue = 1
