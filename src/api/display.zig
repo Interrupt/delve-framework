@@ -8,6 +8,8 @@ const Lua = ziglua.Lua;
 
 var enable_debug_logging = false;
 
+pub var test_me: bool = true;
+
 // pub fn bindLib() void {
 //     const funcs = comptime [_]scripting.ScriptFn{
 //         scripting.wrapFn("set_resolution", set_resolution),
