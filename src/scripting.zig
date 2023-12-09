@@ -23,13 +23,11 @@ pub fn deinit() void {
 
 pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
     comptime {
-        var found_len = 0;
-        inline for (@typeInfo(module).Struct.decls) |_| {
-            found_len += 1;
-        }
+        // Get all the public functions in this module
+        const decls = @typeInfo(module).Struct.decls;
 
-        var found: [found_len]ScriptFn = undefined;
-        inline for (@typeInfo(module).Struct.decls, 0..) |d, i| {
+        var found: [decls.len]ScriptFn = undefined;
+        inline for (decls, 0..) |d, i| {
             // convert the name string to be :0 terminated
             // not sure why @ptrCast doesn't work here
             var name_len = d.name.len;
