@@ -35,7 +35,7 @@ pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
         inline for (decls) |d| {
             const field = @field(module, d.name);
             if(isModuleFunction(@TypeOf(field))) {
-                gen_fields = gen_fields ++ .{d};
+                gen_fields = gen_fields ++ .{ d };
             }
         }
 
@@ -44,7 +44,7 @@ pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
             // convert the name string to be :0 terminated
             var field_name: [:0]const u8 = d.name ++ "";
 
-            found = found ++ .{wrapFn(field_name, @field(module, d.name))};
+            found = found ++ .{ wrapFn(field_name, @field(module, d.name)) };
         }
         return found;
     }
