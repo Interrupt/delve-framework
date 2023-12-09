@@ -30,7 +30,7 @@ pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
         // Get all the public declarations in this module
         const decls = @typeInfo(module).Struct.decls;
 
-        // filter out only the functions
+        // filter out only the public functions
         var gen_fields: []const std.builtin.Type.Declaration = &[_]std.builtin.Type.Declaration {};
         inline for (decls) |d| {
             const field = @field(module, d.name);
@@ -39,14 +39,14 @@ pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
             }
         }
 
-        var found: [gen_fields.len]ScriptFn = undefined;
-        inline for (gen_fields, 0..) |d, i| {
+        var found: []const ScriptFn = &[_]ScriptFn{};
+        inline for (gen_fields) |d| {
             // convert the name string to be :0 terminated
             var field_name: [:0]const u8 = d.name ++ "";
 
-            found[i] = wrapFn(field_name, @field(module, d.name));
+            found = found ++ .{wrapFn(field_name, @field(module, d.name))};
         }
-        return &found;
+        return found;
     }
 }
 
