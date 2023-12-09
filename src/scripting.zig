@@ -42,15 +42,9 @@ pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
         var found: [gen_fields.len]ScriptFn = undefined;
         inline for (gen_fields, 0..) |d, i| {
             // convert the name string to be :0 terminated
-            // not sure why @ptrCast doesn't work here
-            var name_len = d.name.len;
-            var w_name: [name_len:0]u8 = undefined;
-            for (d.name, 0..) |c, ii| {
-                w_name[ii] = c;
-            }
+            var field_name: [:0]const u8 = &[_:0]u8 {} ++ d.name;
 
-            const field = @field(module, d.name);
-            found[i] = wrapFn(&w_name, field);
+            found[i] = wrapFn(field_name, @field(module, d.name));
         }
         return &found;
     }
