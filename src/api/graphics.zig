@@ -5,7 +5,7 @@ const main = @import("../main.zig");
 const debug = @import("../debug.zig");
 const assets = @import("assets.zig");
 const images= @import("../images.zig");
-const scripting = @import("../scripting.zig");
+const scripting = @import("../scripting/manager.zig");
 
 const Lua = ziglua.Lua;
 

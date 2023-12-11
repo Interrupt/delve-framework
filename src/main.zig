@@ -1,6 +1,6 @@
 const std = @import("std");
-const lua = @import("lua.zig");
-const scripting = @import("scripting.zig");
+const lua = @import("scripting/lua.zig");
+const scripting = @import("scripting/manager.zig");
 const images = @import("images.zig");
 const debug = @import("debug.zig");
 

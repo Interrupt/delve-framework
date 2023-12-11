@@ -6,32 +6,30 @@ const debug = @import("../debug.zig");
 const text_module = @import("text.zig");
 const graphics_system = @import("../platform/graphics.zig");
 
-const Lua = ziglua.Lua;
+// const Lua = ziglua.Lua;
 
 var enable_debug_logging = false;
 
-pub fn makeLib(lua: *Lua) i32 {
-    const funcs = [_]ziglua.FnReg{
-        .{ .name = "clear", .func = ziglua.wrap(clear) },
-        .{ .name = "line", .func = ziglua.wrap(line) },
-        .{ .name = "filled_circle", .func = ziglua.wrap(filled_circle) },
-        .{ .name = "filled_rectangle", .func = ziglua.wrap(filled_rectangle_lua) },
-        .{ .name = "rectangle", .func = ziglua.wrap(rectangle_lua) },
-        .{ .name = "text", .func = ziglua.wrap(text) },
-    };
+// pub fn makeLib(lua: *Lua) i32 {
+//     const funcs = [_]ziglua.FnReg{
+//         .{ .name = "clear", .func = ziglua.wrap(clear) },
+//         .{ .name = "line", .func = ziglua.wrap(line) },
+//         .{ .name = "filled_circle", .func = ziglua.wrap(filled_circle) },
+//         .{ .name = "filled_rectangle", .func = ziglua.wrap(filled_rectangle_lua) },
+//         .{ .name = "rectangle", .func = ziglua.wrap(rectangle_lua) },
+//         .{ .name = "text", .func = ziglua.wrap(text) },
+//     };
+//
+//     lua.newLib(&funcs);
+//     return 1;
+// }
 
-    lua.newLib(&funcs);
-    return 1;
-}
-
-fn clear(lua: *Lua) i32 {
-    var color_idx: u32 = @intFromFloat(lua.toNumber(1) catch 0);
-
+pub fn clear(pal_color: u32) void {
     if (enable_debug_logging)
-        debug.log("Draw: clear {d}", .{color_idx});
+        debug.log("Draw: clear {d}", .{pal_color});
 
     // Four bytes per color
-    color_idx *= main.palette.channels;
+    var color_idx = pal_color * main.palette.channels;
 
     if (color_idx >= main.palette.height * main.palette.pitch)
         color_idx = main.palette.pitch - 4;
@@ -47,21 +45,14 @@ fn clear(lua: *Lua) i32 {
     };
 
     graphics_system.clear(color);
-    return 0;
 }
 
-fn line(lua: *Lua) i32 {
-    var start_x: c_int = @intFromFloat(lua.toNumber(1) catch 0);
-    var start_y: c_int = @intFromFloat(lua.toNumber(2) catch 0);
-    var end_x: c_int = @intFromFloat(lua.toNumber(3) catch 0);
-    var end_y: c_int = @intFromFloat(lua.toNumber(4) catch 0);
-    var color_idx: u32 = @intFromFloat(lua.toNumber(5) catch 0);
-
+pub fn line(start_x :i32, start_y: i32, end_x: i32, end_y: i32, pal_color: u32) void {
     if (enable_debug_logging)
-        debug.log("Draw: line({d},{d},{d},{d},{d})", .{ start_x, start_y, end_x, end_y, color_idx });
+        debug.log("Draw: line({d},{d},{d},{d},{d})", .{ start_x, start_y, end_x, end_y, pal_color });
 
     // Four bytes per color
-    color_idx *= main.palette.channels;
+    var color_idx = pal_color * main.palette.channels;
 
     if (color_idx >= main.palette.height * main.palette.pitch)
         color_idx = main.palette.pitch - 4;
@@ -87,20 +78,14 @@ fn line(lua: *Lua) i32 {
     };
 
     graphics_system.line(start, end, color);
-    return 0;
 }
 
-fn filled_circle(lua: *Lua) i32 {
-    var x = lua.toNumber(1) catch 0;
-    var y = lua.toNumber(2) catch 0;
-    var radius = lua.toNumber(3) catch 0;
-    var color_idx: u32 = @intFromFloat(lua.toNumber(4) catch 0);
-
+pub fn filled_circle(x: f32, y: f32, radius: f32, pal_color: u32) void {
     _ = x;
     _ = y;
 
     // Four bytes per color
-    color_idx *= main.palette.channels;
+    var color_idx = pal_color * main.palette.channels;
 
     if (color_idx >= main.palette.height * main.palette.pitch)
         color_idx = main.palette.pitch - 4;
@@ -114,12 +99,12 @@ fn filled_circle(lua: *Lua) i32 {
 
     // Dissapear when too small
     if (radius <= 0.25)
-        return 0;
+        return;
 
     // In the easy case, just plot a pixel
     if (radius <= 0.5) {
         // _ = sdl.SDL_RenderDrawPoint(renderer, @intFromFloat(x), @intFromFloat(y));
-        return 0;
+        return;
     }
 
     // Harder case, draw the circle in vertical strips
@@ -143,32 +128,6 @@ fn filled_circle(lua: *Lua) i32 {
         //         _ = sdl.SDL_RenderDrawPoint(renderer, @intFromFloat(x - x_idx), @intFromFloat(y + y_idx));
         // }
     }
-
-    return 0;
-}
-
-fn filled_rectangle_lua(lua: *Lua) i32 {
-    var start_x: c_int = @intFromFloat(lua.toNumber(1) catch 0);
-    var start_y: c_int = @intFromFloat(lua.toNumber(2) catch 0);
-    var width: c_int = @intFromFloat(lua.toNumber(3) catch 0);
-    var height: c_int = @intFromFloat(lua.toNumber(4) catch 0);
-    var color_idx: u32 = @intFromFloat(lua.toNumber(4) catch 0);
-
-    filled_rectangle(start_x, start_y, width, height, color_idx);
-
-    return 0;
-}
-
-fn rectangle_lua(lua: *Lua) i32 {
-    var start_x: c_int = @intFromFloat(lua.toNumber(1) catch 0);
-    var start_y: c_int = @intFromFloat(lua.toNumber(2) catch 0);
-    var width: c_int = @intFromFloat(lua.toNumber(3) catch 0);
-    var height: c_int = @intFromFloat(lua.toNumber(4) catch 0);
-    var color_idx: u32 = @intFromFloat(lua.toNumber(4) catch 0);
-
-    rectangle(start_x, start_y, width, height, color_idx);
-
-    return 0;
 }
 
 pub fn rectangle(start_x: i32, start_y: i32, width: i32, height: i32, color: u32) void {
@@ -219,6 +178,6 @@ pub fn filled_rectangle(start_x: i32, start_y: i32, width: i32, height: i32, col
     graphics_system.drawDebugRectangle(@floatFromInt(start_x), @floatFromInt(start_y), @floatFromInt(width), @floatFromInt(height));
 }
 
-fn text(lua: *Lua) i32 {
-    return text_module.text(lua);
+pub fn text(text_string: [*:0]const u8, x_pos: i32, y_pos: i32, color_idx: u32) void {
+    text_module.drawText(text_string, x_pos, y_pos, color_idx);
 }

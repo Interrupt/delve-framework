@@ -1,6 +1,6 @@
 const ziglua = @import("ziglua");
 const std = @import("std");
-const debug = @import("debug.zig");
+const debug = @import("../debug.zig");
 
 const Lua = ziglua.Lua;
 
@@ -68,13 +68,13 @@ pub fn openModule(comptime name: [:0]const u8, comptime open_func: ziglua.ZigFn)
 
 fn openModules() void {
     // Open all of the API modules here!
-    openModule("assets", @import("api/assets.zig").makeLib);
+    openModule("assets", @import("../api/assets.zig").makeLib);
     //openModule("display", @import("api/display.zig").makeLib);
-    openModule("draw", @import("api/draw.zig").makeLib);
-    openModule("input.mouse", @import("api/mouse.zig").makeLib);
-    openModule("input.keyboard", @import("api/keyboard.zig").makeLib);
-    openModule("text", @import("api/text.zig").makeLib);
-    openModule("graphics", @import("api/graphics.zig").makeLib);
+    // openModule("draw", @import("api/draw.zig").makeLib);
+    openModule("input.mouse", @import("../api/mouse.zig").makeLib);
+    openModule("input.keyboard", @import("../api/keyboard.zig").makeLib);
+    openModule("text", @import("../api/text.zig").makeLib);
+    openModule("graphics", @import("../api/graphics.zig").makeLib);
 }
 
 pub fn callFunction(func_name: [:0]const u8) !void {

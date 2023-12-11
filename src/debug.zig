@@ -1,5 +1,5 @@
 const std = @import("std");
-const lua = @import("lua.zig");
+const lua = @import("scripting/lua.zig");
 const gfx = @import("platform/graphics.zig");
 const text_module = @import("api/text.zig");
 const draw_module = @import("api/draw.zig");

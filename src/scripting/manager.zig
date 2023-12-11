@@ -1,7 +1,7 @@
 const std = @import("std");
 const fmt = @import("fmt");
 const ziglua = @import("ziglua");
-const debug = @import("debug.zig");
+const debug = @import("../debug.zig");
 const lua_util = @import("lua.zig");
 
 const Lua = ziglua.Lua;
@@ -13,8 +13,11 @@ pub const ScriptFn = struct {
 
 pub fn init() void {
     // Bind all the libraries using some meta programming magic at compile time
-    const display_module_fns = comptime findLibraryFunctions(@import("api/display.zig"));
+    const display_module_fns = comptime findLibraryFunctions(@import("../api/display.zig"));
     bindLibrary("display", display_module_fns);
+
+    const draw_module_fns = comptime findLibraryFunctions(@import("../api/draw.zig"));
+    bindLibrary("draw", draw_module_fns);
 }
 
 pub fn deinit() void {
@@ -25,14 +28,14 @@ fn isModuleFunction(comptime in_type: anytype) bool {
     return @typeInfo(in_type) == .Fn;
 }
 
-pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
+fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
     comptime {
         // Get all the public declarations in this module
         const decls = @typeInfo(module).Struct.decls;
 
         // filter out only the public functions
         var gen_fields: []const std.builtin.Type.Declaration = &[_]std.builtin.Type.Declaration {};
-        inline for (decls) |d| {
+        for (decls) |d| {
             const field = @field(module, d.name);
             if(isModuleFunction(@TypeOf(field))) {
                 gen_fields = gen_fields ++ .{ d };
@@ -40,7 +43,7 @@ pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
         }
 
         var found: []const ScriptFn = &[_]ScriptFn{};
-        inline for (gen_fields) |d| {
+        for (gen_fields) |d| {
             // convert the name string to be :0 terminated
             var field_name: [:0]const u8 = d.name ++ "";
 
@@ -50,19 +53,19 @@ pub fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
     }
 }
 
-pub fn wrapFn(name: [:0]const u8, comptime func: anytype) ScriptFn {
+fn wrapFn(name: [:0]const u8, comptime func: anytype) ScriptFn {
     return ScriptFn {
         .name = name,
         .luaFn = makeLuaBinding(name, func),
     };
 }
 
-pub fn bindLibrary(comptime name: [:0]const u8, comptime funcs: []const ScriptFn) void {
+fn bindLibrary(comptime name: [:0]const u8, comptime funcs: []const ScriptFn) void {
     // Bind these functions with Lua!
     lua_util.openModule(name, makeLuaOpenLibFn(funcs));
 }
 
-pub fn makeLuaOpenLibFn(comptime funcs: []const ScriptFn) fn(*Lua) i32 {
+fn makeLuaOpenLibFn(comptime funcs: []const ScriptFn) fn(*Lua) i32 {
     return opaque {
         pub fn inner(lua: *Lua) i32 {
             var lib_funcs: [funcs.len]ziglua.FnReg = undefined;
@@ -77,7 +80,7 @@ pub fn makeLuaOpenLibFn(comptime funcs: []const ScriptFn) fn(*Lua) i32 {
     }.inner;
 }
 
-pub fn makeLuaBinding(name: [:0]const u8, comptime function: anytype) ziglua.FnReg {
+fn makeLuaBinding(name: [:0]const u8, comptime function: anytype) ziglua.FnReg {
     return ziglua.FnReg { .name = name, .func = ziglua.wrap(bindFuncLua(function)) };
 }
 

@@ -2,9 +2,9 @@ const std = @import("std");
 const fmt = @import("fmt");
 const ziglua = @import("ziglua");
 const debug = @import("../debug.zig");
-const scripting = @import("../scripting.zig");
+// const scripting = @import("../scripting/manager.zig");
 
-const Lua = ziglua.Lua;
+// const Lua = ziglua.Lua;
 
 var enable_debug_logging = false;
 
