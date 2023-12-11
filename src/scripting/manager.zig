@@ -13,17 +13,20 @@ pub const ScriptFn = struct {
 
 pub fn init() void {
     // Bind all the libraries using some meta programming magic at compile time
-    const display_module_fns = comptime findLibraryFunctions(@import("../api/display.zig"));
-    bindLibrary("display", display_module_fns);
+    const display_lib_fns = comptime findLibraryFunctions(@import("../api/display.zig"));
+    bindLibrary("display", display_lib_fns);
 
-    const draw_module_fns = comptime findLibraryFunctions(@import("../api/draw.zig"));
-    bindLibrary("draw", draw_module_fns);
+    const draw_lib_fns = comptime findLibraryFunctions(@import("../api/draw.zig"));
+    bindLibrary("draw", draw_lib_fns);
 
-    const mouse_module_fns = comptime findLibraryFunctions(@import("../api/mouse.zig"));
-    bindLibrary("input.mouse", mouse_module_fns);
+    const mouse_lib_fns = comptime findLibraryFunctions(@import("../api/mouse.zig"));
+    bindLibrary("input.mouse", mouse_lib_fns);
 
-    const keyboard_module_fns = comptime findLibraryFunctions(@import("../api/keyboard.zig"));
-    bindLibrary("input.keyboard", keyboard_module_fns);
+    const keyboard_lib_fns = comptime findLibraryFunctions(@import("../api/keyboard.zig"));
+    bindLibrary("input.keyboard", keyboard_lib_fns);
+
+    const text_lib_fns = comptime findLibraryFunctions(@import("../api/text.zig"));
+    bindLibrary("text", text_lib_fns);
 }
 
 pub fn deinit() void {
@@ -138,7 +141,7 @@ fn bindFuncLua(comptime function: anytype) fn(lua: *Lua) i32{
                     return 1;
                 },
                 c_int, usize, i8, i16, i32, i64, u8, u16, u32, u64 => {
-                    lua.pushNumber(ret_val);
+                    lua.pushNumber(@floatFromInt(ret_val));
                     return 1;
                 },
                 f16, f32, f64 => {

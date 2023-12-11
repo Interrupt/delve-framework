@@ -73,7 +73,7 @@ fn openModules() void {
     // openModule("draw", @import("api/draw.zig").makeLib);
     // openModule("input.mouse", @import("../api/mouse.zig").makeLib);
     // openModule("input.keyboard", @import("../api/keyboard.zig").makeLib);
-    openModule("text", @import("../api/text.zig").makeLib);
+    // openModule("text", @import("../api/text.zig").makeLib);
     openModule("graphics", @import("../api/graphics.zig").makeLib);
 }
 

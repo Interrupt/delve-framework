@@ -179,5 +179,5 @@ pub fn filled_rectangle(start_x: i32, start_y: i32, width: i32, height: i32, col
 }
 
 pub fn text(text_string: [*:0]const u8, x_pos: i32, y_pos: i32, color_idx: u32) void {
-    text_module.drawText(text_string, x_pos, y_pos, color_idx);
+    text_module.draw(text_string, x_pos, y_pos, color_idx);
 }

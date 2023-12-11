@@ -187,7 +187,7 @@ pub fn drawConsole(draw_bg: bool) void {
     var y_draw_pos: i32 = (height_pixels - 8) - padding;
 
     // Draw the pending command text
-    text_module.drawText("> ", padding, y_draw_pos, white_pal_idx);
+    text_module.draw("> ", padding, y_draw_pos, white_pal_idx);
     var pending_cmd_idx: i32 = 0;
     for (pending_cmd.items) |char| {
         pending_cmd_idx += 1;
@@ -206,7 +206,7 @@ pub fn drawConsole(draw_bg: bool) void {
 
         const line = node.data;
         const text_height = text_module.getTextHeight(line, res_w);
-        text_module.drawTextWrapped(line, padding, y_draw_pos - text_height, res_w, white_pal_idx);
+        text_module.draw_wrapped(line, padding, y_draw_pos - text_height, res_w, white_pal_idx);
         y_draw_pos -= text_height;
     }
 }
