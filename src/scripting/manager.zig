@@ -13,20 +13,11 @@ pub const ScriptFn = struct {
 
 pub fn init() void {
     // Bind all the libraries using some meta programming magic at compile time
-    const display_lib_fns = comptime findLibraryFunctions(@import("../api/display.zig"));
-    bindLibrary("display", display_lib_fns);
-
-    const draw_lib_fns = comptime findLibraryFunctions(@import("../api/draw.zig"));
-    bindLibrary("draw", draw_lib_fns);
-
-    const mouse_lib_fns = comptime findLibraryFunctions(@import("../api/mouse.zig"));
-    bindLibrary("input.mouse", mouse_lib_fns);
-
-    const keyboard_lib_fns = comptime findLibraryFunctions(@import("../api/keyboard.zig"));
-    bindLibrary("input.keyboard", keyboard_lib_fns);
-
-    const text_lib_fns = comptime findLibraryFunctions(@import("../api/text.zig"));
-    bindLibrary("text", text_lib_fns);
+    bindZigLibrary("display", @import("../api/display.zig"));
+    bindZigLibrary("draw", @import("../api/draw.zig"));
+    bindZigLibrary("text", @import("../api/text.zig"));
+    bindZigLibrary("input.mouse", @import("../api/mouse.zig"));
+    bindZigLibrary("input.keyboard", @import("../api/keyboard.zig"));
 }
 
 pub fn deinit() void {
@@ -67,6 +58,11 @@ fn wrapFn(name: [:0]const u8, comptime func: anytype) ScriptFn {
         .name = name,
         .luaFn = makeLuaBinding(name, func),
     };
+}
+
+fn bindZigLibrary(comptime name: [:0]const u8, comptime zigfile: anytype) void {
+    const lib_fns = comptime findLibraryFunctions(zigfile);
+    bindLibrary(name, lib_fns);
 }
 
 fn bindLibrary(comptime name: [:0]const u8, comptime funcs: []const ScriptFn) void {
