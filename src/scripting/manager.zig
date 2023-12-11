@@ -11,7 +11,10 @@ pub const ScriptFn = struct {
     luaFn: ziglua.FnReg,
 };
 
-pub fn init() void {
+pub fn init() !void {
+    // Start lua
+    try lua_util.init();
+
     // Bind all the libraries using some meta programming magic at compile time
     bindZigLibrary("assets", @import("../api/assets.zig"));
     bindZigLibrary("display", @import("../api/display.zig"));
@@ -23,7 +26,7 @@ pub fn init() void {
 }
 
 pub fn deinit() void {
-
+    lua_util.deinit();
 }
 
 fn isModuleFunction(comptime name: [:0]const u8, comptime in_type: anytype) bool {

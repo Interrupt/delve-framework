@@ -61,14 +61,12 @@ pub fn main() !void {
 pub fn startSubsystems() !void {
     // try gfx.init();
     try input.init();
-    try lua.init();
-    scripting.init();
+    try scripting.init();
 }
 
 pub fn stopSubsystems() void {
     // gfx.deinit();
     input.deinit();
-    lua.deinit();
     scripting.deinit();
 }
 
