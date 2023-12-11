@@ -21,6 +21,9 @@ pub fn init() void {
 
     const mouse_module_fns = comptime findLibraryFunctions(@import("../api/mouse.zig"));
     bindLibrary("input.mouse", mouse_module_fns);
+
+    const keyboard_module_fns = comptime findLibraryFunctions(@import("../api/keyboard.zig"));
+    bindLibrary("input.keyboard", keyboard_module_fns);
 }
 
 pub fn deinit() void {
@@ -102,7 +105,10 @@ fn bindFuncLua(comptime function: anytype) fn(lua: *Lua) i32{
                 const lua_idx = i + 1;
 
                 switch(param_type) {
-                    c_int, i8, i16, i32, i64, u8, u16, u32, u64 => {
+                    bool => {
+                        args[i] = lua.toBool(lua_idx) catch false;
+                    },
+                    c_int, usize, i8, i16, i32, i64, u8, u16, u32, u64 => {
                         // ints
                         args[i] = @intFromFloat(lua.toNumber(lua_idx) catch 0);
                     },
@@ -126,14 +132,25 @@ fn bindFuncLua(comptime function: anytype) fn(lua: *Lua) i32{
 
             const ret_val = @call(.auto, function, args);
             switch(@TypeOf(ret_val)) {
-                void => {
-                    return 0;
-                },
+                void => { return 0; },
                 bool => {
                     lua.pushBoolean(ret_val);
                     return 1;
                 },
+                c_int, usize, i8, i16, i32, i64, u8, u16, u32, u64 => {
+                    lua.pushNumber(ret_val);
+                    return 1;
+                },
+                f16, f32, f64 => {
+                    lua.pushNumber(ret_val);
+                    return 1;
+                },
+                [*:0]const u8 => {
+                    lua.pushString(ret_val);
+                    return 1;
+                },
                 std.meta.Tuple(&.{f32, f32}) => {
+                    // probably is a way to handle any tuple types
                     lua.pushNumber(ret_val[0]);
                     lua.pushNumber(ret_val[1]);
                     return 2;
