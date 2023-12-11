@@ -28,29 +28,6 @@ var text_gif: images.Image = undefined;
 //     return 1;
 // }
 
-fn text(lua: *Lua) i32 {
-    var text_string = lua.toString(1) catch "";
-    var x_pos = lua.toNumber(2) catch 0;
-    var y_pos = lua.toNumber(3) catch 0;
-    var color_idx = @as(u32, @intFromFloat(lua.toNumber(4) catch 1));
-
-    draw(text_string, @as(i32, @intFromFloat(x_pos)), @as(i32, @intFromFloat(y_pos)), color_idx);
-
-    return 0;
-}
-
-fn text_wrapped(lua: *Lua) i32 {
-    var text_string = lua.toString(1) catch "";
-    var x_pos = lua.toNumber(2) catch 0;
-    var y_pos = lua.toNumber(3) catch 0;
-    var width = lua.toNumber(4) catch 0;
-    var color_idx = @as(u32, @intFromFloat(lua.toNumber(5) catch 0));
-
-    draw_wrapped(text_string, @as(i32, @intFromFloat(x_pos)), @as(i32, @intFromFloat(y_pos)), @as(i32, @intFromFloat(width)), color_idx);
-
-    return 0;
-}
-
 pub fn draw(text_string: [*:0]const u8, x: i32, y: i32, color: u32) void {
     var x_offset: i32 = 0;
     var y_offset: i32 = 0;

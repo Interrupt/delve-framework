@@ -5,7 +5,7 @@ const main = @import("../main.zig");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
 
-const Lua = ziglua.Lua;
+// const Lua = ziglua.Lua;
 
 var loaded_textures: std.AutoHashMap([*:0]const u8, u32) = undefined;
 var texture_handles: std.AutoHashMap(u32, images.Image) = undefined;
@@ -14,61 +14,63 @@ var texture_handles: std.AutoHashMap(u32, images.Image) = undefined;
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = gpa.allocator();
 
-pub fn makeLib(lua: *Lua) i32 {
-    const funcs = [_]ziglua.FnReg{
-        .{ .name = "get_texture", .func = ziglua.wrap(getTexture) },
-    };
-
-    lua.newLib(&funcs);
-
-    // Init everything!
+// called automatically when the library is binded
+pub fn libInit() void {
+    debug.log("Assets: initializing\n", .{});
     loaded_textures = std.AutoHashMap([*:0]const u8, u32).init(allocator);
     texture_handles = std.AutoHashMap(u32, images.Image).init(allocator);
-
-    return 1;
 }
 
-fn getTexture(lua: *Lua) i32 {
-    var filename_arg = lua.toString(1) catch "";
+// pub fn makeLib(lua: *Lua) i32 {
+//     const funcs = [_]ziglua.FnReg{
+//         .{ .name = "get_texture", .func = ziglua.wrap(getTexture) },
+//     };
+//
+//     lua.newLib(&funcs);
+//
+//     // init everything!
+//     loaded_textures = std.autohashmap([*:0]const u8, u32).init(allocator);
+//     texture_handles = std.autohashmap(u32, images.image).init(allocator);
+//
+//     return 1;
+// }
 
-    var found: ?u32 = loaded_textures.get(filename_arg);
+// return a texture handle or -1 if an error occurs
+pub fn get_texture(filename: [*:0]const u8) i64 {
+    const found: ?u32 = loaded_textures.get(filename);
 
     if (found) |texture_handle| {
-        debug.log("Assets: Found preloaded image in cache: {s} handle {d}", .{ filename_arg, texture_handle });
-
-        lua.pushInteger(texture_handle);
-        return 1;
+        debug.log("Assets: Found preloaded image in cache: {s} handle {d}", .{ filename, texture_handle });
+        return texture_handle;
     }
 
     var filename_idx: usize = 0;
-    while (filename_arg[filename_idx] != 0) {
+    while (filename[filename_idx] != 0) {
         filename_idx += 1;
     }
     const filename_len = filename_idx;
 
-    debug.log("Assets: Loading Image: {s}...", .{filename_arg});
-    var new_img: images.Image = images.loadFile(filename_arg[0..filename_len :0]) catch {
-        debug.log("Assets: Error loading image asset: {s}", .{filename_arg});
+    debug.log("Assets: Loading Image: {s}...", .{filename});
+    var new_img: images.Image = images.loadFile(filename[0..filename_len :0]) catch {
+        debug.log("Assets: Error loading image asset: {s}", .{filename});
         return -1;
     };
 
     const new_handle: u32 = texture_handles.count();
-    loaded_textures.put(filename_arg, new_handle) catch {
+    loaded_textures.put(filename, new_handle) catch {
         debug.log("Assets: Error caching loaded image handle!", .{});
-        return 0;
+        return -1;
     };
 
     texture_handles.put(new_handle, new_img) catch {
         debug.log("Assets: Error caching loaded image!", .{});
-        return 0;
+        return -1;
     };
 
-    debug.log("Assets: Loaded image {s} at handle {d}", .{ filename_arg, new_handle });
-
-    lua.pushInteger(new_handle);
-    return 1;
+    debug.log("Assets: Loaded image {s} at handle {d}", .{ filename, new_handle });
+    return new_handle;
 }
 
-pub fn getTextureFromHandle(handle: u32) ?images.Image {
+fn getTextureFromHandle(handle: u32) ?images.Image {
     return texture_handles.get(handle);
 }

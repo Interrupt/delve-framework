@@ -7,36 +7,20 @@ const assets = @import("assets.zig");
 const images= @import("../images.zig");
 const scripting = @import("../scripting/manager.zig");
 
-const Lua = ziglua.Lua;
+// const Lua = ziglua.Lua;
 
 var enable_debug_logging = false;
 
-pub fn makeLib(lua: *Lua) i32 {
-    const funcs = [_]ziglua.FnReg{
-        .{ .name = "blit", .func = ziglua.wrap(blit) },
-    };
+// pub fn makeLib(lua: *Lua) i32 {
+//     const funcs = [_]ziglua.FnReg{
+//         .{ .name = "blit", .func = ziglua.wrap(blit) },
+//     };
+//
+//     lua.newLib(&funcs);
+//     return 1;
+// }
 
-    lua.newLib(&funcs);
-    return 1;
-}
-
-fn blit(lua: *Lua) i32 {
-    var texture_handle: u32 = @intFromFloat(lua.toNumber(1) catch 0);
-    var source_x: i32 = @intFromFloat(lua.toNumber(2) catch 0);
-    var source_y: i32 = @intFromFloat(lua.toNumber(3) catch 0);
-    var source_width: u32 = @intFromFloat(lua.toNumber(4) catch 0);
-    var source_height: u32 = @intFromFloat(lua.toNumber(5) catch 0);
-    var dest_x: i32 = @intFromFloat(lua.toNumber(6) catch 0);
-    var dest_y: i32 = @intFromFloat(lua.toNumber(7) catch 0);
-
-    if (enable_debug_logging)
-        debug.log("Blitting texture {d}", .{texture_handle});
-
-    blitTexture(texture_handle, source_x, source_y, source_width, source_height, dest_x, dest_y);
-    return 0;
-}
-
-pub fn blitTexture(texture_handle: u32, source_x: i32, source_y: i32, source_width: u32, source_height: u32, dest_x: i32, dest_y: i32) void {
+pub fn blit(texture_handle: u32, source_x: i32, source_y: i32, source_width: u32, source_height: u32, dest_x: i32, dest_y: i32) void {
     _ = texture_handle;
     _ = source_x;
     _ = source_y;

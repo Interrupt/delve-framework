@@ -13,9 +13,11 @@ pub const ScriptFn = struct {
 
 pub fn init() void {
     // Bind all the libraries using some meta programming magic at compile time
+    bindZigLibrary("assets", @import("../api/assets.zig"));
     bindZigLibrary("display", @import("../api/display.zig"));
     bindZigLibrary("draw", @import("../api/draw.zig"));
     bindZigLibrary("text", @import("../api/text.zig"));
+    bindZigLibrary("graphics", @import("../api/graphics.zig"));
     bindZigLibrary("input.mouse", @import("../api/mouse.zig"));
     bindZigLibrary("input.keyboard", @import("../api/keyboard.zig"));
 }
@@ -24,7 +26,11 @@ pub fn deinit() void {
 
 }
 
-fn isModuleFunction(comptime in_type: anytype) bool {
+fn isModuleFunction(comptime name: [:0]const u8, comptime in_type: anytype) bool {
+    // Don't try to bind the libInit function!
+    if(std.mem.eql(u8, name, "libInit"))
+        return false;
+
     return @typeInfo(in_type) == .Fn;
 }
 
@@ -37,7 +43,7 @@ fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
         var gen_fields: []const std.builtin.Type.Declaration = &[_]std.builtin.Type.Declaration {};
         for (decls) |d| {
             const field = @field(module, d.name);
-            if(isModuleFunction(@TypeOf(field))) {
+            if(isModuleFunction(d.name ++ "", @TypeOf(field))) {
                 gen_fields = gen_fields ++ .{ d };
             }
         }
@@ -63,7 +69,11 @@ fn wrapFn(name: [:0]const u8, comptime func: anytype) ScriptFn {
 fn bindZigLibrary(comptime name: [:0]const u8, comptime zigfile: anytype) void {
     const lib_fns = comptime findLibraryFunctions(zigfile);
     bindLibrary(name, lib_fns);
-}
+
+    // call the init method, if one exists
+    if(@hasDecl(zigfile, "libInit")) {
+        zigfile.libInit();
+    }}
 
 fn bindLibrary(comptime name: [:0]const u8, comptime funcs: []const ScriptFn) void {
     // Bind these functions with Lua!
