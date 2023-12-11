@@ -18,6 +18,9 @@ pub fn init() void {
 
     const draw_module_fns = comptime findLibraryFunctions(@import("../api/draw.zig"));
     bindLibrary("draw", draw_module_fns);
+
+    const mouse_module_fns = comptime findLibraryFunctions(@import("../api/mouse.zig"));
+    bindLibrary("input.mouse", mouse_module_fns);
 }
 
 pub fn deinit() void {
@@ -91,7 +94,8 @@ fn bindFuncLua(comptime function: anytype) fn(lua: *Lua) i32{
             const ArgsTuple = std.meta.ArgsTuple(@TypeOf(function));
             var args: ArgsTuple = undefined;
 
-            const params = @typeInfo(@TypeOf(function)).Fn.params;
+            const fn_info = @typeInfo(@TypeOf(function)).Fn;
+            const params = fn_info.params;
 
             inline for (params, 0..) |param, i| {
                 const param_type = param.type.?;
@@ -116,8 +120,30 @@ fn bindFuncLua(comptime function: anytype) fn(lua: *Lua) i32{
                 }
             }
 
-            @call(.auto, function, args);
-            return 0;
+            if(fn_info.return_type == null) {
+                @compileError("Function has no return type?! This should not be possible.");
+            }
+
+            const ret_val = @call(.auto, function, args);
+            switch(@TypeOf(ret_val)) {
+                void => {
+                    return 0;
+                },
+                bool => {
+                    lua.pushBoolean(ret_val);
+                    return 1;
+                },
+                std.meta.Tuple(&.{f32, f32}) => {
+                    lua.pushNumber(ret_val[0]);
+                    lua.pushNumber(ret_val[1]);
+                    return 2;
+                },
+                else => {
+                    @compileError("Unimplemented LUA return type: " ++ @typeName(@TypeOf(ret_val)));
+                }
+            }
+
+            @compileError("LUA did not return number of return values correctly!");
         }
     }).lua_call;
 }
