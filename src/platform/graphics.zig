@@ -46,7 +46,7 @@ pub const Bindings = struct {
     length: usize,
     sokol_bindings: ?sg.Bindings,
 
-    pub fn init() Bindings {
+    pub fn init(updatable: bool) Bindings {
         var bindings: Bindings = Bindings {
             .length = 0,
             .sokol_bindings = .{},
@@ -66,12 +66,26 @@ pub const Bindings = struct {
         bindings.sokol_bindings.?.fs.images[shaders.SLOT_tex] = sg.makeImage(img_desc);
         bindings.sokol_bindings.?.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
 
+        if(updatable) {
+            // If this is not static, make streamable buffers with a best guess of size
+            bindings.sokol_bindings.?.vertex_buffers[0] = sg.makeBuffer(.{
+                .usage = .STREAM,
+                .size = 32000 * @sizeOf(Vertex),
+            });
+            bindings.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
+                .usage = .STREAM,
+                .type = .INDEXBUFFER,
+                .size = 32000 * @sizeOf(u16),
+            });
+        }
+
         return bindings;
     }
 
-    pub fn update(self: *Bindings, vertices: anytype, indices: anytype, length: usize) void {
+    /// Creates new buffers to hold these vertices and indices
+    pub fn set(self: *Bindings, vertices: anytype, indices: anytype, length: usize) void {
         if(self.sokol_bindings == null) {
-            self.sokol_bindings = .{};
+            return;
         }
 
         self.length = length;
@@ -82,6 +96,21 @@ pub const Bindings = struct {
             .type = .INDEXBUFFER,
             .data = sg.asRange(indices),
         });
+    }
+
+    /// Updates the existing buffers with new data
+    pub fn update(self: *Bindings, vertices: anytype, indices: anytype, vert_len: usize, index_len: usize) void {
+        if(self.sokol_bindings == null) {
+            return;
+        }
+
+        self.length = index_len;
+
+        if(index_len == 0)
+            return;
+
+        sg.updateBuffer(self.sokol_bindings.?.vertex_buffers[0], sg.asRange(vertices[0..vert_len]));
+        sg.updateBuffer(self.sokol_bindings.?.index_buffer, sg.asRange(indices[0..index_len]));
     }
 
     pub fn destroy(self: *Bindings) void {
@@ -351,7 +380,7 @@ fn computeVsParams(rx: f32, ry: f32) shaders.VsParams {
     const rym = mat4.rotate(ry, .{ .x = 0.0, .y = 1.0, .z = 0.0 });
     const model = mat4.mul(rxm, rym);
     const aspect = sapp.widthf() / sapp.heightf();
-    const proj = mat4.persp(60.0, aspect, 0.01, 10.0);
+    const proj = mat4.persp(60.0, aspect, 0.01, 50.0);
     return shaders.VsParams{ .mvp = mat4.mul(mat4.mul(proj, state.view), model) };
 }
 
@@ -413,7 +442,7 @@ pub fn draw(bindings: Bindings) void {
     if(bindings.sokol_bindings == null)
         return;
 
-    state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 2.5 }, vec3.zero(), vec3.up());
+    state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.5 }, vec3.zero(), vec3.up());
     const vs_params = computeVsParams(rotx, roty);
 
     sg.applyPipeline(state.debug_draw_pipeline);

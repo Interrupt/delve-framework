@@ -35,6 +35,7 @@ export fn sokol_init() void {
     sg.setup(.{
         .context = sgapp.context(),
         .logger = .{ .func = slog.func },
+        .buffer_pool_size = 256, // default is 128
     });
 
     debug.log("Sokol setup backend: {}\n", .{sg.queryBackend()});
@@ -60,12 +61,15 @@ export fn sokol_init() void {
         return;
     };
 
-    // 62 * 4 * 6 = 1488
-    // 63 = 1512
-    for(0 .. 62) |i| {
-        const f_i = @as(f32, @floatFromInt(i));
-        test_batch.addRectangle(0, f_i * 0.1, f_i * 0.25, 0.25 + 0.25 * f_i , 0.5);
-    }
+    // for(0 .. 5000) |i| {
+    //     const f_i = @as(f32, @floatFromInt(i));
+    //     if(@mod(i, 2) != 0) {
+    //         test_batch.addRectangle(0, f_i * 0.1, f_i * 0.25, 0.25 + 0.25 * f_i , 0.5);
+    //     } else {
+    //         test_batch.addTriangle(0, f_i * 0.1, f_i * 0.25, 0.25 + 0.25 * f_i , 0.5);
+    //     }
+    // }
+    // test_batch.apply();
 
     // var verts: []gfx.Vertex = &[_]gfx.Vertex{
     //     .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
@@ -85,7 +89,10 @@ export fn sokol_cleanup() void {
     sg.shutdown();
 }
 
+var tick: u64 = 0;
 export fn sokol_frame() void {
+    tick += 1;
+
     lua.callFunction("_update") catch {
         showErrorScreen("Fatal error!");
     };
@@ -96,6 +103,19 @@ export fn sokol_frame() void {
         showErrorScreen("Fatal error!");
     };
 
+    test_batch.reset();
+    for(0 .. 5000) |i| {
+        const f_i = @as(f32, @floatFromInt(i));
+        const x_pos = std.math.sin(@as(f32, @floatFromInt(tick * i)) * 0.001) * 1.5;
+        const y_pos = std.math.cos(@as(f32, @floatFromInt(tick * i)) * 0.001) * 1.0;
+
+        if(@mod(i, 2) != 0) {
+            test_batch.addRectangle(x_pos, y_pos, f_i * 0.1, 0.5, 0.5);
+        } else {
+            test_batch.addTriangle(-x_pos, y_pos, f_i * 0.1, 0.5, 0.5);
+        }
+    }
+    test_batch.apply();
     test_batch.draw();
 
     gfx.endFrame();
