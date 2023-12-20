@@ -14,14 +14,15 @@ const mat4 = @import("../math.zig").Mat4;
 
 const debugtext = sokol.debugtext;
 
-const test_asset = @embedFile("../static/test.gif");
+pub const test_asset = @embedFile("../static/test.gif");
 
 // TODO: Where should the math library stuff live?
 // Foster puts everything in places like /Spatial or /Graphics
 // Look into using a third party math.zig instead of sokol's
 // A vertex struct with position, color and uv-coords
 // TODO: Stop using packed color and uvs!
-const Vertex = extern struct { x: f32, y: f32, z: f32, color: u32, u: i16, v: i16 };
+
+pub const Vertex = extern struct { x: f32, y: f32, z: f32, color: u32, u: i16, v: i16 };
 
 pub const Vector2 = struct {
     x: f32,
@@ -33,6 +34,59 @@ pub const Color = struct {
     g: f32,
     b: f32,
     a: f32 = 1.0,
+};
+
+// TODO: This should be an interface!
+// pub const Bindings = struct {
+//     create: fn (vertices: []Vertex, indices: []u16) void,
+//     bind: fn () void,
+// };
+
+pub const Bindings = struct {
+    length: usize,
+    sokol_bindings: ?sg.Bindings,
+
+    pub fn init() Bindings {
+        var bindings: Bindings = Bindings {
+            .length = 0,
+            .sokol_bindings = .{},
+        };
+
+        // create a small debug checker-board texture
+        var img_desc: sg.ImageDesc = .{
+            .width = 4,
+            .height = 4,
+        };
+        img_desc.data.subimage[0][0] = sg.asRange(&[4 * 4]u32{
+            0xFFFFFFFF, 0xFFFF0000, 0xFFFFFFFF, 0xFF000000,
+            0xFF000000, 0xFFFFFFFF, 0xFF00FF00, 0xFFFFFFFF,
+            0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF0000FF,
+            0xFFFFFF00, 0xFFFFFF00, 0xFFFFFF00, 0xFFFFFFFF,
+        });
+        bindings.sokol_bindings.?.fs.images[shaders.SLOT_tex] = sg.makeImage(img_desc);
+        bindings.sokol_bindings.?.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
+
+        return bindings;
+    }
+
+    pub fn update(self: *Bindings, vertices: anytype, indices: anytype, length: usize) void {
+        if(self.sokol_bindings == null) {
+            self.sokol_bindings = .{};
+        }
+
+        self.length = length;
+        self.sokol_bindings.?.vertex_buffers[0] = sg.makeBuffer(.{
+            .data = sg.asRange(vertices),
+        });
+        self.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
+            .type = .INDEXBUFFER,
+            .data = sg.asRange(indices),
+        });
+    }
+
+    pub fn destroy(self: *Bindings) void {
+        _ = self;
+    }
 };
 
 const state = struct {
@@ -131,10 +185,13 @@ pub fn init() !void {
     state.pipeline = sg.makePipeline(pipe_desc);
 
     pipe_desc.index_type = .UINT16;
-    pipe_desc.depth= .{};
+    // pipe_desc.depth= .{};
     state.debug_draw_pipeline = sg.makePipeline(pipe_desc);
 
     debug.log("Graphics subsystem started successfully", .{});
+
+    // var testme: Bindings = CreateBindings();
+    // testme.bind();
 }
 
 pub fn deinit() void {
@@ -145,7 +202,7 @@ var rotx: f32 = 0.0;
 var roty: f32 = 0.0;
 
 pub fn startFrame() void {
-    rotx += 0.1;
+    // rotx += 0.1;
     roty += 0.5;
 
     // reset debug text
@@ -350,4 +407,17 @@ pub fn getDisplayHeight() i32 {
 
 pub fn getDisplayDPIScale() f32 {
     return sapp.dpiScale();
+}
+
+pub fn draw(bindings: Bindings) void {
+    if(bindings.sokol_bindings == null)
+        return;
+
+    state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 2.5 }, vec3.zero(), vec3.up());
+    const vs_params = computeVsParams(rotx, roty);
+
+    sg.applyPipeline(state.debug_draw_pipeline);
+    sg.applyBindings(bindings.sokol_bindings.?);
+    sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
+    sg.draw(0, @intCast(bindings.length), 1);
 }

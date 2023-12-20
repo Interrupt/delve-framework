@@ -8,6 +8,7 @@ const debug = @import("debug.zig");
 const app_backend = @import("platform/app.zig");
 const gfx = @import("platform/graphics.zig");
 const input = @import("platform/input.zig");
+const gfx_3d = @import("graphics/3d.zig");
 
 const Allocator = std.mem.Allocator;
 

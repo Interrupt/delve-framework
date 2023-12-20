@@ -3,6 +3,8 @@ const debug = @import("../debug.zig");
 const lua = @import("../scripting/lua.zig");
 const gfx = @import("graphics.zig");
 const input = @import("input.zig");
+const gfx_3d = @import("../graphics/3d.zig");
+const batcher = @import("../graphics/batcher.zig");
 
 const sokol = @import("sokol");
 const slog = sokol.log;
@@ -14,6 +16,10 @@ const Allocator = std.mem.Allocator;
 
 var app_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var app_allocator = app_gpa.allocator();
+
+// Test some stuff
+var test_mesh: gfx_3d.Mesh = undefined;
+var test_batch: batcher.Batcher = undefined;
 
 pub fn init() !void {
     debug.log("App starting", .{});
@@ -49,6 +55,29 @@ export fn sokol_init() void {
         showErrorScreen("Fatal error!");
     };
 
+    test_batch = batcher.Batcher.init() catch {
+        showErrorScreen("Fatal error during batch init!");
+        return;
+    };
+
+    // 62 * 4 * 6 = 1488
+    // 63 = 1512
+    for(0 .. 62) |i| {
+        const f_i = @as(f32, @floatFromInt(i));
+        test_batch.addRectangle(0, f_i * 0.1, f_i * 0.25, 0.25 + 0.25 * f_i , 0.5);
+    }
+
+    // var verts: []gfx.Vertex = &[_]gfx.Vertex{
+    //     .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
+    //     .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 6550, .v = 0 },
+    //     .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 6550, .v = 6550},
+    //     .{ .x = 0.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 6550},
+    // };
+    // // rectangler indices
+    // var indices: []u16 = &[_]u16{ 0, 1, 2, 0, 2, 3 };
+    //
+    // test_mesh = gfx_3d.createMesh(&verts, &indices);
+
 }
 
 export fn sokol_cleanup() void {
@@ -66,6 +95,8 @@ export fn sokol_frame() void {
     lua.callFunction("_draw") catch {
         showErrorScreen("Fatal error!");
     };
+
+    test_batch.draw();
 
     gfx.endFrame();
 }
