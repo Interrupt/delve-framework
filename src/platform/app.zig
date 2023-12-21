@@ -104,15 +104,15 @@ export fn sokol_frame() void {
     };
 
     test_batch.reset();
-    for(0 .. 5000) |i| {
+    for(0 .. 10000) |i| {
         const f_i = @as(f32, @floatFromInt(i));
-        const x_pos = std.math.sin(@as(f32, @floatFromInt(tick * i)) * 0.001) * 1.5;
-        const y_pos = std.math.cos(@as(f32, @floatFromInt(tick * i)) * 0.001) * 1.0;
+        const x_pos = std.math.sin(@as(f32, @floatFromInt(tick * i)) * 0.0001) * (1.0 + (f_i * 0.05));
+        const y_pos = std.math.cos(@as(f32, @floatFromInt(tick * i)) * 0.0001) * (0.5 + (f_i * 0.05));
 
         if(@mod(i, 2) != 0) {
-            test_batch.addRectangle(x_pos, y_pos, f_i * 0.1, 0.5, 0.5);
+            test_batch.addRectangle(x_pos, y_pos, f_i * -0.1, 0.5, 0.5);
         } else {
-            test_batch.addTriangle(-x_pos, y_pos, f_i * 0.1, 0.5, 0.5);
+            test_batch.addTriangle(-x_pos, y_pos, f_i * -0.1, 0.5, 0.5);
         }
     }
     test_batch.apply();

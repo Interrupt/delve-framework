@@ -70,12 +70,12 @@ pub const Bindings = struct {
             // If this is not static, make streamable buffers with a best guess of size
             bindings.sokol_bindings.?.vertex_buffers[0] = sg.makeBuffer(.{
                 .usage = .STREAM,
-                .size = 32000 * @sizeOf(Vertex),
+                .size = 64000 * @sizeOf(Vertex),
             });
             bindings.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
                 .usage = .STREAM,
                 .type = .INDEXBUFFER,
-                .size = 32000 * @sizeOf(u16),
+                .size = 64000 * @sizeOf(u16),
             });
         }
 
@@ -232,7 +232,7 @@ var roty: f32 = 0.0;
 
 pub fn startFrame() void {
     // rotx += 0.1;
-    roty += 0.5;
+    // roty += 0.1;
 
     // reset debug text
     debugtext.canvas(sapp.widthf() * 0.5, sapp.heightf() * 0.5);

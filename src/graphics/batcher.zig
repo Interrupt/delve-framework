@@ -1,4 +1,5 @@
 
+const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
 const std = @import("std");
 
@@ -7,8 +8,11 @@ var batch_allocator = batch_gpa.allocator();
 
 const Vertex = graphics.Vertex;
 
-const max_indices = 32000;
+const max_indices = 64000;
 const max_vertices = max_indices;
+
+const min_indices = 32;
+const min_vertices = min_indices;
 
 pub const Batcher = struct {
     vertex_buffer: []Vertex,
@@ -21,8 +25,8 @@ pub const Batcher = struct {
         var batcher: Batcher = Batcher {
             .vertex_pos = 0,
             .index_pos = 0,
-            .vertex_buffer = try batch_allocator.alloc(Vertex, max_vertices),
-            .index_buffer = try batch_allocator.alloc(u16, max_indices),
+            .vertex_buffer = try batch_allocator.alloc(Vertex, min_vertices),
+            .index_buffer = try batch_allocator.alloc(u16, min_indices),
             .bindings = graphics.Bindings.init(true),
         };
 
@@ -35,6 +39,10 @@ pub const Batcher = struct {
 
     /// Add a rectangle to the batch
     pub fn addRectangle(self: *Batcher, x: f32, y: f32, z: f32, width: f32, height: f32) void {
+        self.growBuffersToFit(self.vertex_pos + 4, self.index_pos + 6) catch {
+            return;
+        };
+
         const verts = &[_]Vertex{
             .{ .x = x, .y = y + height, .z = z, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
             .{ .x = x + width, .y = y + height, .z = z, .color = 0xFFFFFFFF, .u = 6550, .v = 0 },
@@ -61,6 +69,10 @@ pub const Batcher = struct {
 
     /// Add a rectangle to the batch
     pub fn addTriangle(self: *Batcher, x: f32, y: f32, z: f32, width: f32, height: f32) void {
+        self.growBuffersToFit(self.vertex_pos + 3, self.index_pos + 3) catch {
+            return;
+        };
+
         const verts = &[_]Vertex{
             .{ .x = x + width / 2.0, .y = y + height, .z = z, .color = 0xFFFFFFFF, .u = 3275, .v = 0},
             .{ .x = x, .y = y, .z = z, .color = 0xFFFFFFFF, .u = 0, .v = 6550},
@@ -97,5 +109,27 @@ pub const Batcher = struct {
         // draw all shapes from vertex data
         // todo: support multiple bindings to change textures?
         graphics.draw(self.bindings);
+    }
+
+    fn growBuffersToFit(self: *Batcher, needed_vertices: usize, needed_indices: usize) !void {
+        if(needed_vertices > max_vertices or needed_indices > max_indices) {
+            debug.log("Can't grow buffer to fit!: verts:{d} idxs:{d}", .{needed_vertices, needed_indices});
+            return;
+        }
+
+        if(self.vertex_buffer.len < needed_vertices) {
+            // debug.log("Growing vertex buffer to {d}", .{self.vertex_buffer.len * 2});
+            self.vertex_buffer = batch_allocator.realloc(self.vertex_buffer, self.vertex_buffer.len * 2) catch {
+                debug.log("Could not allocate needed vertices! Needed {d}", .{needed_vertices});
+                return;
+            };
+        }
+        if(self.index_buffer.len < needed_indices) {
+            // debug.log("Growing index buffer to {d}", .{self.index_buffer.len * 2});
+            self.index_buffer = batch_allocator.realloc(self.index_buffer, self.index_buffer.len * 2) catch {
+                debug.log("Could not allocate needed indices! Needed {d}", .{needed_indices});
+                return;
+            };
+        }
     }
 };
