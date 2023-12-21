@@ -42,40 +42,32 @@ pub const Color = struct {
 //     bind: fn () void,
 // };
 
+pub const BindingConfig = struct {
+    updatable: bool = false,
+    vert_len: usize = 3200,
+    index_len: usize = 3200,
+};
+
 pub const Bindings = struct {
     length: usize,
     sokol_bindings: ?sg.Bindings,
 
-    pub fn init(updatable: bool) Bindings {
+    pub fn init(cfg: BindingConfig) Bindings {
         var bindings: Bindings = Bindings {
             .length = 0,
             .sokol_bindings = .{},
         };
 
-        // create a small debug checker-board texture
-        var img_desc: sg.ImageDesc = .{
-            .width = 4,
-            .height = 4,
-        };
-        img_desc.data.subimage[0][0] = sg.asRange(&[4 * 4]u32{
-            0xFFFFFFFF, 0xFFFF0000, 0xFFFFFFFF, 0xFF000000,
-            0xFF000000, 0xFFFFFFFF, 0xFF00FF00, 0xFFFFFFFF,
-            0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF0000FF,
-            0xFFFFFF00, 0xFFFFFF00, 0xFFFFFF00, 0xFFFFFFFF,
-        });
-        bindings.sokol_bindings.?.fs.images[shaders.SLOT_tex] = sg.makeImage(img_desc);
-        bindings.sokol_bindings.?.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
-
-        if(updatable) {
-            // If this is not static, make streamable buffers with a best guess of size
+        // Updatable buffers will need to be created ahead-of-time
+        if(cfg.updatable) {
             bindings.sokol_bindings.?.vertex_buffers[0] = sg.makeBuffer(.{
                 .usage = .STREAM,
-                .size = 64000 * @sizeOf(Vertex),
+                .size = cfg.vert_len * @sizeOf(Vertex),
             });
             bindings.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
                 .usage = .STREAM,
                 .type = .INDEXBUFFER,
-                .size = 64000 * @sizeOf(u16),
+                .size = cfg.index_len * @sizeOf(u16),
             });
         }
 
@@ -111,6 +103,17 @@ pub const Bindings = struct {
 
         sg.updateBuffer(self.sokol_bindings.?.vertex_buffers[0], sg.asRange(vertices[0..vert_len]));
         sg.updateBuffer(self.sokol_bindings.?.index_buffer, sg.asRange(indices[0..index_len]));
+    }
+
+    pub fn setImage(self: *Bindings, image_bytes: anytype, width: u32, height: u32) void {
+        var img_desc: sg.ImageDesc = .{
+            .width = @intCast(width),
+            .height = @intCast(height),
+            .pixel_format = .RGBA8,
+        };
+        img_desc.data.subimage[0][0] = sg.asRange(image_bytes);
+        self.sokol_bindings.?.fs.images[shaders.SLOT_tex] = sg.makeImage(img_desc);
+        self.sokol_bindings.?.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
     }
 
     pub fn destroy(self: *Bindings) void {

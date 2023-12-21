@@ -1,6 +1,7 @@
 
 const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
+const images = @import("../images.zig");
 const std = @import("std");
 
 var batch_gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -27,14 +28,27 @@ pub const Batcher = struct {
             .index_pos = 0,
             .vertex_buffer = try batch_allocator.alloc(Vertex, min_vertices),
             .index_buffer = try batch_allocator.alloc(u16, min_indices),
-            .bindings = graphics.Bindings.init(true),
+            .bindings = graphics.Bindings.init(.{.updatable = true, .index_len = 64000, .vert_len = 64000}),
         };
+
+        // create a small debug checker-board texture
+        const img = &[4 * 4]u32{
+            0xFFFFFFFF, 0xFFFF0000, 0xFF333333, 0xFF000000,
+            0xFF000000, 0xFFFFFFFF, 0xFF00FF00, 0xFFFFFFFF,
+            0xFFFFFFFF, 0xFF000000, 0xFF333333, 0xFF0000FF,
+            0xFFFFFF00, 0xFFFFFF00, 0xFFFFFF00, 0xFF333333,
+        };
+        batcher.bindings.setImage(img, 4, 4);
 
         return batcher;
     }
 
     pub fn deinit() void {
         // todo: dealloc here
+    }
+
+    pub fn setImage(self: *Batcher, image: *images.Image) void {
+        self.bindings.setImage(image.raw, image.width, image.height);
     }
 
     /// Add a rectangle to the batch
@@ -63,8 +77,6 @@ pub const Batcher = struct {
 
         self.vertex_pos += verts.len;
         self.index_pos += indices.len;
-
-        // todo: adjust buffer sizes automatically, starting small and growing by powers of two
     }
 
     /// Add a rectangle to the batch
@@ -92,8 +104,6 @@ pub const Batcher = struct {
 
         self.vertex_pos += verts.len;
         self.index_pos += indices.len;
-
-        // todo: adjust buffer sizes automatically, starting small and growing by powers of two
     }
 
     pub fn apply(self: *Batcher) void {
