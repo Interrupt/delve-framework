@@ -3,11 +3,10 @@ const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
 const images = @import("../images.zig");
 const std = @import("std");
+const Vertex = graphics.Vertex;
 
 var batch_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var batch_allocator = batch_gpa.allocator();
-
-const Vertex = graphics.Vertex;
 
 const max_indices = 64000;
 const max_vertices = max_indices;
@@ -22,6 +21,7 @@ pub const Batcher = struct {
     index_pos: usize,
     bindings: graphics.Bindings,
 
+    /// Setup and return a new Batcher
     pub fn init() !Batcher {
         var batcher: Batcher = Batcher {
             .vertex_pos = 0,
@@ -47,6 +47,7 @@ pub const Batcher = struct {
         // todo: dealloc here
     }
 
+    /// Sets the image that will be used when drawing the batch
     pub fn setImage(self: *Batcher, image: *images.Image) void {
         self.bindings.setImage(image.raw, image.width, image.height);
     }
@@ -79,7 +80,7 @@ pub const Batcher = struct {
         self.index_pos += indices.len;
     }
 
-    /// Add a rectangle to the batch
+    /// Add a triangle to the batch
     pub fn addTriangle(self: *Batcher, x: f32, y: f32, z: f32, width: f32, height: f32) void {
         self.growBuffersToFit(self.vertex_pos + 3, self.index_pos + 3) catch {
             return;
@@ -106,21 +107,25 @@ pub const Batcher = struct {
         self.index_pos += indices.len;
     }
 
+    /// Updates our bindings for this frame with the current data
     pub fn apply(self: *Batcher) void {
         self.bindings.update(self.vertex_buffer, self.index_buffer, self.vertex_pos, self.index_pos);
     }
 
+    /// Resets the batch to empty, without clearing memory
     pub fn reset(self: *Batcher) void {
         self.vertex_pos = 0;
         self.index_pos = 0;
     }
 
+    /// Submit a draw call for this batch
     pub fn draw(self: *Batcher) void {
         // draw all shapes from vertex data
         // todo: support multiple bindings to change textures?
         graphics.draw(self.bindings);
     }
 
+    /// Expand the buffers for this batch if needed to fit the new size
     fn growBuffersToFit(self: *Batcher, needed_vertices: usize, needed_indices: usize) !void {
         if(needed_vertices > max_vertices or needed_indices > max_indices) {
             debug.log("Can't grow buffer to fit!: verts:{d} idxs:{d}", .{needed_vertices, needed_indices});
