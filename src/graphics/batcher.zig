@@ -14,6 +14,23 @@ const max_vertices = max_indices;
 const min_indices = 32;
 const min_vertices = min_indices;
 
+/// Keeps track of a sub region of a texture
+pub const TextureRegion = struct {
+    u: f32 = 0,
+    v: f32 = 0,
+    u_2: f32 = 1.0,
+    v_2: f32 = 1.0,
+
+    pub fn convert(in: f32) i16 {
+        return @intFromFloat(6550.0 * in);
+    }
+
+    pub fn default() TextureRegion {
+        return .{.u = 0.0, .v = 0.0, .u_2 = 1.0, .v_2 = 1.0};
+    }
+};
+
+/// Handles drawing a batch of primitive shapes
 pub const Batcher = struct {
     vertex_buffer: []Vertex,
     index_buffer: []u16,
@@ -53,16 +70,21 @@ pub const Batcher = struct {
     }
 
     /// Add a rectangle to the batch
-    pub fn addRectangle(self: *Batcher, x: f32, y: f32, z: f32, width: f32, height: f32) void {
+    pub fn addRectangle(self: *Batcher, x: f32, y: f32, z: f32, width: f32, height: f32, region: TextureRegion) void {
         self.growBuffersToFit(self.vertex_pos + 4, self.index_pos + 6) catch {
             return;
         };
 
+        const u = TextureRegion.convert(region.u);
+        const v = TextureRegion.convert(region.v);
+        const u_2 = TextureRegion.convert(region.u_2);
+        const v_2 = TextureRegion.convert(region.v_2);
+
         const verts = &[_]Vertex{
-            .{ .x = x, .y = y + height, .z = z, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
-            .{ .x = x + width, .y = y + height, .z = z, .color = 0xFFFFFFFF, .u = 6550, .v = 0 },
-            .{ .x = x + width, .y = y, .z = z, .color = 0xFFFFFFFF, .u = 6550, .v = 6550},
-            .{ .x = x, .y = y, .z = z, .color = 0xFFFFFFFF, .u = 0, .v = 6550},
+            .{ .x = x, .y = y + height, .z = z, .color = 0xFFFFFFFF, .u = u, .v = v },
+            .{ .x = x + width, .y = y + height, .z = z, .color = 0xFFFFFFFF, .u = u_2, .v = v },
+            .{ .x = x + width, .y = y, .z = z, .color = 0xFFFFFFFF, .u = u_2, .v = v_2},
+            .{ .x = x, .y = y, .z = z, .color = 0xFFFFFFFF, .u = u, .v = v_2},
         };
 
         const indices = &[_]u16{ 0, 1, 2, 0, 2, 3 };
@@ -81,15 +103,21 @@ pub const Batcher = struct {
     }
 
     /// Add a triangle to the batch
-    pub fn addTriangle(self: *Batcher, x: f32, y: f32, z: f32, width: f32, height: f32) void {
+    pub fn addTriangle(self: *Batcher, x: f32, y: f32, z: f32, width: f32, height: f32, region: TextureRegion) void {
         self.growBuffersToFit(self.vertex_pos + 3, self.index_pos + 3) catch {
             return;
         };
 
+        const u = TextureRegion.convert(region.u);
+        const v = TextureRegion.convert(region.v);
+        const u_2 = TextureRegion.convert(region.u_2);
+        const v_2 = TextureRegion.convert(region.v_2);
+        const u_mid = @divTrunc((u_2 - u), 2);
+
         const verts = &[_]Vertex{
-            .{ .x = x + width / 2.0, .y = y + height, .z = z, .color = 0xFFFFFFFF, .u = 3275, .v = 0},
-            .{ .x = x, .y = y, .z = z, .color = 0xFFFFFFFF, .u = 0, .v = 6550},
-            .{ .x = x + width, .y = y, .z = z, .color = 0xFFFFFFFF, .u = 6550, .v = 6550},
+            .{ .x = x + width / 2.0, .y = y + height, .z = z, .color = 0xFFFFFFFF, .u = u_mid, .v = v},
+            .{ .x = x, .y = y, .z = z, .color = 0xFFFFFFFF, .u = u, .v = v_2},
+            .{ .x = x + width, .y = y, .z = z, .color = 0xFFFFFFFF, .u = u_2, .v = v_2},
         };
 
         const indices = &[_]u16{ 0, 1, 2 };

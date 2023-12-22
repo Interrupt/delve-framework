@@ -252,7 +252,7 @@ pub fn startFrame() void {
 
     sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
 
-    sg.draw(0, 3, 1);
+    // sg.draw(0, 3, 1);
 }
 
 pub fn endFrame() void {
