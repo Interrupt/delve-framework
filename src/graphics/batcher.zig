@@ -37,6 +37,7 @@ pub const Batcher = struct {
     vertex_pos: usize,
     index_pos: usize,
     bindings: graphics.Bindings,
+    shader: graphics.Shader,
 
     /// Setup and return a new Batcher
     pub fn init() !Batcher {
@@ -46,6 +47,7 @@ pub const Batcher = struct {
             .vertex_buffer = try batch_allocator.alloc(Vertex, min_vertices),
             .index_buffer = try batch_allocator.alloc(u16, min_indices),
             .bindings = graphics.Bindings.init(.{.updatable = true, .index_len = 64000, .vert_len = 64000}),
+            .shader = graphics.Shader.init(.{ }),
         };
 
         // create a small debug checker-board texture
@@ -149,8 +151,8 @@ pub const Batcher = struct {
     /// Submit a draw call for this batch
     pub fn draw(self: *Batcher) void {
         // draw all shapes from vertex data
-        // todo: support multiple bindings to change textures?
-        graphics.draw(self.bindings);
+        // todo: support multiple bindings to change textures / shader?
+        graphics.draw(&self.bindings, &self.shader);
     }
 
     /// Expand the buffers for this batch if needed to fit the new size

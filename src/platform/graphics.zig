@@ -121,6 +121,37 @@ pub const Bindings = struct {
     }
 };
 
+pub const ShaderConfig = struct {
+    // TODO: Put depth, index type, attributes, etc, here
+};
+
+pub const Shader = struct {
+    sokol_pipeline: ?sg.Pipeline,
+
+    pub fn init(cfg: ShaderConfig) Shader {
+        _ = cfg;
+
+        // Just use the default shader for now. Maybe use an enum to switch between builtin shaders?
+        const shader = sg.makeShader(shaders.texcubeShaderDesc(sg.queryBackend()));
+
+        var pipe_desc: sg.PipelineDesc = .{
+            .index_type = .UINT16,
+            .shader = shader,
+            .depth = .{
+                .compare = .LESS_EQUAL,
+                .write_enabled = true,
+            }
+        };
+
+        // todo: get these from the ShaderConfig, use intermediate enums
+        pipe_desc.layout.attrs[shaders.ATTR_vs_pos].format = .FLOAT3;
+        pipe_desc.layout.attrs[shaders.ATTR_vs_color0].format = .UBYTE4N;
+        pipe_desc.layout.attrs[shaders.ATTR_vs_texcoord0].format = .SHORT2N;
+
+        return Shader { .sokol_pipeline = sg.makePipeline(pipe_desc) };
+    }
+};
+
 const state = struct {
     var debug_draw_bindings: sg.Bindings = .{};
     var debug_draw_pipeline: sg.Pipeline = .{};
@@ -441,15 +472,23 @@ pub fn getDisplayDPIScale() f32 {
     return sapp.dpiScale();
 }
 
-pub fn draw(bindings: Bindings) void {
-    if(bindings.sokol_bindings == null)
+pub fn drawSubset(start: u32, end: u32, bindings: *Bindings, shader: *Shader) void {
+    if(bindings.sokol_bindings == null or shader.sokol_pipeline == null)
         return;
 
+    // todo: make a graphics.setView function to update the view
     state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.5 }, vec3.zero(), vec3.up());
     const vs_params = computeVsParams(rotx, roty);
 
-    sg.applyPipeline(state.debug_draw_pipeline);
+    // todo: only apply pipeline / bindings if they actually changed
+    sg.applyPipeline(shader.sokol_pipeline.?);
     sg.applyBindings(bindings.sokol_bindings.?);
     sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
-    sg.draw(0, @intCast(bindings.length), 1);
+
+    sg.draw(start, end, 1);
+}
+
+pub fn draw(bindings: *Bindings, shader: *Shader) void {
+    // Draw the whole buffer
+    drawSubset(0, @intCast(bindings.length), bindings, shader);
 }
