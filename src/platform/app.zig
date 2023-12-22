@@ -18,7 +18,6 @@ var app_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var app_allocator = app_gpa.allocator();
 
 // Test some stuff
-var test_mesh: gfx_3d.Mesh = undefined;
 var test_batch: batcher.Batcher = undefined;
 
 pub fn init() !void {
@@ -60,28 +59,6 @@ export fn sokol_init() void {
         showErrorScreen("Fatal error during batch init!");
         return;
     };
-
-    // for(0 .. 5000) |i| {
-    //     const f_i = @as(f32, @floatFromInt(i));
-    //     if(@mod(i, 2) != 0) {
-    //         test_batch.addRectangle(0, f_i * 0.1, f_i * 0.25, 0.25 + 0.25 * f_i , 0.5);
-    //     } else {
-    //         test_batch.addTriangle(0, f_i * 0.1, f_i * 0.25, 0.25 + 0.25 * f_i , 0.5);
-    //     }
-    // }
-    // test_batch.apply();
-
-    // var verts: []gfx.Vertex = &[_]gfx.Vertex{
-    //     .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
-    //     .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 6550, .v = 0 },
-    //     .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 6550, .v = 6550},
-    //     .{ .x = 0.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 6550},
-    // };
-    // // rectangler indices
-    // var indices: []u16 = &[_]u16{ 0, 1, 2, 0, 2, 3 };
-    //
-    // test_mesh = gfx_3d.createMesh(&verts, &indices);
-
 }
 
 export fn sokol_cleanup() void {
@@ -103,6 +80,7 @@ export fn sokol_frame() void {
         showErrorScreen("Fatal error!");
     };
 
+    // Exercise the batcher. Move this to Lua!
     test_batch.reset();
     for(0 .. 10000) |i| {
         const f_i = @as(f32, @floatFromInt(i));
@@ -184,17 +162,7 @@ pub fn showErrorScreen(error_header: [:0]const u8) void {
     };
     defer app_allocator.free(written);
 
-    // Reset to an error palette!
-    // palette.raw[0] = 0x22;
-    // palette.raw[1] = 0x00;
-    // palette.raw[2] = 0x00;
-    // palette.raw[3] = 0xFF;
-    //
-    // palette.raw[4] = 0x99;
-    // palette.raw[5] = 0x00;
-    // palette.raw[6] = 0x00;
-    // palette.raw[7] = 0xFF;
-
+    // run the new lua statement
     std.debug.print("Showing error screen: {s}\n", .{error_header});
     lua.runLine(written) catch {
         std.debug.print("Error running lua to show error screen?\n", .{});
