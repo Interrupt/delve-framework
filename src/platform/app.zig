@@ -110,9 +110,9 @@ export fn sokol_frame() void {
         const y_pos = std.math.cos(@as(f32, @floatFromInt(tick * i)) * 0.0001) * (0.5 + (f_i * 0.05));
 
         if(@mod(i, 2) != 0) {
-            test_batch.addRectangle(x_pos, y_pos, f_i * -0.1, 0.5, 0.5, batcher.TextureRegion.default());
+            test_batch.addRectangle(x_pos, y_pos, f_i * -0.1, 0.5, 0.5, batcher.TextureRegion.default(), 0xFFFFFFFF);
         } else {
-            test_batch.addTriangle(-x_pos, y_pos, f_i * -0.1, 0.5, 0.5, batcher.TextureRegion.default());
+            test_batch.addTriangle(-x_pos, y_pos, f_i * -0.1, 0.5, 0.5, batcher.TextureRegion.default(), 0xFFFFFFFF);
         }
     }
     test_batch.apply();

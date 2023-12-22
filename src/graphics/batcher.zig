@@ -72,7 +72,7 @@ pub const Batcher = struct {
     }
 
     /// Add a rectangle to the batch
-    pub fn addRectangle(self: *Batcher, x: f32, y: f32, z: f32, width: f32, height: f32, region: TextureRegion) void {
+    pub fn addRectangle(self: *Batcher, x: f32, y: f32, z: f32, width: f32, height: f32, region: TextureRegion, color: u32) void {
         self.growBuffersToFit(self.vertex_pos + 4, self.index_pos + 6) catch {
             return;
         };
@@ -83,10 +83,10 @@ pub const Batcher = struct {
         const v_2 = TextureRegion.convert(region.v_2);
 
         const verts = &[_]Vertex{
-            .{ .x = x, .y = y + height, .z = z, .color = 0xFFFFFFFF, .u = u, .v = v },
-            .{ .x = x + width, .y = y + height, .z = z, .color = 0xFFFFFFFF, .u = u_2, .v = v },
-            .{ .x = x + width, .y = y, .z = z, .color = 0xFFFFFFFF, .u = u_2, .v = v_2},
-            .{ .x = x, .y = y, .z = z, .color = 0xFFFFFFFF, .u = u, .v = v_2},
+            .{ .x = x, .y = y + height, .z = z, .color = color, .u = u, .v = v },
+            .{ .x = x + width, .y = y + height, .z = z, .color = color, .u = u_2, .v = v },
+            .{ .x = x + width, .y = y, .z = z, .color = color, .u = u_2, .v = v_2},
+            .{ .x = x, .y = y, .z = z, .color = color, .u = u, .v = v_2},
         };
 
         const indices = &[_]u16{ 0, 1, 2, 0, 2, 3 };
@@ -105,7 +105,7 @@ pub const Batcher = struct {
     }
 
     /// Add a triangle to the batch
-    pub fn addTriangle(self: *Batcher, x: f32, y: f32, z: f32, width: f32, height: f32, region: TextureRegion) void {
+    pub fn addTriangle(self: *Batcher, x: f32, y: f32, z: f32, width: f32, height: f32, region: TextureRegion, color: u32) void {
         self.growBuffersToFit(self.vertex_pos + 3, self.index_pos + 3) catch {
             return;
         };
@@ -117,9 +117,9 @@ pub const Batcher = struct {
         const u_mid = @divTrunc((u_2 - u), 2);
 
         const verts = &[_]Vertex{
-            .{ .x = x + width / 2.0, .y = y + height, .z = z, .color = 0xFFFFFFFF, .u = u_mid, .v = v},
-            .{ .x = x, .y = y, .z = z, .color = 0xFFFFFFFF, .u = u, .v = v_2},
-            .{ .x = x + width, .y = y, .z = z, .color = 0xFFFFFFFF, .u = u_2, .v = v_2},
+            .{ .x = x + width / 2.0, .y = y + height, .z = z, .color = color, .u = u_mid, .v = v},
+            .{ .x = x, .y = y, .z = z, .color = color, .u = u, .v = v_2},
+            .{ .x = x + width, .y = y, .z = z, .color = color, .u = u_2, .v = v_2},
         };
 
         const indices = &[_]u16{ 0, 1, 2 };
