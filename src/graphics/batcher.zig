@@ -30,24 +30,36 @@ pub const TextureRegion = struct {
     }
 };
 
+/// Info on a single drawcall in the buffer
+const DrawCall = struct {
+    start: usize,
+    end: usize,
+    texture: *graphics.Texture,
+    shader: *graphics.Shader,
+};
+
 /// Handles drawing a batch of primitive shapes
 pub const Batcher = struct {
     vertex_buffer: []Vertex,
     index_buffer: []u16,
     vertex_pos: usize,
     index_pos: usize,
+    num_draw_calls: usize,
     bindings: graphics.Bindings,
     shader: graphics.Shader,
+    draw_calls: []DrawCall = undefined,
 
     /// Setup and return a new Batcher
     pub fn init() !Batcher {
         var batcher: Batcher = Batcher {
             .vertex_pos = 0,
             .index_pos = 0,
+            .num_draw_calls = 0,
             .vertex_buffer = try batch_allocator.alloc(Vertex, min_vertices),
             .index_buffer = try batch_allocator.alloc(u16, min_indices),
             .bindings = graphics.Bindings.init(.{.updatable = true, .index_len = 64000, .vert_len = 64000}),
             .shader = graphics.Shader.init(.{ }),
+            .draw_calls = try batch_allocator.alloc(DrawCall, 64),
         };
 
         // create a small debug checker-board texture
@@ -57,7 +69,8 @@ pub const Batcher = struct {
             0xFFFFFFFF, 0xFF000000, 0xFF333333, 0xFF0000FF,
             0xFFFFFF00, 0xFFFFFF00, 0xFFFFFF00, 0xFF333333,
         };
-        batcher.bindings.setImage(img, 4, 4);
+        const texture = graphics.Texture.initFromBytes(4, 4, img);
+        batcher.setTexture(texture);
 
         return batcher;
     }
@@ -66,9 +79,15 @@ pub const Batcher = struct {
         // todo: dealloc here
     }
 
-    /// Sets the image that will be used when drawing the batch
-    pub fn setImage(self: *Batcher, image: *images.Image) void {
-        self.bindings.setImage(image.raw, image.width, image.height);
+    /// Sets the texture from an Image that will be used when drawing the batch
+    pub fn setTextureFromImage(self: *Batcher, image: *images.Image) void {
+        const texture = graphics.Texture.init(image);
+        self.bindings.setTexture(texture);
+    }
+
+    /// Sets the texture that will be used when drawing the batch
+    pub fn setTexture(self: *Batcher, texture: graphics.Texture) void {
+        self.bindings.setTexture(texture);
     }
 
     /// Add a rectangle to the batch
@@ -146,13 +165,23 @@ pub const Batcher = struct {
     pub fn reset(self: *Batcher) void {
         self.vertex_pos = 0;
         self.index_pos = 0;
+        self.num_draw_calls = 0;
     }
 
     /// Submit a draw call for this batch
     pub fn draw(self: *Batcher) void {
         // draw all shapes from vertex data
         // todo: support multiple bindings to change textures / shader?
-        graphics.draw(&self.bindings, &self.shader);
+        if(self.num_draw_calls == 0) {
+            graphics.draw(&self.bindings, &self.shader);
+            return;
+        }
+
+        // for(0..self.num_draw_calls) |i| {
+        //     self.bindings.setTexture(texture);
+        //     // todo: split up draw call here!
+        //     graphics.drawSubset(start, end, &self.bindings, &self.shader);
+        // }
     }
 
     /// Expand the buffers for this batch if needed to fit the new size

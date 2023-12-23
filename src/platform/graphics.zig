@@ -105,14 +105,11 @@ pub const Bindings = struct {
         sg.updateBuffer(self.sokol_bindings.?.index_buffer, sg.asRange(indices[0..index_len]));
     }
 
-    pub fn setImage(self: *Bindings, image_bytes: anytype, width: u32, height: u32) void {
-        var img_desc: sg.ImageDesc = .{
-            .width = @intCast(width),
-            .height = @intCast(height),
-            .pixel_format = .RGBA8,
-        };
-        img_desc.data.subimage[0][0] = sg.asRange(image_bytes);
-        self.sokol_bindings.?.fs.images[shaders.SLOT_tex] = sg.makeImage(img_desc);
+    pub fn setTexture(self: *Bindings, texture: Texture) void {
+        if(texture.sokol_image == null)
+            return;
+
+        self.sokol_bindings.?.fs.images[shaders.SLOT_tex] = texture.sokol_image.?;
         self.sokol_bindings.?.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
     }
 
@@ -149,6 +146,44 @@ pub const Shader = struct {
         pipe_desc.layout.attrs[shaders.ATTR_vs_texcoord0].format = .SHORT2N;
 
         return Shader { .sokol_pipeline = sg.makePipeline(pipe_desc) };
+    }
+};
+
+pub const Texture = struct {
+    width: u32,
+    height: u32,
+    sokol_image: ?sg.Image,
+
+    pub fn init(image: *images.Image) Texture {
+        var img_desc: sg.ImageDesc = .{
+            .width = image.width,
+            .height = image.height,
+            .pixel_format = .RGBA8,
+        };
+
+        img_desc.data.subimage[0][0] = sg.asRange(image.raw);
+
+        return Texture {
+            .width = image.width,
+            .height = image.height,
+            .sokol_image = sg.makeImage(img_desc),
+        };
+    }
+
+    pub fn initFromBytes(width: u32, height: u32, image_bytes: anytype) Texture {
+        var img_desc: sg.ImageDesc = .{
+            .width = @intCast(width),
+            .height = @intCast(height),
+            .pixel_format = .RGBA8,
+        };
+
+        img_desc.data.subimage[0][0] = sg.asRange(image_bytes);
+
+        return Texture {
+            .width = width,
+            .height = height,
+            .sokol_image = sg.makeImage(img_desc),
+        };
     }
 };
 
