@@ -190,10 +190,6 @@ pub const Texture = struct {
 const state = struct {
     var debug_draw_bindings: sg.Bindings = .{};
     var debug_draw_pipeline: sg.Pipeline = .{};
-
-    var bindings: sg.Bindings = .{};
-    var pipeline: sg.Pipeline = .{};
-
     var view: mat4 = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, vec3.zero(), vec3.up());
 };
 
@@ -214,15 +210,6 @@ pub fn init() !void {
         .clear_value = .{ .r = 0.15, .g = 0.15, .b = 0.15, .a = 1 },
     };
 
-    // create vertex buffer with triangle vertices
-    state.bindings.vertex_buffers[0] = sg.makeBuffer(.{
-        .data = sg.asRange(&[_]Vertex{
-            .{ .x = 0.0, .y = 0.5, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
-            .{ .x = 0.5, .y = -0.5, .z = 0.0, .color = 0xFFFFFFFF, .u = 32767, .v = 0 },
-            .{ .x = -0.5, .y = -0.5, .z = 0.0, .color = 0xFF111111, .u = 32767, .v = 32767 },
-        }),
-    });
-
     // create vertex buffer with debug quad vertices
     state.debug_draw_bindings.vertex_buffers[0] = sg.makeBuffer(.{
         .data = sg.asRange(&[_]Vertex{
@@ -239,21 +226,7 @@ pub fn init() !void {
         .data = sg.asRange(&[_]u16{ 0, 1, 2, 0, 2, 3 }),
     });
 
-    // create a small debug checker-board texture
-    var img_desc: sg.ImageDesc = .{
-        .width = 4,
-        .height = 4,
-    };
-    img_desc.data.subimage[0][0] = sg.asRange(&[4 * 4]u32{
-        0xFFFFFFFF, 0xFFFF0000, 0xFFFFFFFF, 0xFF000000,
-        0xFF000000, 0xFFFFFFFF, 0xFF00FF00, 0xFFFFFFFF,
-        0xFFFFFFFF, 0xFF000000, 0xFFFFFFFF, 0xFF0000FF,
-        0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
-    });
-    state.bindings.fs.images[shaders.SLOT_tex] = sg.makeImage(img_desc);
-
     // Load a debug texture for testing
-    // var test_image = try images.loadFile("assets/font.gif");
     var test_image = try images.loadBytes(test_asset);
     var test_img_desc: sg.ImageDesc = .{
         .width = @intCast(test_image.width),
@@ -265,10 +238,9 @@ pub fn init() !void {
     state.debug_draw_bindings.fs.images[shaders.SLOT_tex] = sg.makeImage(test_img_desc);
 
     // ...and a sampler object with default attributes
-    state.bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
     state.debug_draw_bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
 
-    // create a shader and pipeline object
+    // create a debug shader and pipeline object
     const shader = sg.makeShader(shaders.texcubeShaderDesc(sg.queryBackend()));
     var pipe_desc: sg.PipelineDesc = .{
         .shader = shader,
@@ -280,16 +252,11 @@ pub fn init() !void {
     pipe_desc.layout.attrs[shaders.ATTR_vs_pos].format = .FLOAT3;
     pipe_desc.layout.attrs[shaders.ATTR_vs_color0].format = .UBYTE4N;
     pipe_desc.layout.attrs[shaders.ATTR_vs_texcoord0].format = .SHORT2N;
-    state.pipeline = sg.makePipeline(pipe_desc);
 
     pipe_desc.index_type = .UINT16;
-    // pipe_desc.depth= .{};
     state.debug_draw_pipeline = sg.makePipeline(pipe_desc);
 
     debug.log("Graphics subsystem started successfully", .{});
-
-    // var testme: Bindings = CreateBindings();
-    // testme.bind();
 }
 
 pub fn deinit() void {
@@ -309,16 +276,8 @@ pub fn startFrame() void {
 
     // setup view state
     state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, vec3.zero(), vec3.up());
-    const vs_params = computeVsParams(rotx, roty);
 
     sg.beginDefaultPass(default_pass_action, sapp.width(), sapp.height());
-
-    sg.applyPipeline(state.pipeline);
-    sg.applyBindings(state.bindings);
-
-    sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
-
-    // sg.draw(0, 3, 1);
 }
 
 pub fn endFrame() void {
@@ -336,7 +295,6 @@ pub fn endFrame() void {
     // draw the console text over other text
     debug.drawConsoleBackground();
     debugtext.drawLayer(1);
-
 
     sg.endPass();
     sg.commit();
@@ -357,6 +315,9 @@ pub fn line(start: Vector2, end: Vector2, color: Color) void {
     state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, vec3.zero(), vec3.up());
     state.view = mat4.mul(state.view, mat4.translate(translateVec3));
     const vs_params = computeVsParams(start.x, start.y);
+
+    sg.applyPipeline(state.debug_draw_pipeline);
+    sg.applyBindings(state.debug_draw_bindings);
 
     sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
     sg.draw(0, 3, 1);
