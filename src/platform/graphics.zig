@@ -473,7 +473,6 @@ pub fn drawSubset(start: u32, end: u32, bindings: *Bindings, shader: *Shader) vo
         return;
 
     // todo: make a graphics.setView function to update the view
-    state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.5 }, vec3.zero(), vec3.up());
     const vs_params = computeVsParams(rotx, roty);
 
     // todo: only apply pipeline / bindings if they actually changed
