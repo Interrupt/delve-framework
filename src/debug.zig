@@ -280,3 +280,41 @@ pub fn runPendingCommand() void {
     lua.runLine(final_command) catch {};
     trackCommand(final_command);
 }
+
+pub fn showErrorScreen(error_header: [:0]const u8) void {
+    // Simple lua function to make the draw function draw an error screen
+    const error_screen_lua =
+        \\ _draw = function()
+        \\ require('draw').clear(1)
+        \\ require('text').draw("{s}", 8, 8, 0)
+        \\ require('text').draw_wrapped([[{s}]], 8, 24, 264, 0)
+        \\ end
+        \\
+        \\ _update = function() end
+    ;
+
+    // Assume that the last log line is what exploded!
+    const log_history = getLogHistory();
+    var error_desc: [:0]const u8 = undefined;
+    if (log_history.last()) |last_log| {
+        error_desc = last_log.data;
+    } else {
+        error_desc = "Something bad happened!";
+    }
+
+    // Only use until the first newline
+    var error_desc_splits = std.mem.split(u8, error_desc, "\n");
+    var first_split = error_desc_splits.first();
+
+    const written = std.fmt.allocPrintZ(allocator, error_screen_lua, .{ error_header, first_split }) catch {
+        std.debug.print("Error allocating to show error screen?\n", .{});
+        return;
+    };
+    defer allocator.free(written);
+
+    // run the new lua statement
+    std.debug.print("Showing error screen: {s}\n", .{error_header});
+    lua.runLine(written) catch {
+        std.debug.print("Error running lua to show error screen?\n", .{});
+    };
+}
