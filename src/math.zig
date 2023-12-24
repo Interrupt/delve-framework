@@ -24,6 +24,35 @@ pub const Vec2 = extern struct {
     pub fn new(x: f32, y: f32) Vec2 {
         return Vec2{ .x = x, .y = y };
     }
+
+    pub fn len(v: Vec2) f32 {
+        return math.sqrt(Vec2.dot(v, v));
+    }
+
+    pub fn add(left: Vec2, right: Vec2) Vec2 {
+        return Vec2{ .x = left.x + right.x, .y = left.y + right.y };
+    }
+
+    pub fn sub(left: Vec2, right: Vec2) Vec2 {
+        return Vec3{ .x = left.x - right.x, .y = left.y - right.y };
+    }
+
+    pub fn mul(v: Vec2, s: f32) Vec2 {
+        return Vec2{ .x = v.x * s, .y = v.y * s };
+    }
+
+    pub fn norm(v: Vec2) Vec2 {
+        const l = Vec2.len(v);
+        if (l != 0.0) {
+            return Vec2{ .x = v.x / l, .y = v.y / l };
+        } else {
+            return Vec2.zero();
+        }
+    }
+
+    pub fn dot(v0: Vec2, v1: Vec2) f32 {
+        return v0.x * v1.x + v0.y * v1.y;
+    }
 };
 
 pub const Vec3 = extern struct {
@@ -206,6 +235,29 @@ test "Vec3.zero" {
 test "Vec3.new" {
     const v = Vec3.new(1.0, 2.0, 3.0);
     assert(v.x == 1.0 and v.y == 2.0 and v.z == 3.0);
+}
+
+test "Vec2.zero" {
+    const v = Vec2.zero();
+    assert(v.x == 0.0 and v.y == 0.0);
+}
+
+test "Vec2.new" {
+    const v = Vec2.new(1.0, 2.0);
+    assert(v.x == 1.0 and v.y == 2.0);
+}
+
+test "Vec2.len" {
+    const v = Vec2.len(Vec2.new(2.0, 0.0));
+    assert(v == 2.0);
+
+    const v2 = Vec2.len(Vec2.new(0.0, 1.0));
+    assert(v2 == 1.0);
+}
+
+test "Vec2.norm" {
+    const v = Vec2.norm(Vec2.new(2.0, 0.0));
+    assert(v.x == 1.0 and v.y == 0.0);
 }
 
 test "Mat4.ident" {
