@@ -2,6 +2,8 @@
 
 Delve is framework for building games written in Zig using Lua for scripting.
 
+<img width="1072" alt="Screen Shot 2023-12-23 at 8 38 28 PM" src="https://github.com/Interrupt/delve-framework/assets/1374/63bc9219-45c8-40d0-9adc-6ec27e1ab43a">
+
 ## Design Philosphy
 
 Delve uses Zig to make writing cross platform games easy, and because it is easy to interop with the vast library of existing C/C++ game development libraries.
@@ -20,6 +22,8 @@ The scripting manager can generate bindings for Lua automatically by reflecting 
 // Find all public functions in `api/graphics.zig` and make them available to Lua under the module name `graphics`
 bindZigLibrary("graphics", @import("api/graphics.zig"));
 ```
+
+Delve will use the `assets/main.lua` Lua file for scripting unless given a new path on the command line during startup.
 
 ## Modules
 
