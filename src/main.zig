@@ -56,7 +56,7 @@ pub fn main() !void {
 
     // Test some example modules
     try @import("examples/debugdraw.zig").registerModule();
-    // try @import("examples/batcher.zig").registerModule();
+    try @import("examples/batcher.zig").registerModule();
 
     // Kick off the game loop!
     app_backend.startMainLoop();
