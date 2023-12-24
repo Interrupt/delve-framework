@@ -1,19 +1,25 @@
 const debug = @import("../debug.zig");
+const images = @import("../images.zig");
+
 const sokol = @import("sokol");
 const slog = sokol.log;
 const sg = sokol.gfx;
 const sapp = sokol.app;
 const sgapp = sokol.app_gfx_glue;
+const debugtext = sokol.debugtext;
 
 const shaders = @import("../graphics/shaders/texcube.glsl.zig");
-
-const images = @import("../images.zig");
 
 const Vec2 = @import("../math.zig").Vec2;
 const Vec3 = @import("../math.zig").Vec3;
 const Mat4 = @import("../math.zig").Mat4;
 
-const debugtext = sokol.debugtext;
+pub var tex_white: Texture = undefined;
+pub var tex_black: Texture = undefined;
+pub var tex_grey: Texture = undefined;
+pub var tex_red: Texture = undefined;
+pub var tex_blue: Texture = undefined;
+pub var tex_green: Texture = undefined;
 
 // TODO: Where should the math library stuff live?
 // Foster puts everything in places like /Spatial or /Graphics
@@ -216,16 +222,15 @@ pub fn init() !void {
         .data = sg.asRange(&[_]u16{ 0, 1, 2, 0, 2, 3 }),
     });
 
-    // Create a small debug checker-board texture for debug drawing
-    const img = &[4 * 4]u32{
-        0xFFFFFFFF, 0xFFFF0000, 0xFF333333, 0xFF000000,
-        0xFF000000, 0xFFFFFFFF, 0xFF00FF00, 0xFFFFFFFF,
-        0xFFFFFFFF, 0xFF000000, 0xFF333333, 0xFF0000FF,
-        0xFFFFFF00, 0xFFFFFF00, 0xFFFFFF00, 0xFF333333,
-    };
+    // setup some debug textures
+    tex_white = createSolidTexture(0xFFFFFFFF);
+    tex_black = createSolidTexture(0xFF000000);
+    tex_grey = createSolidTexture(0xFF333333);
+    tex_red = createSolidTexture(0xFF0000FF);
+    tex_blue = createSolidTexture(0xFF00FF00);
+    tex_green = createSolidTexture(0xFFFF0000);
 
-    const debug_texture = Texture.initFromBytes(4, 4, img);
-    setDebugDrawTexture(debug_texture);
+    setDebugDrawTexture(tex_white);
 
     // Create a default sampler for the debug draw bindings
     state.debug_draw_bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
@@ -437,6 +442,7 @@ pub fn setDebugDrawTexture(texture: Texture) void {
     state.debug_draw_bindings.fs.images[shaders.SLOT_tex] = texture.sokol_image.?;
 }
 
+// todo: add color to this and to the shader
 pub fn drawDebugRectangle(x: f32, y: f32, width: f32, height: f32) void {
     // setup view state
     const translateVec3: Vec3 = Vec3{.x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = 0.0};
@@ -484,4 +490,12 @@ pub fn drawSubset(start: u32, end: u32, bindings: *Bindings, shader: *Shader) vo
 pub fn draw(bindings: *Bindings, shader: *Shader) void {
     // Draw the whole buffer
     drawSubset(0, @intCast(bindings.length), bindings, shader);
+}
+
+fn createSolidTexture(color: u32) Texture {
+    const img = &[2 * 2]u32{
+        color, color,
+        color, color,
+    };
+    return Texture.initFromBytes(2, 2, img);
 }

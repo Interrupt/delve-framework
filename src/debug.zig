@@ -25,6 +25,8 @@ var cmd_history_last_direction: i32 = 0;
 
 var pending_cmd: std.ArrayList(u8) = undefined;
 
+var last_text_height: i32 = 0;
+
 /// A Linked List that can manage its own memory
 const LogList = struct {
     items: StringLinkedList = StringLinkedList{},
@@ -177,7 +179,8 @@ pub fn drawConsole(draw_bg: bool) void {
     const padding = 2;
 
     const white_pal_idx = 7;
-    const height_pixels: i32 = @intCast(((console_num_to_show + 1) * 8) + padding);
+    const height_pixels: i32 = @intCast(((console_num_to_show + 1) * 9) + padding);
+    last_text_height = height_pixels;
 
     var res_w: i32 = gfx.getDisplayWidth();
     var res_h: i32 = gfx.getDisplayHeight();
@@ -201,6 +204,9 @@ pub fn drawConsole(draw_bg: bool) void {
     pending_cmd_idx += 1;
     text_module.drawGlyph(221, padding + pending_cmd_idx * 8, y_draw_pos, white_pal_idx);
 
+    // add some extra padding between the pending text and the history
+    y_draw_pos -= 1;
+
     var cur = log_history_list.last();
     while (cur) |node| : (cur = node.prev) {
         // Stop drawing if off the screen!
@@ -210,7 +216,7 @@ pub fn drawConsole(draw_bg: bool) void {
         const line = node.data;
         const text_height = text_module.getTextHeight(line, res_w);
         text_module.draw_wrapped(line, padding, y_draw_pos - text_height, res_w, white_pal_idx);
-        y_draw_pos -= text_height;
+        y_draw_pos -= text_height + 1;
     }
 }
 
@@ -218,17 +224,19 @@ pub fn drawConsoleBackground() void {
     if (!console_visible)
         return;
 
-    // Push text away from the top and left sides
-    const padding = 2;
-    const height_pixels: i32 = @intCast(((console_num_to_show + 1) * 8) + padding);
+    const height_pixels = last_text_height;
 
     var res_w: i32 = gfx.getDisplayWidth();
     var res_h: i32 = gfx.getDisplayHeight();
     _ = res_h;
 
     // draw a background
+    gfx.setDebugDrawTexture(gfx.tex_black);
     draw_module.filled_rectangle(0, 0, res_w, height_pixels * 2, 0);
-    draw_module.filled_rectangle(0, height_pixels * 2, res_w, 1, 1);
+
+    // and a bottom line
+    gfx.setDebugDrawTexture(gfx.tex_grey);
+    draw_module.filled_rectangle(0, height_pixels * 2, res_w, 2, 1);
 }
 
 pub fn setConsoleVisible(is_visible: bool) void {

@@ -9,6 +9,8 @@ const modules = @import("../modules.zig");
 var test_batch: batcher.Batcher = undefined;
 var view: math.Mat4 = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, math.Vec3.zero(), math.Vec3.up());
 
+const stress_test_count = 100;
+
 pub fn registerModule() !void {
     const batcherExample = modules.Module {
         .init_fn = on_init,
@@ -31,7 +33,7 @@ fn on_init() void {
 
 fn on_tick(tick: u64) void {
     test_batch.reset();
-    for(0 .. 10000) |i| {
+    for(0 .. stress_test_count) |i| {
         const f_i = @as(f32, @floatFromInt(i));
         const x_pos = std.math.sin(@as(f32, @floatFromInt(tick * i)) * 0.0001) * (1.0 + (f_i * 0.05));
         const y_pos = std.math.cos(@as(f32, @floatFromInt(tick * i)) * 0.0001) * (0.5 + (f_i * 0.05));

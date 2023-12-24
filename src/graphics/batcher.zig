@@ -64,10 +64,10 @@ pub const Batcher = struct {
 
         // create a small debug checker-board texture
         const img = &[4 * 4]u32{
-            0xFFFFFFFF, 0xFFFF0000, 0xFF333333, 0xFF000000,
-            0xFF000000, 0xFFFFFFFF, 0xFF00FF00, 0xFFFFFFFF,
-            0xFFFFFFFF, 0xFF000000, 0xFF333333, 0xFF0000FF,
-            0xFFFFFF00, 0xFFFFFF00, 0xFFFFFF00, 0xFF333333,
+            0xFF999999, 0xFF555555, 0xFF999999, 0xFF555555,
+            0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
+            0xFF999999, 0xFF555555, 0xFF999999, 0xFF555555,
+            0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
         };
         const texture = graphics.Texture.initFromBytes(4, 4, img);
         batcher.setTexture(texture);
