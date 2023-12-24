@@ -76,7 +76,8 @@ fn bindZigLibrary(comptime name: [:0]const u8, comptime zigfile: anytype) void {
     // call the init method, if one exists
     if(@hasDecl(zigfile, "libInit")) {
         zigfile.libInit();
-    }}
+    }
+}
 
 fn bindLibrary(comptime name: [:0]const u8, comptime funcs: []const ScriptFn) void {
     // Bind these functions with Lua!
