@@ -9,7 +9,7 @@ const modules = @import("../modules.zig");
 var test_batch: batcher.Batcher = undefined;
 var view: math.Mat4 = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, math.Vec3.zero(), math.Vec3.up());
 
-const stress_test_count = 100;
+const stress_test_count = 10000;
 
 pub fn registerModule() !void {
     const batcherExample = modules.Module {
