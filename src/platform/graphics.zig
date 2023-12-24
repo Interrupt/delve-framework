@@ -300,8 +300,11 @@ pub fn endFrame() void {
     sg.commit();
 }
 
-pub fn clear(color: Color) void {
-    _ = color;
+pub fn setClearColor(color: Color) void {
+    default_pass_action.colors[0] = .{
+        .load_action = .CLEAR,
+        .clear_value = .{ .r = color.r, .g = color.g, .b = color.b, .a = color.a },
+    };
 }
 
 pub fn setView(view_matrix: mat4) void {

@@ -56,7 +56,7 @@ function _draw()
     mouse.button(2)
     draw.clear(clear_color)
 
-    text.draw("hello zig!", 0, 0)
+    text.draw("hello zig!", 2, 2, white)
     graphics.blit(textures, 8, 0, 8, 8, x + 8, y + 8)
     graphics.blit(textures, 16, 0, 16, 16, x + 24, y + 24)
 

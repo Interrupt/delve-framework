@@ -44,7 +44,7 @@ pub fn clear(pal_color: u32) void {
         .b = @floatFromInt(b),
     };
 
-    graphics_system.clear(color);
+    graphics_system.setClearColor(color);
 }
 
 pub fn line(start_x :i32, start_y: i32, end_x: i32, end_y: i32, pal_color: u32) void {
