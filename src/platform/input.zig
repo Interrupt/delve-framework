@@ -1,5 +1,6 @@
 const debug = @import("../debug.zig");
 const gfx = @import("graphics.zig");
+const math = @import("../math.zig");
 
 const state = struct {
     var mouse_x: f32 = 0;
@@ -16,8 +17,8 @@ pub fn deinit() void {
     debug.log("Input subsystem stopping", .{});
 }
 
-pub fn getMousePosition() gfx.Vector2 {
-    return gfx.Vector2 {
+pub fn getMousePosition() math.Vec2 {
+    return math.Vec2 {
         .x = state.mouse_x,
         .y = state.mouse_y,
     };

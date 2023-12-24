@@ -6,6 +6,8 @@ const debug = @import("../debug.zig");
 const text_module = @import("text.zig");
 const graphics_system = @import("../platform/graphics.zig");
 
+const Vec2 = @import("../math.zig").Vec2;
+
 // const Lua = ziglua.Lua;
 
 var enable_debug_logging = false;
@@ -67,12 +69,12 @@ pub fn line(start_x :i32, start_y: i32, end_x: i32, end_y: i32, pal_color: u32) 
         .b = @floatFromInt(b),
     };
 
-    const start: graphics_system.Vector2 = graphics_system.Vector2 {
+    const start: Vec2 = Vec2 {
         .x = @floatFromInt(start_x),
         .y = @floatFromInt(start_y),
     };
 
-    const end: graphics_system.Vector2 = graphics_system.Vector2 {
+    const end: Vec2 = Vec2 {
         .x = @floatFromInt(end_x),
         .y = @floatFromInt(end_y),
     };

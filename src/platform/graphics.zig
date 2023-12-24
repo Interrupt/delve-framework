@@ -9,8 +9,9 @@ const shaders = @import("../graphics/shaders/texcube.glsl.zig");
 
 const images = @import("../images.zig");
 
-const vec3 = @import("../math.zig").Vec3;
-const mat4 = @import("../math.zig").Mat4;
+const Vec2 = @import("../math.zig").Vec2;
+const Vec3 = @import("../math.zig").Vec3;
+const Mat4 = @import("../math.zig").Mat4;
 
 const debugtext = sokol.debugtext;
 
@@ -21,11 +22,6 @@ const debugtext = sokol.debugtext;
 // TODO: Stop using packed color and uvs!
 
 pub const Vertex = extern struct { x: f32, y: f32, z: f32, color: u32, u: i16, v: i16 };
-
-pub const Vector2 = struct {
-    x: f32,
-    y: f32,
-};
 
 pub const Color = struct {
     r: f32,
@@ -183,8 +179,8 @@ const state = struct {
     var debug_draw_bindings: sg.Bindings = .{};
     var debug_draw_pipeline: sg.Pipeline = .{};
 
-    var view: mat4 = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, vec3.zero(), vec3.up());
-    var model: mat4 = mat4.zero();
+    var view: Mat4 = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, Vec3.zero(), Vec3.up());
+    var model: Mat4 = Mat4.zero();
 };
 
 var default_pass_action: sg.PassAction = .{};
@@ -263,7 +259,7 @@ pub fn startFrame() void {
     debugtext.layer(0);
 
     // setup view state
-    state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, vec3.zero(), vec3.up());
+    state.view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, Vec3.zero(), Vec3.up());
 
     sg.beginDefaultPass(default_pass_action, sapp.width(), sapp.height());
 }
@@ -291,25 +287,25 @@ pub fn setClearColor(color: Color) void {
     };
 }
 
-pub fn setView(view_matrix: mat4, model_matrix: mat4) void {
+pub fn setView(view_matrix: Mat4, model_matrix: Mat4) void {
     state.view = view_matrix;
     state.model = model_matrix;
 }
 
-pub fn line(start: Vector2, end: Vector2, color: Color) void {
+pub fn line(start: Vec2, end: Vec2, color: Color) void {
     // _ = start;
     // _ = end;
     _ = color;
 
-    const translateVec3: vec3 = vec3{.x = -3.5 + end.x * 0.01, .y = 2.5 + end.y * -0.01, .z = 0.0};
+    const translateVec3: Vec3 = Vec3{.x = -3.5 + end.x * 0.01, .y = 2.5 + end.y * -0.01, .z = 0.0};
 
     // Move the view state!
-    state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, vec3.zero(), vec3.up());
-    state.view = mat4.mul(state.view, mat4.translate(translateVec3));
+    state.view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, Vec3.zero(), Vec3.up());
+    state.view = Mat4.mul(state.view, Mat4.translate(translateVec3));
 
-    state.model = mat4.mul(
-        mat4.rotate(start.x, .{ .x = 1.0, .y = 0.0, .z = 0.0 }),
-        mat4.rotate(start.y, .{ .x = 0.0, .y = 1.0, .z = 0.0 })
+    state.model = Mat4.mul(
+        Mat4.rotate(start.x, .{ .x = 1.0, .y = 0.0, .z = 0.0 }),
+        Mat4.rotate(start.y, .{ .x = 0.0, .y = 1.0, .z = 0.0 })
     );
 
     const vs_params = computeVsParams();
@@ -405,14 +401,14 @@ fn makeDefaultShaderDesc() sg.ShaderDesc {
 
 fn computeVsParams() shaders.VsParams {
     const aspect = sapp.widthf() / sapp.heightf();
-    const proj = mat4.persp(60.0, aspect, 0.01, 50.0);
-    return shaders.VsParams{ .mvp = mat4.mul(mat4.mul(proj, state.view), state.model) };
+    const proj = Mat4.persp(60.0, aspect, 0.01, 50.0);
+    return shaders.VsParams{ .mvp = Mat4.mul(Mat4.mul(proj, state.view), state.model) };
 }
 
 fn computeOrthoVsParams() shaders.VsParams {
-    state.model = mat4.identity();
-    const proj = mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), -5.0, 5.0);
-    return shaders.VsParams{ .mvp = mat4.mul(mat4.mul(proj, state.view), state.model) };
+    state.model = Mat4.identity();
+    const proj = Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), -5.0, 5.0);
+    return shaders.VsParams{ .mvp = Mat4.mul(Mat4.mul(proj, state.view), state.model) };
 }
 
 pub fn setDebugTextColor4f(r: f32, g: f32, b: f32, a: f32) void {
@@ -443,11 +439,11 @@ pub fn setDebugDrawTexture(texture: Texture) void {
 
 pub fn drawDebugRectangle(x: f32, y: f32, width: f32, height: f32) void {
     // setup view state
-    const translateVec3: vec3 = vec3{.x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = 0.0};
-    const scaleVec3: vec3 = vec3{.x = width, .y = height, .z = 1.0};
-    state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 0.5 }, vec3.zero(), vec3.up());
-    state.view = mat4.mul(state.view, mat4.translate(translateVec3));
-    state.view = mat4.mul(state.view, mat4.scale(scaleVec3));
+    const translateVec3: Vec3 = Vec3{.x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = 0.0};
+    const scaleVec3: Vec3 = Vec3{.x = width, .y = height, .z = 1.0};
+    state.view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 0.5 }, Vec3.zero(), Vec3.up());
+    state.view = Mat4.mul(state.view, Mat4.translate(translateVec3));
+    state.view = Mat4.mul(state.view, Mat4.scale(scaleVec3));
     const vs_params = computeOrthoVsParams();
 
     // set the debug draw bindings
