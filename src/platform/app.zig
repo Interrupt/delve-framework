@@ -4,7 +4,7 @@ const lua = @import("../scripting/lua.zig");
 const gfx = @import("graphics.zig");
 const input = @import("input.zig");
 const gfx_3d = @import("../graphics/3d.zig");
-const batcher = @import("../graphics/batcher.zig");
+const modules = @import("../modules.zig");
 
 const sokol = @import("sokol");
 const slog = sokol.log;
@@ -16,9 +16,6 @@ const Allocator = std.mem.Allocator;
 
 var app_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var app_allocator = app_gpa.allocator();
-
-// Test some stuff
-var test_batch: batcher.Batcher = undefined;
 
 pub fn init() !void {
     debug.log("App starting", .{});
@@ -55,13 +52,11 @@ export fn sokol_init() void {
         debug.showErrorScreen("Fatal error!");
     };
 
-    test_batch = batcher.Batcher.init() catch {
-        debug.showErrorScreen("Fatal error during batch init!");
-        return;
-    };
+    modules.initModules();
 }
 
 export fn sokol_cleanup() void {
+    modules.cleanupModules();
     gfx.deinit();
     sg.shutdown();
 }
@@ -70,31 +65,17 @@ var tick: u64 = 0;
 export fn sokol_frame() void {
     tick += 1;
 
+    modules.tickModules(tick);
     lua.callFunction("_update") catch {
         debug.showErrorScreen("Fatal error!");
     };
 
     gfx.startFrame();
 
+    modules.drawModules();
     lua.callFunction("_draw") catch {
         debug.showErrorScreen("Fatal error!");
     };
-
-    // Exercise the batcher. Move this to Lua!
-    test_batch.reset();
-    for(0 .. 10000) |i| {
-        const f_i = @as(f32, @floatFromInt(i));
-        const x_pos = std.math.sin(@as(f32, @floatFromInt(tick * i)) * 0.0001) * (1.0 + (f_i * 0.05));
-        const y_pos = std.math.cos(@as(f32, @floatFromInt(tick * i)) * 0.0001) * (0.5 + (f_i * 0.05));
-
-        if(@mod(i, 2) != 0) {
-            test_batch.addRectangle(x_pos, y_pos, f_i * -0.1, 0.5, 0.5, batcher.TextureRegion.default(), 0xFFFFFFFF);
-        } else {
-            test_batch.addTriangle(-x_pos, y_pos, f_i * -0.1, 0.5, 0.5, batcher.TextureRegion.default(), 0xFFFFFFFF);
-        }
-    }
-    test_batch.apply();
-    test_batch.draw();
 
     gfx.endFrame();
 }
@@ -118,8 +99,8 @@ pub fn startMainLoop() void {
         .frame_cb = sokol_frame,
         .cleanup_cb = sokol_cleanup,
         .event_cb = sokol_input,
-        .width = 640,
-        .height = 480,
+        .width = 960,
+        .height = 540,
         .icon = .{
             .sokol_default = true,
         },

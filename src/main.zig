@@ -1,8 +1,9 @@
 const std = @import("std");
-const lua = @import("scripting/lua.zig");
-const scripting = @import("scripting/manager.zig");
-const images = @import("images.zig");
 const debug = @import("debug.zig");
+const images = @import("images.zig");
+const lua = @import("scripting/lua.zig");
+const modules = @import("modules.zig");
+const scripting = @import("scripting/manager.zig");
 
 // Main systems
 const app_backend = @import("platform/app.zig");
@@ -52,6 +53,9 @@ pub fn main() !void {
     // Start up the subsystems
     try startSubsystems();
     defer stopSubsystems();
+
+    // Use an example module
+    try @import("examples/batcher.zig").registerModule();
 
     // Kick off the game loop!
     app_backend.startMainLoop();

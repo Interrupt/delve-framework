@@ -304,6 +304,10 @@ pub fn clear(color: Color) void {
     _ = color;
 }
 
+pub fn setView(view_matrix: mat4) void {
+    state.view = view_matrix;
+}
+
 pub fn line(start: Vector2, end: Vector2, color: Color) void {
     // _ = start;
     // _ = end;
