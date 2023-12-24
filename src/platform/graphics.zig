@@ -182,7 +182,9 @@ pub const Texture = struct {
 const state = struct {
     var debug_draw_bindings: sg.Bindings = .{};
     var debug_draw_pipeline: sg.Pipeline = .{};
+
     var view: mat4 = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, vec3.zero(), vec3.up());
+    var model: mat4 = mat4.zero();
 };
 
 var default_pass_action: sg.PassAction = .{};
@@ -303,7 +305,13 @@ pub fn line(start: Vector2, end: Vector2, color: Color) void {
     // Move the view state!
     state.view = mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, vec3.zero(), vec3.up());
     state.view = mat4.mul(state.view, mat4.translate(translateVec3));
-    const vs_params = computeVsParams(start.x, start.y);
+
+    state.model = mat4.mul(
+        mat4.rotate(start.x, .{ .x = 1.0, .y = 0.0, .z = 0.0 }),
+        mat4.rotate(start.y, .{ .x = 0.0, .y = 1.0, .z = 0.0 })
+    );
+
+    const vs_params = computeVsParams();
 
     sg.applyPipeline(state.debug_draw_pipeline);
     sg.applyBindings(state.debug_draw_bindings);
@@ -394,19 +402,16 @@ fn makeDefaultShaderDesc() sg.ShaderDesc {
     return desc;
 }
 
-fn computeVsParams(rx: f32, ry: f32) shaders.VsParams {
-    const rxm = mat4.rotate(rx, .{ .x = 1.0, .y = 0.0, .z = 0.0 });
-    const rym = mat4.rotate(ry, .{ .x = 0.0, .y = 1.0, .z = 0.0 });
-    const model = mat4.mul(rxm, rym);
+fn computeVsParams() shaders.VsParams {
     const aspect = sapp.widthf() / sapp.heightf();
     const proj = mat4.persp(60.0, aspect, 0.01, 50.0);
-    return shaders.VsParams{ .mvp = mat4.mul(mat4.mul(proj, state.view), model) };
+    return shaders.VsParams{ .mvp = mat4.mul(mat4.mul(proj, state.view), state.model) };
 }
 
 fn computeOrthoVsParams() shaders.VsParams {
-    const model = mat4.identity();
+    state.model = mat4.identity();
     const proj = mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), -5.0, 5.0);
-    return shaders.VsParams{ .mvp = mat4.mul(mat4.mul(proj, state.view), model) };
+    return shaders.VsParams{ .mvp = mat4.mul(mat4.mul(proj, state.view), state.model) };
 }
 
 pub fn setDebugTextColor4f(r: f32, g: f32, b: f32, a: f32) void {
@@ -469,8 +474,7 @@ pub fn drawSubset(start: u32, end: u32, bindings: *Bindings, shader: *Shader) vo
     if(bindings.sokol_bindings == null or shader.sokol_pipeline == null)
         return;
 
-    // todo: make a graphics.setView function to update the view
-    const vs_params = computeVsParams(0.0, 0.0);
+    const vs_params = computeVsParams();
 
     // todo: only apply pipeline / bindings if they actually changed
     sg.applyPipeline(shader.sokol_pipeline.?);
