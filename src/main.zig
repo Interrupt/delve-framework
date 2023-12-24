@@ -54,7 +54,8 @@ pub fn main() !void {
     try startSubsystems();
     defer stopSubsystems();
 
-    // Use an example module
+    // Test some example modules
+    try @import("examples/debugdraw.zig").registerModule();
     try @import("examples/batcher.zig").registerModule();
 
     // Kick off the game loop!

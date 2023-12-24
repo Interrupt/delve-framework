@@ -14,8 +14,6 @@ const mat4 = @import("../math.zig").Mat4;
 
 const debugtext = sokol.debugtext;
 
-pub const test_asset = @embedFile("../static/test.gif");
-
 // TODO: Where should the math library stuff live?
 // Foster puts everything in places like /Spatial or /Graphics
 // Look into using a third party math.zig instead of sokol's
@@ -35,12 +33,6 @@ pub const Color = struct {
     b: f32,
     a: f32 = 1.0,
 };
-
-// TODO: This should be an interface!
-// pub const Bindings = struct {
-//     create: fn (vertices: []Vertex, indices: []u16) void,
-//     bind: fn () void,
-// };
 
 pub const BindingConfig = struct {
     updatable: bool = false,
@@ -156,8 +148,8 @@ pub const Texture = struct {
 
     pub fn init(image: *images.Image) Texture {
         var img_desc: sg.ImageDesc = .{
-            .width = image.width,
-            .height = image.height,
+            .width = @intCast(image.width),
+            .height = @intCast(image.height),
             .pixel_format = .RGBA8,
         };
 
@@ -226,18 +218,18 @@ pub fn init() !void {
         .data = sg.asRange(&[_]u16{ 0, 1, 2, 0, 2, 3 }),
     });
 
-    // Load a debug texture for testing
-    var test_image = try images.loadBytes(test_asset);
-    var test_img_desc: sg.ImageDesc = .{
-        .width = @intCast(test_image.width),
-        .height = @intCast(test_image.height),
-        .pixel_format = .RGBA8,
+    // Create a small debug checker-board texture for debug drawing
+    const img = &[4 * 4]u32{
+        0xFFFFFFFF, 0xFFFF0000, 0xFF333333, 0xFF000000,
+        0xFF000000, 0xFFFFFFFF, 0xFF00FF00, 0xFFFFFFFF,
+        0xFFFFFFFF, 0xFF000000, 0xFF333333, 0xFF0000FF,
+        0xFFFFFF00, 0xFFFFFF00, 0xFFFFFF00, 0xFF333333,
     };
-    debug.log("Loaded font image successfully: {d}x{d}\n", .{test_image.width, test_image.height});
-    test_img_desc.data.subimage[0][0] = sg.asRange(test_image.raw);
-    state.debug_draw_bindings.fs.images[shaders.SLOT_tex] = sg.makeImage(test_img_desc);
 
-    // ...and a sampler object with default attributes
+    const debug_texture = Texture.initFromBytes(4, 4, img);
+    setDebugDrawTexture(debug_texture);
+
+    // Create a default sampler for the debug draw bindings
     state.debug_draw_bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
 
     // create a debug shader and pipeline object
@@ -263,13 +255,7 @@ pub fn deinit() void {
     debug.log("Graphics subsystem stopping", .{});
 }
 
-var rotx: f32 = 0.0;
-var roty: f32 = 0.0;
-
 pub fn startFrame() void {
-    // rotx += 0.1;
-    // roty += 0.1;
-
     // reset debug text
     debugtext.canvas(sapp.widthf() * 0.5, sapp.heightf() * 0.5);
     debugtext.layer(0);
@@ -281,10 +267,6 @@ pub fn startFrame() void {
 }
 
 pub fn endFrame() void {
-
-    // test texture drawing
-    drawDebugRectangle(50.0, 50.0, 100.0, 100.0);
-
     // draw console text on a new layer
     debugtext.layer(1);
     debug.drawConsole(false);
@@ -445,6 +427,10 @@ pub fn drawDebugTextChar(x: f32, y: f32, char: u8) void {
     debugtext.putc(char);
 }
 
+pub fn setDebugDrawTexture(texture: Texture) void {
+    state.debug_draw_bindings.fs.images[shaders.SLOT_tex] = texture.sokol_image.?;
+}
+
 pub fn drawDebugRectangle(x: f32, y: f32, width: f32, height: f32) void {
     // setup view state
     const translateVec3: vec3 = vec3{.x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = 0.0};
@@ -480,7 +466,7 @@ pub fn drawSubset(start: u32, end: u32, bindings: *Bindings, shader: *Shader) vo
         return;
 
     // todo: make a graphics.setView function to update the view
-    const vs_params = computeVsParams(rotx, roty);
+    const vs_params = computeVsParams(0.0, 0.0);
 
     // todo: only apply pipeline / bindings if they actually changed
     sg.applyPipeline(shader.sokol_pipeline.?);
