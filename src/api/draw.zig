@@ -167,9 +167,11 @@ pub fn filled_rectangle(start_x: i32, start_y: i32, width: i32, height: i32, col
     if (color_idx >= main.palette.height * main.palette.pitch)
         color_idx = main.palette.pitch - 4;
 
-    // const r = main.palette.raw[color_idx];
-    // const g = main.palette.raw[color_idx + 1];
-    // const b = main.palette.raw[color_idx + 2];
+    const r = @as(f32, @floatFromInt(main.palette.raw[color_idx])) / 256.0;
+    const g = @as(f32, @floatFromInt(main.palette.raw[color_idx + 1])) / 256.0;
+    const b = @as(f32, @floatFromInt(main.palette.raw[color_idx + 2])) / 256.0;
+
+    const c = graphics_system.Color{ .r = r, .g = g, .b = b, .a = 1.0 };
 
     // const renderer = zigsdl.getRenderer();
     // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
@@ -177,7 +179,8 @@ pub fn filled_rectangle(start_x: i32, start_y: i32, width: i32, height: i32, col
     // const rect = sdl.SDL_Rect{ .x = start_x, .y = start_y, .w = width + 1, .h = height + 1 };
     // _ = sdl.SDL_RenderFillRect(renderer, &rect);
 
-    graphics_system.drawDebugRectangle(@floatFromInt(start_x), @floatFromInt(start_y), @floatFromInt(width), @floatFromInt(height));
+    graphics_system.setDebugDrawTexture(graphics_system.tex_white);
+    graphics_system.drawDebugRectangle(@floatFromInt(start_x), @floatFromInt(start_y), @floatFromInt(width), @floatFromInt(height), c);
 }
 
 pub fn text(text_string: [*:0]const u8, x_pos: i32, y_pos: i32, color_idx: u32) void {

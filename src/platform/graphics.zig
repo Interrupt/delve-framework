@@ -8,7 +8,9 @@ const sapp = sokol.app;
 const sgapp = sokol.app_gfx_glue;
 const debugtext = sokol.debugtext;
 
-const shaders = @import("../graphics/shaders/texcube.glsl.zig");
+// compile built-in shaders via:
+// ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl330:metal_macos:hlsl4 -f sokol_zig
+const shaders = @import("../graphics/shaders/default.glsl.zig");
 
 const Vec2 = @import("../math.zig").Vec2;
 const Vec3 = @import("../math.zig").Vec3;
@@ -17,9 +19,6 @@ const Mat4 = @import("../math.zig").Mat4;
 pub var tex_white: Texture = undefined;
 pub var tex_black: Texture = undefined;
 pub var tex_grey: Texture = undefined;
-pub var tex_red: Texture = undefined;
-pub var tex_blue: Texture = undefined;
-pub var tex_green: Texture = undefined;
 
 // TODO: Where should the math library stuff live?
 // Foster puts everything in places like /Spatial or /Graphics
@@ -34,6 +33,14 @@ pub const Color = struct {
     g: f32,
     b: f32,
     a: f32 = 1.0,
+
+    pub fn white() Color {
+       return Color{.r=1.0,.g=1.0,.b=1.0,.a=1.0};
+    }
+
+    pub fn black() Color {
+       return Color{.r=0.0,.g=0.0,.b=0.0,.a=1.0};
+    }
 };
 
 pub const BindingConfig = struct {
@@ -187,6 +194,7 @@ const state = struct {
 
     var view: Mat4 = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, Vec3.zero(), Vec3.up());
     var model: Mat4 = Mat4.zero();
+    var draw_color: [4]f32 = [_]f32{ 1.0, 1.0, 1.0, 1.0 };
 };
 
 var default_pass_action: sg.PassAction = .{};
@@ -226,9 +234,6 @@ pub fn init() !void {
     tex_white = createSolidTexture(0xFFFFFFFF);
     tex_black = createSolidTexture(0xFF000000);
     tex_grey = createSolidTexture(0xFF333333);
-    tex_red = createSolidTexture(0xFF0000FF);
-    tex_blue = createSolidTexture(0xFF00FF00);
-    tex_green = createSolidTexture(0xFFFF0000);
 
     setDebugDrawTexture(tex_white);
 
@@ -290,6 +295,10 @@ pub fn setClearColor(color: Color) void {
         .load_action = .CLEAR,
         .clear_value = .{ .r = color.r, .g = color.g, .b = color.b, .a = color.a },
     };
+}
+
+pub fn setDrawColor(color: Color) void {
+    state.draw_color = [_]f32 { color.r, color.g, color.b, color.a };
 }
 
 pub fn setView(view_matrix: Mat4, model_matrix: Mat4) void {
@@ -407,13 +416,19 @@ fn makeDefaultShaderDesc() sg.ShaderDesc {
 fn computeVsParams() shaders.VsParams {
     const aspect = sapp.widthf() / sapp.heightf();
     const proj = Mat4.persp(60.0, aspect, 0.01, 50.0);
-    return shaders.VsParams{ .mvp = Mat4.mul(Mat4.mul(proj, state.view), state.model) };
+    return shaders.VsParams{
+        .mvp = Mat4.mul(Mat4.mul(proj, state.view), state.model),
+        .in_color = state.draw_color,
+    };
 }
 
 fn computeOrthoVsParams() shaders.VsParams {
     state.model = Mat4.identity();
     const proj = Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), -5.0, 5.0);
-    return shaders.VsParams{ .mvp = Mat4.mul(Mat4.mul(proj, state.view), state.model) };
+    return shaders.VsParams{
+        .mvp = Mat4.mul(Mat4.mul(proj, state.view), state.model),
+        .in_color = state.draw_color,
+    };
 }
 
 pub fn setDebugTextColor4f(r: f32, g: f32, b: f32, a: f32) void {
@@ -443,13 +458,15 @@ pub fn setDebugDrawTexture(texture: Texture) void {
 }
 
 // todo: add color to this and to the shader
-pub fn drawDebugRectangle(x: f32, y: f32, width: f32, height: f32) void {
+pub fn drawDebugRectangle(x: f32, y: f32, width: f32, height: f32, color: Color) void {
     // setup view state
     const translateVec3: Vec3 = Vec3{.x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = 0.0};
     const scaleVec3: Vec3 = Vec3{.x = width, .y = height, .z = 1.0};
     state.view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 0.5 }, Vec3.zero(), Vec3.up());
     state.view = Mat4.mul(state.view, Mat4.translate(translateVec3));
     state.view = Mat4.mul(state.view, Mat4.scale(scaleVec3));
+
+    setDrawColor(color);
     const vs_params = computeOrthoVsParams();
 
     // set the debug draw bindings

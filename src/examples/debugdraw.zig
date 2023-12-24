@@ -40,7 +40,7 @@ fn on_tick(tick: u64) void {
 
 fn on_draw() void {
     graphics.setDebugDrawTexture(texture);
-    graphics.drawDebugRectangle(120.0, 200.0, 100.0, 100.0);
+    graphics.drawDebugRectangle(120.0, 200.0, 100.0, 100.0, graphics.Color{.r=1.0, .g=1.0, .b=1.0, .a=1.0});
 
     const scale = 1.5 + std.math.sin(time * 0.02) * 0.2;
 

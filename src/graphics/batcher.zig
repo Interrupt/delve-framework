@@ -47,6 +47,7 @@ pub const Batcher = struct {
     num_draw_calls: usize,
     bindings: graphics.Bindings,
     shader: graphics.Shader,
+    draw_color: graphics.Color = graphics.Color.white(),
     draw_calls: []DrawCall = undefined,
 
     /// Setup and return a new Batcher
@@ -173,6 +174,7 @@ pub const Batcher = struct {
         // draw all shapes from vertex data
         // todo: support multiple bindings to change textures / shader?
         if(self.num_draw_calls == 0) {
+            graphics.setDrawColor(self.draw_color);
             graphics.draw(&self.bindings, &self.shader);
             return;
         }
