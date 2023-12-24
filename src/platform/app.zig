@@ -104,7 +104,7 @@ pub fn startMainLoop() void {
         .icon = .{
             .sokol_default = true,
         },
-        .window_title = "DelveEngine",
+        .window_title = "Delve Framework",
         .logger = .{
             .func = slog.func,
         },

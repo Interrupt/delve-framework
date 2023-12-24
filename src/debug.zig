@@ -170,6 +170,9 @@ pub fn drawConsole(draw_bg: bool) void {
     if (!console_visible)
         return;
 
+    // Reset text drawing scale
+    gfx.setDebugTextScale(1, 1);
+
     // Push text away from the top and left sides
     const padding = 2;
 

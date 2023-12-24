@@ -40,8 +40,10 @@ fn on_tick(tick: u64) void {
 fn on_draw() void {
     graphics.setDebugDrawTexture(texture);
     graphics.drawDebugRectangle(50.0, 50.0, 100.0, 100.0);
+
+    graphics.setDebugTextScale(1.5, 1.5);
     graphics.setDebugTextColor4f(1.0, std.math.sin(time * 0.02), 0.0, 1.0);
-    graphics.drawDebugText(2.0, 250.0, "This is from the debug draw module!");
+    graphics.drawDebugText(2.0, 165.0, "This is from the debug draw module!");
 }
 
 fn on_cleanup() void {

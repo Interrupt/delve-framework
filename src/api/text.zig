@@ -128,6 +128,7 @@ pub fn drawGlyph(char: u8, x: i32, y: i32, color: u32) void {
     const pal_g = main.palette.raw[color_idx + 1];
     const pal_b = main.palette.raw[color_idx + 2];
 
+    gfx.setDebugTextScale(1.0, 1.0);
     gfx.setDebugTextColor4b(pal_r, pal_g, pal_b, 0xFF);
     gfx.drawDebugTextChar(@floatFromInt(x), @floatFromInt(y), char);
 

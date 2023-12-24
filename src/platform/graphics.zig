@@ -427,6 +427,10 @@ pub fn drawDebugTextChar(x: f32, y: f32, char: u8) void {
     debugtext.putc(char);
 }
 
+pub fn setDebugTextScale(x: f32, y: f32) void {
+    debugtext.canvas(sapp.widthf() / (x * 2.0), sapp.heightf() / (y * 2.0));
+}
+
 pub fn setDebugDrawTexture(texture: Texture) void {
     state.debug_draw_bindings.fs.images[shaders.SLOT_tex] = texture.sokol_image.?;
 }
