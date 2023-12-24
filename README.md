@@ -40,4 +40,7 @@ const exampleModule = modules.Module {
 try modules.registerModule(exampleModule);
 ```
 
-Some example modules are included automatically to exercise some code paths, these live under `src/examples`
+Some example modules are included automatically to exercise some code paths, these live under `src/examples` and are good examples of how to start using the framework.
+
+* [Sprite Batch Example](src/examples/batcher.zig)
+* [Debug Drawing Example](src/examples/debugdraw.zig)
