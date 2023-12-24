@@ -11,6 +11,7 @@ pub const test_asset = @embedFile("../static/test.gif");
 
 var time: f32 = 0.0;
 var texture: graphics.Texture = undefined;
+var test_image: images.Image = undefined;
 
 pub fn registerModule() !void {
     const debugDrawExample = modules.Module {
@@ -26,7 +27,7 @@ pub fn registerModule() !void {
 fn on_init() void {
     debug.log("Debug draw example module initializing", .{});
 
-    var test_image = images.loadBytes(test_asset) catch {
+    test_image = images.loadBytes(test_asset) catch {
         debug.log("Could not load test texture", .{});
         return;
     };
@@ -41,11 +42,14 @@ fn on_draw() void {
     graphics.setDebugDrawTexture(texture);
     graphics.drawDebugRectangle(50.0, 50.0, 100.0, 100.0);
 
-    graphics.setDebugTextScale(1.5, 1.5);
+    const scale = 1.5 + std.math.sin(time * 0.02) * 0.2;
+
+    graphics.setDebugTextScale(scale, scale);
     graphics.setDebugTextColor4f(1.0, std.math.sin(time * 0.02), 0.0, 1.0);
-    graphics.drawDebugText(2.0, 165.0, "This is from the debug draw module!");
+    graphics.drawDebugText(2.0 / scale, 240.0 / scale, "This is from the debug draw module!");
 }
 
 fn on_cleanup() void {
     debug.log("Debug draw example module cleaning up", .{});
+    test_image.destroy();
 }

@@ -14,8 +14,8 @@ pub const Image = struct {
     channels: u8,
     raw: []u8,
 
-    pub fn destroy(gi: *Image) void {
-        stb_image.stbi_image_free(gi.raw.ptr);
+    pub fn destroy(self: *Image) void {
+        stb_image.stbi_image_free(self.raw.ptr);
     }
 
     pub fn create(compressed_bytes: []const u8) !Image {
