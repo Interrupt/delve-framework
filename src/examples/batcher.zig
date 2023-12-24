@@ -52,7 +52,7 @@ fn on_draw() void {
     view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, math.Vec3.zero(), math.Vec3.up());
     view = math.Mat4.mul(view, math.Mat4.translate(view_translate));
 
-    graphics.setView(view);
+    graphics.setView(view, math.Mat4.identity());
     test_batch.draw();
 }
 

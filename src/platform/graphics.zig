@@ -291,8 +291,9 @@ pub fn setClearColor(color: Color) void {
     };
 }
 
-pub fn setView(view_matrix: mat4) void {
+pub fn setView(view_matrix: mat4, model_matrix: mat4) void {
     state.view = view_matrix;
+    state.model = model_matrix;
 }
 
 pub fn line(start: Vector2, end: Vector2, color: Color) void {
