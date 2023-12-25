@@ -15,6 +15,7 @@ var test_image: images.Image = undefined;
 
 pub fn registerModule() !void {
     const debugDrawExample = modules.Module {
+        .name = "debug_draw_example",
         .init_fn = on_init,
         .tick_fn = on_tick,
         .draw_fn = on_draw,

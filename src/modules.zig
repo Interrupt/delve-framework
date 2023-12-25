@@ -1,4 +1,5 @@
 const std = @import("std");
+const debug = @import("debug.zig");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = gpa.allocator();
@@ -7,6 +8,7 @@ var modules: []Module = undefined;
 var num_modules: u32 = 0;
 
 pub const Module = struct {
+    name: [:0]const u8,
     init_fn: *const fn () void,
     tick_fn: *const fn (u64) void,
     draw_fn: *const fn () void,
@@ -19,6 +21,8 @@ pub fn registerModule(module: Module) !void {
 
     modules[num_modules] = module;
     num_modules += 1;
+
+    debug.log("Registered module: {s}", .{module.name});
 }
 
 pub fn getModules() []Module {

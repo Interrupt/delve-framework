@@ -13,6 +13,7 @@ const stress_test_count = 10000;
 
 pub fn registerModule() !void {
     const batcherExample = modules.Module {
+        .name = "batcher_example",
         .init_fn = on_init,
         .tick_fn = on_tick,
         .draw_fn = on_draw,

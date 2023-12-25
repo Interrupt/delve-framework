@@ -123,6 +123,9 @@ pub fn deinit() void {
 }
 
 pub fn log(comptime fmt: []const u8, args: anytype) void {
+    if(needs_init)
+        init();
+
     const written = std.fmt.allocPrintZ(allocator, fmt, args) catch {
         std.debug.print(fmt ++ "\n", args);
         std.debug.print("Error logging to console. Out of memory?\n", .{});
