@@ -27,6 +27,10 @@ var pending_cmd: std.ArrayList(u8) = undefined;
 
 var last_text_height: i32 = 0;
 
+// Other systems could init the debug system before the app does
+var needs_init: bool = true;
+var needs_deinit: bool = false;
+
 /// A Linked List that can manage its own memory
 const LogList = struct {
     items: StringLinkedList = StringLinkedList{},
@@ -96,12 +100,22 @@ const LogList = struct {
 };
 
 pub fn init() void {
+    if(!needs_init)
+        return;
+    needs_init = false;
+    needs_deinit = true;
+
     log_history_list = LogList.init(allocator);
     cmd_history_list = LogList.init(allocator);
     pending_cmd = char_array.init(allocator);
 }
 
 pub fn deinit() void {
+    if(!needs_deinit)
+        return;
+    needs_deinit = false;
+    needs_init = true;
+
     log_history_list.deinit();
     cmd_history_list.deinit();
     pending_cmd.deinit();

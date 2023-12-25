@@ -1,7 +1,7 @@
 const std = @import("std");
 const math = std.math;
 const ziglua = @import("ziglua");
-const main = @import("../main.zig");
+const app = @import("../app.zig");
 const debug = @import("../debug.zig");
 const text_module = @import("text.zig");
 const graphics_system = @import("../platform/graphics.zig");
@@ -31,14 +31,14 @@ pub fn clear(pal_color: u32) void {
         debug.log("Draw: clear {d}", .{pal_color});
 
     // Four bytes per color
-    var color_idx = pal_color * main.palette.channels;
+    var color_idx = pal_color * app.palette.channels;
 
-    if (color_idx >= main.palette.height * main.palette.pitch)
-        color_idx = main.palette.pitch - 4;
+    if (color_idx >= app.palette.height * app.palette.pitch)
+        color_idx = app.palette.pitch - 4;
 
-    const r = main.palette.raw[color_idx];
-    const g = main.palette.raw[color_idx + 1];
-    const b = main.palette.raw[color_idx + 2];
+    const r = app.palette.raw[color_idx];
+    const g = app.palette.raw[color_idx + 1];
+    const b = app.palette.raw[color_idx + 2];
 
     const color: graphics_system.Color = graphics_system.Color{
         .r = @floatFromInt(r),
@@ -54,14 +54,14 @@ pub fn line(start_x :i32, start_y: i32, end_x: i32, end_y: i32, pal_color: u32) 
         debug.log("Draw: line({d},{d},{d},{d},{d})", .{ start_x, start_y, end_x, end_y, pal_color });
 
     // Four bytes per color
-    var color_idx = pal_color * main.palette.channels;
+    var color_idx = pal_color * app.palette.channels;
 
-    if (color_idx >= main.palette.height * main.palette.pitch)
-        color_idx = main.palette.pitch - 4;
+    if (color_idx >= app.palette.height * app.palette.pitch)
+        color_idx = app.palette.pitch - 4;
 
-    const r = main.palette.raw[color_idx];
-    const g = main.palette.raw[color_idx + 1];
-    const b = main.palette.raw[color_idx + 2];
+    const r = app.palette.raw[color_idx];
+    const g = app.palette.raw[color_idx + 1];
+    const b = app.palette.raw[color_idx + 2];
 
     const color: graphics_system.Color = graphics_system.Color{
         .r = @floatFromInt(r),
@@ -87,14 +87,14 @@ pub fn filled_circle(x: f32, y: f32, radius: f32, pal_color: u32) void {
     _ = y;
 
     // Four bytes per color
-    var color_idx = pal_color * main.palette.channels;
+    var color_idx = pal_color * app.palette.channels;
 
-    if (color_idx >= main.palette.height * main.palette.pitch)
-        color_idx = main.palette.pitch - 4;
+    if (color_idx >= app.palette.height * app.palette.pitch)
+        color_idx = app.palette.pitch - 4;
 
-    // const r = main.palette.raw[color_idx];
-    // const g = main.palette.raw[color_idx + 1];
-    // const b = main.palette.raw[color_idx + 2];
+    // const r = app.palette.raw[color_idx];
+    // const g = app.palette.raw[color_idx + 1];
+    // const b = app.palette.raw[color_idx + 2];
 
     // const renderer = zigsdl.getRenderer();
     // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
@@ -139,14 +139,14 @@ pub fn rectangle(start_x: i32, start_y: i32, width: i32, height: i32, color: u32
     _ = height;
 
     // Four bytes per color
-    var color_idx = color * main.palette.channels;
+    var color_idx = color * app.palette.channels;
 
-    if (color_idx >= main.palette.height * main.palette.pitch)
-        color_idx = main.palette.pitch - 4;
+    if (color_idx >= app.palette.height * app.palette.pitch)
+        color_idx = app.palette.pitch - 4;
 
-    // const r = main.palette.raw[color_idx];
-    // const g = main.palette.raw[color_idx + 1];
-    // const b = main.palette.raw[color_idx + 2];
+    // const r = app.palette.raw[color_idx];
+    // const g = app.palette.raw[color_idx + 1];
+    // const b = app.palette.raw[color_idx + 2];
     //
     // const renderer = zigsdl.getRenderer();
     // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
@@ -162,14 +162,14 @@ pub fn filled_rectangle(start_x: i32, start_y: i32, width: i32, height: i32, col
     // _ = height;
 
     // Four bytes per color
-    var color_idx = color * main.palette.channels;
+    var color_idx = color * app.palette.channels;
 
-    if (color_idx >= main.palette.height * main.palette.pitch)
-        color_idx = main.palette.pitch - 4;
+    if (color_idx >= app.palette.height * app.palette.pitch)
+        color_idx = app.palette.pitch - 4;
 
-    const r = @as(f32, @floatFromInt(main.palette.raw[color_idx])) / 256.0;
-    const g = @as(f32, @floatFromInt(main.palette.raw[color_idx + 1])) / 256.0;
-    const b = @as(f32, @floatFromInt(main.palette.raw[color_idx + 2])) / 256.0;
+    const r = @as(f32, @floatFromInt(app.palette.raw[color_idx])) / 256.0;
+    const g = @as(f32, @floatFromInt(app.palette.raw[color_idx + 1])) / 256.0;
+    const b = @as(f32, @floatFromInt(app.palette.raw[color_idx + 2])) / 256.0;
 
     const c = graphics_system.Color{ .r = r, .g = g, .b = b, .a = 1.0 };
 
