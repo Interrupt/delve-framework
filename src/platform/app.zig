@@ -4,7 +4,6 @@ const debug = @import("../debug.zig");
 const lua = @import("../scripting/lua.zig");
 const gfx = @import("graphics.zig");
 const input = @import("input.zig");
-const gfx_3d = @import("../graphics/3d.zig");
 const modules = @import("../modules.zig");
 
 const sokol = @import("sokol");
@@ -12,11 +11,6 @@ const slog = sokol.log;
 const sg = sokol.gfx;
 const sapp = sokol.app;
 const sgapp = sokol.app_gfx_glue;
-
-const Allocator = std.mem.Allocator;
-
-var app_gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var app_allocator = app_gpa.allocator();
 
 pub fn init() !void {
     debug.log("App starting", .{});
