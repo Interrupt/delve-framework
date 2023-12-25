@@ -6,9 +6,6 @@ const app = @import("app.zig");
 var args_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var args_allocator = args_gpa.allocator();
 
-var assets_path: [:0]const u8 = undefined;
-var default_assets_path: [:0]const u8 = "assets";
-
 pub fn main() !void {
     // Get arguments
     const args = try std.process.argsAlloc(args_allocator);
