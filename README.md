@@ -31,6 +31,7 @@ Additional Zig code can be registered as a Module to run during the game lifecyc
 
 ```
 const exampleModule = modules.Module {
+    .name = "example-module",
     .init_fn = my_on_init,
     .tick_fn = my_on_tick,
     .draw_fn = my_on_draw,
