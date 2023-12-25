@@ -1,4 +1,5 @@
 const std = @import("std");
+const app = @import("../app.zig");
 const debug = @import("../debug.zig");
 const lua = @import("../scripting/lua.zig");
 const gfx = @import("graphics.zig");
@@ -93,18 +94,18 @@ export fn sokol_input(event: ?*const sapp.Event) void {
     }
 }
 
-pub fn startMainLoop() void {
+pub fn startMainLoop(config: app.AppConfig) void {
     sapp.run(.{
         .init_cb = sokol_init,
         .frame_cb = sokol_frame,
         .cleanup_cb = sokol_cleanup,
         .event_cb = sokol_input,
-        .width = 960,
-        .height = 540,
+        .width = config.width,
+        .height = config.height,
         .icon = .{
             .sokol_default = true,
         },
-        .window_title = "Delve Framework",
+        .window_title = config.title,
         .logger = .{
             .func = slog.func,
         },

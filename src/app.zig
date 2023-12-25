@@ -11,11 +11,17 @@ const input = @import("platform/input.zig");
 pub var assets_path: [:0]const u8 = "assets";
 pub var palette: images.Image = undefined;
 
+pub const AppConfig = struct {
+    title: [:0]const u8 = "Delve Framework",
+    width: i32 = 960,
+    height: i32 = 540,
+};
+
 pub fn setAssetsPath(path: [:0]const u8) !void {
     assets_path = path;
 }
 
-pub fn start() !void {
+pub fn start(config: AppConfig) !void {
     debug.init();
     defer debug.deinit();
 
@@ -38,7 +44,7 @@ pub fn start() !void {
     defer stopSubsystems();
 
     // Kick off the game loop!
-    app_backend.startMainLoop();
+    app_backend.startMainLoop(config);
 
     debug.log("Delve framework stopping", .{});
 }

@@ -21,5 +21,5 @@ pub fn main() !void {
     try @import("examples/debugdraw.zig").registerModule();
     try @import("examples/batcher.zig").registerModule();
 
-    try app.start();
+    try app.start(app.AppConfig{ .title = "Delve Framework Test" });
 }
