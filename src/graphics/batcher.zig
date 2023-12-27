@@ -3,7 +3,11 @@ const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
 const images = @import("../images.zig");
 const std = @import("std");
+const math = @import("../math.zig");
+
 const Vertex = graphics.Vertex;
+const Vec3 = math.Vec3;
+const Mat4 = math.Mat4;
 
 var batch_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var batch_allocator = batch_gpa.allocator();
@@ -49,6 +53,7 @@ pub const Batcher = struct {
     shader: graphics.Shader,
     draw_color: graphics.Color = graphics.Color.white(),
     draw_calls: []DrawCall = undefined,
+    transform: Mat4 = Mat4.identity(),
 
     /// Setup and return a new Batcher
     pub fn init() !Batcher {
@@ -91,6 +96,10 @@ pub const Batcher = struct {
         self.bindings.setTexture(texture);
     }
 
+    pub fn setTransformMatrix(self: *Batcher, matrix: Mat4) void {
+        self.transform = matrix;
+    }
+
     /// Add a rectangle to the batch
     pub fn addRectangle(self: *Batcher, x: f32, y: f32, z: f32, width: f32, height: f32, region: TextureRegion, color: u32) void {
         self.growBuffersToFit(self.vertex_pos + 4, self.index_pos + 6) catch {
@@ -103,10 +112,10 @@ pub const Batcher = struct {
         const v_2 = TextureRegion.convert(region.v_2);
 
         const verts = &[_]Vertex{
-            .{ .x = x, .y = y + height, .z = z, .color = color, .u = u, .v = v },
-            .{ .x = x + width, .y = y + height, .z = z, .color = color, .u = u_2, .v = v },
-            .{ .x = x + width, .y = y, .z = z, .color = color, .u = u_2, .v = v_2},
-            .{ .x = x, .y = y, .z = z, .color = color, .u = u, .v = v_2},
+            Vertex.mulMat4(.{ .x = x, .y = y + height, .z = z, .color = color, .u = u, .v = v }, self.transform),
+            Vertex.mulMat4(.{ .x = x + width, .y = y + height, .z = z, .color = color, .u = u_2, .v = v }, self.transform),
+            Vertex.mulMat4(.{ .x = x + width, .y = y, .z = z, .color = color, .u = u_2, .v = v_2}, self.transform),
+            Vertex.mulMat4(.{ .x = x, .y = y, .z = z, .color = color, .u = u, .v = v_2}, self.transform),
         };
 
         const indices = &[_]u16{ 0, 1, 2, 0, 2, 3 };

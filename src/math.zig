@@ -104,6 +104,23 @@ pub const Vec3 = extern struct {
     pub fn dot(v0: Vec3, v1: Vec3) f32 {
         return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z;
     }
+
+    pub fn mulMat4(left: Vec3, right: Mat4) Vec3 {
+        var res = Vec3.zero();
+        res.x += left.x * right.m[0][0];
+        res.y += left.x * right.m[0][1];
+        res.z += left.x * right.m[0][2];
+        res.x += left.y * right.m[1][0];
+        res.y += left.y * right.m[1][1];
+        res.z += left.y * right.m[1][2];
+        res.x += left.z * right.m[2][0];
+        res.y += left.z * right.m[2][1];
+        res.z += left.z * right.m[2][2];
+        res.x += 1.0 * right.m[3][0];
+        res.y += 1.0 * right.m[3][1];
+        res.z += 1.0 * right.m[3][2];
+        return res;
+    }
 };
 
 pub const Mat4 = extern struct {
@@ -363,4 +380,20 @@ test "Mat4.rotate" {
     assert(eq(m.m[3][1], 0.0));
     assert(eq(m.m[3][2], 0.0));
     assert(eq(m.m[3][3], 1.0));
+}
+
+test "Vec3.mulMat4" {
+    var l = Vec3 {.x = 1.0, .y = 2.0, .z = 3.0};
+    var r = Mat4.identity();
+    var v = Vec3.mulMat4(l, r);
+    assert(v.x == 1.0);
+    assert(v.y == 2.0);
+    assert(v.z == 3.0);
+
+    l = Vec3 {.x = 1.0, .y = 2.0, .z = 3.0};
+    r = Mat4.translate(Vec3 {.x = 2.0, .y = 0.0, .z = -3.0 });
+    v = Vec3.mulMat4(l, r);
+    assert(v.x == 3.0);
+    assert(v.y == 2.0);
+    assert(v.z == 0.0);
 }

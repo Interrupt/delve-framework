@@ -26,7 +26,23 @@ pub var tex_grey: Texture = undefined;
 // A vertex struct with position, color and uv-coords
 // TODO: Stop using packed color and uvs!
 
-pub const Vertex = extern struct { x: f32, y: f32, z: f32, color: u32, u: i16, v: i16 };
+pub const Vertex = extern struct {
+    x: f32,
+    y: f32,
+    z: f32,
+    color: u32,
+    u: i16,
+    v: i16,
+
+    pub fn mulMat4(left: Vertex, right: Mat4) Vertex {
+        var ret = left;
+        const vec = Vec3.mulMat4(Vec3{.x = left.x, .y = left.y, .z = left.z}, right);
+        ret.x = vec.x;
+        ret.y = vec.y;
+        ret.z = vec.z;
+        return ret;
+    }
+};
 
 pub const Color = struct {
     r: f32,
