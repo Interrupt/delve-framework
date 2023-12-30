@@ -26,7 +26,7 @@ pub fn registerModule() !void {
 fn on_init() void {
     debug.log("Batch example module initializing", .{});
 
-    test_batch = batcher.Batcher.init() catch {
+    test_batch = batcher.Batcher.init(.{}) catch {
         debug.showErrorScreen("Fatal error during batch init!");
         return;
     };

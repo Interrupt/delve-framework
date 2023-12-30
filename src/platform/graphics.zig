@@ -68,11 +68,13 @@ pub const BindingConfig = struct {
 pub const Bindings = struct {
     length: usize,
     sokol_bindings: ?sg.Bindings,
+    config: BindingConfig,
 
     pub fn init(cfg: BindingConfig) Bindings {
         var bindings: Bindings = Bindings {
             .length = 0,
             .sokol_bindings = .{},
+            .config = cfg,
         };
 
         // Updatable buffers will need to be created ahead-of-time
@@ -87,6 +89,9 @@ pub const Bindings = struct {
                 .size = cfg.index_len * @sizeOf(u16),
             });
         }
+
+        // Make a sampler for our bindings
+        bindings.sokol_bindings.?.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
 
         return bindings;
     }
@@ -122,16 +127,42 @@ pub const Bindings = struct {
         sg.updateBuffer(self.sokol_bindings.?.index_buffer, sg.asRange(indices[0..index_len]));
     }
 
+    /// Sets the texture that will be used to draw this binding
     pub fn setTexture(self: *Bindings, texture: Texture) void {
         if(texture.sokol_image == null)
             return;
 
         self.sokol_bindings.?.fs.images[shaders.SLOT_tex] = texture.sokol_image.?;
-        self.sokol_bindings.?.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
     }
 
+    /// Destroy our binding
     pub fn destroy(self: *Bindings) void {
-        _ = self;
+        sg.destroyBuffer(self.sokol_bindings.?.vertex_buffers[0]);
+        sg.destroyBuffer(self.sokol_bindings.?.index_buffer);
+        sg.destroySampler(self.sokol_bindings.?.fs.samplers[shaders.SLOT_smp]);
+    }
+
+    /// Resize buffers used by our binding. Will destroy buffers and recreate them!
+    pub fn resize(self: *Bindings, vertex_len: usize, index_len: usize) void {
+        if(!self.config.updatable)
+            return;
+
+        // debug.log("Resizing buffer! {}x{}", .{vertex_len, index_len});
+
+        // destroy old buffers
+        sg.destroyBuffer(self.sokol_bindings.?.vertex_buffers[0]);
+        sg.destroyBuffer(self.sokol_bindings.?.index_buffer);
+
+        // create new buffers
+        self.sokol_bindings.?.vertex_buffers[0] = sg.makeBuffer(.{
+            .usage = .STREAM,
+            .size = vertex_len * @sizeOf(Vertex),
+        });
+        self.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
+            .usage = .STREAM,
+            .type = .INDEXBUFFER,
+            .size = index_len * @sizeOf(u16),
+        });
     }
 };
 

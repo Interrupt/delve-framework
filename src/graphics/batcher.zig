@@ -15,9 +15,6 @@ var batch_allocator = batch_gpa.allocator();
 const max_indices = 64000;
 const max_vertices = max_indices;
 
-const min_indices = 32;
-const min_vertices = min_indices;
-
 /// Keeps track of a sub region of a texture
 pub const TextureRegion = struct {
     u: f32 = 0,
@@ -42,6 +39,11 @@ const DrawCall = struct {
     shader: *graphics.Shader,
 };
 
+const BatcherConfig = struct {
+    min_vertices: usize = 128,
+    min_indices: usize = 128,
+};
+
 /// Handles drawing a batch of primitive shapes
 pub const Batcher = struct {
     vertex_buffer: []Vertex,
@@ -56,14 +58,14 @@ pub const Batcher = struct {
     transform: Mat4 = Mat4.identity(),
 
     /// Setup and return a new Batcher
-    pub fn init() !Batcher {
+    pub fn init(cfg: BatcherConfig) !Batcher {
         var batcher: Batcher = Batcher {
             .vertex_pos = 0,
             .index_pos = 0,
             .num_draw_calls = 0,
-            .vertex_buffer = try batch_allocator.alloc(Vertex, min_vertices),
-            .index_buffer = try batch_allocator.alloc(u16, min_indices),
-            .bindings = graphics.Bindings.init(.{.updatable = true, .index_len = 64000, .vert_len = 64000}),
+            .vertex_buffer = try batch_allocator.alloc(Vertex, cfg.min_vertices),
+            .index_buffer = try batch_allocator.alloc(u16, cfg.min_indices),
+            .bindings = graphics.Bindings.init(.{.updatable = true, .index_len = cfg.min_indices, .vert_len = cfg.min_vertices}),
             .shader = graphics.Shader.init(.{ }),
             .draw_calls = try batch_allocator.alloc(DrawCall, 64),
         };
@@ -202,12 +204,15 @@ pub const Batcher = struct {
             return;
         }
 
+        var needs_resize = false;
+
         if(self.vertex_buffer.len < needed_vertices) {
             // debug.log("Growing vertex buffer to {d}", .{self.vertex_buffer.len * 2});
             self.vertex_buffer = batch_allocator.realloc(self.vertex_buffer, self.vertex_buffer.len * 2) catch {
                 debug.log("Could not allocate needed vertices! Needed {d}", .{needed_vertices});
                 return;
             };
+            needs_resize = true;
         }
         if(self.index_buffer.len < needed_indices) {
             // debug.log("Growing index buffer to {d}", .{self.index_buffer.len * 2});
@@ -215,6 +220,12 @@ pub const Batcher = struct {
                 debug.log("Could not allocate needed indices! Needed {d}", .{needed_indices});
                 return;
             };
+            needs_resize = true;
         }
+
+        if(!needs_resize)
+            return;
+
+        self.bindings.resize(self.vertex_buffer.len, self.index_buffer.len);
     }
 };
