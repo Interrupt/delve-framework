@@ -74,6 +74,7 @@ pub const SpriteBatcher = struct {
         if(batcher == null)
             return;
 
+        batcher.?.transform = self.transform;
         batcher.?.addRectangle(x, y, z, width, height, region, color);
     }
 
@@ -83,6 +84,7 @@ pub const SpriteBatcher = struct {
         if(batcher == null)
             return;
 
+        batcher.?.transform = self.transform;
         batcher.?.addTriangle(x, y, z, width, height, region, color);
     }
 
@@ -101,9 +103,6 @@ pub const SpriteBatcher = struct {
             debug.log("Could not create a new batch for SpriteBatch!", .{});
             return null;
         };
-
-        // initialize some values based on state
-        new_batcher.setTransformMatrix(self.transform);
 
         self.batches.put(self.current_tex_key, new_batcher) catch {
             debug.log("Could not add new batch to map for SpriteBatch!", .{});
@@ -141,11 +140,6 @@ pub const SpriteBatcher = struct {
     /// Update the transform matrix for the batches
     pub fn setTransformMatrix(self: *SpriteBatcher, matrix: Mat4) void {
         self.transform = matrix;
-
-        var it = self.batches.iterator();
-        while(it.next()) |batcher| {
-            batcher.value_ptr.setTransformMatrix(matrix);
-        }
     }
 
     /// Updates all bindings for this frame with the current data
