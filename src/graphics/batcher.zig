@@ -43,6 +43,7 @@ pub const SpriteBatcher = struct {
     transform: Mat4 = Mat4.identity(),
     config: BatcherConfig = BatcherConfig{},
     current_tex_key: u32 = 0,
+    current_tex: graphics.Texture = undefined,
 
     pub fn init(cfg: BatcherConfig) !SpriteBatcher {
         var sprite_batcher = SpriteBatcher {
@@ -62,31 +63,8 @@ pub const SpriteBatcher = struct {
 
     /// Switch the current batch to one for the given texture
     pub fn useTexture(self: *SpriteBatcher, texture: graphics.Texture) void {
-        const tex_key: u32 = texture.handle;
-        self.current_tex_key = tex_key;
-
-        // Check if a batch already exists for this texture
-        var batcher: ?*Batcher = self.batches.getPtr(tex_key);
-        if(batcher != null)
-            return;
-
-        // debug.log("Creating a new batch for tex {}", .{tex_key});
-
-        // Create a new batch with our config values, but using a new texture
-        var new_cfg = self.config;
-        new_cfg.texture = texture;
-
-        var new_batcher: Batcher = Batcher.init(new_cfg) catch {
-            debug.log("Could not create a new batch for SpriteBatch!", .{});
-            return;
-        };
-
-        // initialize some values based on state
-        new_batcher.setTransformMatrix(self.transform);
-
-        self.batches.put(tex_key, new_batcher) catch {
-            debug.log("Could not add new batch to map for SpriteBatch!", .{});
-        };
+        self.current_tex_key = texture.handle;
+        self.current_tex = texture;
     }
 
     /// Add a rectangle to the current batch
@@ -109,6 +87,28 @@ pub const SpriteBatcher = struct {
 
     /// Gets the batcher used for the current texture
     pub fn getCurrentBatcher(self: *SpriteBatcher) ?*Batcher {
+        // Return an existing batch if available
+        var batcher: ?*Batcher = self.batches.getPtr(self.current_tex_key);
+        if(batcher != null)
+            return batcher;
+
+        // None found, create a new batch with our config values but using a new texture
+        var new_cfg = self.config;
+        new_cfg.texture = self.current_tex;
+
+        var new_batcher: Batcher = Batcher.init(new_cfg) catch {
+            debug.log("Could not create a new batch for SpriteBatch!", .{});
+            return null;
+        };
+
+        // initialize some values based on state
+        new_batcher.setTransformMatrix(self.transform);
+
+        self.batches.put(self.current_tex_key, new_batcher) catch {
+            debug.log("Could not add new batch to map for SpriteBatch!", .{});
+            return null;
+        };
+
         return self.batches.getPtr(self.current_tex_key);
     }
 
