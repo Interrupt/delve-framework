@@ -286,10 +286,11 @@ pub const Batcher = struct {
         self.index_pos = 0;
     }
 
-    /// Submit a draw call for this batch
+    /// Submit a draw call to draw all shapes for this batch
     pub fn draw(self: *Batcher) void {
-        // draw all shapes from vertex data
-        // todo: support multiple bindings to change textures / shader?
+        if(self.index_pos == 0)
+            return;
+
         graphics.setDrawColor(self.draw_color);
         graphics.draw(&self.bindings, &self.shader);
     }
