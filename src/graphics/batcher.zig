@@ -41,6 +41,7 @@ const BatcherConfig = struct {
 pub const SpriteBatcher = struct {
     batches: std.AutoArrayHashMap(u32, Batcher) = undefined,
     transform: Mat4 = Mat4.identity(),
+    draw_color: graphics.Color = graphics.Color.white(),
     config: BatcherConfig = BatcherConfig{},
     current_tex_key: u32 = 0,
     current_tex: graphics.Texture = undefined,
@@ -116,6 +117,7 @@ pub const SpriteBatcher = struct {
     pub fn draw(self: *SpriteBatcher) void {
         var it = self.batches.iterator();
         while(it.next()) |batcher| {
+            batcher.value_ptr.draw_color = self.draw_color;
             batcher.value_ptr.draw();
         }
     }
