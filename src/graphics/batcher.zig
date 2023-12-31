@@ -31,30 +31,135 @@ pub const TextureRegion = struct {
     }
 };
 
-/// Info on a single drawcall in the buffer
-const DrawCall = struct {
-    start: usize,
-    end: usize,
-    texture: *graphics.Texture,
-    shader: *graphics.Shader,
-};
-
 const BatcherConfig = struct {
     min_vertices: usize = 128,
     min_indices: usize = 128,
+    texture: ?graphics.Texture = null,
 };
 
-/// Handles drawing a batch of primitive shapes
+/// Handles drawing batches of primitive shapes, bucketed by texture / shader
+pub const SpriteBatcher = struct {
+    batches: std.AutoArrayHashMap(u32, Batcher) = undefined,
+    transform: Mat4 = Mat4.identity(),
+    config: BatcherConfig = BatcherConfig{},
+    current_tex_key: u32 = 0,
+
+    pub fn init(cfg: BatcherConfig) !SpriteBatcher {
+        var sprite_batcher = SpriteBatcher {
+            .batches = std.AutoArrayHashMap(u32, Batcher).init(batch_allocator),
+            .config = cfg
+        };
+
+        const debug_texture: graphics.Texture = makeDebugTexture();
+        sprite_batcher.useTexture(debug_texture);
+
+        return sprite_batcher;
+    }
+
+    /// Switch the current batch to one for the given texture
+    pub fn useTexture(self: *SpriteBatcher, texture: graphics.Texture) void {
+        const tex_key: u32 = texture.handle;
+        self.current_tex_key = tex_key;
+
+        // Check if a batch already exists for this texture
+        var batcher: ?*Batcher = self.batches.getPtr(tex_key);
+        if(batcher != null)
+            return;
+
+        // debug.log("Creating a new batch for tex {}", .{tex_key});
+
+        // Create a new batch with our config values, but using a new texture
+        var new_cfg = self.config;
+        new_cfg.texture = texture;
+
+        var new_batcher: Batcher = Batcher.init(new_cfg) catch {
+            debug.log("Could not create a new batch for SpriteBatch!", .{});
+            return;
+        };
+
+        // initialize some values based on state
+        new_batcher.setTransformMatrix(self.transform);
+
+        self.batches.put(tex_key, new_batcher) catch {
+            debug.log("Could not add new batch to map for SpriteBatch!", .{});
+        };
+    }
+
+    /// Add a rectangle to the current batch
+    pub fn addRectangle(self: *SpriteBatcher, x: f32, y: f32, z: f32, width: f32, height: f32, region: TextureRegion, color: u32) void {
+        var batcher: ?*Batcher = self.getCurrentBatcher();
+        if(batcher == null)
+            return;
+
+        batcher.?.addRectangle(x, y, z, width, height, region, color);
+    }
+
+    /// Add a triangle to the current batch
+    pub fn addTriangle(self: *SpriteBatcher, x: f32, y: f32, z: f32, width: f32, height: f32, region: TextureRegion, color: u32) void {
+        var batcher: ?*Batcher = self.getCurrentBatcher();
+        if(batcher == null)
+            return;
+
+        batcher.?.addTriangle(x, y, z, width, height, region, color);
+    }
+
+    /// Gets the batcher used for the current texture
+    pub fn getCurrentBatcher(self: *SpriteBatcher) ?*Batcher {
+        return self.batches.getPtr(self.current_tex_key);
+    }
+
+    /// Draws all the batches
+    pub fn draw(self: *SpriteBatcher) void {
+        var it = self.batches.iterator();
+        while(it.next()) |batcher| {
+            batcher.value_ptr.draw();
+        }
+    }
+
+    /// Reset the batches for this frame
+    pub fn reset(self: *SpriteBatcher) void {
+        var it = self.batches.iterator();
+        while(it.next()) |batcher| {
+            batcher.value_ptr.reset();
+        }
+    }
+
+    /// Free the batches
+    pub fn deinit(self: *SpriteBatcher) void {
+        var it = self.batches.iterator();
+        while(it.next()) |batcher| {
+            batcher.value_ptr.deinit();
+        }
+    }
+
+    /// Update the transform matrix for the batches
+    pub fn setTransformMatrix(self: *SpriteBatcher, matrix: Mat4) void {
+        self.transform = matrix;
+
+        var it = self.batches.iterator();
+        while(it.next()) |batcher| {
+            batcher.value_ptr.setTransformMatrix(matrix);
+        }
+    }
+
+    /// Updates all bindings for this frame with the current data
+    pub fn apply(self: *SpriteBatcher) void {
+        var it = self.batches.iterator();
+        while(it.next()) |batcher| {
+            batcher.value_ptr.apply();
+        }
+    }
+};
+
+/// Handles drawing a batch of primitive shapes all with the same texture / shader
 pub const Batcher = struct {
     vertex_buffer: []Vertex,
     index_buffer: []u16,
     vertex_pos: usize,
     index_pos: usize,
-    num_draw_calls: usize,
     bindings: graphics.Bindings,
     shader: graphics.Shader,
     draw_color: graphics.Color = graphics.Color.white(),
-    draw_calls: []DrawCall = undefined,
     transform: Mat4 = Mat4.identity(),
 
     /// Setup and return a new Batcher
@@ -62,35 +167,33 @@ pub const Batcher = struct {
         var batcher: Batcher = Batcher {
             .vertex_pos = 0,
             .index_pos = 0,
-            .num_draw_calls = 0,
             .vertex_buffer = try batch_allocator.alloc(Vertex, cfg.min_vertices),
             .index_buffer = try batch_allocator.alloc(u16, cfg.min_indices),
             .bindings = graphics.Bindings.init(.{.updatable = true, .index_len = cfg.min_indices, .vert_len = cfg.min_vertices}),
             .shader = graphics.Shader.init(.{ }),
-            .draw_calls = try batch_allocator.alloc(DrawCall, 64),
         };
 
-        // create a small debug checker-board texture
-        const img = &[4 * 4]u32{
-            0xFF999999, 0xFF555555, 0xFF999999, 0xFF555555,
-            0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
-            0xFF999999, 0xFF555555, 0xFF999999, 0xFF555555,
-            0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
-        };
-        const texture = graphics.Texture.initFromBytes(4, 4, img);
-        batcher.setTexture(texture);
+        if(cfg.texture == null) {
+            // use debug checker-board texture if none was given
+            batcher.setTexture(makeDebugTexture());
+        } else {
+            batcher.setTexture(cfg.texture.?);
+        }
 
         return batcher;
     }
 
-    pub fn deinit() void {
-        // todo: dealloc here
+    pub fn deinit(self: *Batcher) void {
+        self.bindings.destroy();
+        batch_allocator.free(self.vertex_buffer);
+        batch_allocator.free(self.index_buffer);
     }
 
     /// Sets the texture from an Image that will be used when drawing the batch
     pub fn setTextureFromImage(self: *Batcher, image: *images.Image) void {
         const texture = graphics.Texture.init(image);
         self.bindings.setTexture(texture);
+        self.draw_calls[0].texture = texture;
     }
 
     /// Sets the texture that will be used when drawing the batch
@@ -114,16 +217,16 @@ pub const Batcher = struct {
         const v_2 = TextureRegion.convert(region.v_2);
 
         const verts = &[_]Vertex{
-            Vertex.mulMat4(.{ .x = x, .y = y + height, .z = z, .color = color, .u = u, .v = v }, self.transform),
-            Vertex.mulMat4(.{ .x = x + width, .y = y + height, .z = z, .color = color, .u = u_2, .v = v }, self.transform),
-            Vertex.mulMat4(.{ .x = x + width, .y = y, .z = z, .color = color, .u = u_2, .v = v_2}, self.transform),
-            Vertex.mulMat4(.{ .x = x, .y = y, .z = z, .color = color, .u = u, .v = v_2}, self.transform),
+            .{ .x = x, .y = y + height, .z = z, .color = color, .u = u, .v = v },
+            .{ .x = x + width, .y = y + height, .z = z, .color = color, .u = u_2, .v = v },
+            .{ .x = x + width, .y = y, .z = z, .color = color, .u = u_2, .v = v_2},
+            .{ .x = x, .y = y, .z = z, .color = color, .u = u, .v = v_2},
         };
 
         const indices = &[_]u16{ 0, 1, 2, 0, 2, 3 };
 
         for(verts, 0..) |vert, i| {
-            self.vertex_buffer[self.vertex_pos + i] = vert;
+            self.vertex_buffer[self.vertex_pos + i] = Vertex.mulMat4(vert, self.transform);
         }
 
         const v_pos = @as(u16, @intCast(self.vertex_pos));
@@ -156,7 +259,7 @@ pub const Batcher = struct {
         const indices = &[_]u16{ 0, 1, 2 };
 
         for(verts, 0..) |vert, i| {
-            self.vertex_buffer[self.vertex_pos + i] = vert;
+            self.vertex_buffer[self.vertex_pos + i] = Vertex.mulMat4(vert, self.transform);
         }
 
         const v_pos = @as(u16, @intCast(self.vertex_pos));
@@ -177,24 +280,14 @@ pub const Batcher = struct {
     pub fn reset(self: *Batcher) void {
         self.vertex_pos = 0;
         self.index_pos = 0;
-        self.num_draw_calls = 0;
     }
 
     /// Submit a draw call for this batch
     pub fn draw(self: *Batcher) void {
         // draw all shapes from vertex data
         // todo: support multiple bindings to change textures / shader?
-        if(self.num_draw_calls == 0) {
-            graphics.setDrawColor(self.draw_color);
-            graphics.draw(&self.bindings, &self.shader);
-            return;
-        }
-
-        // for(0..self.num_draw_calls) |i| {
-        //     self.bindings.setTexture(texture);
-        //     // todo: split up draw call here!
-        //     graphics.drawSubset(start, end, &self.bindings, &self.shader);
-        // }
+        graphics.setDrawColor(self.draw_color);
+        graphics.draw(&self.bindings, &self.shader);
     }
 
     /// Expand the buffers for this batch if needed to fit the new size
@@ -226,6 +319,18 @@ pub const Batcher = struct {
         if(!needs_resize)
             return;
 
+        // debug.log("Resizing buffer to {d}x{d}", .{self.vertex_buffer.len, self.index_buffer.len});
         self.bindings.resize(self.vertex_buffer.len, self.index_buffer.len);
     }
 };
+
+/// Returns a checkerboard texture for debugging
+fn makeDebugTexture() graphics.Texture {
+    const img = &[4 * 4]u32{
+        0xFF999999, 0xFF555555, 0xFF999999, 0xFF555555,
+        0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
+        0xFF999999, 0xFF555555, 0xFF999999, 0xFF555555,
+        0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
+    };
+    return graphics.Texture.initFromBytes(4, 4, img);
+}

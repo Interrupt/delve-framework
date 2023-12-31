@@ -197,12 +197,16 @@ pub const Shader = struct {
     }
 };
 
+var next_texture_handle: u32 = 0;
 pub const Texture = struct {
     width: u32,
     height: u32,
     sokol_image: ?sg.Image,
+    handle: u32,
 
     pub fn init(image: *images.Image) Texture {
+        defer next_texture_handle += 1;
+
         var img_desc: sg.ImageDesc = .{
             .width = @intCast(image.width),
             .height = @intCast(image.height),
@@ -215,10 +219,13 @@ pub const Texture = struct {
             .width = image.width,
             .height = image.height,
             .sokol_image = sg.makeImage(img_desc),
+            .handle = next_texture_handle,
         };
     }
 
     pub fn initFromBytes(width: u32, height: u32, image_bytes: anytype) Texture {
+        defer next_texture_handle += 1;
+
         var img_desc: sg.ImageDesc = .{
             .width = @intCast(width),
             .height = @intCast(height),
@@ -231,6 +238,7 @@ pub const Texture = struct {
             .width = width,
             .height = height,
             .sokol_image = sg.makeImage(img_desc),
+            .handle = next_texture_handle,
         };
     }
 };
