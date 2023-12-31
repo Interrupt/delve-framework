@@ -50,8 +50,12 @@ pub const SpriteBatcher = struct {
             .config = cfg
         };
 
-        const debug_texture: graphics.Texture = makeDebugTexture();
-        sprite_batcher.useTexture(debug_texture);
+        if(cfg.texture == null) {
+            const debug_texture: graphics.Texture = makeDebugTexture();
+            sprite_batcher.useTexture(debug_texture);
+        } else {
+            sprite_batcher.useTexture(cfg.texture.?);
+        }
 
         return sprite_batcher;
     }
