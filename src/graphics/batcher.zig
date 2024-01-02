@@ -77,13 +77,13 @@ pub const SpriteBatcher = struct {
     }
 
     /// Add a rectangle to the current batch
-    pub fn addRectangle(self: *SpriteBatcher, x: f32, y: f32, width: f32, height: f32, region: TextureRegion, color: u32) void {
+    pub fn addRectangle(self: *SpriteBatcher, pos: Vec2, size: Vec2, region: TextureRegion, color: u32) void {
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
             return;
 
         batcher.?.transform = self.transform;
-        batcher.?.addRectangle(x, y, width, height, region, color);
+        batcher.?.addRectangle(pos, size, region, color);
     }
 
     /// Add a triangle to the current batch
@@ -246,11 +246,11 @@ pub const Batcher = struct {
     }
 
     /// Add a rectangle to the batch
-    pub fn addRectangle(self: *Batcher, x: f32, y: f32, width: f32, height: f32, region: TextureRegion, color: u32) void {
-        const v0 = Vec2 { .x = x, .y = y + height };
-        const v1 = Vec2 { .x = x + width, .y = y + height };
-        const v2 = Vec2 { .x = x + width, .y = y };
-        const v3 = Vec2 { .x = x, .y = y };
+    pub fn addRectangle(self: *Batcher, pos: Vec2, size: Vec2, region: TextureRegion, color: u32) void {
+        const v0 = Vec2.add(pos, Vec2{.x = 0, .y = size.y});
+        const v1 = Vec2.add(pos, Vec2{.x = size.x, .y = size.y});
+        const v2 = Vec2.add(pos, Vec2{.x = size.x, .y = 0});
+        const v3 = pos;
 
         self.addQuad(v0, v1, v2, v3, region, color);
     }

@@ -73,7 +73,7 @@ fn on_tick(tick: u64) void {
             transform = math.Mat4.mul(transform, math.Mat4.rotate(f_i * 3.0, .{ .x = 1.0, .y = 1.0, .z = 0.0 }));
             test_batch.setTransformMatrix(transform);
 
-            test_batch.addRectangle(0, 0, 0.5, 0.5, batcher.TextureRegion.default(), 0xFFFFFFFF);
+            test_batch.addRectangle(math.Vec2{.x=0, .y=0}, math.Vec2{.x=0.5, .y=0.5}, batcher.TextureRegion.default(), 0xFFFFFFFF);
         } else {
             transform = math.Mat4.translate(.{ .x = -x_pos, .y = y_pos, .z = f_i * -0.1 });
             transform = math.Mat4.mul(transform, math.Mat4.rotate(f_i * 3.0, .{ .x = 0.0, .y = -1.0, .z = 0.0 }));
