@@ -6,27 +6,8 @@ const images = @import("../images.zig");
 const debug = @import("../debug.zig");
 const gfx = @import("../platform/graphics.zig");
 
-const Lua = ziglua.Lua;
-
 const text_asset = @embedFile("../static/font.gif");
 var text_gif: images.Image = undefined;
-
-// pub fn makeLib(lua: *Lua) i32 {
-//     const funcs = [_]ziglua.FnReg{
-//         .{ .name = "draw", .func = ziglua.wrap(text) },
-//         .{ .name = "draw_wrapped", .func = ziglua.wrap(text_wrapped) },
-//     };
-//
-//     text_gif = images.loadBytes(text_asset) catch {
-//         debug.log("Text: Error loading builtin font.", .{});
-//         return 0;
-//     };
-//
-//     debug.log("Text: Loaded builtin font: {d}kb", .{text_asset.len / 1000});
-//
-//     lua.newLib(&funcs);
-//     return 1;
-// }
 
 pub fn draw(text_string: [*:0]const u8, x: i32, y: i32, color: u32) void {
     var x_offset: i32 = 0;

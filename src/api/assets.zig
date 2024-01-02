@@ -5,8 +5,6 @@ const main = @import("../main.zig");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
 
-// const Lua = ziglua.Lua;
-
 var loaded_textures: std.AutoHashMap([*:0]const u8, u32) = undefined;
 var texture_handles: std.AutoHashMap(u32, images.Image) = undefined;
 
@@ -20,20 +18,6 @@ pub fn libInit() void {
     loaded_textures = std.AutoHashMap([*:0]const u8, u32).init(allocator);
     texture_handles = std.AutoHashMap(u32, images.Image).init(allocator);
 }
-
-// pub fn makeLib(lua: *Lua) i32 {
-//     const funcs = [_]ziglua.FnReg{
-//         .{ .name = "get_texture", .func = ziglua.wrap(getTexture) },
-//     };
-//
-//     lua.newLib(&funcs);
-//
-//     // init everything!
-//     loaded_textures = std.autohashmap([*:0]const u8, u32).init(allocator);
-//     texture_handles = std.autohashmap(u32, images.image).init(allocator);
-//
-//     return 1;
-// }
 
 // return a texture handle or -1 if an error occurs
 pub fn get_texture(filename: [*:0]const u8) i64 {

@@ -7,18 +7,7 @@ const assets = @import("assets.zig");
 const images= @import("../images.zig");
 const scripting = @import("../scripting/manager.zig");
 
-// const Lua = ziglua.Lua;
-
 var enable_debug_logging = false;
-
-// pub fn makeLib(lua: *Lua) i32 {
-//     const funcs = [_]ziglua.FnReg{
-//         .{ .name = "blit", .func = ziglua.wrap(blit) },
-//     };
-//
-//     lua.newLib(&funcs);
-//     return 1;
-// }
 
 pub fn blit(texture_handle: u32, source_x: i32, source_y: i32, source_width: u32, source_height: u32, dest_x: i32, dest_y: i32) void {
     _ = texture_handle;

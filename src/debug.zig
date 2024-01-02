@@ -314,8 +314,8 @@ pub fn showErrorScreen(error_header: [:0]const u8) void {
     const error_screen_lua =
         \\ _draw = function()
         \\ require('draw').clear(1)
-        \\ require('text').draw("{s}", 8, 8, 0)
-        \\ require('text').draw_wrapped([[{s}]], 8, 24, 264, 0)
+        \\ require('text').draw("{s}", 32, 32, 0)
+        \\ require('text').draw_wrapped([[{s}]], 32, 32+16, 800, 0)
         \\ end
         \\
         \\ _update = function() end
