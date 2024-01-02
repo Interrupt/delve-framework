@@ -71,13 +71,14 @@ pub const SpriteBatcher = struct {
 
     /// Switch the current batch to one for a solid color
     pub fn useSolidColor(self: *SpriteBatcher) void {
-        var solid_tex: graphics.Texture = getSolidColorTexture();
+        var solid_tex: graphics.Texture = graphics.tex_white;
         self.current_tex_key = solid_tex.handle;
         self.current_tex = solid_tex;
     }
 
     /// Add a rectangle to the current batch
-    pub fn addRectangle(self: *SpriteBatcher, pos: Vec2, size: Vec2, region: TextureRegion, color: u32) void {
+    pub fn addRectangle(self: *SpriteBatcher, texture: graphics.Texture, pos: Vec2, size: Vec2, region: TextureRegion, color: u32) void {
+        self.useTexture(texture);
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
             return;
@@ -86,14 +87,36 @@ pub const SpriteBatcher = struct {
         batcher.?.addRectangle(pos, size, region, color);
     }
 
+    /// Add a rectangle of lines to the current batch
+    pub fn addLineRectangle(self: *SpriteBatcher, texture: graphics.Texture, pos: Vec2, size: Vec2, line_width: f32, region: TextureRegion, color: u32) void {
+        self.useTexture(texture);
+        var batcher: ?*Batcher = self.getCurrentBatcher();
+        if(batcher == null)
+            return;
+
+        batcher.?.transform = self.transform;
+        batcher.?.addLineRectangle(pos, size, line_width, region, color);
+    }
+
     /// Add a triangle to the current batch
-    pub fn addTriangle(self: *SpriteBatcher, x: f32, y: f32, width: f32, height: f32, region: TextureRegion, color: u32) void {
+    pub fn addTriangle(self: *SpriteBatcher, texture: graphics.Texture, x: f32, y: f32, width: f32, height: f32, region: TextureRegion, color: u32) void {
+        self.useTexture(texture);
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
             return;
 
         batcher.?.transform = self.transform;
         batcher.?.addTriangle(x, y, width, height, region, color);
+    }
+
+    pub fn addLine(self: *SpriteBatcher, texture: graphics.Texture, from: Vec2, to: Vec2, width: f32, region: TextureRegion, color: u32) void {
+        self.useTexture(texture);
+        var batcher: ?*Batcher = self.getCurrentBatcher();
+        if(batcher == null)
+            return;
+
+        batcher.?.transform = self.transform;
+        batcher.?.addLine(from, to, width, region, color);
     }
 
     /// Gets the batcher used for the current texture
@@ -182,8 +205,7 @@ pub const Batcher = struct {
         };
 
         if(cfg.texture == null) {
-            var solid_tex = getSolidColorTexture();
-            batcher.setTexture(solid_tex);
+            batcher.setTexture(graphics.tex_white);
         } else {
             batcher.setTexture(cfg.texture.?);
         }
@@ -201,7 +223,6 @@ pub const Batcher = struct {
     pub fn setTextureFromImage(self: *Batcher, image: *images.Image) void {
         const texture = graphics.Texture.init(image);
         self.bindings.setTexture(texture);
-        self.draw_calls[0].texture = texture;
     }
 
     /// Sets the texture that will be used when drawing the batch
@@ -213,6 +234,7 @@ pub const Batcher = struct {
         self.transform = matrix;
     }
 
+    /// Add a four sided quad shape to the batch
     pub fn addQuad(self: *Batcher, v0: Vec2, v1: Vec2, v2: Vec2, v3: Vec2, region: TextureRegion, color: u32) void {
         self.growBuffersToFit(self.vertex_pos + 4, self.index_pos + 6) catch {
             return;
@@ -253,6 +275,33 @@ pub const Batcher = struct {
         const v3 = pos;
 
         self.addQuad(v0, v1, v2, v3, region, color);
+    }
+
+    /// Add a line to the batch
+    pub fn addLine(self: *Batcher, from: Vec2, to: Vec2, width: f32, region: TextureRegion, color: u32) void {
+        const normal = Vec2.norm(Vec2.sub(to, from));
+        const extents = Vec2.mul(Vec2{.x=-normal.y, .y=normal.x}, width * 0.5);
+
+        const v0 = Vec2.add(from, extents);
+        const v1 = Vec2.add(to, extents);
+        const v2 = Vec2.sub(to, extents);
+        const v3 = Vec2.sub(from, extents);
+
+        // A line is really just a quad
+        self.addQuad(v0, v1, v2, v3, region, color);
+    }
+
+    /// Add a rectangle made of lines to the batch
+    pub fn addLineRectangle(self: *Batcher, pos: Vec2, size: Vec2, line_width: f32, region: TextureRegion, color: u32) void {
+        const w: f32 = line_width * 0.5;
+
+        // top and bottom
+        self.addLine(math.vec2(pos.x - w, pos.y), math.vec2(pos.x + size.x + w, pos.y), line_width, region, color);
+        self.addLine(math.vec2(pos.x - w, pos.y + size.y), math.vec2(pos.x + size.x + w, pos.y + size.y), line_width, region, color);
+
+        // sides
+        self.addLine(math.vec2(pos.x, pos.y), math.vec2(pos.x, pos.y + size.y), line_width, region, color);
+        self.addLine(math.vec2(pos.x + size.x, pos.y), math.vec2(pos.x + size.x, pos.y + size.y), line_width, region, color);
     }
 
     /// Add a triangle to the batch
@@ -351,23 +400,4 @@ fn makeDebugTexture() graphics.Texture {
         0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
     };
     return graphics.Texture.initFromBytes(4, 4, img);
-}
-
-/// Returns a solid white texture
-fn makeSolidColorTexture() graphics.Texture {
-    const img = &[2 * 2]u32{
-        0xFFFFFFFF, 0xFFFFFFFF,
-        0xFFFFFFFF, 0xFFFFFFFF,
-    };
-    return graphics.Texture.initFromBytes(2, 2, img);
-}
-
-var solid_texture: ?graphics.Texture = null;
-
-/// Gets or creates the solid color texture
-fn getSolidColorTexture() graphics.Texture {
-    if(solid_texture == null)
-        solid_texture = makeSolidColorTexture();
-
-    return solid_texture.?;
 }

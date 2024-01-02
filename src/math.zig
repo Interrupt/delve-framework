@@ -13,6 +13,10 @@ fn radians(deg: f32) f32 {
     return deg * (math.pi / 180.0);
 }
 
+pub fn vec2(x: f32, y: f32) Vec2 {
+    return Vec2{ .x = x, .y = y };
+}
+
 pub const Vec2 = extern struct {
     x: f32,
     y: f32,
@@ -34,7 +38,7 @@ pub const Vec2 = extern struct {
     }
 
     pub fn sub(left: Vec2, right: Vec2) Vec2 {
-        return Vec3{ .x = left.x - right.x, .y = left.y - right.y };
+        return Vec2{ .x = left.x - right.x, .y = left.y - right.y };
     }
 
     pub fn mul(v: Vec2, s: f32) Vec2 {
@@ -54,6 +58,10 @@ pub const Vec2 = extern struct {
         return v0.x * v1.x + v0.y * v1.y;
     }
 };
+
+pub fn vec3(x: f32, y: f32, z: f32) Vec3 {
+    return Vec3{ .x = x, .y = y, .z = z };
+}
 
 pub const Vec3 = extern struct {
     x: f32,

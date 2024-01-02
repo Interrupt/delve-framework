@@ -36,22 +36,20 @@ export fn sokol_init() void {
         return;
     };
 
-    // Load and run the main script
-    lua.runFile("main.lua") catch {
-        debug.showErrorScreen("Fatal error during startup!");
+    // Now that there is an app and graphics context, we can start the app subsystems
+    app.startSubsystems() catch {
+        debug.log("Fatal error starting subsystems!\n", .{});
         return;
     };
 
-    // Call the init lifecycle function
-    lua.callFunction("_init") catch {
-        debug.showErrorScreen("Fatal error!");
-    };
-
+    // Todo: should the subsystems just be modules?
     modules.initModules();
 }
 
 export fn sokol_cleanup() void {
     modules.cleanupModules();
+    app.stopSubsystems();
+
     gfx.deinit();
     sg.shutdown();
 }

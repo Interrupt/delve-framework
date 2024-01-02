@@ -39,11 +39,7 @@ pub fn start(config: AppConfig) !void {
     palette = try images.loadFile("palette.gif");
     defer palette.destroy();
 
-    // Start up the subsystems
-    try startSubsystems();
-    defer stopSubsystems();
-
-    // Kick off the game loop!
+    // Kick off the game loop! This will also start and stop the subsystems.
     app_backend.startMainLoop(config);
 
     debug.log("Delve framework stopping", .{});

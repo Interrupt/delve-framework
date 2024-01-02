@@ -23,6 +23,17 @@ pub fn init() !void {
     bindZigLibrary("graphics", @import("../api/graphics.zig"));
     bindZigLibrary("input.mouse", @import("../api/mouse.zig"));
     bindZigLibrary("input.keyboard", @import("../api/keyboard.zig"));
+
+    // Load and run the main script
+    lua_util.runFile("main.lua") catch {
+        debug.showErrorScreen("Fatal error!");
+        return;
+    };
+
+    // Call the init lifecycle function
+    lua_util.callFunction("_init") catch {
+        debug.showErrorScreen("Fatal error!");
+    };
 }
 
 pub fn deinit() void {

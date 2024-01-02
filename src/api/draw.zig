@@ -5,8 +5,10 @@ const app = @import("../app.zig");
 const debug = @import("../debug.zig");
 const text_module = @import("text.zig");
 const graphics_system = @import("../platform/graphics.zig");
+const batcher = @import("../graphics/batcher.zig");
 
 const Vec2 = @import("../math.zig").Vec2;
+
 
 // const Lua = ziglua.Lua;
 
