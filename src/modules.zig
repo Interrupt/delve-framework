@@ -9,10 +9,10 @@ var num_modules: u32 = 0;
 
 pub const Module = struct {
     name: [:0]const u8,
-    init_fn: *const fn () void,
-    tick_fn: *const fn (u64) void,
-    draw_fn: *const fn () void,
-    cleanup_fn: *const fn () void,
+    init_fn: ?*const fn () void = null,
+    tick_fn: ?*const fn (u64) void = null,
+    draw_fn: ?*const fn () void = null,
+    cleanup_fn: ?*const fn () void = null,
 };
 
 pub fn registerModule(module: Module) !void {
@@ -31,24 +31,28 @@ pub fn getModules() []Module {
 
 pub fn initModules() void {
     for(getModules()) |module| {
-        module.init_fn();
+        if(module.init_fn != null)
+            module.init_fn.?();
     }
 }
 
 pub fn tickModules(tick: u64) void {
     for(getModules()) |module| {
-        module.tick_fn(tick);
+        if(module.tick_fn != null)
+            module.tick_fn.?(tick);
     }
 }
 
 pub fn drawModules() void {
     for(getModules()) |module| {
-        module.draw_fn();
+        if(module.draw_fn != null)
+            module.draw_fn.?();
     }
 }
 
 pub fn cleanupModules() void {
     for(getModules()) |module| {
-        module.cleanup_fn();
+        if(module.cleanup_fn != null)
+            module.cleanup_fn.?();
     }
 }

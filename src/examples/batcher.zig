@@ -96,7 +96,7 @@ fn on_tick(tick: u64) void {
     test_batch.setTransformMatrix(math.Mat4.translate(math.vec3(0,0,-0.001)));
 
     // test a filled rectangle!
-    test_batch.addRectangle(graphics.tex_white, math.vec2(-2.5, 0), math.vec2(2, 0.5), batcher.TextureRegion.default(), 0xFFFF0000);
+    test_batch.addRectangle(graphics.tex_white, math.vec2(-2.5, 0), math.vec2(2, 0.5), batcher.TextureRegion.default(), 0xFF0000FF);
 
     test_batch.apply();
 }

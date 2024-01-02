@@ -71,16 +71,16 @@ function _draw()
     graphics.blit(textures, 8, 0, 8, 8, x + 8, y + 8)
     graphics.blit(textures, 16, 0, 16, 16, x + 24, y + 24)
 
-    -- if #points < 11 then
-    --     return
-    -- end
-    --
-    -- for i = 1, #points - 10, 1 do
-    --     local p0 = points[i]
-    --     local p1 = points[i + 10]
-    --     local c = i / (#points - 10)
-    --     draw.line(p0.x, p0.y, p1.x, p1.y, shade(c))
-    -- end
+    if #points < 11 then
+        return
+    end
+
+    for i = 1, #points - 10, 1 do
+        local p0 = points[i]
+        local p1 = points[i + 10]
+        local c = i / (#points - 10)
+        draw.line(p0.x, p0.y, p1.x, p1.y, shade(c))
+    end
 end
 
 function shade(t)

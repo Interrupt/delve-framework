@@ -16,7 +16,7 @@ var allocator = gpa.allocator();
 
 // called automatically when the library is binded
 pub fn libInit() void {
-    debug.log("Assets: initializing\n", .{});
+    debug.log("Assets: initializing", .{});
     loaded_textures = std.AutoHashMap([*:0]const u8, u32).init(allocator);
     texture_handles = std.AutoHashMap(u32, images.Image).init(allocator);
 }

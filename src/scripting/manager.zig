@@ -1,8 +1,9 @@
 const std = @import("std");
 const fmt = @import("fmt");
-const ziglua = @import("ziglua");
 const debug = @import("../debug.zig");
 const lua_util = @import("lua.zig");
+const modules = @import("../modules.zig");
+const ziglua = @import("ziglua");
 
 const Lua = ziglua.Lua;
 
@@ -16,14 +17,24 @@ pub fn init() !void {
     try lua_util.init();
 
     // Bind all the libraries using some meta programming magic at compile time
-    bindZigLibrary("assets", @import("../api/assets.zig"));
-    bindZigLibrary("display", @import("../api/display.zig"));
-    bindZigLibrary("draw", @import("../api/draw.zig"));
-    bindZigLibrary("text", @import("../api/text.zig"));
-    bindZigLibrary("graphics", @import("../api/graphics.zig"));
-    bindZigLibrary("input.mouse", @import("../api/mouse.zig"));
-    bindZigLibrary("input.keyboard", @import("../api/keyboard.zig"));
+    try bindZigLibrary("assets", @import("../api/assets.zig"));
+    try bindZigLibrary("display", @import("../api/display.zig"));
+    try bindZigLibrary("draw", @import("../api/draw.zig"));
+    try bindZigLibrary("text", @import("../api/text.zig"));
+    try bindZigLibrary("graphics", @import("../api/graphics.zig"));
+    try bindZigLibrary("input.mouse", @import("../api/mouse.zig"));
+    try bindZigLibrary("input.keyboard", @import("../api/keyboard.zig"));
 
+    // Register the script manager as a module to tie into the app lifecycle
+    var scriptManagerModule = modules.Module {
+        .name = "script_manager",
+        .init_fn = on_init,
+    };
+
+    try modules.registerModule(scriptManagerModule);
+}
+
+pub fn on_init() void {
     // Load and run the main script
     lua_util.runFile("main.lua") catch {
         debug.showErrorScreen("Fatal error!");
@@ -41,8 +52,11 @@ pub fn deinit() void {
 }
 
 fn isModuleFunction(comptime name: [:0]const u8, comptime in_type: anytype) bool {
-    // Don't try to bind the libInit function!
-    if(std.mem.eql(u8, name, "libInit"))
+    // Don't try to bind the script lib lifecycle functions!
+    if(std.mem.eql(u8, name, "libInit")
+    or std.mem.eql(u8, name, "libTick")
+    or std.mem.eql(u8, name, "libDraw")
+    or std.mem.eql(u8, name, "libCleanup"))
         return false;
 
     return @typeInfo(in_type) == .Fn;
@@ -80,14 +94,31 @@ fn wrapFn(name: [:0]const u8, comptime func: anytype) ScriptFn {
     };
 }
 
-fn bindZigLibrary(comptime name: [:0]const u8, comptime zigfile: anytype) void {
+fn bindZigLibrary(comptime name: [:0]const u8, comptime zigfile: anytype) !void {
     const lib_fns = comptime findLibraryFunctions(zigfile);
     bindLibrary(name, lib_fns);
 
-    // call the init method, if one exists
+    // Register the library as a module to tie into the app lifecycle
+    var scriptApiModule = modules.Module {
+        .name = "scriptapi_" ++ name,
+    };
+
+    // bind lifecycle functions for the library module
     if(@hasDecl(zigfile, "libInit")) {
-        zigfile.libInit();
+        scriptApiModule.init_fn = zigfile.libInit;
     }
+    if(@hasDecl(zigfile, "libTick")) {
+        scriptApiModule.tick_fn = zigfile.libTick;
+    }
+    if(@hasDecl(zigfile, "libDraw")) {
+        scriptApiModule.draw_fn = zigfile.libDraw;
+    }
+    if(@hasDecl(zigfile, "libCleanup")) {
+        scriptApiModule.cleanup_fn = zigfile.libCleanup;
+    }
+
+    try modules.registerModule(scriptApiModule);
+
 }
 
 fn bindLibrary(comptime name: [:0]const u8, comptime funcs: []const ScriptFn) void {

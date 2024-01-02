@@ -65,10 +65,10 @@ export fn sokol_frame() void {
 
     gfx.startFrame();
 
-    modules.drawModules();
     lua.callFunction("_draw") catch {
         debug.showErrorScreen("Fatal error!");
     };
+    modules.drawModules();
 
     gfx.endFrame();
 }
