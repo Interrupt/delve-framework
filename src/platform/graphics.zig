@@ -57,6 +57,15 @@ pub const Color = struct {
     pub fn black() Color {
        return Color{.r=0.0,.g=0.0,.b=0.0,.a=1.0};
     }
+
+    pub fn toInt(self: Color) u32 {
+        var c: u32 = 0;
+        c |= @intFromFloat(self.r * 0x000000FF);
+        c |= @intFromFloat(self.g * 0x0000FF00);
+        c |= @intFromFloat(self.b * 0x00FF0000);
+        c |= @intFromFloat(self.a * 0xFF000000);
+        return c;
+    }
 };
 
 pub const BindingConfig = struct {

@@ -94,12 +94,7 @@ pub fn line(start_x :i32, start_y: i32, end_x: i32, end_y: i32, pal_color: u32) 
         .y = @floatFromInt(-end_y),
     };
 
-    var c: u32 = 0xFF000000;
-    c |= @intFromFloat(color.r * 0x000000FF);
-    c |= @intFromFloat(color.g * 0x0000FF00);
-    c |= @intFromFloat(color.b * 0x00FF0000);
-
-    shape_batch.addLine(Vec2.mul(start, 0.0075), Vec2.mul(end, 0.0075), 0.02, batcher.TextureRegion.default(), c);
+    shape_batch.addLine(Vec2.mul(start, 0.0075), Vec2.mul(end, 0.0075), 0.02, batcher.TextureRegion.default(), color.toInt());
 }
 
 pub fn filled_circle(x: f32, y: f32, radius: f32, pal_color: u32) void {
