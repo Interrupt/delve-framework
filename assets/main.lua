@@ -79,7 +79,7 @@ function _draw()
         local p0 = points[i]
         local p1 = points[i + 10]
         local c = i / (#points - 10)
-        draw.line(p0.x, p0.y, p1.x, p1.y, shade(c))
+        draw.line(p0.x, p0.y, p1.x, p1.y, 2.0, shade(c))
     end
 end
 

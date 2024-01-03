@@ -71,7 +71,7 @@ pub fn clear(pal_color: u32) void {
     graphics.setClearColor(color);
 }
 
-pub fn line(start_x :i32, start_y: i32, end_x: i32, end_y: i32, pal_color: u32) void {
+pub fn line(start_x :f32, start_y: f32, end_x: f32, end_y: f32, line_width: f32, pal_color: u32) void {
     if (enable_debug_logging)
         debug.log("Draw: line({d},{d},{d},{d},{d})", .{ start_x, start_y, end_x, end_y, pal_color });
 
@@ -91,17 +91,10 @@ pub fn line(start_x :i32, start_y: i32, end_x: i32, end_y: i32, pal_color: u32) 
         .b = @floatFromInt(b),
     };
 
-    const start: Vec2 = Vec2 {
-        .x = @floatFromInt(start_x),
-        .y = @floatFromInt(start_y),
-    };
+    const start = Vec2 { .x = start_x, .y = start_y };
+    const end = Vec2 { .x = end_x, .y = end_y };
 
-    const end: Vec2 = Vec2 {
-        .x = @floatFromInt(end_x),
-        .y = @floatFromInt(end_y),
-    };
-
-    shape_batch.addLine(Vec2.mul(start, 1.0), Vec2.mul(end, 1.0), 2.0, batcher.TextureRegion.default(), color.toInt());
+    shape_batch.addLine(Vec2.mul(start, 1.0), Vec2.mul(end, 1.0), line_width, batcher.TextureRegion.default(), color.toInt());
 }
 
 pub fn filled_circle(x: f32, y: f32, radius: f32, pal_color: u32) void {
@@ -154,7 +147,7 @@ pub fn filled_circle(x: f32, y: f32, radius: f32, pal_color: u32) void {
     }
 }
 
-pub fn rectangle(start_x: f32, start_y: f32, width: f32, height: f32, pal_color: u32) void {
+pub fn rectangle(start_x: f32, start_y: f32, width: f32, height: f32, line_width: f32, pal_color: u32) void {
     // Four bytes per color
     var color_idx = pal_color * app.palette.channels;
 
@@ -174,7 +167,7 @@ pub fn rectangle(start_x: f32, start_y: f32, width: f32, height: f32, pal_color:
     const pos = Vec2.new(start_x, start_y);
     const size = Vec2.new(width, height);
 
-    shape_batch.addLineRectangle(pos, size, 0.02, batcher.TextureRegion.default(), color.toInt());
+    shape_batch.addLineRectangle(pos, size, line_width, batcher.TextureRegion.default(), color.toInt());
 }
 
 pub fn filled_rectangle(start_x: f32, start_y: f32, width: f32, height: f32, pal_color: u32) void {
@@ -192,6 +185,7 @@ pub fn filled_rectangle(start_x: f32, start_y: f32, width: f32, height: f32, pal
 
     const pos = Vec2.new(start_x, start_y);
     const size = Vec2.new(width, height);
+
     shape_batch.addRectangle(pos, size, batcher.TextureRegion.default(), color.toInt());
 }
 
