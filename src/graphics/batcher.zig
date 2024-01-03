@@ -359,6 +359,27 @@ pub const Batcher = struct {
         self.index_pos += indices.len;
     }
 
+    /// Adds a circle to the batch
+    pub fn addCircle(self: *Batcher, center: Vec2, radius: f32, steps: i32, region: TextureRegion, color: u32) void {
+        var last = angleToVector(0, radius);
+
+        const tau = std.math.pi * 2.0;
+
+        _ = region;
+
+        const uv0 = Vec2.zero();
+        const uv1 = Vec2.zero();
+        const uv2 = Vec2.zero();
+
+        for(0 .. @intCast(steps+1)) |i| {
+            const if32: f32 = @floatFromInt(i);
+            const next = angleToVector(if32 / @as(f32, @floatFromInt(steps)) * tau, radius);
+            self.addTriangleFromVecs(Vec2.add(center, last), Vec2.add(center, next), center, uv0, uv1, uv2, color);
+            last = next;
+        }
+
+    }
+
     /// Updates our bindings for this frame with the current data
     pub fn apply(self: *Batcher) void {
         self.bindings.update(self.vertex_buffer, self.index_buffer, self.vertex_pos, self.index_pos);
@@ -426,4 +447,8 @@ fn makeDebugTexture() graphics.Texture {
 
 fn floatToIntUV(in: f32) i16 {
     return @intFromFloat(6550.0 * in);
+}
+
+fn angleToVector(angle: f32, length: f32) Vec2 {
+    return Vec2{ .x = std.math.cos(angle) * length, .y = std.math.sin(angle) * length };
 }

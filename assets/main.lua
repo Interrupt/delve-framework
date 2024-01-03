@@ -71,6 +71,9 @@ function _draw()
     graphics.blit(textures, 8, 0, 8, 8, x + 8, y + 8)
     graphics.blit(textures, 16, 0, 16, 16, x + 24, y + 24)
 
+    draw.filled_circle(270, 400, 50, black)
+    draw.filled_circle(260, 380, 20, white)
+
     if #points < 11 then
         return
     end
