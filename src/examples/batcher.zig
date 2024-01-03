@@ -80,7 +80,7 @@ fn on_tick(tick: u64) void {
             transform = math.Mat4.mul(transform, math.Mat4.rotate(f_i * 3.0, .{ .x = 0.0, .y = -1.0, .z = 0.0 }));
             test_batch.setTransformMatrix(transform);
 
-            test_batch.addTriangle(tex, 0, 0, 0.5, 0.5, batcher.TextureRegion.default(), 0xFFFFFFFF);
+            test_batch.addTriangle(tex, math.Vec2{.x=0, .y=0}, math.Vec2{.x=0.5, .y=0.5}, batcher.TextureRegion.default(), 0xFFFFFFFF);
         }
     }
 

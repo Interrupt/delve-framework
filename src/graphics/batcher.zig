@@ -98,17 +98,29 @@ pub const SpriteBatcher = struct {
         batcher.?.addLineRectangle(pos, size, line_width, region, color);
     }
 
-    /// Add a triangle to the current batch
-    pub fn addTriangle(self: *SpriteBatcher, texture: graphics.Texture, x: f32, y: f32, width: f32, height: f32, region: TextureRegion, color: u32) void {
+    /// Add an equilateral triangle to the current batch
+    pub fn addTriangle(self: *SpriteBatcher, texture: graphics.Texture, pos: Vec2, size: Vec2, region: TextureRegion, color: u32) void {
         self.useTexture(texture);
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
             return;
 
         batcher.?.transform = self.transform;
-        batcher.?.addTriangle(x, y, width, height, region, color);
+        batcher.?.addTriangle(pos, size, region, color);
     }
 
+    /// Adds a freeform triangle to the current batch
+    pub fn addTriangleFromVecs(self: *SpriteBatcher, texture: graphics.Texture, v0: Vec2, v1: Vec2, v2: Vec2, uv0: Vec2, uv1: Vec2, uv2: Vec2, color: u32) void {
+        self.useTexture(texture);
+        var batcher: ?*Batcher = self.getCurrentBatcher();
+        if(batcher == null)
+            return;
+
+        batcher.?.transform = self.transform;
+        batcher.?.addTriangleFromVecs(v0, v1, v2, uv0, uv1, uv2, color);
+    }
+
+    /// Adds a textured line to the current batch
     pub fn addLine(self: *SpriteBatcher, texture: graphics.Texture, from: Vec2, to: Vec2, width: f32, region: TextureRegion, color: u32) void {
         self.useTexture(texture);
         var batcher: ?*Batcher = self.getCurrentBatcher();
@@ -230,6 +242,7 @@ pub const Batcher = struct {
         self.bindings.setTexture(texture);
     }
 
+    /// Sets the transform matrix that will be used to transform shapes when adding
     pub fn setTransformMatrix(self: *Batcher, matrix: Mat4) void {
         self.transform = matrix;
     }
@@ -304,22 +317,31 @@ pub const Batcher = struct {
         self.addLine(math.vec2(pos.x + size.x, pos.y), math.vec2(pos.x + size.x, pos.y + size.y), line_width, region, color);
     }
 
-    /// Add a triangle to the batch
-    pub fn addTriangle(self: *Batcher, x: f32, y: f32, width: f32, height: f32, region: TextureRegion, color: u32) void {
+    /// Adds an equilateral triangle to the batch
+    pub fn addTriangle(self: *Batcher, pos: Vec2, size: Vec2, region: TextureRegion, color: u32) void {
+        const v0: Vec2 = Vec2{.x = pos.x + size.x / 2.0, .y = pos.y + size.y};
+        const v1: Vec2 = pos;
+        const v2: Vec2 = Vec2{.x = pos.x + size.x, .y = pos.y };
+
+        const u_mid = (region.u + region.u_2) / 2.0;
+
+        const uv0: Vec2 = Vec2.new(u_mid, region.v);
+        const uv1: Vec2 = Vec2.new(region.u, region.v_2);
+        const uv2: Vec2 = Vec2.new(region.u_2, region.v_2);
+
+        self.addTriangleFromVecs(v0, v1, v2, uv0, uv1, uv2, color);
+    }
+
+    /// Add a freeform triangle to the batch
+    pub fn addTriangleFromVecs(self: *Batcher, v0: Vec2, v1: Vec2, v2: Vec2, uv0: Vec2, uv1: Vec2, uv2: Vec2, color: u32) void {
         self.growBuffersToFit(self.vertex_pos + 3, self.index_pos + 3) catch {
             return;
         };
 
-        const u = TextureRegion.convert(region.u);
-        const v = TextureRegion.convert(region.v);
-        const u_2 = TextureRegion.convert(region.u_2);
-        const v_2 = TextureRegion.convert(region.v_2);
-        const u_mid = @divTrunc((u_2 - u), 2);
-
         const verts = &[_]Vertex{
-            .{ .x = x + width / 2.0, .y = y + height, .z = 0, .color = color, .u = u_mid, .v = v},
-            .{ .x = x, .y = y, .z = 0, .color = color, .u = u, .v = v_2},
-            .{ .x = x + width, .y = y, .z = 0, .color = color, .u = u_2, .v = v_2},
+            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color, .u = floatToIntUV(uv0.x), .v = floatToIntUV(uv0.y) },
+            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color, .u = floatToIntUV(uv1.x), .v = floatToIntUV(uv1.y) },
+            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color, .u = floatToIntUV(uv2.x), .v = floatToIntUV(uv2.y) },
         };
 
         const indices = &[_]u16{ 0, 1, 2 };
@@ -400,4 +422,8 @@ fn makeDebugTexture() graphics.Texture {
         0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
     };
     return graphics.Texture.initFromBytes(4, 4, img);
+}
+
+fn floatToIntUV(in: f32) i16 {
+    return @intFromFloat(6550.0 * in);
 }
