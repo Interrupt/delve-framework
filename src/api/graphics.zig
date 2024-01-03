@@ -62,6 +62,7 @@ pub fn blit(texture_handle: u32, source_x: f32, source_y: f32, source_width: f32
     const x_aspect = 1.0 / @as(f32, @floatFromInt(loaded_img.?.width));
     const y_aspect = 1.0 / @as(f32, @floatFromInt(loaded_img.?.height));
 
+    // We're drawing with a flipped y to have top left be 0,0, so the texture region v also needs to be flipped
     var region = batcher.TextureRegion {
         .u = @min(source_x * x_aspect, 1.0),
         .v = @min((source_y + source_height) * y_aspect, 1.0),

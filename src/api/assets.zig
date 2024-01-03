@@ -14,6 +14,8 @@ var texture_handles: std.AutoHashMap(u32, graphics.Texture) = undefined;
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = gpa.allocator();
 
+// TODO: Move the guts of this to a subsystem!
+
 // called automatically when the library is binded
 pub fn libInit() void {
     debug.log("Assets: initializing", .{});

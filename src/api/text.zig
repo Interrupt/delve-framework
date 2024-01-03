@@ -106,6 +106,7 @@ pub fn drawGlyph(char: u8, x: i32, y: i32, color: u32) void {
     const pal_g = app.palette.raw[color_idx + 1];
     const pal_b = app.palette.raw[color_idx + 2];
 
+    // TODO: This should blit part of a texture to the screen, not use the debug text stuff!
     gfx.setDebugTextScale(1.0, 1.0);
     gfx.setDebugTextColor4b(pal_r, pal_g, pal_b, 0xFF);
     gfx.drawDebugTextChar(@floatFromInt(x), @floatFromInt(y), char);
