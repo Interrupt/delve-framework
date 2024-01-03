@@ -59,6 +59,10 @@ fn isModuleFunction(comptime name: [:0]const u8, comptime in_type: anytype) bool
     or std.mem.eql(u8, name, "libCleanup"))
         return false;
 
+    // Hide some other functions that start with '_'
+    if(name[0] == '_')
+        return false;
+
     return @typeInfo(in_type) == .Fn;
 }
 

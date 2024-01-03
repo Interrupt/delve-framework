@@ -4,9 +4,11 @@ const ziglua = @import("ziglua");
 const main = @import("../main.zig");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
+const graphics = @import("../platform/graphics.zig");
 
 var loaded_textures: std.AutoHashMap([*:0]const u8, u32) = undefined;
-var texture_handles: std.AutoHashMap(u32, images.Image) = undefined;
+var image_handles: std.AutoHashMap(u32, images.Image) = undefined;
+var texture_handles: std.AutoHashMap(u32, graphics.Texture) = undefined;
 
 // Allocator for assets
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -16,7 +18,8 @@ var allocator = gpa.allocator();
 pub fn libInit() void {
     debug.log("Assets: initializing", .{});
     loaded_textures = std.AutoHashMap([*:0]const u8, u32).init(allocator);
-    texture_handles = std.AutoHashMap(u32, images.Image).init(allocator);
+    image_handles = std.AutoHashMap(u32, images.Image).init(allocator);
+    texture_handles = std.AutoHashMap(u32, graphics.Texture).init(allocator);
 }
 
 // return a texture handle or -1 if an error occurs
@@ -46,8 +49,14 @@ pub fn get_texture(filename: [*:0]const u8) i64 {
         return -1;
     };
 
-    texture_handles.put(new_handle, new_img) catch {
+    image_handles.put(new_handle, new_img) catch {
         debug.log("Assets: Error caching loaded image!", .{});
+        return -1;
+    };
+
+    const texture = graphics.Texture.init(&new_img);
+    texture_handles.put(new_handle, texture) catch {
+        debug.log("Assets: Error caching loaded texture!", .{});
         return -1;
     };
 
@@ -55,6 +64,10 @@ pub fn get_texture(filename: [*:0]const u8) i64 {
     return new_handle;
 }
 
-fn getTextureFromHandle(handle: u32) ?images.Image {
+pub fn _getImageFromHandle(handle: u32) ?images.Image {
+    return image_handles.get(handle);
+}
+
+pub fn _getTextureFromHandle(handle: u32) ?graphics.Texture{
     return texture_handles.get(handle);
 }

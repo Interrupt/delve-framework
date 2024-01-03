@@ -1,70 +1,77 @@
 const std = @import("std");
-const math = std.math;
+const math = @import("../math.zig");
 const ziglua = @import("ziglua");
 const main = @import("../main.zig");
 const debug = @import("../debug.zig");
 const assets = @import("assets.zig");
-const images= @import("../images.zig");
+const images = @import("../images.zig");
+const graphics = @import("../platform/graphics.zig");
+const batcher = @import("../graphics/batcher.zig");
 const scripting = @import("../scripting/manager.zig");
 
 var enable_debug_logging = false;
 
-pub fn blit(texture_handle: u32, source_x: i32, source_y: i32, source_width: u32, source_height: u32, dest_x: i32, dest_y: i32) void {
-    _ = texture_handle;
-    _ = source_x;
-    _ = source_y;
-    _ = source_width;
-    _ = source_height;
-    _ = dest_x;
-    _ = dest_y;
+var sprite_batch: batcher.SpriteBatcher = undefined;
 
-    // const renderer = zigsdl.getRenderer();
-    //
-    // // Get the texture to draw!
-    // var loaded_img: ?images.Image = assets.getTextureFromHandle(texture_handle);
-    // if (loaded_img == null)
-    //     return;
-    //
-    // // Found the texture, good to go!
-    // const img = loaded_img.?;
-    //
-    // // Also make sure not to draw outside the bounds of the screen
-    // var res_x: c_int = 0;
-    // var res_y: c_int = 0;
-    // _ = sdl.SDL_GetRendererOutputSize(renderer, &res_x, &res_y);
-    //
-    // for (0..source_width) |x_pos| {
-    //     for (0..source_height) |y_pos| {
-    //         const x_pixel_pos = @as(i32, @intCast(x_pos)) + source_x;
-    //         const y_pixel_pos = @as(i32, @intCast(y_pos)) + source_y;
-    //
-    //         if (x_pixel_pos < 0 or x_pixel_pos > img.width)
-    //             continue;
-    //         if (y_pixel_pos < 0 or y_pixel_pos > img.height)
-    //             continue;
-    //
-    //         const index = (x_pixel_pos * img.channels) + (y_pixel_pos * @as(i32, @intCast(img.pitch)));
-    //
-    //         const final_index: usize = @as(usize, @intCast(index));
-    //         if (index + 2 >= img.width * img.height * img.channels)
-    //             continue;
-    //
-    //         const r = img.raw[final_index];
-    //         const g = img.raw[final_index + 1];
-    //         const b = img.raw[final_index + 2];
-    //
-    //         // Skip black pixels
-    //         if (r == 0 and g == 0 and b == 0)
-    //             continue;
-    //
-    //         const x_pixel = @as(i32, @intCast(x_pos)) + dest_x;
-    //         const y_pixel = @as(i32, @intCast(y_pos)) + dest_y;
-    //
-    //         if (x_pixel < 0 or y_pixel < 0 or x_pixel > res_x or y_pixel > res_y)
-    //             continue;
-    //
-    //         _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
-    //         _ = sdl.SDL_RenderDrawPoint(renderer, @as(c_int, @truncate(x_pixel)), @as(c_int, @truncate(y_pixel)));
-    //     }
-    // }
+// ------- Lifecycle functions --------
+/// Called when the app is starting up
+pub fn libInit() void {
+    sprite_batch = batcher.SpriteBatcher.init(.{}) catch {
+        debug.log("Error initializing sprite batch!", .{});
+        return;
+    };
+}
+
+/// Called at the start of a frame
+pub fn libTick(tick: u64) void {
+    _ = tick;
+    sprite_batch.reset();
+}
+
+/// Called at the end of a frame
+pub fn libDraw() void {
+    var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5 }, math.Vec3.zero(), math.Vec3.up());
+    var model = math.Mat4.translate(.{ .x = 0.0, .y = 0.0, .z = -2.5 });
+
+    graphics.setProjectionOrtho(0.001, 10.0, true);
+    graphics.setView(view, model);
+
+    sprite_batch.apply();
+    sprite_batch.draw();
+}
+
+/// Called when things are shutting down
+pub fn libCleanup() void {
+    debug.log("Graphics API: cleanup", .{});
+    sprite_batch.deinit();
+}
+
+/// Draws a section of an image to the screen
+pub fn blit(texture_handle: u32, source_x: f32, source_y: f32, source_width: f32, source_height: f32, dest_x: f32, dest_y: f32, dest_width: f32, dest_height: f32) void {
+    var loaded_tex: ?graphics.Texture = assets._getTextureFromHandle(texture_handle);
+    if(loaded_tex == null)
+        return;
+
+    var loaded_img: ?images.Image = assets._getImageFromHandle(texture_handle);
+    if(loaded_img == null)
+        return;
+
+    var transform = math.Mat4.translate(.{ .x = dest_x, .y = dest_y, .z = 0.0 });
+    sprite_batch.setTransformMatrix(transform);
+
+    const x_aspect = 1.0 / @as(f32, @floatFromInt(loaded_img.?.width));
+    const y_aspect = 1.0 / @as(f32, @floatFromInt(loaded_img.?.height));
+
+    var region = batcher.TextureRegion {
+        .u = @min(source_x * x_aspect, 1.0),
+        .v = @min((source_y + source_height) * y_aspect, 1.0),
+        .v_2 = @min(source_y * y_aspect, 1.0),
+        .u_2 = @min((source_x + source_width) * x_aspect, 1.0),
+    };
+
+    sprite_batch.addRectangle(loaded_tex.?,
+        math.Vec2{.x=0, .y=0},
+        math.Vec2{.x=dest_width, .y=dest_height},
+        region,
+        0xFFFFFFFF);
 }
