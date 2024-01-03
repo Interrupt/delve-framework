@@ -14,6 +14,7 @@ var shape_batch: batcher.Batcher = undefined;
 var enable_debug_logging = false;
 
 // ------- Lifecycle functions --------
+/// Called when the app is starting up
 pub fn libInit() void {
     shape_batch = batcher.Batcher.init(.{}) catch {
         debug.log("Error initializing shape batch!", .{});
@@ -21,26 +22,32 @@ pub fn libInit() void {
     };
 }
 
-pub fn libDraw() void {
-    var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, math.Vec3.zero(), math.Vec3.up());
-    view = math.Mat4.mul(view, math.Mat4.translate(.{.x = -3.5, .y = 2.0, .z = 0.0}));
-
-    graphics.setView(view, math.Mat4.identity());
-    shape_batch.apply();
-    shape_batch.draw();
-}
-
+/// Called at the start of a frame
 pub fn libTick(tick: u64) void {
     _ = tick;
     shape_batch.reset();
 }
 
+/// Called at the end of a frame
+pub fn libDraw() void {
+    var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5 }, math.Vec3.zero(), math.Vec3.up());
+    var model = math.Mat4.translate(.{ .x = 0.0, .y = 0.0, .z = -2.5 });
+
+    graphics.setProjectionOrtho(0.001, 10.0, true);
+    graphics.setView(view, model);
+
+    shape_batch.apply();
+    shape_batch.draw();
+}
+
+/// Called when things are shutting down
 pub fn libCleanup() void {
     debug.log("Draw: cleanup", .{});
     shape_batch.deinit();
 }
 
 // ------- API functions --------
+/// Sets the clear color
 pub fn clear(pal_color: u32) void {
     if (enable_debug_logging)
         debug.log("Draw: clear {d}", .{pal_color});
@@ -86,15 +93,15 @@ pub fn line(start_x :i32, start_y: i32, end_x: i32, end_y: i32, pal_color: u32) 
 
     const start: Vec2 = Vec2 {
         .x = @floatFromInt(start_x),
-        .y = @floatFromInt(-start_y),
+        .y = @floatFromInt(start_y),
     };
 
     const end: Vec2 = Vec2 {
         .x = @floatFromInt(end_x),
-        .y = @floatFromInt(-end_y),
+        .y = @floatFromInt(end_y),
     };
 
-    shape_batch.addLine(Vec2.mul(start, 0.0075), Vec2.mul(end, 0.0075), 0.02, batcher.TextureRegion.default(), color.toInt());
+    shape_batch.addLine(Vec2.mul(start, 1.0), Vec2.mul(end, 1.0), 2.0, batcher.TextureRegion.default(), color.toInt());
 }
 
 pub fn filled_circle(x: f32, y: f32, radius: f32, pal_color: u32) void {
@@ -147,37 +154,32 @@ pub fn filled_circle(x: f32, y: f32, radius: f32, pal_color: u32) void {
     }
 }
 
-pub fn rectangle(start_x: i32, start_y: i32, width: i32, height: i32, color: u32) void {
-    _ = start_x;
-    _ = start_y;
-    _ = width;
-    _ = height;
-
+pub fn rectangle(start_x: f32, start_y: f32, width: f32, height: f32, pal_color: u32) void {
     // Four bytes per color
-    var color_idx = color * app.palette.channels;
+    var color_idx = pal_color * app.palette.channels;
 
     if (color_idx >= app.palette.height * app.palette.pitch)
         color_idx = app.palette.pitch - 4;
 
-    // const r = app.palette.raw[color_idx];
-    // const g = app.palette.raw[color_idx + 1];
-    // const b = app.palette.raw[color_idx + 2];
-    //
-    // const renderer = zigsdl.getRenderer();
-    // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
+    const r = app.palette.raw[color_idx];
+    const g = app.palette.raw[color_idx + 1];
+    const b = app.palette.raw[color_idx + 2];
 
-    // const rect = sdl.SDL_Rect{ .x = start_x, .y = start_y, .w = width + 1, .h = height + 1 };
-    // _ = sdl.SDL_RenderDrawRect(renderer, &rect);
+    const color: graphics.Color = graphics.Color{
+        .r = @floatFromInt(r),
+        .g = @floatFromInt(g),
+        .b = @floatFromInt(b),
+    };
+
+    const pos = Vec2.new(start_x, start_y);
+    const size = Vec2.new(width, height);
+
+    shape_batch.addLineRectangle(pos, size, 0.02, batcher.TextureRegion.default(), color.toInt());
 }
 
-pub fn filled_rectangle(start_x: i32, start_y: i32, width: i32, height: i32, color: u32) void {
-    // _ = start_x;
-    // _ = start_y;
-    // _ = width;
-    // _ = height;
-
+pub fn filled_rectangle(start_x: f32, start_y: f32, width: f32, height: f32, pal_color: u32) void {
     // Four bytes per color
-    var color_idx = color * app.palette.channels;
+    var color_idx = pal_color * app.palette.channels;
 
     if (color_idx >= app.palette.height * app.palette.pitch)
         color_idx = app.palette.pitch - 4;
@@ -186,16 +188,11 @@ pub fn filled_rectangle(start_x: i32, start_y: i32, width: i32, height: i32, col
     const g = @as(f32, @floatFromInt(app.palette.raw[color_idx + 1])) / 256.0;
     const b = @as(f32, @floatFromInt(app.palette.raw[color_idx + 2])) / 256.0;
 
-    const c = graphics.Color{ .r = r, .g = g, .b = b, .a = 1.0 };
+    const color = graphics.Color{ .r = r, .g = g, .b = b, .a = 1.0 };
 
-    // const renderer = zigsdl.getRenderer();
-    // _ = sdl.SDL_SetRenderDrawColor(renderer, r, g, b, 0xFF);
-
-    // const rect = sdl.SDL_Rect{ .x = start_x, .y = start_y, .w = width + 1, .h = height + 1 };
-    // _ = sdl.SDL_RenderFillRect(renderer, &rect);
-
-    graphics.setDebugDrawTexture(graphics.tex_white);
-    graphics.drawDebugRectangle(@floatFromInt(start_x), @floatFromInt(start_y), @floatFromInt(width), @floatFromInt(height), c);
+    const pos = Vec2.new(start_x, start_y);
+    const size = Vec2.new(width, height);
+    shape_batch.addRectangle(pos, size, batcher.TextureRegion.default(), color.toInt());
 }
 
 pub fn text(text_string: [*:0]const u8, x_pos: i32, y_pos: i32, color_idx: u32) void {

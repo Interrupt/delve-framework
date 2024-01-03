@@ -242,18 +242,18 @@ pub fn drawConsoleBackground() void {
         return;
 
     const height_pixels = last_text_height;
+    const draw_height: f32 = @floatFromInt(height_pixels * 2);
 
-    var res_w: i32 = gfx.getDisplayWidth();
-    var res_h: i32 = gfx.getDisplayHeight();
-    _ = res_h;
+    var res_w: f32 = @floatFromInt(gfx.getDisplayWidth());
+
+    // use a solid white texture when drawing
+    gfx.setDebugDrawTexture(gfx.tex_white);
 
     // draw a background
-    gfx.setDebugDrawTexture(gfx.tex_black);
-    draw_module.filled_rectangle(0, 0, res_w, height_pixels * 2, 0);
+    gfx.drawDebugRectangle(0.0, 0.0, res_w, draw_height, gfx.Color.black());
 
     // and a bottom line
-    gfx.setDebugDrawTexture(gfx.tex_grey);
-    draw_module.filled_rectangle(0, height_pixels * 2, res_w, 2, 1);
+    gfx.drawDebugRectangle(0.0, draw_height, res_w, 2.0, gfx.Color.grey());
 }
 
 pub fn setConsoleVisible(is_visible: bool) void {

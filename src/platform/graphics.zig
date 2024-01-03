@@ -58,6 +58,10 @@ pub const Color = struct {
        return Color{.r=0.0,.g=0.0,.b=0.0,.a=1.0};
     }
 
+    pub fn grey() Color {
+       return Color{.r=0.5,.g=0.5,.b=0.5,.a=1.0};
+    }
+
     pub fn toInt(self: Color) u32 {
         var c: u32 = 0;
         c |= @intFromFloat(self.r * 0x000000FF);
@@ -204,6 +208,19 @@ pub const Shader = struct {
 
         return Shader { .sokol_pipeline = sg.makePipeline(pipe_desc) };
     }
+
+    pub fn apply(self: *Shader) void {
+        if(self.sokol_pipeline == null)
+            return;
+
+        const vs_params = shaders.VsParams{
+            .mvp = Mat4.mul(Mat4.mul(state.projection, state.view), state.model),
+            .in_color = state.draw_color,
+        };
+
+        sg.applyPipeline(self.sokol_pipeline.?);
+        sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
+    }
 };
 
 var next_texture_handle: u32 = 0;
@@ -256,8 +273,11 @@ const state = struct {
     var debug_draw_bindings: sg.Bindings = .{};
     var debug_draw_pipeline: sg.Pipeline = .{};
 
+    // 3d view matrices
+    var projection = Mat4.persp(60.0, 1.28, 0.01, 50.0);
     var view: Mat4 = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, Vec3.zero(), Vec3.up());
     var model: Mat4 = Mat4.zero();
+
     var draw_color: [4]f32 = [_]f32{ 1.0, 1.0, 1.0, 1.0 };
 };
 
@@ -320,6 +340,9 @@ pub fn init() !void {
     pipe_desc.index_type = .UINT16;
     state.debug_draw_pipeline = sg.makePipeline(pipe_desc);
 
+    // Set our initial view projection
+    setProjectionPerspective(60.0, 0.01, 50.0);
+
     debug.log("Graphics subsystem started successfully", .{});
 }
 
@@ -368,31 +391,6 @@ pub fn setDrawColor(color: Color) void {
 pub fn setView(view_matrix: Mat4, model_matrix: Mat4) void {
     state.view = view_matrix;
     state.model = model_matrix;
-}
-
-pub fn line(start: Vec2, end: Vec2, color: Color) void {
-    // _ = start;
-    // _ = end;
-    _ = color;
-
-    const translateVec3: Vec3 = Vec3{.x = -3.5 + end.x * 0.01, .y = 2.5 + end.y * -0.01, .z = 0.0};
-
-    // Move the view state!
-    state.view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, Vec3.zero(), Vec3.up());
-    state.view = Mat4.mul(state.view, Mat4.translate(translateVec3));
-
-    state.model = Mat4.mul(
-        Mat4.rotate(start.x, .{ .x = 1.0, .y = 0.0, .z = 0.0 }),
-        Mat4.rotate(start.y, .{ .x = 0.0, .y = 1.0, .z = 0.0 })
-    );
-
-    const vs_params = computeVsParams();
-
-    sg.applyPipeline(state.debug_draw_pipeline);
-    sg.applyBindings(state.debug_draw_bindings);
-
-    sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
-    sg.draw(0, 3, 1);
 }
 
 fn makeDefaultShaderDesc() sg.ShaderDesc {
@@ -477,22 +475,37 @@ fn makeDefaultShaderDesc() sg.ShaderDesc {
     return desc;
 }
 
-fn computeVsParams() shaders.VsParams {
+// fn computeVsParams() shaders.VsParams {
+//     return shaders.VsParams{
+//         .mvp = Mat4.mul(Mat4.mul(state.projection, state.view), state.model),
+//         .in_color = state.draw_color,
+//     };
+// }
+//
+// fn computeOrthoVsParams() shaders.VsParams {
+//     state.model = Mat4.identity();
+//     const proj = Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), -5.0, 50.0);
+//     return shaders.VsParams{
+//         .mvp = Mat4.mul(Mat4.mul(proj, state.view), state.model),
+//         .in_color = state.draw_color,
+//     };
+// }
+
+pub fn setProjectionPerspective(fov: f32, near: f32, far: f32) void {
     const aspect = sapp.widthf() / sapp.heightf();
-    const proj = Mat4.persp(60.0, aspect, 0.01, 50.0);
-    return shaders.VsParams{
-        .mvp = Mat4.mul(Mat4.mul(proj, state.view), state.model),
-        .in_color = state.draw_color,
-    };
+    state.projection = Mat4.persp(fov, aspect, near, far);
 }
 
-fn computeOrthoVsParams() shaders.VsParams {
-    state.model = Mat4.identity();
-    const proj = Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), -5.0, 5.0);
-    return shaders.VsParams{
-        .mvp = Mat4.mul(Mat4.mul(proj, state.view), state.model),
-        .in_color = state.draw_color,
-    };
+pub fn setProjectionOrtho(near: f32, far: f32, flip_y: bool) void {
+    if(flip_y) {
+        state.projection = Mat4.ortho(0.0, sapp.widthf(), sapp.heightf(), 0.0, near, far);
+        return;
+    }
+    state.projection = Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), near, far);
+}
+
+pub fn setProjectionOrthoCustom(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) void {
+    state.projection = Mat4.ortho(left, right, bottom, top, near, far);
 }
 
 pub fn setDebugTextColor4f(r: f32, g: f32, b: f32, a: f32) void {
@@ -523,15 +536,21 @@ pub fn setDebugDrawTexture(texture: Texture) void {
 
 // todo: add color to this and to the shader
 pub fn drawDebugRectangle(x: f32, y: f32, width: f32, height: f32, color: Color) void {
-    // setup view state
-    const translateVec3: Vec3 = Vec3{.x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = 0.0};
-    const scaleVec3: Vec3 = Vec3{.x = width, .y = height, .z = 1.0};
-    state.view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 0.5 }, Vec3.zero(), Vec3.up());
-    state.view = Mat4.mul(state.view, Mat4.translate(translateVec3));
-    state.view = Mat4.mul(state.view, Mat4.scale(scaleVec3));
+    // create a view state
+    const proj = Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), 0.001, 10.0);
+    var view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.0 }, Vec3.zero(), Vec3.up());
 
-    setDrawColor(color);
-    const vs_params = computeOrthoVsParams();
+    const translate_vec: Vec3 = Vec3{.x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = -1.5};
+    const scale_vec: Vec3 = Vec3{.x = width, .y = height, .z = 1.0};
+
+    var model = Mat4.identity();
+    model = Mat4.mul(model, Mat4.translate(translate_vec));
+    model = Mat4.mul(model, Mat4.scale(scale_vec));
+
+    const vs_params = shaders.VsParams{
+        .mvp = Mat4.mul(Mat4.mul(proj, view), model),
+        .in_color = [_]f32 { color.r, color.g, color.b, color.a },
+    };
 
     // set the debug draw bindings
     sg.applyPipeline(state.debug_draw_pipeline);
@@ -558,13 +577,9 @@ pub fn drawSubset(start: u32, end: u32, bindings: *Bindings, shader: *Shader) vo
     if(bindings.sokol_bindings == null or shader.sokol_pipeline == null)
         return;
 
-    const vs_params = computeVsParams();
+    shader.apply();
 
-    // todo: only apply pipeline / bindings if they actually changed
-    sg.applyPipeline(shader.sokol_pipeline.?);
     sg.applyBindings(bindings.sokol_bindings.?);
-    sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
-
     sg.draw(start, end, 1);
 }
 

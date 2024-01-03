@@ -102,6 +102,9 @@ fn on_tick(tick: u64) void {
 }
 
 fn on_draw() void {
+    // Draw with a 60 degree fov
+    graphics.setProjectionPerspective(60.0, 0.01, 50.0);
+
     const mouse_pos = input.getMousePosition();
     const view_translate = math.Vec3 { .x = -3.5 + mouse_pos.x * 0.007, .y = 1 + -mouse_pos.y * 0.0075, .z = 0 };
 

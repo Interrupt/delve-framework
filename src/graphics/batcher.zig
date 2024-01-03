@@ -282,17 +282,12 @@ pub const Batcher = struct {
         const normal = Vec2.norm(Vec2.sub(to, from));
         const right = Vec2.mul(Vec2{.x=-normal.y, .y=normal.x}, width * 0.5);
 
-        // const v0 = Vec2.add(from, right);
-        // const v1 = Vec2.add(to, right);
-        // const v2 = Vec2.sub(to, right);
-        // const v3 = Vec2.sub(from, right);
+        const v0 = Vec2.add(from, right);
+        const v1 = Vec2.add(to, right);
+        const v2 = Vec2.sub(to, right);
+        const v3 = Vec2.sub(from, right);
 
-        const v0 = Vec2.new(from.x + right.x, from.y + right.y);
-        const v1 = Vec2.new(to.x + right.x, to.y + right.y);
-        const v2 = Vec2.new(to.x - right.x, to.y - right.y);
-        const v3 = Vec2.new(from.x - right.x, from.y - right.y);
-
-        // A line is really just a quad
+        // A line with a width is really just a quad
         self.addQuad(v0, v1, v2, v3, region, color);
     }
 
