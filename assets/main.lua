@@ -27,7 +27,7 @@ function _init()
     pink = 14
     peach = 15
 
-    draw.clear(white)
+    draw.clear(black)
 
     color = 0
     size = 0
@@ -50,13 +50,11 @@ function _update()
     end
 end
 
-clear_color = white
-
 function _draw()
     local x, y = mouse.position()
     mouse.button(0)
     mouse.button(2)
-    draw.clear(clear_color)
+    draw.clear(white)
 
     local border = 5
     local box_x = 270
@@ -72,7 +70,7 @@ function _draw()
     graphics.blit(textures, 16, 0, 16, 16, x + 24, y + 24)
 
     draw.filled_circle(270, 400, 50, black)
-    draw.filled_circle(260, 380, 20, white)
+    draw.circle(260, 380, 20, 4, white)
 
     if #points < 11 then
         return

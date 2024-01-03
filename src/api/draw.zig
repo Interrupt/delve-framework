@@ -74,6 +74,13 @@ pub fn filled_circle(x: f32, y: f32, radius: f32, pal_color: u32) void {
     shape_batch.addCircle(pos, radius, 16, batcher.TextureRegion.default(), color.toInt());
 }
 
+pub fn circle(x: f32, y: f32, radius: f32, line_width: f32, pal_color: u32) void {
+    const pos = Vec2{ .x = x, .y = y };
+    const color = colorFromPalette(pal_color);
+
+    shape_batch.addLineCircle(pos, radius, 16, line_width, batcher.TextureRegion.default(), color.toInt());
+}
+
 pub fn rectangle(start_x: f32, start_y: f32, width: f32, height: f32, line_width: f32, pal_color: u32) void {
     const pos = Vec2.new(start_x, start_y);
     const size = Vec2.new(width, height);

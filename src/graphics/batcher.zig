@@ -377,7 +377,24 @@ pub const Batcher = struct {
             self.addTriangleFromVecs(Vec2.add(center, last), Vec2.add(center, next), center, uv0, uv1, uv2, color);
             last = next;
         }
+    }
 
+    /// Adds a line circle to the batch
+    pub fn addLineCircle(self: *Batcher, center: Vec2, radius: f32, steps: i32, line_width: f32, region: TextureRegion, color: u32) void {
+        var last = angleToVector(0, radius);
+
+        const tau = std.math.pi * 2.0;
+
+        for(0 .. @intCast(steps+1)) |i| {
+            const if32: f32 = @floatFromInt(i);
+            const next = angleToVector(if32 / @as(f32, @floatFromInt(steps)) * tau, radius);
+
+            const start = Vec2.add(center, last);
+            const end = Vec2.add(center, next);
+
+            self.addLine(start, end, line_width, region, color);
+            last = next;
+        }
     }
 
     /// Updates our bindings for this frame with the current data
