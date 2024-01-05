@@ -21,7 +21,7 @@ pub fn registerModule() !void {
 fn on_init() void {
     debug.log("Audio example module initializing", .{});
 
-    music_test = audio.playMusic("sample-9s.mp3", 0.25);
+    music_test = audio.playMusic("sample-9s.mp3", 0.25, true);
     // sound_test = audio.playSound("sample-9s.mp3", 0.25);
 }
 
