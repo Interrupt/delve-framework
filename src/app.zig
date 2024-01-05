@@ -7,6 +7,7 @@ const scripting = @import("scripting/manager.zig");
 // Main systems
 const app_backend = @import("platform/app.zig");
 const input = @import("platform/input.zig");
+const audio = @import("platform/audio.zig");
 
 pub var assets_path: [:0]const u8 = "assets";
 pub var palette: images.Image = undefined;
@@ -48,9 +49,11 @@ pub fn start(config: AppConfig) !void {
 pub fn startSubsystems() !void {
     try input.init();
     try scripting.init();
+    try audio.init();
 }
 
 pub fn stopSubsystems() void {
     input.deinit();
     scripting.deinit();
+    audio.deinit();
 }
