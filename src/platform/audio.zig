@@ -9,12 +9,8 @@ var zaudio_engine: ?*zaudio.Engine = null;
 
 /// A sound that is loaded and can be adjusted
 pub const Sound = struct {
-    is_playing: bool = false,
+    // if this was loaded as music or not
     is_music: bool = false,
-    is_looping: bool = false,
-    volume: f32 = 1.0,
-    pitch: f32 = 1.0,
-    pan: f32 = 1.0,
 
     // the actual zaudio sound. don't muck with this directly!
     zaudio_sound: ?*zaudio.Sound,
@@ -23,6 +19,8 @@ pub const Sound = struct {
     pub fn destroy(self: *Sound) void {
         if(self.zaudio_sound) |sound|
            sound.destroy();
+
+        self.zaudio_sound = null;
     }
 
     /// Starts playing this sound
@@ -32,7 +30,6 @@ pub const Sound = struct {
                 debug.log("Could not start sound!", .{});
                 return;
             };
-            self.is_playing = true;
         }
     }
 
@@ -43,7 +40,6 @@ pub const Sound = struct {
                 debug.log("Could not stop sound!", .{});
                 return;
             };
-            self.is_playing = false;
         }
     }
 
@@ -51,7 +47,6 @@ pub const Sound = struct {
     pub fn setLooping(self: *Sound, looping: bool) void {
         if(self.zaudio_sound) |sound| {
             sound.setLooping(looping);
-            self.is_looping = true;
         }
     }
 
@@ -59,7 +54,6 @@ pub const Sound = struct {
     pub fn setVolume(self: *Sound, volume: f32) void {
         if(self.zaudio_sound) |sound| {
             sound.setVolume(volume);
-            self.volume = volume;
         }
     }
 
@@ -67,7 +61,6 @@ pub const Sound = struct {
     pub fn setPitch(self: *Sound, pitch: f32) void {
         if(self.zaudio_sound) |sound| {
             sound.setPitch(pitch);
-            self.pitch = pitch;
         }
     }
 
@@ -75,8 +68,47 @@ pub const Sound = struct {
     pub fn setPan(self: *Sound, pan: f32) void {
         if(self.zaudio_sound) |sound| {
             sound.setPan(pan);
-            self.pan = pan;
         }
+    }
+
+    /// Gets if the sound is playing
+    pub fn getIsPlaying(self: *Sound) bool {
+        if(self.zaudio_sound) |sound| {
+            return sound.isPlaying();
+        }
+        return false;
+    }
+
+    /// Gets if the sound is looping
+    pub fn getLooping(self: *Sound) bool {
+        if(self.zaudio_sound) |sound| {
+            return sound.getLooping();
+        }
+        return false;
+    }
+
+    /// Gets the current volume
+    pub fn getVolume(self: *Sound) f32 {
+        if(self.zaudio_sound) |sound| {
+            return sound.getVolume();
+        }
+        return 1.0;
+    }
+
+    /// Gets the current pitch
+    pub fn getPitch(self: *Sound) f32 {
+        if(self.zaudio_sound) |sound| {
+            return sound.getPitch();
+        }
+        return 1.0;
+    }
+
+    /// Gets the current pan
+    pub fn getPan(self: *Sound) f32 {
+        if(self.zaudio_sound) |sound| {
+            return sound.getPan();
+        }
+        return 1.0;
     }
 };
 
