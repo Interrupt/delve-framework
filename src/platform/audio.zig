@@ -8,6 +8,7 @@ var allocator = gpa.allocator();
 var zaudio_engine: ?*zaudio.Engine = null;
 
 pub const Sound = struct {
+    is_music: bool = false,
     zaudio_sound: *zaudio.Sound,
 
     pub fn destroy(self: *Sound) void {
@@ -45,22 +46,23 @@ pub fn playMusic(filename: [:0]const u8, volume: f32) ?Sound {
         return null;
     };
 
-    return Sound { .zaudio_sound = zaudio_sound };
+    return Sound { .is_music = true, .zaudio_sound = zaudio_sound };
 }
 
-pub fn playSound(filename: [:0]const u8, volume: f32) Sound {
+pub fn playSound(filename: [:0]const u8, volume: f32) ?Sound {
     const zaudio_sound = zaudio_engine.?.createSoundFromFile(
         filename,
         .{ .flags = .{ .async_load = true } },
     ) catch {
         debug.log("Could not load sound file!", .{});
-        return;
+        return null;
     };
 
     zaudio_sound.setVolume(volume);
 
-    zaudio_sound.?.start() catch {
+    zaudio_sound.start() catch {
         debug.log("Could not start sound!", .{});
+        return null;
     };
 
     return Sound { .zaudio_sound = zaudio_sound };

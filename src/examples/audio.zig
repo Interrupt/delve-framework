@@ -5,6 +5,7 @@ const debug = @import("../debug.zig");
 const modules = @import("../modules.zig");
 
 var music_test: ?audio.Sound = null;
+var sound_test: ?audio.Sound = null;
 
 pub fn registerModule() !void {
     const audioExample = modules.Module {
@@ -21,6 +22,7 @@ fn on_init() void {
     debug.log("Audio example module initializing", .{});
 
     music_test = audio.playMusic("sample-9s.mp3", 0.25);
+    // sound_test = audio.playSound("sample-9s.mp3", 0.25);
 }
 
 fn on_tick(tick: u64) void {
@@ -32,4 +34,7 @@ fn on_cleanup() void {
 
     if(music_test != null)
         music_test.?.destroy();
+
+    if(sound_test != null)
+        sound_test.?.destroy();
 }
