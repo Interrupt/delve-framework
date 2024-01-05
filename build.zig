@@ -1,5 +1,6 @@
 const std = @import("std");
 const sokol = @import("3rdparty/sokol-zig/build.zig");
+const zaudio = @import("3rdparty/zaudio/build.zig");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -29,6 +30,10 @@ pub fn build(b: *std.Build) void {
     // Add sdb_image single header library for image file format support
     exe.addCSourceFile(.{ .file = .{ .cwd_relative = "libs/stb_image-2.28/stb_image_impl.c"}, .flags = &[_][]const u8{"-std=c99"}});
     exe.addIncludePath(.{ .path = "libs/stb_image-2.28"});
+
+    // Add zaudio library
+    const zaudio_pkg = zaudio.package(b, target, optimize, .{});
+    zaudio_pkg.link(exe);
 
     const install_exe = b.addInstallArtifact(exe, .{});
     b.getInstallStep().dependOn(&install_exe.step);
