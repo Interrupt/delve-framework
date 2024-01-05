@@ -16,7 +16,9 @@ var sprite_batch: batcher.SpriteBatcher = undefined;
 // ------- Lifecycle functions --------
 /// Called when the app is starting up
 pub fn libInit() void {
-    sprite_batch = batcher.SpriteBatcher.init(.{}) catch {
+    // since we will be drawing a view with 0,0 as the top left, and not bottom right,
+    // flip the texture vertically!
+    sprite_batch = batcher.SpriteBatcher.init(.{ .flip_tex_y = true }) catch {
         debug.log("Error initializing sprite batch!", .{});
         return;
     };
@@ -62,11 +64,11 @@ pub fn blit(texture_handle: u32, source_x: f32, source_y: f32, source_width: f32
     const x_aspect = 1.0 / @as(f32, @floatFromInt(loaded_img.?.width));
     const y_aspect = 1.0 / @as(f32, @floatFromInt(loaded_img.?.height));
 
-    // We're drawing with a flipped y to have top left be 0,0, so the texture region v also needs to be flipped
+    // Snip out just what we were asked to draw
     var region = batcher.TextureRegion {
         .u = @min(source_x * x_aspect, 1.0),
-        .v = @min((source_y + source_height) * y_aspect, 1.0),
-        .v_2 = @min(source_y * y_aspect, 1.0),
+        .v = @min(source_y * y_aspect, 1.0),
+        .v_2 = @min((source_y + source_height) * y_aspect, 1.0),
         .u_2 = @min((source_x + source_width) * x_aspect, 1.0),
     };
 

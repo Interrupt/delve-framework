@@ -30,12 +30,17 @@ pub const TextureRegion = struct {
     pub fn default() TextureRegion {
         return .{.u = 0.0, .v = 0.0, .u_2 = 1.0, .v_2 = 1.0};
     }
+
+    pub fn flipY(self: TextureRegion) TextureRegion {
+        return .{ .u = self.u, .v = self.v_2, .u_2 = self.u_2, .v_2 = self.v };
+    }
 };
 
 const BatcherConfig = struct {
     min_vertices: usize = 128,
     min_indices: usize = 128,
     texture: ?graphics.Texture = null,
+    flip_tex_y: bool = false,
 };
 
 /// Handles drawing batches of primitive shapes, bucketed by texture / shader
@@ -204,6 +209,7 @@ pub const Batcher = struct {
     shader: graphics.Shader,
     draw_color: graphics.Color = graphics.Color.white(),
     transform: Mat4 = Mat4.identity(),
+    flip_tex_y: bool = false,
 
     /// Setup and return a new Batcher
     pub fn init(cfg: BatcherConfig) !Batcher {
@@ -214,6 +220,7 @@ pub const Batcher = struct {
             .index_buffer = try batch_allocator.alloc(u16, cfg.min_indices),
             .bindings = graphics.Bindings.init(.{.updatable = true, .index_len = cfg.min_indices, .vert_len = cfg.min_vertices}),
             .shader = graphics.Shader.init(.{ }),
+            .flip_tex_y = cfg.flip_tex_y,
         };
 
         if(cfg.texture == null) {
@@ -248,10 +255,12 @@ pub const Batcher = struct {
     }
 
     /// Add a four sided quad shape to the batch
-    pub fn addQuad(self: *Batcher, v0: Vec2, v1: Vec2, v2: Vec2, v3: Vec2, region: TextureRegion, color: u32) void {
+    pub fn addQuad(self: *Batcher, v0: Vec2, v1: Vec2, v2: Vec2, v3: Vec2, tex_region: TextureRegion, color: u32) void {
         self.growBuffersToFit(self.vertex_pos + 4, self.index_pos + 6) catch {
             return;
         };
+
+        const region = if(self.flip_tex_y) tex_region.flipY() else tex_region;
 
         const u = TextureRegion.convert(region.u);
         const v = TextureRegion.convert(region.v);
@@ -318,7 +327,9 @@ pub const Batcher = struct {
     }
 
     /// Adds an equilateral triangle to the batch
-    pub fn addTriangle(self: *Batcher, pos: Vec2, size: Vec2, region: TextureRegion, color: u32) void {
+    pub fn addTriangle(self: *Batcher, pos: Vec2, size: Vec2, tex_region: TextureRegion, color: u32) void {
+        const region = if(self.flip_tex_y) tex_region.flipY() else tex_region;
+
         const v0: Vec2 = Vec2{.x = pos.x + size.x / 2.0, .y = pos.y + size.y};
         const v1: Vec2 = pos;
         const v2: Vec2 = Vec2{.x = pos.x + size.x, .y = pos.y };
