@@ -71,10 +71,36 @@ pub const Sound = struct {
         }
     }
 
+    /// Sets the position of this sound
+    pub fn setPosition(self: *Sound, pos: [3]f32) f32 {
+        if(self.zaudio_sound) |sound| {
+            // Make sure this sound is spatialized! Will be absolute by default
+            if(sound.getPositioning() != zaudio.Positioning.relative)
+                sound.setPositioning(zaudio.Positioning.relative);
+
+            sound.setPosition(pos);
+        }
+    }
+
+    /// Sets the velocity of this sound
+    pub fn setVelocity(self: *Sound, vel: [3]f32) f32 {
+        if(self.zaudio_sound) |sound| {
+            sound.setVelocity(vel);
+        }
+    }
+
     /// Gets if the sound is playing
     pub fn getIsPlaying(self: *Sound) bool {
         if(self.zaudio_sound) |sound| {
             return sound.isPlaying();
+        }
+        return false;
+    }
+
+    /// Whether or not the sound has played all the way through
+    pub fn getIsDone(self: *Sound) bool {
+        if(self.zaudio_sound) |sound| {
+            return sound.isAtEnd();
         }
         return false;
     }
@@ -163,4 +189,39 @@ pub fn loadSound(filename: [:0]const u8, stream: bool) !Sound {
     );
 
     return Sound { .zaudio_sound = zaudio_sound };
+}
+
+/// Sets the position of our listener for spatial audio
+pub fn setListenerPosition(pos: [3]f32) void {
+   if(zaudio_engine) |engine| {
+        engine.setListenerPosition(pos);
+    }
+}
+
+/// Sets the direction of our listener for spatial audio
+pub fn setListenerDirection(dir: [3]f32) void {
+   if(zaudio_engine) |engine| {
+        engine.setListenerDirection(dir);
+    }
+}
+
+/// Sets the velocity of our listener for spatial audio
+pub fn setListenerVelocity(vel: [3]f32) void {
+   if(zaudio_engine) |engine| {
+        engine.setListenerVelocity(vel);
+    }
+}
+
+/// Sets the 'up' value for the listener
+pub fn setListenerWorldUp(up: [3]f32) void {
+   if(zaudio_engine) |engine| {
+        engine.setListenerWorldUp(up);
+    }
+}
+
+/// Enables spatial audio
+pub fn enableSpatialAudio() void {
+    if(zaudio_engine) |engine| {
+        engine.setListenerEnabled(true);
+    }
 }
