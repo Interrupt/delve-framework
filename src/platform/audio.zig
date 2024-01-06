@@ -299,15 +299,11 @@ pub fn on_tick(tick: u64) void {
 
     var it = loaded_sounds.iterator();
     while(it.next()) |sound| {
-        var needs_destroy = false;
+        var needs_destroy = sound.value_ptr.ready_for_cleanup;
 
-        if(sound.value_ptr.ready_for_cleanup) {
-            needs_destroy = true;
-        } else {
+        if(!needs_destroy) {
             if(sound.value_ptr.zaudio_sound) |zaudio_sound| {
-                if(zaudio_sound.isAtEnd()) {
-                    needs_destroy = true;
-                }
+                needs_destroy = zaudio_sound.isAtEnd();
             } else {
                 // How did a null zaudio sound get in here?
                 debug.log("Cleaning up a zombie sound pointer!.", .{});
