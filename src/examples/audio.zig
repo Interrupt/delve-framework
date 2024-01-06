@@ -39,8 +39,12 @@ fn on_tick(tick: u64) void {
     _ = tick;
 
     if(input.isMouseButtonPressed(0)) {
-        if(sound_test == null or sound_test.?.getIsDone())
+        if(sound_test == null or sound_test.?.getIsDone()) {
+            if(sound_test != null)
+                sound_test.?.destroy();
+
             sound_test = audio.playSound("sample-shoot.wav", 0.1);
+        }
     }
 }
 
