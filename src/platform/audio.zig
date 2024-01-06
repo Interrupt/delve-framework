@@ -72,7 +72,7 @@ pub const Sound = struct {
     }
 
     /// Sets the position of this sound
-    pub fn setPosition(self: *Sound, pos: [3]f32) f32 {
+    pub fn setPosition(self: *Sound, pos: [3]f32) void {
         if(self.zaudio_sound) |sound| {
             // Make sure this sound is spatialized! Will be absolute by default
             if(sound.getPositioning() != zaudio.Positioning.relative)
@@ -83,9 +83,16 @@ pub const Sound = struct {
     }
 
     /// Sets the velocity of this sound
-    pub fn setVelocity(self: *Sound, vel: [3]f32) f32 {
+    pub fn setVelocity(self: *Sound, vel: [3]f32) void {
         if(self.zaudio_sound) |sound| {
             sound.setVelocity(vel);
+        }
+    }
+
+    /// Sets the direction of this sound
+    pub fn setDirection(self: *Sound, dir: [3]f32) void {
+        if(self.zaudio_sound) |sound| {
+            sound.setDirection(dir);
         }
     }
 
@@ -194,34 +201,34 @@ pub fn loadSound(filename: [:0]const u8, stream: bool) !Sound {
 /// Sets the position of our listener for spatial audio
 pub fn setListenerPosition(pos: [3]f32) void {
    if(zaudio_engine) |engine| {
-        engine.setListenerPosition(pos);
+        engine.setListenerPosition(0, pos);
     }
 }
 
 /// Sets the direction of our listener for spatial audio
 pub fn setListenerDirection(dir: [3]f32) void {
    if(zaudio_engine) |engine| {
-        engine.setListenerDirection(dir);
+        engine.setListenerDirection(0, dir);
     }
 }
 
 /// Sets the velocity of our listener for spatial audio
 pub fn setListenerVelocity(vel: [3]f32) void {
    if(zaudio_engine) |engine| {
-        engine.setListenerVelocity(vel);
+        engine.setListenerVelocity(0, vel);
     }
 }
 
 /// Sets the 'up' value for the listener
 pub fn setListenerWorldUp(up: [3]f32) void {
    if(zaudio_engine) |engine| {
-        engine.setListenerWorldUp(up);
+        engine.setListenerWorldUp(0, up);
     }
 }
 
 /// Enables spatial audio
-pub fn enableSpatialAudio() void {
+pub fn enableSpatialAudio(enabled: bool) void {
     if(zaudio_engine) |engine| {
-        engine.setListenerEnabled(true);
+        engine.setListenerEnabled(0, enabled);
     }
 }
