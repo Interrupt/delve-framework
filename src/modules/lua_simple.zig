@@ -2,6 +2,10 @@ const debug = @import("../debug.zig");
 const lua = @import("../scripting/lua.zig");
 const modules = @import("../modules.zig");
 
+// This is a module that emulates a Pico-8 style simple app.
+// It will call _init on startup, _update on tick, _draw when drawing,
+// and _shutdown at the end.
+
 /// Registers this module
 pub fn registerModule() !void {
     const luaSimpleLifecycle = modules.Module {

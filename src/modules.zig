@@ -17,6 +17,7 @@ pub const Module = struct {
     cleanup_fn: ?*const fn () void = null,
 };
 
+/// Registers a module to tie it into the app lifecycle
 pub fn registerModule(module: Module) !void {
     if(num_modules == 0)
         modules = try allocator.alloc(Module, 64);
@@ -27,10 +28,12 @@ pub fn registerModule(module: Module) !void {
     debug.log("Registered module: {s}", .{module.name});
 }
 
+/// Returns all registered modules
 pub fn getModules() []Module {
     return modules[0..num_modules];
 }
 
+/// Initialize all the modules
 pub fn initModules() void {
     for(getModules()) |module| {
         if(module.init_fn != null)
@@ -38,6 +41,7 @@ pub fn initModules() void {
     }
 }
 
+/// Let all modules know that initialization is done
 pub fn startModules() void {
     for(getModules()) |module| {
         if(module.start_fn != null)
@@ -45,6 +49,7 @@ pub fn startModules() void {
     }
 }
 
+/// Let all modules know that things are stopping
 pub fn stopModules() void {
     for(getModules()) |module| {
         if(module.stop_fn != null)
@@ -52,6 +57,7 @@ pub fn stopModules() void {
     }
 }
 
+/// Calls the tick function of all modules
 pub fn tickModules(tick: u64) void {
     for(getModules()) |module| {
         if(module.tick_fn != null)
@@ -59,6 +65,7 @@ pub fn tickModules(tick: u64) void {
     }
 }
 
+/// Calls the draw function of all modules
 pub fn drawModules() void {
     for(getModules()) |module| {
         if(module.draw_fn != null)
@@ -66,6 +73,7 @@ pub fn drawModules() void {
     }
 }
 
+/// Calls the cleanup function of all modules
 pub fn cleanupModules() void {
     for(getModules()) |module| {
         if(module.cleanup_fn != null)
