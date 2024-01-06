@@ -4,8 +4,8 @@ const debug = @import("debug.zig");
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = gpa.allocator();
 
-var modules: []Module = undefined;
-var num_modules: u32 = 0;
+var modules: std.StringArrayHashMap(Module) = undefined;
+var needs_init: bool = true;
 
 pub const Module = struct {
     name: [:0]const u8,
@@ -19,64 +19,66 @@ pub const Module = struct {
 
 /// Registers a module to tie it into the app lifecycle
 pub fn registerModule(module: Module) !void {
-    if(num_modules == 0)
-        modules = try allocator.alloc(Module, 64);
+    if(needs_init) {
+        modules = std.StringArrayHashMap(Module).init(allocator);
+        needs_init = false;
+    }
 
-    modules[num_modules] = module;
-    num_modules += 1;
-
+    // only allow one version of a module to be registered!
+    try modules.putNoClobber(module.name, module);
     debug.log("Registered module: {s}", .{module.name});
-}
-
-/// Returns all registered modules
-pub fn getModules() []Module {
-    return modules[0..num_modules];
 }
 
 /// Initialize all the modules
 pub fn initModules() void {
-    for(getModules()) |module| {
-        if(module.init_fn != null)
-            module.init_fn.?();
+    var it = modules.iterator();
+    while(it.next()) |module| {
+        if(module.value_ptr.init_fn != null)
+            module.value_ptr.init_fn.?();
     }
 }
 
 /// Let all modules know that initialization is done
 pub fn startModules() void {
-    for(getModules()) |module| {
-        if(module.start_fn != null)
-            module.start_fn.?();
+    var it = modules.iterator();
+    while(it.next()) |module| {
+        if(module.value_ptr.start_fn != null)
+            module.value_ptr.start_fn.?();
     }
 }
 
 /// Let all modules know that things are stopping
 pub fn stopModules() void {
-    for(getModules()) |module| {
-        if(module.stop_fn != null)
-            module.stop_fn.?();
+    var it = modules.iterator();
+    while(it.next()) |module| {
+        if(module.value_ptr.stop_fn != null)
+            module.value_ptr.stop_fn.?();
     }
 }
 
 /// Calls the tick function of all modules
 pub fn tickModules(tick: u64) void {
-    for(getModules()) |module| {
-        if(module.tick_fn != null)
-            module.tick_fn.?(tick);
+    var it = modules.iterator();
+    while(it.next()) |module| {
+        if(module.value_ptr.tick_fn != null)
+            module.value_ptr.tick_fn.?(tick);
     }
 }
 
 /// Calls the draw function of all modules
 pub fn drawModules() void {
-    for(getModules()) |module| {
-        if(module.draw_fn != null)
-            module.draw_fn.?();
+    var it = modules.iterator();
+    while(it.next()) |module| {
+        if(module.value_ptr.draw_fn != null)
+            module.value_ptr.draw_fn.?();
     }
 }
 
 /// Calls the cleanup function of all modules
 pub fn cleanupModules() void {
-    for(getModules()) |module| {
-        if(module.cleanup_fn != null)
-            module.cleanup_fn.?();
+    var it = modules.iterator();
+    while(it.next()) |module| {
+        if(module.value_ptr.cleanup_fn != null)
+            module.value_ptr.cleanup_fn.?();
     }
 }
