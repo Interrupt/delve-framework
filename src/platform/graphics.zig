@@ -44,6 +44,7 @@ pub const Vertex = extern struct {
     }
 };
 
+// TODO: Move this to somewhere else. color.zig?
 pub const Color = struct {
     r: f32,
     g: f32,
