@@ -8,6 +8,8 @@ const modules = @import("../modules.zig");
 var music_test: ?audio.Sound = null;
 var sound_test: ?audio.Sound = null;
 
+// -- This is a module that exercises the audio paths --
+
 pub fn registerModule() !void {
     const audioExample = modules.Module {
         .name = "audio_example",

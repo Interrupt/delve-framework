@@ -13,6 +13,8 @@ var time: f32 = 0.0;
 var texture: graphics.Texture = undefined;
 var test_image: images.Image = undefined;
 
+// -- This module exercises the simple debug drawing functions --
+
 pub fn registerModule() !void {
     const debugDrawExample = modules.Module {
         .name = "debug_draw_example",
