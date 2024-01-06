@@ -17,6 +17,9 @@ pub fn main() !void {
         try app.setAssetsPath(args[1]);
     }
 
+    // Register the simple lua lifecycle that runs assets/main.lua
+    try @import("modules/lua_simple.zig").registerModule();
+
     // Test some example modules
     try @import("examples/debugdraw.zig").registerModule();
     try @import("examples/batcher.zig").registerModule();

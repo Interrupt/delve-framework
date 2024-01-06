@@ -10,6 +10,8 @@ var num_modules: u32 = 0;
 pub const Module = struct {
     name: [:0]const u8,
     init_fn: ?*const fn () void = null,
+    start_fn: ?*const fn () void = null,
+    stop_fn: ?*const fn () void = null,
     tick_fn: ?*const fn (u64) void = null,
     draw_fn: ?*const fn () void = null,
     cleanup_fn: ?*const fn () void = null,
@@ -33,6 +35,20 @@ pub fn initModules() void {
     for(getModules()) |module| {
         if(module.init_fn != null)
             module.init_fn.?();
+    }
+}
+
+pub fn startModules() void {
+    for(getModules()) |module| {
+        if(module.start_fn != null)
+            module.start_fn.?();
+    }
+}
+
+pub fn stopModules() void {
+    for(getModules()) |module| {
+        if(module.stop_fn != null)
+            module.stop_fn.?();
     }
 }
 

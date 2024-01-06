@@ -1,0 +1,59 @@
+const debug = @import("../debug.zig");
+const lua = @import("../scripting/lua.zig");
+const modules = @import("../modules.zig");
+
+/// Registers this module
+pub fn registerModule() !void {
+    const luaSimpleLifecycle = modules.Module {
+        .name = "lua_simple_lifecycle",
+        .start_fn = on_game_start,
+        .stop_fn = on_game_stop,
+        .tick_fn = on_tick,
+        .draw_fn = on_draw,
+        .cleanup_fn = on_cleanup,
+    };
+
+    try modules.registerModule(luaSimpleLifecycle);
+}
+
+pub fn on_game_start() void {
+    debug.log("Starting simple Lua lifecycle...", .{});
+
+    // Load and run the main script
+    lua.runFile("main.lua") catch {
+        debug.showErrorScreen("Fatal error!");
+        return;
+    };
+
+    // Call the init lifecycle function
+    lua.callFunction("_init") catch {
+        debug.showErrorScreen("Fatal error!");
+    };
+}
+
+pub fn on_game_stop() void {
+    debug.log("Simple Lua lifecycle stopping", .{});
+
+    // Call the shutdown lifecycle function
+    lua.callFunction("_shutdown") catch {
+        debug.log("Error calling lua _shutdown", .{});
+    };
+}
+
+pub fn on_cleanup() void {
+
+}
+
+pub fn on_tick(tick: u64) void {
+    _ = tick;
+
+    lua.callFunction("_update") catch {
+        debug.showErrorScreen("Fatal error!");
+    };
+}
+
+pub fn on_draw() void {
+    lua.callFunction("_draw") catch {
+        debug.showErrorScreen("Fatal error!");
+    };
+}

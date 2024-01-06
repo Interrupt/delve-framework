@@ -1,7 +1,6 @@
 const std = @import("std");
 const app = @import("../app.zig");
 const debug = @import("../debug.zig");
-const lua = @import("../scripting/lua.zig");
 const gfx = @import("graphics.zig");
 const input = @import("input.zig");
 const modules = @import("../modules.zig");
@@ -42,14 +41,17 @@ export fn sokol_init() void {
         return;
     };
 
-    // Todo: should the subsystems just be modules?
+    // initialize modules first
     modules.initModules();
+
+    // then kick everything off!
+    modules.startModules();
 }
 
 export fn sokol_cleanup() void {
+    modules.stopModules();
     modules.cleanupModules();
     app.stopSubsystems();
-
     gfx.deinit();
     sg.shutdown();
 }
@@ -58,18 +60,12 @@ var tick: u64 = 0;
 export fn sokol_frame() void {
     tick += 1;
 
+    // tick first
     modules.tickModules(tick);
-    lua.callFunction("_update") catch {
-        debug.showErrorScreen("Fatal error!");
-    };
 
+    // then draw!
     gfx.startFrame();
-
-    lua.callFunction("_draw") catch {
-        debug.showErrorScreen("Fatal error!");
-    };
     modules.drawModules();
-
     gfx.endFrame();
 }
 

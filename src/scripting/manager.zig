@@ -24,27 +24,6 @@ pub fn init() !void {
     try bindZigLibrary("graphics", @import("../api/graphics.zig"));
     try bindZigLibrary("input.mouse", @import("../api/mouse.zig"));
     try bindZigLibrary("input.keyboard", @import("../api/keyboard.zig"));
-
-    // Register the script manager as a module to tie into the app lifecycle
-    var scriptManagerModule = modules.Module {
-        .name = "script_manager",
-        .init_fn = on_init,
-    };
-
-    try modules.registerModule(scriptManagerModule);
-}
-
-pub fn on_init() void {
-    // Load and run the main script
-    lua_util.runFile("main.lua") catch {
-        debug.showErrorScreen("Fatal error!");
-        return;
-    };
-
-    // Call the init lifecycle function
-    lua_util.callFunction("_init") catch {
-        debug.showErrorScreen("Fatal error!");
-    };
 }
 
 pub fn deinit() void {

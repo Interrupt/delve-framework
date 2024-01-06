@@ -1,6 +1,7 @@
 const std = @import("std");
 const zaudio = @import("zaudio");
 const debug = @import("../debug.zig");
+const modules = @import("../modules.zig");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = gpa.allocator();
@@ -145,12 +146,26 @@ pub const Sound = struct {
     }
 };
 
+/// Registers the audio subsystem as a module
+pub fn registerModule() !void {
+    const audioSubsystem = modules.Module {
+        .name = "audio_subystem",
+        .tick_fn = on_tick,
+        .cleanup_fn = on_cleanup,
+    };
+
+    try modules.registerModule(audioSubsystem);
+}
+
 /// Starts the audio subsystem
 pub fn init() !void {
     debug.log("Audio system initializing", .{});
 
     zaudio.init(allocator);
     zaudio_engine = try zaudio.Engine.create(null);
+
+    // Register this subystem as a module to get tick events
+    try registerModule();
 }
 
 /// Stops and cleans up the audio subsystem
@@ -231,4 +246,14 @@ pub fn enableSpatialAudio(enabled: bool) void {
     if(zaudio_engine) |engine| {
         engine.setListenerEnabled(0, enabled);
     }
+}
+
+/// App lifecycle on_tick
+pub fn on_tick(tick: u64) void {
+    _ = tick;
+}
+
+/// App lifecycle on_cleanup
+pub fn on_cleanup() void {
+
 }
