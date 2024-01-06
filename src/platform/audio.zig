@@ -30,26 +30,24 @@ pub const Sound = struct {
     /// Checks if this sound is still alive
     pub fn isAlive(self: *Sound) bool {
         var found = loaded_sounds.get(self.handle);
-        if(found != null) {
+        if(found != null)
             return found.ready_for_cleanup;
-        }
+
         return true;
     }
 
     /// Marks this sound as being ready for cleanup
     pub fn requestDestroy(self: *Sound) void {
         var found = loaded_sounds.getPtr(self.handle);
-        if(found) |loaded_sound| {
+        if(found) |loaded_sound|
             loaded_sound.ready_for_cleanup = true;
-        }
     }
 
     /// Whether this sound needs to be garbage collected
     pub fn needsCleanup(self: *Sound) bool {
         var found = loaded_sounds.getPtr(self.handle);
-        if(found) |loaded_sound| {
+        if(found) |loaded_sound|
             return loaded_sound.ready_for_cleanup;
-        }
 
         return false;
     }
@@ -101,11 +99,11 @@ pub const Sound = struct {
     /// Sets the position of this sound
     pub fn setPosition(self: *Sound, pos: [3]f32) void {
         if(getZaudioSound(self.handle)) |sound| {
-                // Make sure this sound is spatialized! Will be absolute by default
-                if(sound.getPositioning() != zaudio.Positioning.relative)
-                    sound.setPositioning(zaudio.Positioning.relative);
+            // Make sure this sound is spatialized! Will be absolute by default
+            if(sound.getPositioning() != zaudio.Positioning.relative)
+                sound.setPositioning(zaudio.Positioning.relative);
 
-                sound.setPosition(pos);
+            sound.setPosition(pos);
         }
     }
 
@@ -131,18 +129,17 @@ pub const Sound = struct {
 
     /// Whether or not the sound has played all the way through
     pub fn getIsDone(self: *Sound) bool {
-        if(getZaudioSound(self.handle)) |sound| {
+        if(getZaudioSound(self.handle)) |sound|
             return sound.isAtEnd();
-        }
 
         return true;
     }
 
     /// Gets if the sound is looping
     pub fn getLooping(self: *Sound) bool {
-        if(getZaudioSound(self.handle)) |sound| {
+        if(getZaudioSound(self.handle)) |sound|
             return sound.getLooping();
-        }
+
         return false;
     }
 
