@@ -25,7 +25,7 @@ pub const Vec2 = extern struct {
         return Vec2{ .x = 0.0, .y = 0.0 };
     }
 
-    pub fn fromArr(val: [2]f32) Vec2 {
+    pub fn fromArray(val: [2]f32) Vec2 {
         return Vec2{ .x = val[0], .y = val[1] };
     }
 
@@ -76,8 +76,8 @@ pub const Vec3 = extern struct {
         return Vec3{ .x = 0.0, .y = 0.0, .z = 0.0 };
     }
 
-    pub fn fromArr(val: [3]f32) Vec2 {
-        return Vec2{ .x = val[0], .y = val[1], .z = val[2] };
+    pub fn fromArray(val: [3]f32) Vec3 {
+        return Vec3{ .x = val[0], .y = val[1], .z = val[2] };
     }
 
     pub fn new(x: f32, y: f32, z: f32) Vec3 {
@@ -270,9 +270,19 @@ test "Vec3.new" {
     assert(v.x == 1.0 and v.y == 2.0 and v.z == 3.0);
 }
 
+test "Vec3.fromArray" {
+    const v = Vec3.fromArray(.{1.0, 2.0, 3.0});
+    assert(v.x == 1.0 and v.y == 2.0 and v.z == 3.0);
+}
+
 test "Vec2.zero" {
     const v = Vec2.zero();
     assert(v.x == 0.0 and v.y == 0.0);
+}
+
+test "Vec2.fromArray" {
+    const v = Vec2.fromArray(.{1.0, 2.0});
+    assert(v.x == 1.0 and v.y == 2.0);
 }
 
 test "Vec2.new" {
