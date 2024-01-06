@@ -97,26 +97,16 @@ pub const Sound = struct {
     }
 
     /// Sets the position of this sound
-    pub fn setPosition(self: *Sound, pos: [3]f32) void {
+    pub fn setPosition(self: *Sound, pos: [3]f32, dir: [3]f32, vel: [3]f32) void {
         if(getZaudioSound(self.handle)) |sound| {
             // Make sure this sound is spatialized! Will be absolute by default
             if(sound.getPositioning() != zaudio.Positioning.relative)
                 sound.setPositioning(zaudio.Positioning.relative);
 
             sound.setPosition(pos);
-        }
-    }
-
-    /// Sets the velocity of this sound
-    pub fn setVelocity(self: *Sound, vel: [3]f32) void {
-        if(getZaudioSound(self.handle)) |sound|
-            sound.setVelocity(vel);
-    }
-
-    /// Sets the direction of this sound
-    pub fn setDirection(self: *Sound, dir: [3]f32) void {
-        if(getZaudioSound(self.handle)) |sound|
             sound.setDirection(dir);
+            sound.setVelocity(vel);
+        }
     }
 
     /// Gets if the sound is playing

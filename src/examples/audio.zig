@@ -32,8 +32,7 @@ fn on_init() void {
     music_test = audio.playMusic("sample-9s.mp3", 0.5, true);
 
     if(music_test != null) {
-        music_test.?.setPosition(.{-1.0, 0.0, 3.0});
-        music_test.?.setDirection(.{1.0, 0.0, 0.0});
+        music_test.?.setPosition(.{-1.0, 0.0, 3.0}, .{1.0, 0.0, 0.0}, .{0.0, 0.0, 0.0});
     }
 }
 
