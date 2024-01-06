@@ -308,6 +308,11 @@ pub fn on_tick(tick: u64) void {
                 if(zaudio_sound.isAtEnd()) {
                     needs_destroy = true;
                 }
+            } else {
+                // How did a null zaudio sound get in here?
+                debug.log("Cleaning up a zombie sound pointer!.", .{});
+                _ = loaded_sounds.swapRemove(sound.value_ptr.handle);
+                return;
             }
         }
 
