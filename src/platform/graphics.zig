@@ -50,6 +50,14 @@ pub const Color = struct {
     b: f32,
     a: f32 = 1.0,
 
+    pub fn new(r: f32, g: f32, b: f32, a: f32) Color {
+       return Color{.r=r,.g=g,.b=b,.a=a};
+    }
+
+    pub fn fromArray(val: [4]f32) Color {
+       return Color{.r=val[0],.g=val[1],.b=val[2],.a=val[3]};
+    }
+
     pub fn white() Color {
        return Color{.r=1.0,.g=1.0,.b=1.0,.a=1.0};
     }
