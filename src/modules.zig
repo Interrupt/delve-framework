@@ -7,6 +7,7 @@ var allocator = gpa.allocator();
 var modules: std.StringArrayHashMap(Module) = undefined;
 var needs_init: bool = true;
 
+/// A Module is a named set of functions that tie into the app lifecycle
 pub const Module = struct {
     name: [:0]const u8,
     init_fn: ?*const fn () void = null,

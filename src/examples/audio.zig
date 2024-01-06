@@ -41,21 +41,16 @@ fn on_tick(tick: u64) void {
     _ = tick;
 
     if(input.isMouseButtonPressed(0)) {
-        if(sound_test == null or sound_test.?.getIsDone()) {
-            if(sound_test != null)
-                sound_test.?.destroy();
-
+        if(sound_test == null or sound_test.?.getIsDone())
             sound_test = audio.playSound("sample-shoot.wav", 0.1);
-        }
     }
 }
 
 fn on_cleanup() void {
     debug.log("Audio example module cleaning up", .{});
 
-    if(music_test != null)
-        music_test.?.destroy();
-
-    if(sound_test != null)
-        sound_test.?.destroy();
+    // This would get cleaned up automatically, but we can request it too
+    if(music_test != null) {
+        music_test.?.requestDestroy();
+    }
 }
