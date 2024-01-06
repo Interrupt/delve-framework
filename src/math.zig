@@ -25,6 +25,10 @@ pub const Vec2 = extern struct {
         return Vec2{ .x = 0.0, .y = 0.0 };
     }
 
+    pub fn fromArr(val: [2]f32) Vec2 {
+        return Vec2{ .x = val[0], .y = val[1] };
+    }
+
     pub fn new(x: f32, y: f32) Vec2 {
         return Vec2{ .x = x, .y = y };
     }
@@ -70,6 +74,10 @@ pub const Vec3 = extern struct {
 
     pub fn zero() Vec3 {
         return Vec3{ .x = 0.0, .y = 0.0, .z = 0.0 };
+    }
+
+    pub fn fromArr(val: [3]f32) Vec2 {
+        return Vec2{ .x = val[0], .y = val[1], .z = val[2] };
     }
 
     pub fn new(x: f32, y: f32, z: f32) Vec3 {
