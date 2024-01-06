@@ -26,7 +26,15 @@ pub var tex_grey: Texture = undefined;
 // A vertex struct with position, color and uv-coords
 // TODO: Stop using packed color and uvs!
 
-pub const Vertex = extern struct {
+pub const BlendMode = enum {
+    none, // opaque!
+    blend,
+    add,
+    mod,
+    mul,
+};
+
+pub const Vertex = struct {
     x: f32,
     y: f32,
     z: f32,
@@ -190,14 +198,13 @@ pub const Bindings = struct {
 
 pub const ShaderConfig = struct {
     // TODO: Put depth, index type, attributes, etc, here
+    blend_mode: BlendMode = BlendMode.none,
 };
 
 pub const Shader = struct {
     sokol_pipeline: ?sg.Pipeline,
 
     pub fn init(cfg: ShaderConfig) Shader {
-        _ = cfg;
-
         // Just use the default shader for now. Maybe use an enum to switch between builtin shaders?
         const shader = sg.makeShader(shaders.texcubeShaderDesc(sg.queryBackend()));
 
@@ -214,6 +221,9 @@ pub const Shader = struct {
         pipe_desc.layout.attrs[shaders.ATTR_vs_pos].format = .FLOAT3;
         pipe_desc.layout.attrs[shaders.ATTR_vs_color0].format = .UBYTE4N;
         pipe_desc.layout.attrs[shaders.ATTR_vs_texcoord0].format = .SHORT2N;
+
+        // apply blending values
+        pipe_desc.colors[0].blend = blendModeToBlendState(cfg.blend_mode);
 
         return Shader { .sokol_pipeline = sg.makePipeline(pipe_desc) };
     }
@@ -603,4 +613,57 @@ fn createSolidTexture(color: u32) Texture {
         color, color,
     };
     return Texture.initFromBytes(2, 2, img);
+}
+
+/// Converts our BlendMode enum to a Sokol BlendState struct
+fn blendModeToBlendState(mode: BlendMode) sg.BlendState {
+    switch(mode) {
+        .none => {
+            return sg.BlendState{ };
+        },
+        .blend => {
+            return sg.BlendState{
+                .enabled = true,
+                .src_factor_rgb = sg.BlendFactor.SRC_ALPHA,
+                .dst_factor_rgb = sg.BlendFactor.ONE_MINUS_SRC_ALPHA,
+                .op_rgb = sg.BlendOp.ADD,
+                .src_factor_alpha = sg.BlendFactor.ONE,
+                .dst_factor_alpha = sg.BlendFactor.ONE_MINUS_SRC_ALPHA,
+                .op_alpha = sg.BlendOp.ADD,
+            };
+        },
+        .add => {
+            return sg.BlendState{
+                .enabled = true,
+                .src_factor_rgb = sg.BlendFactor.SRC_ALPHA,
+                .dst_factor_rgb = sg.BlendFactor.ONE,
+                .op_rgb = sg.BlendOp.ADD,
+                .src_factor_alpha = sg.BlendFactor.ZERO,
+                .dst_factor_alpha = sg.BlendFactor.ONE,
+                .op_alpha = sg.BlendOp.ADD,
+            };
+        },
+        .mul => {
+            return sg.BlendState{
+                .enabled = true,
+                .src_factor_rgb = sg.BlendFactor.DST_COLOR,
+                .dst_factor_rgb = sg.BlendFactor.ONE_MINUS_SRC_ALPHA,
+                .op_rgb = sg.BlendOp.ADD,
+                .src_factor_alpha = sg.BlendFactor.DST_ALPHA,
+                .dst_factor_alpha = sg.BlendFactor.ONE_MINUS_SRC_ALPHA,
+                .op_alpha = sg.BlendOp.ADD,
+            };
+        },
+        .mod => {
+            return sg.BlendState{
+                .enabled = true,
+                .src_factor_rgb = sg.BlendFactor.DST_COLOR,
+                .dst_factor_rgb = sg.BlendFactor.ZERO,
+                .op_rgb = sg.BlendOp.ADD,
+                .src_factor_alpha = sg.BlendFactor.ZERO,
+                .dst_factor_alpha = sg.BlendFactor.ONE,
+                .op_alpha = sg.BlendOp.ADD,
+            };
+        },
+    }
 }
