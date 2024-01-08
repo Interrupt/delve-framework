@@ -372,8 +372,6 @@ pub fn init() !void {
     tex_black = createSolidTexture(0xFF000000);
     tex_grey = createSolidTexture(0xFF333333);
 
-    setDebugDrawTexture(tex_white);
-
     // Set the initial clear color
     default_pass_action.colors[0] = .{
         .load_action = .CLEAR,
@@ -469,16 +467,15 @@ pub fn setDebugTextScale(x: f32, y: f32) void {
     debugtext.canvas(sapp.widthf() / (x * 2.0), sapp.heightf() / (y * 2.0));
 }
 
-pub fn setDebugDrawTexture(texture: Texture) void {
-    state.debug_draw_bindings.fs.images[shaders.SLOT_tex] = texture.sokol_image.?;
-}
-
 pub fn setDebugDrawShaderParams(params: ShaderParams) void {
     state.debug_shader.params = params;
 }
 
 // todo: add color to this and to the shader
-pub fn drawDebugRectangle(x: f32, y: f32, width: f32, height: f32, color: Color) void {
+pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32, color: Color) void {
+    // apply the texture
+    state.debug_draw_bindings.fs.images[shaders.SLOT_tex] = tex.sokol_image.?;
+
     // create a view state
     const proj = Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), 0.001, 10.0);
     var view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.0 }, Vec3.zero(), Vec3.up());

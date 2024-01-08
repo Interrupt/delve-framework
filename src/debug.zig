@@ -246,14 +246,11 @@ pub fn drawConsoleBackground() void {
 
     var res_w: f32 = @floatFromInt(gfx.getDisplayWidth());
 
-    // use a solid white texture when drawing
-    gfx.setDebugDrawTexture(gfx.tex_white);
-
-    // draw a background
-    gfx.drawDebugRectangle(0.0, 0.0, res_w, draw_height, gfx.Color.black());
+    // draw a solid background
+    gfx.drawDebugRectangle(gfx.tex_white, 0.0, 0.0, res_w, draw_height, gfx.Color.black());
 
     // and a bottom line
-    gfx.drawDebugRectangle(0.0, draw_height, res_w, 2.0, gfx.Color.grey());
+    gfx.drawDebugRectangle(gfx.tex_white, 0.0, draw_height, res_w, 2.0, gfx.Color.grey());
 }
 
 pub fn setConsoleVisible(is_visible: bool) void {

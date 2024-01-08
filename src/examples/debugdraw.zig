@@ -42,15 +42,15 @@ fn on_tick(tick: u64) void {
 }
 
 fn on_draw() void {
+    // Draw our debug cat image, but use the color override to tint it!
     const r_ovr = std.math.sin(time * 0.006) + 0.5;
     const g_ovr = std.math.sin(time * 0.008) + 0.5;
     const b_ovr = std.math.sin(time * 0.01) + 0.5;
+    const a_ovr = std.math.sin(time * 0.02) - 0.5; // alpha channel controls how much tinting should occur
 
-    const params = graphics.ShaderParams{.color_override = [_]f32{r_ovr, g_ovr, b_ovr, std.math.sin(time * 0.02) - 0.5}};
+    const params = graphics.ShaderParams{.color_override = [_]f32{r_ovr, g_ovr, b_ovr, a_ovr}};
     graphics.setDebugDrawShaderParams(params);
-
-    graphics.setDebugDrawTexture(texture);
-    graphics.drawDebugRectangle(120.0, 200.0, 100.0, 100.0, graphics.Color{.r=1.0, .g=1.0, .b=1.0, .a=1.0});
+    graphics.drawDebugRectangle(texture, 120.0, 200.0, 100.0, 100.0, graphics.Color{.r=1.0, .g=1.0, .b=1.0, .a=1.0});
 
     const scale = 1.5 + std.math.sin(time * 0.02) * 0.2;
 
