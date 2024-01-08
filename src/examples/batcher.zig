@@ -91,13 +91,13 @@ fn on_tick(tick: u64) void {
         var transform: math.Mat4 = undefined;
         if(@mod(i, 2) != 0) {
             transform = math.Mat4.translate(.{ .x = x_pos, .y = y_pos, .z = f_i * -0.1 });
-            transform = math.Mat4.mul(transform, math.Mat4.rotate(f_i * 3.0, .{ .x = 1.0, .y = 1.0, .z = 0.0 }));
+            transform = transform.mul(math.Mat4.rotate(f_i * 3.0, .{ .x = 1.0, .y = 1.0, .z = 0.0 }));
             test_batch.setTransformMatrix(transform);
 
             test_batch.addRectangle(tex, math.Vec2{.x=0, .y=0}, math.Vec2{.x=0.5, .y=0.5}, batcher.TextureRegion.default(), 0xFFFFFFFF);
         } else {
             transform = math.Mat4.translate(.{ .x = -x_pos, .y = y_pos, .z = f_i * -0.1 });
-            transform = math.Mat4.mul(transform, math.Mat4.rotate(f_i * 3.0, .{ .x = 0.0, .y = -1.0, .z = 0.0 }));
+            transform = transform.mul(math.Mat4.rotate(f_i * 3.0, .{ .x = 0.0, .y = -1.0, .z = 0.0 }));
             test_batch.setTransformMatrix(transform);
 
             test_batch.addTriangle(tex, math.Vec2{.x=0, .y=0}, math.Vec2{.x=0.5, .y=0.5}, batcher.TextureRegion.default(), 0xFFFFFFFF);
@@ -131,8 +131,8 @@ fn on_draw() void {
     const view_translate = math.Vec3 { .x = -3.5 + mouse_pos.x * 0.007, .y = 1 + -mouse_pos.y * 0.0075, .z = 0 };
 
     view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, math.Vec3.zero(), math.Vec3.up());
-    view = math.Mat4.mul(view, math.Mat4.translate(view_translate));
-    view = math.Mat4.mul(view, math.Mat4.rotate(25.0, .{ .x = 0.0, .y = 1.0, .z = 0.0 }));
+    view = view.mul(math.Mat4.translate(view_translate));
+    view = view.mul(math.Mat4.rotate(25.0, .{ .x = 0.0, .y = 1.0, .z = 0.0 }));
 
     graphics.setView(view, math.Mat4.identity());
     test_batch.draw();

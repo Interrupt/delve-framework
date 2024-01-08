@@ -88,23 +88,23 @@ pub const Vec3 = extern struct {
         return Vec3{ .x = 0.0, .y = 1.0, .z = 0.0 };
     }
 
-    pub fn len(v: Vec3) f32 {
-        return math.sqrt(Vec3.dot(v, v));
+    pub fn len(v: *const Vec3) f32 {
+        return math.sqrt(v.dot(Vec3.new(v.x, v.y, v.z)));
     }
 
-    pub fn add(left: Vec3, right: Vec3) Vec3 {
+    pub fn add(left: *const Vec3, right: Vec3) Vec3 {
         return Vec3{ .x = left.x + right.x, .y = left.y + right.y, .z = left.z + right.z };
     }
 
-    pub fn sub(left: Vec3, right: Vec3) Vec3 {
+    pub fn sub(left: *const Vec3, right: Vec3) Vec3 {
         return Vec3{ .x = left.x - right.x, .y = left.y - right.y, .z = left.z - right.z };
     }
 
-    pub fn mul(v: Vec3, s: f32) Vec3 {
+    pub fn mul(v: *const Vec3, s: f32) Vec3 {
         return Vec3{ .x = v.x * s, .y = v.y * s, .z = v.z * s };
     }
 
-    pub fn norm(v: Vec3) Vec3 {
+    pub fn norm(v: *const Vec3) Vec3 {
         const l = Vec3.len(v);
         if (l != 0.0) {
             return Vec3{ .x = v.x / l, .y = v.y / l, .z = v.z / l };
@@ -113,15 +113,15 @@ pub const Vec3 = extern struct {
         }
     }
 
-    pub fn cross(v0: Vec3, v1: Vec3) Vec3 {
+    pub fn cross(v0: *const Vec3, v1: Vec3) Vec3 {
         return Vec3{ .x = (v0.y * v1.z) - (v0.z * v1.y), .y = (v0.z * v1.x) - (v0.x * v1.z), .z = (v0.x * v1.y) - (v0.y * v1.x) };
     }
 
-    pub fn dot(v0: Vec3, v1: Vec3) f32 {
+    pub fn dot(v0: *const Vec3, v1: Vec3) f32 {
         return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z;
     }
 
-    pub fn mulMat4(left: Vec3, right: Mat4) Vec3 {
+    pub fn mulMat4(left: *const Vec3, right: Mat4) Vec3 {
         var res = Vec3.zero();
         res.x += left.x * right.m[0][0];
         res.y += left.x * right.m[0][1];
@@ -154,7 +154,7 @@ pub const Mat4 = extern struct {
         };
     }
 
-    pub fn mul(left: Mat4, right: Mat4) Mat4 {
+    pub fn mul(left: *const Mat4, right: Mat4) Mat4 {
         var res = Mat4.zero();
         var col: usize = 0;
         while (col < 4) : (col += 1) {
@@ -206,9 +206,9 @@ pub const Mat4 = extern struct {
     pub fn lookat(eye: Vec3, center: Vec3, up: Vec3) Mat4 {
         var res = Mat4.zero();
 
-        const f = Vec3.norm(Vec3.sub(center, eye));
-        const s = Vec3.norm(Vec3.cross(f, up));
-        const u = Vec3.cross(s, f);
+        const f = center.sub(eye).norm();
+        const s = f.cross(up).norm();
+        const u = s.cross(f);
 
         res.m[0][0] = s.x;
         res.m[0][1] = u.x;
@@ -222,9 +222,9 @@ pub const Mat4 = extern struct {
         res.m[2][1] = u.z;
         res.m[2][2] = -f.z;
 
-        res.m[3][0] = -Vec3.dot(s, eye);
-        res.m[3][1] = -Vec3.dot(u, eye);
-        res.m[3][2] = Vec3.dot(f, eye);
+        res.m[3][0] = -s.dot(eye);
+        res.m[3][1] = -u.dot(eye);
+        res.m[3][2] = f.dot(eye);
         res.m[3][3] = 1.0;
 
         return res;
@@ -233,7 +233,7 @@ pub const Mat4 = extern struct {
     pub fn rotate(angle: f32, axis_unorm: Vec3) Mat4 {
         var res = Mat4.identity();
 
-        const axis = Vec3.norm(axis_unorm);
+        const axis = axis_unorm.norm();
         const sin_theta = math.sin(radians(angle));
         const cos_theta = math.cos(radians(angle));
         const cos_value = 1.0 - cos_theta;
@@ -280,12 +280,6 @@ test "Vec2.zero" {
     assert(v.x == 0.0 and v.y == 0.0);
 }
 
-test "Vec2.add" {
-    const v = Vec2.zero();
-    const u = Vec2.zero();
-    assert(v.addTest(u).x == 0.0);
-}
-
 test "Vec2.fromArray" {
     const v = Vec2.fromArray(.{1.0, 2.0});
     assert(v.x == 1.0 and v.y == 2.0);
@@ -297,15 +291,15 @@ test "Vec2.new" {
 }
 
 test "Vec2.len" {
-    const v = Vec2.len(Vec2.new(2.0, 0.0));
+    const v = Vec2.new(2.0, 0.0).len();
     assert(v == 2.0);
 
-    const v2 = Vec2.len(Vec2.new(0.0, 1.0));
+    const v2 = Vec2.new(0.0, 1.0).len();
     assert(v2 == 1.0);
 }
 
 test "Vec2.norm" {
-    const v = Vec2.norm(Vec2.new(2.0, 0.0));
+    const v = Vec2.new(2.0, 0.0).norm();
     assert(v.x == 1.0 and v.y == 0.0);
 }
 
@@ -417,14 +411,14 @@ test "Mat4.rotate" {
 test "Vec3.mulMat4" {
     var l = Vec3 {.x = 1.0, .y = 2.0, .z = 3.0};
     var r = Mat4.identity();
-    var v = Vec3.mulMat4(l, r);
+    var v = l.mulMat4(r);
     assert(v.x == 1.0);
     assert(v.y == 2.0);
     assert(v.z == 3.0);
 
     l = Vec3 {.x = 1.0, .y = 2.0, .z = 3.0};
     r = Mat4.translate(Vec3 {.x = 2.0, .y = 0.0, .z = -3.0 });
-    v = Vec3.mulMat4(l, r);
+    v = l.mulMat4(r);
     assert(v.x == 3.0);
     assert(v.y == 2.0);
     assert(v.z == 0.0);

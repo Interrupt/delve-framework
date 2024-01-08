@@ -57,7 +57,7 @@ pub const Vertex = struct {
 
     pub fn mulMat4(left: Vertex, right: Mat4) Vertex {
         var ret = left;
-        const vec = Vec3.mulMat4(Vec3{.x = left.x, .y = left.y, .z = left.z}, right);
+        const vec = Vec3.new(left.x, left.y, left.z).mulMat4(right);
         ret.x = vec.x;
         ret.y = vec.y;
         ret.z = vec.z;
@@ -262,7 +262,7 @@ pub const Shader = struct {
             return;
 
         const vs_params = shaders.VsParams{
-            .mvp = Mat4.mul(Mat4.mul(state.projection, state.view), state.model),
+            .mvp = state.projection.mul(state.view).mul(state.model),
             .in_color = self.params.draw_color,
         };
 
@@ -483,11 +483,11 @@ pub fn drawDebugRectangle(x: f32, y: f32, width: f32, height: f32, color: Color)
     const scale_vec: Vec3 = Vec3{.x = width, .y = height, .z = 1.0};
 
     var model = Mat4.identity();
-    model = Mat4.mul(model, Mat4.translate(translate_vec));
-    model = Mat4.mul(model, Mat4.scale(scale_vec));
+    model = model.mul(Mat4.translate(translate_vec));
+    model = model.mul(Mat4.scale(scale_vec));
 
     const vs_params = shaders.VsParams{
-        .mvp = Mat4.mul(Mat4.mul(proj, view), model),
+        .mvp = proj.mul(view).mul(model),
         .in_color = [_]f32 { color.r, color.g, color.b, color.a },
     };
 
