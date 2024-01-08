@@ -48,9 +48,7 @@ void main() {
 
     // to also make sprite flash effects easier, allow a color to take over the final output
     float override_mod = 1.0 - in_color_override.a;
-    c.r = (c.r * override_mod) + (in_color_override.r * in_color_override.a);
-    c.g = (c.g * override_mod) + (in_color_override.g * in_color_override.a);
-    c.b = (c.b * override_mod) + (in_color_override.b * in_color_override.a);
+    c.rgb = (c.rgb * override_mod) + (in_color_override.rgb * in_color_override.a);
 
     frag_color = c;
 }
