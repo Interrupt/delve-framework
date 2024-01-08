@@ -346,31 +346,19 @@ pub fn init() !void {
         .data = sg.asRange(&[_]u16{ 0, 1, 2, 0, 2, 3 }),
     });
 
+    // Create a default sampler for the debug draw bindings
+    state.debug_draw_bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
+
+    // Use the default shader for debug drawing
+    const default_shader = Shader.init(.{});
+    state.debug_draw_pipeline = default_shader.sokol_pipeline.?;
+
     // Setup some debug textures
     tex_white = createSolidTexture(0xFFFFFFFF);
     tex_black = createSolidTexture(0xFF000000);
     tex_grey = createSolidTexture(0xFF333333);
 
     setDebugDrawTexture(tex_white);
-
-    // Create a default sampler for the debug draw bindings
-    state.debug_draw_bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
-
-    // Create a debug shader and pipeline object
-    const shader = sg.makeShader(shaders.defaultShaderDesc(sg.queryBackend()));
-    var pipe_desc: sg.PipelineDesc = .{
-        .shader = shader,
-        .depth = .{
-            .compare = .LESS_EQUAL,
-            .write_enabled = true,
-        }
-    };
-    pipe_desc.layout.attrs[shaders.ATTR_vs_pos].format = .FLOAT3;
-    pipe_desc.layout.attrs[shaders.ATTR_vs_color0].format = .UBYTE4N;
-    pipe_desc.layout.attrs[shaders.ATTR_vs_texcoord0].format = .FLOAT2;
-
-    pipe_desc.index_type = .UINT16;
-    state.debug_draw_pipeline = sg.makePipeline(pipe_desc);
 
     // Set the initial clear color
     default_pass_action.colors[0] = .{
