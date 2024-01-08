@@ -23,7 +23,7 @@ out vec2 uv;
 void main() {
     gl_Position = mvp * pos;
     color = color0 * in_color;
-    uv = texcoord0 * 5.0;
+    uv = texcoord0;
 }
 #pragma sokol @end
 
@@ -36,8 +36,14 @@ in vec2 uv;
 out vec4 frag_color;
 
 void main() {
-    frag_color = texture(sampler2D(tex, smp), uv) * color;
+    vec4 c = texture(sampler2D(tex, smp), uv) * color;
+
+    if(c.a == 0.0) {
+        discard;
+    }
+
+    frag_color = c;
 }
 #pragma sokol @end
 
-#pragma sokol @program texcube vs fs
+#pragma sokol @program default vs fs

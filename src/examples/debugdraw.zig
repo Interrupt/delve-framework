@@ -7,7 +7,7 @@ const input = @import("../platform/input.zig");
 const math = @import("../math.zig");
 const modules = @import("../modules.zig");
 
-pub const test_asset = @embedFile("../static/test.gif");
+pub const test_asset = @embedFile("../static/test.png");
 
 var time: f32 = 0.0;
 var texture: graphics.Texture = undefined;

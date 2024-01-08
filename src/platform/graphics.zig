@@ -39,8 +39,8 @@ pub const Vertex = struct {
     y: f32,
     z: f32,
     color: u32,
-    u: i16,
-    v: i16,
+    u: f32,
+    v: f32,
 
     pub fn mulMat4(left: Vertex, right: Mat4) Vertex {
         var ret = left;
@@ -201,12 +201,14 @@ pub const ShaderConfig = struct {
     blend_mode: BlendMode = BlendMode.none,
 };
 
+var next_shader_handle: u32 = 0;
 pub const Shader = struct {
     sokol_pipeline: ?sg.Pipeline,
+    handle: u32,
 
     pub fn init(cfg: ShaderConfig) Shader {
         // Just use the default shader for now. Maybe use an enum to switch between builtin shaders?
-        const shader = sg.makeShader(shaders.texcubeShaderDesc(sg.queryBackend()));
+        const shader = sg.makeShader(shaders.defaultShaderDesc(sg.queryBackend()));
 
         var pipe_desc: sg.PipelineDesc = .{
             .index_type = .UINT16,
@@ -220,12 +222,13 @@ pub const Shader = struct {
         // todo: get these from the ShaderConfig, use intermediate enums
         pipe_desc.layout.attrs[shaders.ATTR_vs_pos].format = .FLOAT3;
         pipe_desc.layout.attrs[shaders.ATTR_vs_color0].format = .UBYTE4N;
-        pipe_desc.layout.attrs[shaders.ATTR_vs_texcoord0].format = .SHORT2N;
+        pipe_desc.layout.attrs[shaders.ATTR_vs_texcoord0].format = .FLOAT2;
 
         // apply blending values
         pipe_desc.colors[0].blend = blendModeToBlendState(cfg.blend_mode);
 
-        return Shader { .sokol_pipeline = sg.makePipeline(pipe_desc) };
+        defer next_shader_handle += 1;
+        return Shader { .sokol_pipeline = sg.makePipeline(pipe_desc), .handle = next_shader_handle };
     }
 
     pub fn apply(self: *Shader) void {
@@ -316,9 +319,9 @@ pub fn init() !void {
     state.debug_draw_bindings.vertex_buffers[0] = sg.makeBuffer(.{
         .data = sg.asRange(&[_]Vertex{
             .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
-            .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 6550, .v = 0 },
-            .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 6550, .v = 6550},
-            .{ .x = 0.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 6550},
+            .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 1, .v = 0 },
+            .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 1, .v = 1},
+            .{ .x = 0.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 1},
         }),
     });
 
@@ -339,7 +342,7 @@ pub fn init() !void {
     state.debug_draw_bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
 
     // Create a debug shader and pipeline object
-    const shader = sg.makeShader(shaders.texcubeShaderDesc(sg.queryBackend()));
+    const shader = sg.makeShader(shaders.defaultShaderDesc(sg.queryBackend()));
     var pipe_desc: sg.PipelineDesc = .{
         .shader = shader,
         .depth = .{
@@ -349,7 +352,7 @@ pub fn init() !void {
     };
     pipe_desc.layout.attrs[shaders.ATTR_vs_pos].format = .FLOAT3;
     pipe_desc.layout.attrs[shaders.ATTR_vs_color0].format = .UBYTE4N;
-    pipe_desc.layout.attrs[shaders.ATTR_vs_texcoord0].format = .SHORT2N;
+    pipe_desc.layout.attrs[shaders.ATTR_vs_texcoord0].format = .FLOAT2;
 
     pipe_desc.index_type = .UINT16;
     state.debug_draw_pipeline = sg.makePipeline(pipe_desc);

@@ -40,6 +40,7 @@ const BatcherConfig = struct {
     min_vertices: usize = 128,
     min_indices: usize = 128,
     texture: ?graphics.Texture = null,
+    shader: ?graphics.Shader = null,
     flip_tex_y: bool = false,
 };
 
@@ -49,8 +50,9 @@ pub const SpriteBatcher = struct {
     transform: Mat4 = Mat4.identity(),
     draw_color: graphics.Color = graphics.Color.white(),
     config: BatcherConfig = BatcherConfig{},
-    current_tex_key: u32 = 0,
+    current_batch_key: u32 = 0,
     current_tex: graphics.Texture = undefined,
+    current_shader: graphics.Shader = undefined,
 
     pub fn init(cfg: BatcherConfig) !SpriteBatcher {
         var sprite_batcher = SpriteBatcher {
@@ -58,26 +60,32 @@ pub const SpriteBatcher = struct {
             .config = cfg
         };
 
-        if(cfg.texture == null) {
-            const debug_texture: graphics.Texture = makeDebugTexture();
-            sprite_batcher.useTexture(debug_texture);
-        } else {
-            sprite_batcher.useTexture(cfg.texture.?);
-        }
+        // set initial texture and shader
+        const tex = if(cfg.texture != null) cfg.texture.? else makeDebugTexture();
+        sprite_batcher.current_tex = tex;
+
+        const shader = if(cfg.shader != null) cfg.shader.? else graphics.Shader.init(.{ });
+        sprite_batcher.useShader(shader);
 
         return sprite_batcher;
     }
 
     /// Switch the current batch to one for the given texture
     pub fn useTexture(self: *SpriteBatcher, texture: graphics.Texture) void {
-        self.current_tex_key = texture.handle;
+        self.current_batch_key = makeSpriteBatchKey(texture, self.current_shader);
         self.current_tex = texture;
+    }
+
+    /// Switch the current batch to one for the given shader
+    pub fn useShader(self: *SpriteBatcher, shader: graphics.Shader) void {
+        self.current_batch_key = makeSpriteBatchKey(self.current_tex, shader);
+        self.current_shader = shader;
     }
 
     /// Switch the current batch to one for a solid color
     pub fn useSolidColor(self: *SpriteBatcher) void {
         var solid_tex: graphics.Texture = graphics.tex_white;
-        self.current_tex_key = solid_tex.handle;
+        self.current_batch_key = solid_tex.handle;
         self.current_tex = solid_tex;
     }
 
@@ -139,25 +147,26 @@ pub const SpriteBatcher = struct {
     /// Gets the batcher used for the current texture
     pub fn getCurrentBatcher(self: *SpriteBatcher) ?*Batcher {
         // Return an existing batch if available
-        var batcher: ?*Batcher = self.batches.getPtr(self.current_tex_key);
+        var batcher: ?*Batcher = self.batches.getPtr(self.current_batch_key);
         if(batcher != null)
             return batcher;
 
         // None found, create a new batch with our config values but using a new texture
         var new_cfg = self.config;
         new_cfg.texture = self.current_tex;
+        new_cfg.shader = self.current_shader;
 
         var new_batcher: Batcher = Batcher.init(new_cfg) catch {
             debug.log("Could not create a new batch for SpriteBatch!", .{});
             return null;
         };
 
-        self.batches.put(self.current_tex_key, new_batcher) catch {
+        self.batches.put(self.current_batch_key, new_batcher) catch {
             debug.log("Could not add new batch to map for SpriteBatch!", .{});
             return null;
         };
 
-        return self.batches.getPtr(self.current_tex_key);
+        return self.batches.getPtr(self.current_batch_key);
     }
 
     /// Draws all the batches
@@ -199,6 +208,10 @@ pub const SpriteBatcher = struct {
     }
 };
 
+fn makeSpriteBatchKey(tex: graphics.Texture, shader: graphics.Shader) u32 {
+    return tex.handle + (shader.handle * 100000);
+}
+
 /// Handles drawing a batch of primitive shapes all with the same texture / shader
 pub const Batcher = struct {
     vertex_buffer: []Vertex,
@@ -219,7 +232,7 @@ pub const Batcher = struct {
             .vertex_buffer = try batch_allocator.alloc(Vertex, cfg.min_vertices),
             .index_buffer = try batch_allocator.alloc(u16, cfg.min_indices),
             .bindings = graphics.Bindings.init(.{.updatable = true, .index_len = cfg.min_indices, .vert_len = cfg.min_vertices}),
-            .shader = graphics.Shader.init(.{ }),
+            .shader = if(cfg.shader != null) cfg.shader.? else graphics.Shader.init(.{ }),
             .flip_tex_y = cfg.flip_tex_y,
         };
 
@@ -262,10 +275,10 @@ pub const Batcher = struct {
 
         const region = if(self.flip_tex_y) tex_region.flipY() else tex_region;
 
-        const u = TextureRegion.convert(region.u);
-        const v = TextureRegion.convert(region.v);
-        const u_2 = TextureRegion.convert(region.u_2);
-        const v_2 = TextureRegion.convert(region.v_2);
+        const u = region.u;
+        const v = region.v;
+        const u_2 = region.u_2;
+        const v_2 = region.v_2;
 
         const verts = &[_]Vertex{
             .{ .x = v0.x, .y = v0.y, .z = 0, .color = color, .u = u, .v = v },
@@ -350,9 +363,9 @@ pub const Batcher = struct {
         };
 
         const verts = &[_]Vertex{
-            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color, .u = floatToIntUV(uv0.x), .v = floatToIntUV(uv0.y) },
-            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color, .u = floatToIntUV(uv1.x), .v = floatToIntUV(uv1.y) },
-            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color, .u = floatToIntUV(uv2.x), .v = floatToIntUV(uv2.y) },
+            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color, .u = uv0.x, .v = uv0.y },
+            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color, .u = uv1.x, .v = uv1.y },
+            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color, .u = uv2.x, .v = uv2.y },
         };
 
         const indices = &[_]u16{ 0, 1, 2 };
@@ -470,10 +483,6 @@ fn makeDebugTexture() graphics.Texture {
         0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
     };
     return graphics.Texture.initFromBytes(4, 4, img);
-}
-
-fn floatToIntUV(in: f32) i16 {
-    return @intFromFloat(6550.0 * in);
 }
 
 fn angleToVector(angle: f32, length: f32) Vec2 {

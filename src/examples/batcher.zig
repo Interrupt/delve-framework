@@ -7,11 +7,15 @@ const input = @import("../platform/input.zig");
 const math = @import("../math.zig");
 const modules = @import("../modules.zig");
 
-pub const test_asset_1 = @embedFile("../static/test.gif");
+pub const test_asset_1 = @embedFile("../static/test.png");
 pub const test_asset_2 = @embedFile("../static/test2.gif");
 
 var texture_1: graphics.Texture = undefined;
 var texture_2: graphics.Texture = undefined;
+
+var shader_opaque: graphics.Shader = undefined;
+var shader_add: graphics.Shader = undefined;
+var shader_blend: graphics.Shader = undefined;
 
 var test_batch: batcher.SpriteBatcher = undefined;
 var view: math.Mat4 = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, math.Vec3.zero(), math.Vec3.up());
@@ -54,6 +58,11 @@ fn on_init() void {
     // make some textures from our images
     texture_1 = graphics.Texture.init(&test_image_1);
     texture_2 = graphics.Texture.init(&test_image_2);
+
+    // make some shaders for testing
+    shader_opaque = graphics.Shader.init(.{});
+    shader_add = graphics.Shader.init(.{.blend_mode = graphics.BlendMode.blend});
+    shader_blend = graphics.Shader.init(.{.blend_mode = graphics.BlendMode.blend});
 }
 
 fn on_tick(tick: u64) void {
@@ -64,11 +73,21 @@ fn on_tick(tick: u64) void {
         const y_pos = std.math.cos(@as(f32, @floatFromInt(tick * i)) * 0.0001) * (0.5 + (f_i * 0.05));
 
         var tex: graphics.Texture = undefined;
+        var shader: graphics.Shader = undefined;
+
         if(@mod(i, 3) == 0) {
             tex = texture_1;
         } else {
             tex = texture_2;
         }
+
+        if(@mod(i, 5) == 0) {
+            shader = shader_add;
+        } else {
+            shader = shader_opaque;
+        }
+
+        test_batch.useShader(shader);
 
         var transform: math.Mat4 = undefined;
         if(@mod(i, 2) != 0) {
@@ -86,6 +105,8 @@ fn on_tick(tick: u64) void {
         }
     }
 
+    test_batch.useShader(shader_blend);
+
     // test a line!
     const ly1 = std.math.sin(@as(f32, @floatFromInt(tick)) * 0.01);
     const ly2 = std.math.cos(@as(f32, @floatFromInt(tick)) * 0.012);
@@ -98,7 +119,7 @@ fn on_tick(tick: u64) void {
     test_batch.setTransformMatrix(math.Mat4.translate(math.vec3(0,0,-0.001)));
 
     // test a filled rectangle!
-    test_batch.addRectangle(graphics.tex_white, math.vec2(-2.5, 0), math.vec2(2, 0.5), batcher.TextureRegion.default(), 0xFF0000FF);
+    test_batch.addRectangle(graphics.tex_white, math.vec2(-2.5, 0), math.vec2(2, 0.5), batcher.TextureRegion.default(), 0xAA0000FF);
 
     test_batch.apply();
 }
