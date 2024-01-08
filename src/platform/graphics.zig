@@ -210,7 +210,7 @@ pub const Bindings = struct {
 };
 
 pub const ShaderConfig = struct {
-    // TODO: Put depth, index type, attributes, etc, here
+    // TODO: Put index type, attributes, etc, here
     blend_mode: BlendMode = .NONE,
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
@@ -222,7 +222,7 @@ pub const Shader = struct {
     handle: u32,
 
     pub fn init(cfg: ShaderConfig) Shader {
-        // Just use the default shader for now. Maybe use an enum to switch between builtin shaders?
+        // TODO: Add support for loading shaders from files as well
         const shader = sg.makeShader(shaders.defaultShaderDesc(sg.queryBackend()));
 
         var pipe_desc: sg.PipelineDesc = .{

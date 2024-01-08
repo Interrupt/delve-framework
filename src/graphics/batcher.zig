@@ -23,10 +23,6 @@ pub const TextureRegion = struct {
     u_2: f32 = 1.0,
     v_2: f32 = 1.0,
 
-    pub fn convert(in: f32) i16 {
-        return @intFromFloat(6550.0 * in);
-    }
-
     pub fn default() TextureRegion {
         return .{.u = 0.0, .v = 0.0, .u_2 = 1.0, .v_2 = 1.0};
     }
