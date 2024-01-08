@@ -216,10 +216,17 @@ pub const ShaderConfig = struct {
     depth_compare: CompareFunc = .LESS_EQUAL,
 };
 
+pub const ShaderParams = struct {
+    // These should probably be a map instead!
+    draw_color: [4]f32 = [_]f32 { 1.0, 1.0, 1.0, 1.0 },
+    color_override: [4]f32 = [_]f32 { 0.0, 0.0, 0.0, 0.0 },
+};
+
 var next_shader_handle: u32 = 0;
 pub const Shader = struct {
     sokol_pipeline: ?sg.Pipeline,
     handle: u32,
+    params: ShaderParams = ShaderParams{},
 
     pub fn init(cfg: ShaderConfig) Shader {
         // TODO: Add support for loading shaders from files as well
@@ -252,11 +259,16 @@ pub const Shader = struct {
 
         const vs_params = shaders.VsParams{
             .mvp = Mat4.mul(Mat4.mul(state.projection, state.view), state.model),
-            .in_color = state.draw_color,
+            .in_color = self.params.draw_color,
+        };
+
+        const fs_params = shaders.FsParams{
+            .in_color_override = self.params.color_override,
         };
 
         sg.applyPipeline(self.sokol_pipeline.?);
         sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
+        sg.applyUniforms(.FS, shaders.SLOT_fs_params, sg.asRange(&fs_params));
     }
 };
 
@@ -314,8 +326,6 @@ const state = struct {
     var projection = Mat4.persp(60.0, 1.28, 0.01, 50.0);
     var view: Mat4 = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, Vec3.zero(), Vec3.up());
     var model: Mat4 = Mat4.zero();
-
-    var draw_color: [4]f32 = [_]f32{ 1.0, 1.0, 1.0, 1.0 };
 };
 
 var default_pass_action: sg.PassAction = .{};
@@ -409,10 +419,6 @@ pub fn setClearColor(color: Color) void {
         .load_action = .CLEAR,
         .clear_value = .{ .r = color.r, .g = color.g, .b = color.b, .a = color.a },
     };
-}
-
-pub fn setDrawColor(color: Color) void {
-    state.draw_color = [_]f32 { color.r, color.g, color.b, color.a };
 }
 
 pub fn setView(view_matrix: Mat4, model_matrix: Mat4) void {

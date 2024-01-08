@@ -432,7 +432,9 @@ pub const Batcher = struct {
         if(self.index_pos == 0)
             return;
 
-        graphics.setDrawColor(self.draw_color);
+        const color = self.draw_color;
+        self.shader.params.draw_color = [_]f32 { color.r, color.g, color.b, color.a };
+
         graphics.draw(&self.bindings, &self.shader);
     }
 

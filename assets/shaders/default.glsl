@@ -30,6 +30,9 @@ void main() {
 #pragma sokol @fs fs
 uniform texture2D tex;
 uniform sampler smp;
+uniform fs_params {
+    vec4 in_color_override;
+};
 
 in vec4 color;
 in vec2 uv;
@@ -38,9 +41,16 @@ out vec4 frag_color;
 void main() {
     vec4 c = texture(sampler2D(tex, smp), uv) * color;
 
+    // to make sprite drawing easier, discard full alpha pixels
     if(c.a == 0.0) {
         discard;
     }
+
+    // to also make sprite flash effects easier, allow a color to take over the final output
+    float override_mod = 1.0 - in_color_override.a;
+    c.r = (c.r * override_mod) + (in_color_override.r * in_color_override.a);
+    c.g = (c.g * override_mod) + (in_color_override.g * in_color_override.a);
+    c.b = (c.b * override_mod) + (in_color_override.b * in_color_override.a);
 
     frag_color = c;
 }
