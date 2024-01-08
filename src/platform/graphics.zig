@@ -101,7 +101,7 @@ pub const Color = struct {
         return c;
     }
 
-    pub fn toArray(self: Color) f32[4] {
+    pub fn toArray(self: Color) [4]f32 {
         return [_]f32 { self.r, self.g, self.b, self.a };
     }
 };
@@ -325,6 +325,7 @@ pub const Texture = struct {
 const state = struct {
     var debug_draw_bindings: sg.Bindings = .{};
     var debug_draw_pipeline: sg.Pipeline = .{};
+    var debug_shader: Shader = undefined;
 
     // 3d view matrices
     var projection = Mat4.persp(60.0, 1.28, 0.01, 50.0);
@@ -364,8 +365,7 @@ pub fn init() !void {
     state.debug_draw_bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
 
     // Use the default shader for debug drawing
-    const default_shader = Shader.init(.{});
-    state.debug_draw_pipeline = default_shader.sokol_pipeline.?;
+    state.debug_shader = Shader.init(.{});
 
     // Setup some debug textures
     tex_white = createSolidTexture(0xFFFFFFFF);
@@ -473,6 +473,10 @@ pub fn setDebugDrawTexture(texture: Texture) void {
     state.debug_draw_bindings.fs.images[shaders.SLOT_tex] = texture.sokol_image.?;
 }
 
+pub fn setDebugDrawShaderParams(params: ShaderParams) void {
+    state.debug_shader.params = params;
+}
+
 // todo: add color to this and to the shader
 pub fn drawDebugRectangle(x: f32, y: f32, width: f32, height: f32, color: Color) void {
     // create a view state
@@ -488,13 +492,17 @@ pub fn drawDebugRectangle(x: f32, y: f32, width: f32, height: f32, color: Color)
 
     const vs_params = shaders.VsParams{
         .mvp = proj.mul(view).mul(model),
-        .in_color = [_]f32 { color.r, color.g, color.b, color.a },
+        .in_color = color.toArray(),
     };
 
-    // set the debug draw bindings
-    sg.applyPipeline(state.debug_draw_pipeline);
-    sg.applyBindings(state.debug_draw_bindings);
+    const fs_params = shaders.FsParams{
+        .in_color_override = state.debug_shader.params.color_override,
+    };
+
+    sg.applyPipeline(state.debug_shader.sokol_pipeline.?);
     sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
+    sg.applyUniforms(.FS, shaders.SLOT_fs_params, sg.asRange(&fs_params));
+    sg.applyBindings(state.debug_draw_bindings);
 
     // draw our quad
     sg.draw(0, 6, 1);
