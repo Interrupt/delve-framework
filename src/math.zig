@@ -33,23 +33,23 @@ pub const Vec2 = extern struct {
         return Vec2{ .x = x, .y = y };
     }
 
-    pub fn len(v: Vec2) f32 {
-        return math.sqrt(Vec2.dot(v, v));
+    pub fn len(v: *const Vec2) f32 {
+        return math.sqrt(v.dot(Vec2.new(v.x, v.y)));
     }
 
-    pub fn add(left: Vec2, right: Vec2) Vec2 {
+    pub fn add(left: *const Vec2, right: Vec2) Vec2 {
         return Vec2{ .x = left.x + right.x, .y = left.y + right.y };
     }
 
-    pub fn sub(left: Vec2, right: Vec2) Vec2 {
+    pub fn sub(left: *const Vec2, right: Vec2) Vec2 {
         return Vec2{ .x = left.x - right.x, .y = left.y - right.y };
     }
 
-    pub fn mul(v: Vec2, s: f32) Vec2 {
+    pub fn mul(v: *const Vec2, s: f32) Vec2 {
         return Vec2{ .x = v.x * s, .y = v.y * s };
     }
 
-    pub fn norm(v: Vec2) Vec2 {
+    pub fn norm(v: *const Vec2) Vec2 {
         const l = Vec2.len(v);
         if (l != 0.0) {
             return Vec2{ .x = v.x / l, .y = v.y / l };
@@ -58,7 +58,7 @@ pub const Vec2 = extern struct {
         }
     }
 
-    pub fn dot(v0: Vec2, v1: Vec2) f32 {
+    pub fn dot(v0: *const Vec2, v1: Vec2) f32 {
         return v0.x * v1.x + v0.y * v1.y;
     }
 };
@@ -278,6 +278,12 @@ test "Vec3.fromArray" {
 test "Vec2.zero" {
     const v = Vec2.zero();
     assert(v.x == 0.0 and v.y == 0.0);
+}
+
+test "Vec2.add" {
+    const v = Vec2.zero();
+    const u = Vec2.zero();
+    assert(v.addTest(u).x == 0.0);
 }
 
 test "Vec2.fromArray" {

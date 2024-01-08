@@ -298,9 +298,9 @@ pub const Batcher = struct {
 
     /// Add a rectangle to the batch
     pub fn addRectangle(self: *Batcher, pos: Vec2, size: Vec2, region: TextureRegion, color: u32) void {
-        const v0 = Vec2.add(pos, Vec2{.x = 0, .y = size.y});
-        const v1 = Vec2.add(pos, Vec2{.x = size.x, .y = size.y});
-        const v2 = Vec2.add(pos, Vec2{.x = size.x, .y = 0});
+        const v0 = pos.add(Vec2{.x = 0, .y = size.y});
+        const v1 = pos.add(Vec2{.x = size.x, .y = size.y});
+        const v2 = pos.add(Vec2{.x = size.x, .y = 0});
         const v3 = pos;
 
         self.addQuad(v0, v1, v2, v3, region, color);
@@ -308,13 +308,13 @@ pub const Batcher = struct {
 
     /// Add a line to the batch
     pub fn addLine(self: *Batcher, from: Vec2, to: Vec2, width: f32, region: TextureRegion, color: u32) void {
-        const normal = Vec2.norm(Vec2.sub(to, from));
-        const right = Vec2.mul(Vec2{.x=-normal.y, .y=normal.x}, width * 0.5);
+        const normal = to.sub(from).norm();
+        const right = Vec2.mul(&Vec2{.x=-normal.y, .y=normal.x}, width * 0.5);
 
-        const v0 = Vec2.add(from, right);
-        const v1 = Vec2.add(to, right);
-        const v2 = Vec2.sub(to, right);
-        const v3 = Vec2.sub(from, right);
+        const v0 = from.add(right);
+        const v1 = to.add(right);
+        const v2 = to.sub(right);
+        const v3 = from.sub(right);
 
         // A line with a width is really just a quad
         self.addQuad(v0, v1, v2, v3, region, color);
@@ -325,12 +325,12 @@ pub const Batcher = struct {
         const w: f32 = line_width * 0.5;
 
         // top and bottom
-        self.addLine(math.vec2(pos.x - w, pos.y), math.vec2(pos.x + size.x + w, pos.y), line_width, region, color);
-        self.addLine(math.vec2(pos.x - w, pos.y + size.y), math.vec2(pos.x + size.x + w, pos.y + size.y), line_width, region, color);
+        self.addLine(Vec2.new(pos.x - w, pos.y), Vec2.new(pos.x + size.x + w, pos.y), line_width, region, color);
+        self.addLine(Vec2.new(pos.x - w, pos.y + size.y), Vec2.new(pos.x + size.x + w, pos.y + size.y), line_width, region, color);
 
         // sides
-        self.addLine(math.vec2(pos.x, pos.y), math.vec2(pos.x, pos.y + size.y), line_width, region, color);
-        self.addLine(math.vec2(pos.x + size.x, pos.y), math.vec2(pos.x + size.x, pos.y + size.y), line_width, region, color);
+        self.addLine(Vec2.new(pos.x, pos.y), Vec2.new(pos.x, pos.y + size.y), line_width, region, color);
+        self.addLine(Vec2.new(pos.x + size.x, pos.y), Vec2.new(pos.x + size.x, pos.y + size.y), line_width, region, color);
     }
 
     /// Adds an equilateral triangle to the batch
@@ -393,7 +393,7 @@ pub const Batcher = struct {
             const if32: f32 = @floatFromInt(i);
             const next = angleToVector(if32 / @as(f32, @floatFromInt(steps)) * tau, radius);
 
-            self.addTriangleFromVecs(Vec2.add(center, last), Vec2.add(center, next), center, uv0, uv1, uv2, color);
+            self.addTriangleFromVecs(center.add(last), center.add(next), center, uv0, uv1, uv2, color);
             last = next;
         }
     }
@@ -406,8 +406,8 @@ pub const Batcher = struct {
             const if32: f32 = @floatFromInt(i);
             const next = angleToVector(if32 / @as(f32, @floatFromInt(steps)) * std.math.tau, radius);
 
-            const start = Vec2.add(center, last);
-            const end = Vec2.add(center, next);
+            const start = center.add(last);
+            const end = center.add(next);
 
             self.addLine(start, end, line_width, region, color);
             last = next;

@@ -64,7 +64,7 @@ pub fn line(start_x :f32, start_y: f32, end_x: f32, end_y: f32, line_width: f32,
     const end = Vec2 { .x = end_x, .y = end_y };
     const color = colorFromPalette(pal_color);
 
-    shape_batch.addLine(Vec2.mul(start, 1.0), Vec2.mul(end, 1.0), line_width, batcher.TextureRegion.default(), color.toInt());
+    shape_batch.addLine(start, end, line_width, batcher.TextureRegion.default(), color.toInt());
 }
 
 pub fn filled_circle(x: f32, y: f32, radius: f32, pal_color: u32) void {
