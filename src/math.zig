@@ -319,7 +319,7 @@ test "Mat4.ident" {
 test "Mat4.mul" {
     const l = Mat4.identity();
     const r = Mat4.identity();
-    const m = Mat4.mul(l, r);
+    const m = l.mul(r);
     for (m.m, 0..) |row, y| {
         for (row, 0..) |val, x| {
             if (x == y) {
