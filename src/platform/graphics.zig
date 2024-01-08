@@ -27,11 +27,24 @@ pub var tex_grey: Texture = undefined;
 // TODO: Stop using packed color and uvs!
 
 pub const BlendMode = enum {
-    none, // opaque!
-    blend,
-    add,
-    mod,
-    mul,
+    NONE, // opaque!
+    BLEND,
+    ADD,
+    MOD,
+    MUL,
+};
+
+pub const CompareFunc = enum(i32) {
+    DEFAULT,
+    NEVER,
+    LESS,
+    EQUAL,
+    LESS_EQUAL,
+    GREATER,
+    NOT_EQUAL,
+    GREATER_EQUAL,
+    ALWAYS,
+    NUM,
 };
 
 pub const Vertex = struct {
@@ -198,7 +211,9 @@ pub const Bindings = struct {
 
 pub const ShaderConfig = struct {
     // TODO: Put depth, index type, attributes, etc, here
-    blend_mode: BlendMode = BlendMode.none,
+    blend_mode: BlendMode = .NONE,
+    depth_write_enabled: bool = true,
+    depth_compare: CompareFunc = .LESS_EQUAL,
 };
 
 var next_shader_handle: u32 = 0;
@@ -214,8 +229,8 @@ pub const Shader = struct {
             .index_type = .UINT16,
             .shader = shader,
             .depth = .{
-                .compare = .LESS_EQUAL,
-                .write_enabled = true,
+                .compare = convertCompareFunc(cfg.depth_compare),
+                .write_enabled = cfg.depth_write_enabled,
             }
         };
 
@@ -225,7 +240,7 @@ pub const Shader = struct {
         pipe_desc.layout.attrs[shaders.ATTR_vs_texcoord0].format = .FLOAT2;
 
         // apply blending values
-        pipe_desc.colors[0].blend = blendModeToBlendState(cfg.blend_mode);
+        pipe_desc.colors[0].blend = convertBlendMode(cfg.blend_mode);
 
         defer next_shader_handle += 1;
         return Shader { .sokol_pipeline = sg.makePipeline(pipe_desc), .handle = next_shader_handle };
@@ -523,12 +538,12 @@ fn createSolidTexture(color: u32) Texture {
 }
 
 /// Converts our BlendMode enum to a Sokol BlendState struct
-fn blendModeToBlendState(mode: BlendMode) sg.BlendState {
+fn convertBlendMode(mode: BlendMode) sg.BlendState {
     switch(mode) {
-        .none => {
+        .NONE => {
             return sg.BlendState{ };
         },
-        .blend => {
+        .BLEND => {
             return sg.BlendState{
                 .enabled = true,
                 .src_factor_rgb = sg.BlendFactor.SRC_ALPHA,
@@ -539,7 +554,7 @@ fn blendModeToBlendState(mode: BlendMode) sg.BlendState {
                 .op_alpha = sg.BlendOp.ADD,
             };
         },
-        .add => {
+        .ADD => {
             return sg.BlendState{
                 .enabled = true,
                 .src_factor_rgb = sg.BlendFactor.SRC_ALPHA,
@@ -550,7 +565,7 @@ fn blendModeToBlendState(mode: BlendMode) sg.BlendState {
                 .op_alpha = sg.BlendOp.ADD,
             };
         },
-        .mul => {
+        .MUL => {
             return sg.BlendState{
                 .enabled = true,
                 .src_factor_rgb = sg.BlendFactor.DST_COLOR,
@@ -561,7 +576,7 @@ fn blendModeToBlendState(mode: BlendMode) sg.BlendState {
                 .op_alpha = sg.BlendOp.ADD,
             };
         },
-        .mod => {
+        .MOD => {
             return sg.BlendState{
                 .enabled = true,
                 .src_factor_rgb = sg.BlendFactor.DST_COLOR,
@@ -573,4 +588,10 @@ fn blendModeToBlendState(mode: BlendMode) sg.BlendState {
             };
         },
     }
+}
+
+/// Converts our CompareFunc enum to a Sokol CompareFunc struct
+fn convertCompareFunc(func: CompareFunc) sg.CompareFunc {
+    // Our enums match up, so this is easy!
+    return @enumFromInt(@intFromEnum(func));
 }

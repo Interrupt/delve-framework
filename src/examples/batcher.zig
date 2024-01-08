@@ -61,8 +61,7 @@ fn on_init() void {
 
     // make some shaders for testing
     shader_opaque = graphics.Shader.init(.{});
-    shader_add = graphics.Shader.init(.{.blend_mode = graphics.BlendMode.blend});
-    shader_blend = graphics.Shader.init(.{.blend_mode = graphics.BlendMode.blend});
+    shader_blend = graphics.Shader.init(.{.blend_mode = graphics.BlendMode.BLEND});
 }
 
 fn on_tick(tick: u64) void {
@@ -82,7 +81,7 @@ fn on_tick(tick: u64) void {
         }
 
         if(@mod(i, 5) == 0) {
-            shader = shader_add;
+            shader = shader_blend;
         } else {
             shader = shader_opaque;
         }
