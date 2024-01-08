@@ -169,7 +169,6 @@ pub const SpriteBatcher = struct {
     pub fn draw(self: *SpriteBatcher) void {
         var it = self.batches.iterator();
         while(it.next()) |batcher| {
-            batcher.value_ptr.draw_color = self.draw_color;
             batcher.value_ptr.draw();
         }
     }
@@ -216,7 +215,6 @@ pub const Batcher = struct {
     index_pos: usize,
     bindings: graphics.Bindings,
     shader: graphics.Shader,
-    draw_color: graphics.Color = graphics.Color.white(),
     transform: Mat4 = Mat4.identity(),
     flip_tex_y: bool = false,
 
@@ -431,9 +429,6 @@ pub const Batcher = struct {
     pub fn draw(self: *Batcher) void {
         if(self.index_pos == 0)
             return;
-
-        const color = self.draw_color;
-        self.shader.params.draw_color = [_]f32 { color.r, color.g, color.b, color.a };
 
         graphics.draw(&self.bindings, &self.shader);
     }

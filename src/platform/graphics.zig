@@ -100,6 +100,10 @@ pub const Color = struct {
         c |= @intFromFloat(self.a * 0xFF000000);
         return c;
     }
+
+    pub fn toArray(self: Color) f32[4] {
+        return [_]f32 { self.r, self.g, self.b, self.a };
+    }
 };
 
 pub const BindingConfig = struct {
