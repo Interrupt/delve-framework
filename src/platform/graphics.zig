@@ -312,12 +312,7 @@ pub fn init() !void {
     text_desc.fonts[0] = debugtext.fontOric();
     debugtext.setup(text_desc);
 
-    default_pass_action.colors[0] = .{
-        .load_action = .CLEAR,
-        .clear_value = .{ .r = 0.15, .g = 0.15, .b = 0.15, .a = 1 },
-    };
-
-    // create vertex buffer with debug quad vertices
+    // Create vertex buffer with debug quad vertices
     state.debug_draw_bindings.vertex_buffers[0] = sg.makeBuffer(.{
         .data = sg.asRange(&[_]Vertex{
             .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
@@ -327,13 +322,13 @@ pub fn init() !void {
         }),
     });
 
-    // debug quad index buffer
+    // Debug quad index buffer
     state.debug_draw_bindings.index_buffer = sg.makeBuffer(.{
         .type = .INDEXBUFFER,
         .data = sg.asRange(&[_]u16{ 0, 1, 2, 0, 2, 3 }),
     });
 
-    // setup some debug textures
+    // Setup some debug textures
     tex_white = createSolidTexture(0xFFFFFFFF);
     tex_black = createSolidTexture(0xFF000000);
     tex_grey = createSolidTexture(0xFF333333);
@@ -343,7 +338,7 @@ pub fn init() !void {
     // Create a default sampler for the debug draw bindings
     state.debug_draw_bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
 
-    // create a debug shader and pipeline object
+    // Create a debug shader and pipeline object
     const shader = sg.makeShader(shaders.texcubeShaderDesc(sg.queryBackend()));
     var pipe_desc: sg.PipelineDesc = .{
         .shader = shader,
@@ -359,8 +354,17 @@ pub fn init() !void {
     pipe_desc.index_type = .UINT16;
     state.debug_draw_pipeline = sg.makePipeline(pipe_desc);
 
+    // Set the initial clear color
+    default_pass_action.colors[0] = .{
+        .load_action = .CLEAR,
+        .clear_value = .{ .r = 0.0, .g = 0.0, .b = 0.0, .a = 1 },
+    };
+
     // Set our initial view projection
     setProjectionPerspective(60.0, 0.01, 50.0);
+
+    // Setup initial view state
+    state.view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, Vec3.zero(), Vec3.up());
 
     debug.log("Graphics subsystem started successfully", .{});
 }
@@ -373,9 +377,6 @@ pub fn startFrame() void {
     // reset debug text
     debugtext.canvas(sapp.widthf() * 0.5, sapp.heightf() * 0.5);
     debugtext.layer(0);
-
-    // setup view state
-    state.view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, Vec3.zero(), Vec3.up());
 
     sg.beginDefaultPass(default_pass_action, sapp.width(), sapp.height());
 }
@@ -392,6 +393,7 @@ pub fn endFrame() void {
     debug.drawConsoleBackground();
     debugtext.drawLayer(1);
 
+    // flush to the screen!
     sg.endPass();
     sg.commit();
 }
@@ -411,104 +413,6 @@ pub fn setView(view_matrix: Mat4, model_matrix: Mat4) void {
     state.view = view_matrix;
     state.model = model_matrix;
 }
-
-fn makeDefaultShaderDesc() sg.ShaderDesc {
-    var desc: sg.ShaderDesc = .{};
-    switch (sg.queryBackend()) {
-        .D3D11 => {
-            desc.attrs[0].sem_name = "POS";
-            desc.attrs[1].sem_name = "COLOR";
-            desc.vs.source =
-                \\struct vs_in {
-                \\  float4 pos: POS;
-                \\  float4 color: COLOR;
-                \\};
-                \\struct vs_out {
-                \\  float4 color: COLOR0;
-                \\  float4 pos: SV_Position;
-                \\};
-                \\vs_out main(vs_in inp) {
-                \\  vs_out outp;
-                \\  outp.pos = inp.pos;
-                \\  outp.color = inp.color;
-                \\  return outp;
-                \\}
-            ;
-            desc.fs.source =
-                \\float4 main(float4 color: COLOR0): SV_Target0 {
-                \\  return color;
-                \\}
-            ;
-        },
-        .GLCORE33 => {
-            desc.attrs[0].name = "position";
-            desc.attrs[1].name = "color0";
-            desc.vs.source =
-                \\ #version 330
-                \\ in vec4 position;
-                \\ in vec4 color0;
-                \\ out vec4 color;
-                \\ void main() {
-                \\   gl_Position = position;
-                \\   color = color0;
-                \\ }
-            ;
-            desc.fs.source =
-                \\ #version 330
-                \\ in vec4 color;
-                \\ out vec4 frag_color;
-                \\ void main() {
-                \\   frag_color = color;
-                \\ }
-            ;
-        },
-        .METAL_MACOS => {
-            desc.vs.source =
-                \\ #include <metal_stdlib>
-                \\ using namespace metal;
-                \\ struct vs_in {
-                \\   float4 position [[attribute(0)]];
-                \\   float4 color [[attribute(1)]];
-                \\ };
-                \\ struct vs_out {
-                \\   float4 position [[position]];
-                \\   float4 color;
-                \\ };
-                \\ vertex vs_out _main(vs_in inp [[stage_in]]) {
-                \\   vs_out outp;
-                \\   outp.position = inp.position;
-                \\   outp.color = inp.color;
-                \\   return outp;
-                \\ }
-            ;
-            desc.fs.source =
-                \\ #include <metal_stdlib>
-                \\ using namespace metal;
-                \\ fragment float4 _main(float4 color [[stage_in]]) {
-                \\   return color;
-                \\ };
-            ;
-        },
-        else => {},
-    }
-    return desc;
-}
-
-// fn computeVsParams() shaders.VsParams {
-//     return shaders.VsParams{
-//         .mvp = Mat4.mul(Mat4.mul(state.projection, state.view), state.model),
-//         .in_color = state.draw_color,
-//     };
-// }
-//
-// fn computeOrthoVsParams() shaders.VsParams {
-//     state.model = Mat4.identity();
-//     const proj = Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), -5.0, 50.0);
-//     return shaders.VsParams{
-//         .mvp = Mat4.mul(Mat4.mul(proj, state.view), state.model),
-//         .in_color = state.draw_color,
-//     };
-// }
 
 pub fn setProjectionPerspective(fov: f32, near: f32, far: f32) void {
     const aspect = sapp.widthf() / sapp.heightf();
