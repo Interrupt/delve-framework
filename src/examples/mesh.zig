@@ -1,4 +1,5 @@
 const std = @import("std");
+const assets = @import("../api/assets.zig");
 const batcher = @import("../graphics/batcher.zig");
 const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
@@ -29,8 +30,14 @@ pub fn registerModule() !void {
 fn on_init() void {
     debug.log("Mesh example module initializing", .{});
 
-    mesh_test = mesh.Mesh.initFromFile("meshes/Suzanne.gltf", .{});
-    // mesh_test = mesh.Mesh.initFromFile("meshes/SciFiHelmet.gltf", .{});
+    const mesh_texture = "meshes/SciFiHelmet_BaseColor_512.png";
+    var tex_img: images.Image = images.loadFile(mesh_texture) catch {
+        debug.log("Assets: Error loading image asset: {s}", .{mesh_texture});
+        return;
+    };
+
+    const tex = graphics.Texture.init(&tex_img);
+    mesh_test = mesh.Mesh.initFromFile("meshes/SciFiHelmet.gltf", .{.texture = tex});
 }
 
 fn on_tick(tick: u64) void {
@@ -42,9 +49,9 @@ fn on_draw() void {
     if(mesh_test == null)
         return;
 
-
     var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, math.Vec3.zero(), math.Vec3.up());
-    var model = math.Mat4.rotate(time * 0.6, .{ .x = 0.0, .y = 1.0, .z = 0.0 });
+    var model = math.Mat4.translate(.{ .x = 2.0, .y = 0.0, .z = 0.0});
+    model = model.mul(math.Mat4.rotate(time * 0.6, .{ .x = 0.0, .y = 1.0, .z = 0.0 }));
 
     graphics.setProjectionPerspective(60.0, 0.01, 50.0);
     graphics.setView(view, model);

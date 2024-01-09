@@ -66,10 +66,10 @@ pub fn get_texture(filename: [*:0]const u8) i64 {
     return new_handle;
 }
 
-pub fn _getImageFromHandle(handle: u32) ?images.Image {
-    return image_handles.get(handle);
+pub fn _getImageFromHandle(handle: i64) ?images.Image {
+    return image_handles.get(@intCast(handle));
 }
 
-pub fn _getTextureFromHandle(handle: u32) ?graphics.Texture{
-    return texture_handles.get(handle);
+pub fn _getTextureFromHandle(handle: i64) ?graphics.Texture{
+    return texture_handles.get(@intCast(handle));
 }

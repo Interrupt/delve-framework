@@ -48,9 +48,8 @@ pub const Mesh = struct {
             return null;
         };
 
-        debug.log("  mesh has {d} verts and {d} indices", .{mesh_positions.items.len, mesh_indices.items.len});
+        debug.log("Loaded mesh file {s} with {d} indices", .{ filename, mesh_indices.items.len });
 
-        debug.log("Loaded mesh file {s}", .{ filename });
         var vertices = allocator.alloc(Vertex, mesh_positions.items.len) catch {
             debug.log("Could not process mesh file!", .{});
             return null;
