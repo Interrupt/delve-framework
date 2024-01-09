@@ -30,6 +30,11 @@ pub fn registerModule(module: Module) !void {
     debug.log("Registered module: {s}", .{module.name});
 }
 
+/// Gets a registered module
+pub fn getModule(module_name: [:0]const u8) ?Module {
+    return modules.get(module_name);
+}
+
 /// Initialize all the modules
 pub fn initModules() void {
     var it = modules.iterator();
