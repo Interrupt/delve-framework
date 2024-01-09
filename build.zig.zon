@@ -1,16 +1,9 @@
-// because zon file is really just a zig struct
-// comments are really done in the same way using 2 forward slashes
 .{
-    // the name of your project
-    .name = "zig-game-test",
-    // the version of your project
+    .name = "delve-framework",
     .version = "0.0.1",
 
-    // the actual packages you need as dependencies of your project
     .dependencies = .{
-        // the name of the package
         .ziglua = .{
-            // Use a tagged release of Ziglua tracking a stable Zig release
             .url = "https://github.com/natecraddock/ziglua/archive/refs/tags/0.2.0.tar.gz",
             .hash = "1220d14df5c57d4c3fafe26191fcc3b32c23ffd319e7f5d839d2ace030372f1f85b4",
         },
