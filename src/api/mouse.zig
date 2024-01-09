@@ -11,7 +11,6 @@ pub fn position() Tuple(&.{f32, f32}) {
 
 // Get Mouse Button Pressed State
 pub fn button(btn: u32) bool {
-    const button_idx = @as(u5, @truncate(btn));
-    const is_pressed = input.isMouseButtonPressed(button_idx);
+    const is_pressed = input.isMouseButtonPressed(@enumFromInt(btn));
     return is_pressed;
 }

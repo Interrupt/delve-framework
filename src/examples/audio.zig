@@ -39,7 +39,7 @@ fn on_init() void {
 fn on_tick(tick: u64) void {
     _ = tick;
 
-    if(input.isMouseButtonJustPressed(0)) {
+    if(input.isMouseButtonJustPressed(input.MouseButtons.LEFT)) {
         sound_test = audio.playSound("sample-shoot.wav", 0.1);
     }
 }
