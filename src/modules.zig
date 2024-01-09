@@ -15,6 +15,7 @@ pub const Module = struct {
     stop_fn: ?*const fn () void = null,
     tick_fn: ?*const fn (u64) void = null,
     draw_fn: ?*const fn () void = null,
+    post_draw_fn: ?*const fn () void = null,
     cleanup_fn: ?*const fn () void = null,
 };
 
@@ -77,6 +78,15 @@ pub fn drawModules() void {
     while(it.next()) |module| {
         if(module.value_ptr.draw_fn != null)
             module.value_ptr.draw_fn.?();
+    }
+}
+
+/// Calls the post-draw function of all modules. Happens at the end of a frame
+pub fn postDrawModules() void {
+    var it = modules.iterator();
+    while(it.next()) |module| {
+        if(module.value_ptr.post_draw_fn != null)
+            module.value_ptr.post_draw_fn.?();
     }
 }
 

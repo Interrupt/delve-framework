@@ -67,6 +67,9 @@ export fn sokol_frame() void {
     gfx.startFrame();
     modules.drawModules();
     gfx.endFrame();
+
+    // tell modules this frame is done
+    modules.postDrawModules();
 }
 
 export fn sokol_input(event: ?*const sapp.Event) void {

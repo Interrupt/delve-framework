@@ -1,7 +1,7 @@
 const debug = @import("../debug.zig");
 const gfx = @import("graphics.zig");
-const math = @import("../math.zig");
 const modules = @import("../modules.zig");
+const math = @import("../math.zig");
 
 const state = struct {
     var mouse_x: f32 = 0;
@@ -18,7 +18,7 @@ const state = struct {
 pub fn registerModule() !void {
     const inputSubsystem = modules.Module {
         .name = "input_subystem",
-        .tick_fn = on_tick,
+        .post_draw_fn = on_post_draw,
     };
 
     try modules.registerModule(inputSubsystem);
@@ -33,8 +33,7 @@ pub fn deinit() void {
     debug.log("Input subsystem stopping", .{});
 }
 
-pub fn on_tick(tick: u64) void {
-    _ = tick;
+pub fn on_post_draw() void {
     // reset the 'just pressed' states
     for(0 .. state.keyboard_just_pressed.len) |i| {
         state.keyboard_just_pressed[i] = false;
