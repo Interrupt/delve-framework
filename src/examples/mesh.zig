@@ -29,7 +29,8 @@ pub fn registerModule() !void {
 fn on_init() void {
     debug.log("Mesh example module initializing", .{});
 
-    mesh_test = mesh.Mesh.init("meshes/Suzanne.gltf");
+    mesh_test = mesh.Mesh.initFromFile("meshes/Suzanne.gltf", .{});
+    // mesh_test = mesh.Mesh.initFromFile("meshes/SciFiHelmet.gltf", .{});
 }
 
 fn on_tick(tick: u64) void {
@@ -41,16 +42,14 @@ fn on_draw() void {
     if(mesh_test == null)
         return;
 
-    graphics.setProjectionPerspective(60.0, 0.01, 50.0);
-    const view_translate = math.Vec3 { .x = 0, .y = 0, .z = 0 };
 
     var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, math.Vec3.zero(), math.Vec3.up());
-    view = view.mul(math.Mat4.translate(view_translate));
-
     var model = math.Mat4.rotate(time * 0.6, .{ .x = 0.0, .y = 1.0, .z = 0.0 });
 
+    graphics.setProjectionPerspective(60.0, 0.01, 50.0);
     graphics.setView(view, model);
-    graphics.draw(&mesh_test.?.bindings, &mesh_test.?.shader);
+
+    mesh_test.?.draw();
 }
 
 fn on_cleanup() void {

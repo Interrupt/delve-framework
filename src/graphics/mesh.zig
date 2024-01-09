@@ -9,11 +9,17 @@ const Vertex = graphics.Vertex;
 var mesh_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = mesh_gpa.allocator();
 
+pub const MeshConfig = struct {
+    texture: ?graphics.Texture = null,
+    shader: ?graphics.Shader = null,
+};
+
 pub const Mesh = struct {
     bindings: graphics.Bindings = undefined,
+    texture: graphics.Texture = undefined,
     shader: graphics.Shader = undefined,
 
-    pub fn init(filename: [:0]const u8) ?Mesh {
+    pub fn initFromFile(filename: [:0]const u8, cfg: MeshConfig) ?Mesh {
         zmesh.init(allocator);
         defer zmesh.deinit();
 
@@ -26,7 +32,7 @@ pub const Mesh = struct {
 
         var mesh_indices = std.ArrayList(u32).init(allocator);
         var mesh_positions = std.ArrayList([3]f32).init(allocator);
-        var mesh_normals = std.ArrayList([3]f32).init(allocator);
+        var mesh_texcoords = std.ArrayList([2]f32).init(allocator);
 
         zmesh.io.appendMeshPrimitive(
             data, // *zmesh.io.cgltf.Data
@@ -34,8 +40,8 @@ pub const Mesh = struct {
             0, // gltf primitive index (submesh index)
             &mesh_indices,
             &mesh_positions,
-            &mesh_normals, // normals (optional)
-            null, // texcoords (optional)
+            null, // normals (optional)
+            &mesh_texcoords, // texcoords (optional)
             null, // tangents (optional)
         ) catch {
             debug.log("Could not process mesh file!", .{});
@@ -50,32 +56,34 @@ pub const Mesh = struct {
             return null;
         };
 
-        for(mesh_positions.items, 0..) |v, i| {
-            vertices[i].x = v[0];
-            vertices[i].y = v[1];
-            vertices[i].z = v[2];
+        for(mesh_positions.items, mesh_texcoords.items, 0..) |vert, texcoord, i| {
+            vertices[i].x = vert[0];
+            vertices[i].y = vert[1];
+            vertices[i].z = vert[2];
+            vertices[i].u = texcoord[0];
+            vertices[i].v = texcoord[1];
         }
 
         var bindings = graphics.Bindings.init(.{.index_len = mesh_indices.items.len, .vert_len = mesh_positions.items.len});
         bindings.set(vertices, mesh_indices.items , mesh_indices.items.len);
-        bindings.setTexture(graphics.tex_grey);
 
-        return Mesh{ .bindings = bindings, .shader = graphics.Shader.init(.{}) };
+        var tex = if(cfg.texture != null) cfg.texture.? else graphics.createDebugTexture();
+        var shd = if(cfg.shader != null) cfg.shader.? else graphics.Shader.init(.{ .cull_mode = .BACK, .index_size = .UINT32});
+
+        return Mesh{ .bindings = bindings, .shader = shd, .texture = tex};
     }
 
     pub fn deinit(self: *Mesh) void {
         self.bindings.destroy();
     }
 
-    // pub fn draw(self: *Batcher) void {
-    //     if(self.index_pos == 0)
-    //         return;
-    //
-    //     graphics.draw(&self.bindings, &self.shader);
-    // }
+    pub fn draw(self: *Mesh) void {
+        self.bindings.setTexture(self.texture);
+        graphics.draw(&self.bindings, &self.shader);
+    }
 };
 
-pub fn createMesh(vertices: []graphics.Vertex, indices: []u16) Mesh {
+pub fn createMesh(vertices: []graphics.Vertex, indices: []u32) Mesh {
     const m: Mesh = Mesh {
         .bindings = graphics.Bindings{
             .vertex_buffer = vertices,

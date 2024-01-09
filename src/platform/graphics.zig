@@ -47,6 +47,12 @@ pub const CompareFunc = enum(i32) {
     NUM,
 };
 
+pub const CullMode = enum(i32) {
+    NONE,
+    FRONT,
+    BACK,
+};
+
 pub const Vertex = struct {
     x: f32,
     y: f32,
@@ -213,11 +219,18 @@ pub const Bindings = struct {
     }
 };
 
+pub const IndexSize = enum(u16) {
+    UINT16,
+    UINT32,
+};
+
 pub const ShaderConfig = struct {
     // TODO: Put index type, attributes, etc, here
     blend_mode: BlendMode = .NONE,
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
+    cull_mode: CullMode = .NONE,
+    index_size: IndexSize = .UINT16,
 };
 
 pub const ShaderParams = struct {
@@ -237,12 +250,13 @@ pub const Shader = struct {
         const shader = sg.makeShader(shaders.defaultShaderDesc(sg.queryBackend()));
 
         var pipe_desc: sg.PipelineDesc = .{
-            .index_type = .UINT16,
+            .index_type = if(cfg.index_size == .UINT16) .UINT16 else .UINT32,
             .shader = shader,
             .depth = .{
                 .compare = convertCompareFunc(cfg.depth_compare),
                 .write_enabled = cfg.depth_write_enabled,
-            }
+            },
+            .cull_mode = convertCullMode(cfg.cull_mode),
         };
 
         // todo: get these from the ShaderConfig, use intermediate enums
@@ -532,12 +546,24 @@ pub fn draw(bindings: *Bindings, shader: *Shader) void {
     drawSubset(0, @intCast(bindings.length), bindings, shader);
 }
 
-fn createSolidTexture(color: u32) Texture {
+/// Returns a small 2x2 solid color texture
+pub fn createSolidTexture(color: u32) Texture {
     const img = &[2 * 2]u32{
         color, color,
         color, color,
     };
     return Texture.initFromBytes(2, 2, img);
+}
+
+/// Returns a 4x4 checkerboard texture for debugging
+pub fn createDebugTexture() Texture {
+    const img = &[4 * 4]u32{
+        0xFF999999, 0xFF555555, 0xFF999999, 0xFF555555,
+        0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
+        0xFF999999, 0xFF555555, 0xFF999999, 0xFF555555,
+        0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
+    };
+    return Texture.initFromBytes(4, 4, img);
 }
 
 /// Converts our BlendMode enum to a Sokol BlendState struct
@@ -593,8 +619,23 @@ fn convertBlendMode(mode: BlendMode) sg.BlendState {
     }
 }
 
-/// Converts our CompareFunc enum to a Sokol CompareFunc struct
+/// Converts our CompareFunc enum to a Sokol CompareFunc enum
 fn convertCompareFunc(func: CompareFunc) sg.CompareFunc {
     // Our enums match up, so this is easy!
     return @enumFromInt(@intFromEnum(func));
+}
+
+/// Converts our CullMode enum to a Sokol CullMode enum
+fn convertCullMode(mode: CullMode) sg.CullMode {
+    switch(mode) {
+        .NONE => {
+            return sg.CullMode.NONE;
+        },
+        .BACK => {
+            return sg.CullMode.FRONT;
+        },
+        .FRONT => {
+            return sg.CullMode.BACK;
+        }
+    }
 }

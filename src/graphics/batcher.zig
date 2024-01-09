@@ -57,7 +57,7 @@ pub const SpriteBatcher = struct {
         };
 
         // set initial texture and shader
-        const tex = if(cfg.texture != null) cfg.texture.? else makeDebugTexture();
+        const tex = if(cfg.texture != null) cfg.texture.? else graphics.createDebugTexture();
         sprite_batcher.current_tex = tex;
 
         const shader = if(cfg.shader != null) cfg.shader.? else graphics.Shader.init(.{ });
@@ -466,17 +466,6 @@ pub const Batcher = struct {
         self.bindings.resize(self.vertex_buffer.len, self.index_buffer.len);
     }
 };
-
-/// Returns a checkerboard texture for debugging
-fn makeDebugTexture() graphics.Texture {
-    const img = &[4 * 4]u32{
-        0xFF999999, 0xFF555555, 0xFF999999, 0xFF555555,
-        0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
-        0xFF999999, 0xFF555555, 0xFF999999, 0xFF555555,
-        0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
-    };
-    return graphics.Texture.initFromBytes(4, 4, img);
-}
 
 fn angleToVector(angle: f32, length: f32) Vec2 {
     return Vec2{ .x = std.math.cos(angle) * length, .y = std.math.sin(angle) * length };
