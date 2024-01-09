@@ -1,6 +1,7 @@
 const std = @import("std");
 const sokol = @import("3rdparty/sokol-zig/build.zig");
 const zaudio = @import("3rdparty/zaudio/build.zig");
+const zmesh = @import("3rdparty/zmesh/build.zig");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -34,6 +35,10 @@ pub fn build(b: *std.Build) void {
     // Add zaudio library
     const zaudio_pkg = zaudio.package(b, target, optimize, .{});
     zaudio_pkg.link(exe);
+
+    // Add zmesh library
+    const zmesh_pkg = zmesh.package(b, target, optimize, .{});
+    zmesh_pkg.link(exe);
 
     const install_exe = b.addInstallArtifact(exe, .{});
     b.getInstallStep().dependOn(&install_exe.step);

@@ -51,9 +51,9 @@ pub const Vertex = struct {
     x: f32,
     y: f32,
     z: f32,
-    color: u32,
-    u: f32,
-    v: f32,
+    color: u32 = 0xFFFFFFFF,
+    u: f32 = 0,
+    v: f32 = 0,
 
     pub fn mulMat4(left: Vertex, right: Mat4) Vertex {
         var ret = left;
@@ -370,7 +370,7 @@ pub fn init() !void {
     // Setup some debug textures
     tex_white = createSolidTexture(0xFFFFFFFF);
     tex_black = createSolidTexture(0xFF000000);
-    tex_grey = createSolidTexture(0xFF333333);
+    tex_grey = createSolidTexture(0xFF777777);
 
     // Set the initial clear color
     default_pass_action.colors[0] = .{

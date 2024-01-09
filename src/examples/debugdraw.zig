@@ -54,6 +54,7 @@ fn on_draw() void {
 
     graphics.drawDebugRectangle(texture, 120.0, 200.0, 100.0, 100.0, graphics.Color{.r=1.0, .g=1.0, .b=1.0, .a=1.0});
 
+    // Now draw some text
     const scale = 1.5 + std.math.sin(time * 0.02) * 0.2;
 
     graphics.setDebugTextScale(scale, scale);

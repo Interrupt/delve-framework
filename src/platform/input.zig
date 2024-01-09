@@ -141,9 +141,9 @@ const state = struct {
     var mouse_y: f32 = 0;
 
     var keyboard_pressed: [512]bool = undefined;
-    var mouse_pressed: [3]bool = undefined;
-
     var keyboard_just_pressed: [512]bool = undefined;
+
+    var mouse_pressed: [3]bool = undefined;
     var mouse_just_pressed: [3]bool = undefined;
 };
 
