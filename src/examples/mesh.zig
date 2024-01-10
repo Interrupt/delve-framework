@@ -56,6 +56,10 @@ fn on_draw() void {
     graphics.setProjectionPerspective(60.0, 0.01, 50.0);
     graphics.setView(view, model);
 
+    const sin_val = std.math.sin(time * 0.006) + 1.0;
+    const params = graphics.ShaderParams{.draw_color = [_]f32{sin_val, sin_val, sin_val, 1.0}};
+    mesh_test.?.shader.params = params;
+
     mesh_test.?.draw();
 }
 

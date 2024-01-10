@@ -12,6 +12,7 @@ var allocator = mesh_gpa.allocator();
 pub const MeshConfig = struct {
     texture: ?graphics.Texture = null,
     shader: ?graphics.Shader = null,
+    tex_filter: graphics.FilterMode = .LINEAR,
 };
 
 pub const Mesh = struct {
@@ -63,7 +64,11 @@ pub const Mesh = struct {
             vertices[i].v = texcoord[1];
         }
 
-        var bindings = graphics.Bindings.init(.{.index_len = mesh_indices.items.len, .vert_len = mesh_positions.items.len});
+        var bindings = graphics.Bindings.init(.{
+            .index_len = mesh_indices.items.len,
+            .vert_len = mesh_positions.items.len,
+            .tex_filter_mode = cfg.tex_filter});
+
         bindings.set(vertices, mesh_indices.items , mesh_indices.items.len);
 
         var tex = if(cfg.texture != null) cfg.texture.? else graphics.createDebugTexture();

@@ -116,6 +116,7 @@ pub const BindingConfig = struct {
     updatable: bool = false,
     vert_len: usize = 3200,
     index_len: usize = 3200,
+    tex_filter_mode: FilterMode = .NEAREST,
 };
 
 pub const Bindings = struct {
@@ -144,7 +145,8 @@ pub const Bindings = struct {
         }
 
         // Make a sampler for our bindings
-        bindings.sokol_bindings.?.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
+        const samplerDesc = convertBindingConfigToSamplerDesc(cfg);
+        bindings.sokol_bindings.?.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(samplerDesc);
 
         return bindings;
     }
@@ -224,6 +226,11 @@ pub const IndexSize = enum(u16) {
     UINT32,
 };
 
+pub const FilterMode = enum(u16) {
+    NEAREST,
+    LINEAR,
+};
+
 pub const ShaderConfig = struct {
     // TODO: Put index type, attributes, etc, here
     blend_mode: BlendMode = .NONE,
@@ -287,6 +294,10 @@ pub const Shader = struct {
         sg.applyPipeline(self.sokol_pipeline.?);
         sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
         sg.applyUniforms(.FS, shaders.SLOT_fs_params, sg.asRange(&fs_params));
+    }
+
+    pub fn setParams(self: *Shader, params: ShaderParams) void {
+        self.params = params;
     }
 };
 
@@ -638,4 +649,13 @@ fn convertCullMode(mode: CullMode) sg.CullMode {
             return sg.CullMode.BACK;
         }
     }
+}
+
+fn convertBindingConfigToSamplerDesc(cfg: BindingConfig) sg.SamplerDesc {
+    const filter_mode = if (cfg.tex_filter_mode == FilterMode.LINEAR) sg.Filter.LINEAR else sg.Filter.NEAREST;
+    return sg.SamplerDesc {
+        .min_filter = filter_mode,
+        .mag_filter = filter_mode,
+        .mipmap_filter = filter_mode,
+    };
 }
