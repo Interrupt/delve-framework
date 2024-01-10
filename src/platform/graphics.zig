@@ -371,12 +371,9 @@ pub const MaterialConfig = struct {
     texture_3: ?Texture = null,
     texture_4: ?Texture = null,
 
-    // shader setup
-    shader_config: ShaderConfig = .{ .index_size = .UINT32 },
-
     // material options
     cull_mode: CullMode = .BACK,
-    filter: FilterMode = .NEAREST,
+    filter: FilterMode = .LINEAR,
     blend_mode: BlendMode = .NONE,
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
