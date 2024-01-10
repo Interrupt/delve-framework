@@ -73,7 +73,7 @@ pub const Mesh = struct {
         var tex = if(cfg.texture != null) cfg.texture.? else graphics.createDebugTexture();
         var shd = if(cfg.shader != null) cfg.shader.? else graphics.Shader.init(.{ .cull_mode = .BACK, .index_size = .UINT32});
 
-        bindings.setTextureFilter(graphics.FilterMode.LINEAR);
+        // bindings.setTextureFilter(graphics.FilterMode.LINEAR);
 
         return Mesh{ .bindings = bindings, .shader = shd, .texture = tex};
     }

@@ -116,13 +116,14 @@ pub const BindingConfig = struct {
     updatable: bool = false,
     vert_len: usize = 3200,
     index_len: usize = 3200,
-    tex_filter_mode: FilterMode = .NEAREST,
 };
 
 pub const Bindings = struct {
     length: usize,
     sokol_bindings: ?sg.Bindings,
     config: BindingConfig,
+
+    default_sokol_sampler: sg.Sampler = undefined,
 
     pub fn init(cfg: BindingConfig) Bindings {
         var bindings: Bindings = Bindings {
@@ -144,9 +145,10 @@ pub const Bindings = struct {
             });
         }
 
-        // TODO: Put this and the texture in a Material struct!
-        const samplerDesc = convertFilterModeToSamplerDesc(FilterMode.NEAREST);
-        bindings.sokol_bindings.?.fs.samplers[0] = sg.makeSampler(samplerDesc);
+        // maybe have a default material instead?
+        const samplerDesc = convertFilterModeToSamplerDesc(.NEAREST);
+        bindings.default_sokol_sampler = sg.makeSampler(samplerDesc);
+        bindings.sokol_bindings.?.fs.samplers[0] = bindings.default_sokol_sampler;
 
         return bindings;
     }
@@ -191,31 +193,24 @@ pub const Bindings = struct {
         self.sokol_bindings.?.fs.images[0] = texture.sokol_image.?;
     }
 
-    /// Assigns a texture to a specific shader slot
-    /// TODO: All of this texture stuff should live in a Material struct!
-    pub fn setTextureToSlot(self: *Bindings, texture: Texture, slot: u8) void {
-        if(texture.sokol_image == null)
-            return;
+    /// Sets values from the material that will be used to draw this
+    fn updateFromMaterial(self: *Bindings, material: Material) void {
+        for(0..material.textures.len) |i| {
+            if(material.textures[i] != null)
+                self.sokol_bindings.?.fs.images[i] = material.textures[i];
+        }
 
-        // set the texture to a specific fragment shader image slot
-        self.sokol_bindings.?.fs.images[slot] = texture.sokol_image.?;
-    }
+        // how many samplers should we support?
+        self.sokol_bindings.?.fs.samplers[0] = material.sokol_sampler;
 
-    pub fn setTextureFilter(self: *Bindings, filter: FilterMode) void {
-        // This is bad to destroy the sampler every time
-        // A Material struct could hold this forever
-        sg.destroySampler(self.sokol_bindings.?.fs.samplers[0]);
-
-        // Set the new sampler
-        const samplerDesc = convertFilterModeToSamplerDesc(filter);
-        self.sokol_bindings.?.fs.samplers[0] = sg.makeSampler(samplerDesc);
+        // also set shader uniforms here?
     }
 
     /// Destroy our binding
     pub fn destroy(self: *Bindings) void {
         sg.destroyBuffer(self.sokol_bindings.?.vertex_buffers[0]);
         sg.destroyBuffer(self.sokol_bindings.?.index_buffer);
-        sg.destroySampler(self.sokol_bindings.?.fs.samplers[0]);
+        sg.destroySampler(self.default_sokol_sampler);
     }
 
     /// Resize buffers used by our binding. Will destroy buffers and recreate them!
@@ -253,7 +248,7 @@ pub const FilterMode = enum(u16) {
 };
 
 pub const ShaderConfig = struct {
-    // TODO: Put index type, attributes, etc, here
+    // TODO: Put filename here to load externally
     blend_mode: BlendMode = .NONE,
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
@@ -365,6 +360,76 @@ pub const Texture = struct {
             .sokol_image = sg.makeImage(img_desc),
             .handle = next_texture_handle,
         };
+    }
+};
+
+pub const MaterialConfig = struct {
+    // texture slots for easy binding
+    texture_0: ?Texture = null,
+    texture_1: ?Texture = null,
+    texture_2: ?Texture = null,
+    texture_3: ?Texture = null,
+    texture_4: ?Texture = null,
+
+    // material options
+    cull_mode: CullMode = .BACK,
+    index_size: IndexSize = .UINT32,
+    filter: FilterMode = .NEAREST,
+    blend_mode: BlendMode = .NONE,
+    depth_write_enabled: bool = true,
+    depth_compare: CompareFunc = .LESS_EQUAL,
+    cull_mode: CullMode = .BACK,
+};
+
+pub const Material = struct {
+    texture: [5]?Texture = [_]Texture{null} ** 5,
+    shader: ?Shader,
+    filter: FilterMode,
+    blend_mode: BlendMode,
+    depth_write_enabled: bool,
+    depth_compare: CompareFunc,
+    cull_mode: CullMode,
+
+    sokol_sampler: *sg.Sampler = undefined,
+
+    pub fn init(cfg: MaterialConfig) Material {
+        const samplerDesc = convertFilterModeToSamplerDesc(cfg.filter);
+        const material = Material {
+            .shader = cfg.shader,
+            .filter = cfg.filter,
+            .blend_mode = cfg.blend_mode,
+            .depth_write_enabled = cfg.depth_write_enabled,
+            .depth_compare = cfg.depth_compare,
+            .cull_mode = cfg.cull_mode,
+            .sokol_sampler = sg.makeSampler(samplerDesc),
+        };
+
+        // ugly!
+        if(cfg.texture_0 != null)
+            material.texture[0] = cfg.texture_0;
+        if(cfg.texture_1 != null)
+            material.texture[1] = cfg.texture_1;
+        if(cfg.texture_2 != null)
+            material.texture[2] = cfg.texture_2;
+        if(cfg.texture_3 != null)
+            material.texture[3] = cfg.texture_3;
+        if(cfg.texture_4 != null)
+            material.texture[4] = cfg.texture_4;
+        if(cfg.texture_5 != null)
+            material.texture[5] = cfg.texture_5;
+
+        // make a default shader if none was given
+        if(material.shader == null) {
+            material.shader = Shader.init(.{
+                .cull_mode = cfg.cull_mode,
+                .blend_mode = cfg.blend_mode,
+                .depth_write_enabled = cfg.depth_write_enabled,
+                .depth_compare = cfg.depth_compare,
+                .index_size = cfg.index_size,
+            });
+        }
+
+        return material;
     }
 };
 
@@ -563,7 +628,8 @@ pub fn getDisplayDPIScale() f32 {
     return sapp.dpiScale();
 }
 
-pub fn drawSubset(start: u32, end: u32, bindings: *Bindings, shader: *Shader) void {
+/// Draw part of a binding
+pub fn drawSubset(bindings: *Bindings, start: u32, end: u32, shader: *Shader) void {
     if(bindings.sokol_bindings == null or shader.sokol_pipeline == null)
         return;
 
@@ -573,9 +639,21 @@ pub fn drawSubset(start: u32, end: u32, bindings: *Bindings, shader: *Shader) vo
     sg.draw(start, end, 1);
 }
 
+/// Draw a whole binding
 pub fn draw(bindings: *Bindings, shader: *Shader) void {
+    drawSubset(bindings, 0, @intCast(bindings.length), shader);
+}
+
+/// Draw a part of a binding, using a material
+pub fn drawSubsetWithMaterial(bindings: *Bindings, start: u32, end: u32, material: *Material) void {
+    bindings.updateFromMaterial(material);
+    drawSubset(bindings, start, end, material.shader);
+}
+
+/// Draw a whole binding, using a material
+pub fn drawWithMaterial(bindings: *Bindings, material: *Material) void {
     // Draw the whole buffer
-    drawSubset(0, @intCast(bindings.length), bindings, shader);
+    drawSubsetWithMaterial(bindings, 0, @intCast(bindings.length), material);
 }
 
 /// Returns a small 2x2 solid color texture
