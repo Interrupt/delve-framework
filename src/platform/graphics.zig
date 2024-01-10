@@ -382,7 +382,7 @@ pub const MaterialConfig = struct {
 
 pub const Material = struct {
     textures: [5]?Texture = [_]?Texture{null} ** 5,
-    shader: ?Shader = null,
+    shader: Shader = undefined,
     filter: FilterMode,
     blend_mode: BlendMode,
     depth_write_enabled: bool,
@@ -414,23 +414,21 @@ pub const Material = struct {
         if(cfg.texture_4 != null)
             material.textures[4] = cfg.texture_4;
 
-        // make a default shader if none was given
-        if(material.shader == null) {
-            material.shader = Shader.init(.{
-                .cull_mode = cfg.cull_mode,
-                .blend_mode = cfg.blend_mode,
-                .depth_write_enabled = cfg.depth_write_enabled,
-                .depth_compare = cfg.depth_compare,
-                .index_size = cfg.index_size,
-            });
-        }
+        // make a shader out of our options
+        material.shader = Shader.init(.{
+            .cull_mode = cfg.cull_mode,
+            .blend_mode = cfg.blend_mode,
+            .depth_write_enabled = cfg.depth_write_enabled,
+            .depth_compare = cfg.depth_compare,
+            .index_size = cfg.index_size,
+        });
 
         return material;
     }
 
     /// Sets shader parameters
     pub fn setParams(self: *Material, params: ShaderParams) void {
-        self.shader.?.params = params;
+        self.shader.params = params;
     }
 };
 
@@ -648,12 +646,11 @@ pub fn draw(bindings: *Bindings, shader: *Shader) void {
 /// Draw a part of a binding, using a material
 pub fn drawSubsetWithMaterial(bindings: *Bindings, start: u32, end: u32, material: *Material) void {
     bindings.updateFromMaterial(material);
-    drawSubset(bindings, start, end, &material.shader.?);
+    drawSubset(bindings, start, end, &material.shader);
 }
 
 /// Draw a whole binding, using a material
 pub fn drawWithMaterial(bindings: *Bindings, material: *Material) void {
-    // Draw the whole buffer
     drawSubsetWithMaterial(bindings, 0, @intCast(bindings.length), material);
 }
 
