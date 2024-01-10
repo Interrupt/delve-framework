@@ -37,7 +37,8 @@ fn on_init() void {
     };
 
     const tex = graphics.Texture.init(&tex_img);
-    mesh_test = mesh.Mesh.initFromFile("meshes/SciFiHelmet.gltf", .{.texture = tex});
+    const material = graphics.Material.init(.{ .texture_0 = tex });
+    mesh_test = mesh.Mesh.initFromFile("meshes/SciFiHelmet.gltf", .{.material = material});
 }
 
 fn on_tick(tick: u64) void {
@@ -58,7 +59,7 @@ fn on_draw() void {
 
     const sin_val = std.math.sin(time * 0.006) + 1.0;
     const params = graphics.ShaderParams{.draw_color = [_]f32{sin_val, sin_val, sin_val, 1.0}};
-    mesh_test.?.shader.params = params;
+    mesh_test.?.material.shader.?.params = params;
 
     mesh_test.?.draw();
 }

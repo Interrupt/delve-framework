@@ -10,14 +10,12 @@ var mesh_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = mesh_gpa.allocator();
 
 pub const MeshConfig = struct {
-    texture: ?graphics.Texture = null,
-    shader: ?graphics.Shader = null,
+    material: ?graphics.Material = null,
 };
 
 pub const Mesh = struct {
     bindings: graphics.Bindings = undefined,
-    texture: graphics.Texture = undefined,
-    shader: graphics.Shader = undefined,
+    material: graphics.Material = undefined,
 
     pub fn initFromFile(filename: [:0]const u8, cfg: MeshConfig) ?Mesh {
         zmesh.init(allocator);
@@ -70,12 +68,15 @@ pub const Mesh = struct {
 
         bindings.set(vertices, mesh_indices.items , mesh_indices.items.len);
 
-        var tex = if(cfg.texture != null) cfg.texture.? else graphics.createDebugTexture();
-        var shd = if(cfg.shader != null) cfg.shader.? else graphics.Shader.init(.{ .cull_mode = .BACK, .index_size = .UINT32});
+        var material: graphics.Material = undefined;
+        if(cfg.material == null) {
+            var tex = graphics.createDebugTexture();
+            material = graphics.Material.init(.{ .texture_0 = tex });
+        } else {
+            material = cfg.material.?;
+        }
 
-        // bindings.setTextureFilter(graphics.FilterMode.LINEAR);
-
-        return Mesh{ .bindings = bindings, .shader = shd, .texture = tex};
+        return Mesh{ .bindings = bindings, .material = material};
     }
 
     pub fn deinit(self: *Mesh) void {
@@ -83,8 +84,7 @@ pub const Mesh = struct {
     }
 
     pub fn draw(self: *Mesh) void {
-        self.bindings.setTexture(self.texture);
-        graphics.draw(&self.bindings, &self.shader);
+        graphics.drawWithMaterial(&self.bindings, &self.material);
     }
 };
 

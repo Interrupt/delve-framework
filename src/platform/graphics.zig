@@ -194,14 +194,14 @@ pub const Bindings = struct {
     }
 
     /// Sets values from the material that will be used to draw this
-    fn updateFromMaterial(self: *Bindings, material: Material) void {
+    fn updateFromMaterial(self: *Bindings, material: *Material) void {
         for(0..material.textures.len) |i| {
             if(material.textures[i] != null)
-                self.sokol_bindings.?.fs.images[i] = material.textures[i];
+                self.sokol_bindings.?.fs.images[i] = material.textures[i].?.sokol_image.?;
         }
 
         // how many samplers should we support?
-        self.sokol_bindings.?.fs.samplers[0] = material.sokol_sampler;
+        self.sokol_bindings.?.fs.samplers[0] = material.sokol_sampler.?;
 
         // also set shader uniforms here?
     }
@@ -371,31 +371,32 @@ pub const MaterialConfig = struct {
     texture_3: ?Texture = null,
     texture_4: ?Texture = null,
 
+    // shader setup
+    shader_config: ShaderConfig = .{ .index_size = .UINT32 },
+
     // material options
     cull_mode: CullMode = .BACK,
-    index_size: IndexSize = .UINT32,
     filter: FilterMode = .NEAREST,
     blend_mode: BlendMode = .NONE,
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
-    cull_mode: CullMode = .BACK,
+    index_size: IndexSize = .UINT32,
 };
 
 pub const Material = struct {
-    texture: [5]?Texture = [_]Texture{null} ** 5,
-    shader: ?Shader,
+    textures: [5]?Texture = [_]?Texture{null} ** 5,
+    shader: ?Shader = null,
     filter: FilterMode,
     blend_mode: BlendMode,
     depth_write_enabled: bool,
     depth_compare: CompareFunc,
     cull_mode: CullMode,
 
-    sokol_sampler: *sg.Sampler = undefined,
+    sokol_sampler: ?sg.Sampler = null,
 
     pub fn init(cfg: MaterialConfig) Material {
         const samplerDesc = convertFilterModeToSamplerDesc(cfg.filter);
-        const material = Material {
-            .shader = cfg.shader,
+        var material = Material {
             .filter = cfg.filter,
             .blend_mode = cfg.blend_mode,
             .depth_write_enabled = cfg.depth_write_enabled,
@@ -406,17 +407,15 @@ pub const Material = struct {
 
         // ugly!
         if(cfg.texture_0 != null)
-            material.texture[0] = cfg.texture_0;
+            material.textures[0] = cfg.texture_0;
         if(cfg.texture_1 != null)
-            material.texture[1] = cfg.texture_1;
+            material.textures[1] = cfg.texture_1;
         if(cfg.texture_2 != null)
-            material.texture[2] = cfg.texture_2;
+            material.textures[2] = cfg.texture_2;
         if(cfg.texture_3 != null)
-            material.texture[3] = cfg.texture_3;
+            material.textures[3] = cfg.texture_3;
         if(cfg.texture_4 != null)
-            material.texture[4] = cfg.texture_4;
-        if(cfg.texture_5 != null)
-            material.texture[5] = cfg.texture_5;
+            material.textures[4] = cfg.texture_4;
 
         // make a default shader if none was given
         if(material.shader == null) {
@@ -647,7 +646,7 @@ pub fn draw(bindings: *Bindings, shader: *Shader) void {
 /// Draw a part of a binding, using a material
 pub fn drawSubsetWithMaterial(bindings: *Bindings, start: u32, end: u32, material: *Material) void {
     bindings.updateFromMaterial(material);
-    drawSubset(bindings, start, end, material.shader);
+    drawSubset(bindings, start, end, &material.shader.?);
 }
 
 /// Draw a whole binding, using a material
