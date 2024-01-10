@@ -144,9 +144,9 @@ pub const Bindings = struct {
             });
         }
 
-        // Make a sampler for our bindings
-        const samplerDesc = convertBindingConfigToSamplerDesc(cfg);
-        bindings.sokol_bindings.?.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(samplerDesc);
+        // TODO: Put this and the texture in a Material struct!
+        const samplerDesc = convertFilterModeToSamplerDesc(FilterMode.NEAREST);
+        bindings.sokol_bindings.?.fs.samplers[0] = sg.makeSampler(samplerDesc);
 
         return bindings;
     }
@@ -187,14 +187,35 @@ pub const Bindings = struct {
         if(texture.sokol_image == null)
             return;
 
-        self.sokol_bindings.?.fs.images[shaders.SLOT_tex] = texture.sokol_image.?;
+        // set the texture to the default fragment shader image slot
+        self.sokol_bindings.?.fs.images[0] = texture.sokol_image.?;
+    }
+
+    /// Assigns a texture to a specific shader slot
+    /// TODO: All of this texture stuff should live in a Material struct!
+    pub fn setTextureToSlot(self: *Bindings, texture: Texture, slot: u8) void {
+        if(texture.sokol_image == null)
+            return;
+
+        // set the texture to a specific fragment shader image slot
+        self.sokol_bindings.?.fs.images[slot] = texture.sokol_image.?;
+    }
+
+    pub fn setTextureFilter(self: *Bindings, filter: FilterMode) void {
+        // This is bad to destroy the sampler every time
+        // A Material struct could hold this forever
+        sg.destroySampler(self.sokol_bindings.?.fs.samplers[0]);
+
+        // Set the new sampler
+        const samplerDesc = convertFilterModeToSamplerDesc(filter);
+        self.sokol_bindings.?.fs.samplers[0] = sg.makeSampler(samplerDesc);
     }
 
     /// Destroy our binding
     pub fn destroy(self: *Bindings) void {
         sg.destroyBuffer(self.sokol_bindings.?.vertex_buffers[0]);
         sg.destroyBuffer(self.sokol_bindings.?.index_buffer);
-        sg.destroySampler(self.sokol_bindings.?.fs.samplers[shaders.SLOT_smp]);
+        sg.destroySampler(self.sokol_bindings.?.fs.samplers[0]);
     }
 
     /// Resize buffers used by our binding. Will destroy buffers and recreate them!
@@ -292,8 +313,8 @@ pub const Shader = struct {
         };
 
         sg.applyPipeline(self.sokol_pipeline.?);
-        sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
-        sg.applyUniforms(.FS, shaders.SLOT_fs_params, sg.asRange(&fs_params));
+        sg.applyUniforms(.VS, 0, sg.asRange(&vs_params));
+        sg.applyUniforms(.FS, 0, sg.asRange(&fs_params));
     }
 
     pub fn setParams(self: *Shader, params: ShaderParams) void {
@@ -387,7 +408,7 @@ pub fn init() !void {
     });
 
     // Create a default sampler for the debug draw bindings
-    state.debug_draw_bindings.fs.samplers[shaders.SLOT_smp] = sg.makeSampler(.{});
+    state.debug_draw_bindings.fs.samplers[0] = sg.makeSampler(.{});
 
     // Use the default shader for debug drawing
     state.debug_shader = Shader.init(.{});
@@ -499,7 +520,7 @@ pub fn setDebugDrawShaderParams(params: ShaderParams) void {
 // todo: add color to this and to the shader
 pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32, color: Color) void {
     // apply the texture
-    state.debug_draw_bindings.fs.images[shaders.SLOT_tex] = tex.sokol_image.?;
+    state.debug_draw_bindings.fs.images[0] = tex.sokol_image.?;
 
     // create a view state
     const proj = Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), 0.001, 10.0);
@@ -522,8 +543,8 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
     };
 
     sg.applyPipeline(state.debug_shader.sokol_pipeline.?);
-    sg.applyUniforms(.VS, shaders.SLOT_vs_params, sg.asRange(&vs_params));
-    sg.applyUniforms(.FS, shaders.SLOT_fs_params, sg.asRange(&fs_params));
+    sg.applyUniforms(.VS, 0, sg.asRange(&vs_params));
+    sg.applyUniforms(.FS, 0, sg.asRange(&fs_params));
     sg.applyBindings(state.debug_draw_bindings);
 
     // draw our quad
@@ -651,8 +672,8 @@ fn convertCullMode(mode: CullMode) sg.CullMode {
     }
 }
 
-fn convertBindingConfigToSamplerDesc(cfg: BindingConfig) sg.SamplerDesc {
-    const filter_mode = if (cfg.tex_filter_mode == FilterMode.LINEAR) sg.Filter.LINEAR else sg.Filter.NEAREST;
+fn convertFilterModeToSamplerDesc(filter: FilterMode) sg.SamplerDesc {
+    const filter_mode = if (filter == FilterMode.LINEAR) sg.Filter.LINEAR else sg.Filter.NEAREST;
     return sg.SamplerDesc {
         .min_filter = filter_mode,
         .mag_filter = filter_mode,
