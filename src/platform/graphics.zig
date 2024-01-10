@@ -430,6 +430,11 @@ pub const Material = struct {
 
         return material;
     }
+
+    /// Sets shader parameters
+    pub fn setParams(self: *Material, params: ShaderParams) void {
+        self.shader.?.params = params;
+    }
 };
 
 const state = struct {
