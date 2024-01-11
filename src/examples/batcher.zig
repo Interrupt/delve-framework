@@ -60,8 +60,8 @@ fn on_init() void {
     texture_2 = graphics.Texture.init(&test_image_2);
 
     // make some shaders for testing
-    shader_opaque = graphics.Shader.init(.{});
-    shader_blend = graphics.Shader.init(.{.blend_mode = graphics.BlendMode.BLEND});
+    shader_opaque = graphics.Shader.initDefault(.{});
+    shader_blend = graphics.Shader.initDefault(.{.blend_mode = graphics.BlendMode.BLEND});
 }
 
 fn on_tick(tick: u64) void {

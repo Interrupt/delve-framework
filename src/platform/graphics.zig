@@ -1,3 +1,4 @@
+const std = @import("std");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
 
@@ -9,8 +10,8 @@ const sgapp = sokol.app_gfx_glue;
 const debugtext = sokol.debugtext;
 
 // compile built-in shaders via:
-// ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl330:metal_macos:hlsl4 -f sokol_zig
-const shaders = @import("../graphics/shaders/default.glsl.zig");
+// ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl300es:glsl330:wgsl:metal_macos:metal_ios:metal_sim:hlsl4 -f sokol_zig
+const shader_default = @import("../graphics/shaders/default.glsl.zig");
 
 const Vec2 = @import("../math.zig").Vec2;
 const Vec3 = @import("../math.zig").Vec3;
@@ -248,7 +249,6 @@ pub const FilterMode = enum(u16) {
 };
 
 pub const ShaderConfig = struct {
-    // TODO: Put filename here to load externally
     blend_mode: BlendMode = .NONE,
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
@@ -268,9 +268,66 @@ pub const Shader = struct {
     handle: u32,
     params: ShaderParams = ShaderParams{},
 
-    pub fn init(cfg: ShaderConfig) Shader {
-        // TODO: Add support for loading shaders from files as well
-        const shader = sg.makeShader(shaders.defaultShaderDesc(sg.queryBackend()));
+    fs_texture_slots: u8 = 1,
+    fs_sampler_slots: u8 = 1,
+    fs_uniform_slots: u8 = 1,
+
+    vs_texture_slots: u8 = 0,
+    vs_sampler_slots: u8 = 0,
+    vs_uniform_slots: u8 = 1,
+
+    sokol_shader_desc: sg.ShaderDesc,
+
+    /// Create a new shader using the default
+    pub fn initDefault(cfg: ShaderConfig) Shader {
+        const shader_desc = shader_default.defaultShaderDesc(sg.queryBackend());
+        return initSokolShader(cfg, shader_desc);
+    }
+
+    // TODO: Add support for loading shaders from built files as well!
+    // Sokol supports exporting to multiple shader formats alongside a YAML definition file,
+    // we could load that definition and the correct file based on the current backend.
+
+    /// Creates a shader from a shader built in as a zig file
+    pub fn initFromBuiltin(cfg: ShaderConfig, comptime builtin: anytype) ?Shader {
+        const shader_desc_fn = getBuiltinSokolCreateFunction(builtin);
+        if(shader_desc_fn == null)
+            return null;
+
+        return Shader.initSokolShader(cfg, shader_desc_fn.?(sg.queryBackend()));
+    }
+
+    /// Find the function in the builtin that can actually make the ShaderDesc
+    fn getBuiltinSokolCreateFunction(comptime builtin: anytype) ?fn(sg.Backend) sg.ShaderDesc {
+        comptime {
+            const decls = @typeInfo(builtin).Struct.decls;
+            for (decls) |d| {
+                const field = @field(builtin, d.name);
+                const field_type = @typeInfo(@TypeOf(field));
+                if(field_type == .Fn) {
+                    const fn_info = field_type.Fn;
+                    if(fn_info.return_type == sg.ShaderDesc) {
+                        return field;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Create a shader from a Sokol Shader Description - useful for loading built-in shaders
+    pub fn initSokolShader(cfg: ShaderConfig, shader_desc: sg.ShaderDesc) Shader {
+        const shader = sg.makeShader(shader_desc);
+
+        // TODO: Fill in the rest of these values!
+        var num_fs_images: u8 = 0;
+        for(0..5) |i| {
+            if(shader_desc.fs.images[i].used) {
+                num_fs_images += 1;
+            } else {
+                break;
+            }
+        }
 
         var pipe_desc: sg.PipelineDesc = .{
             .index_type = if(cfg.index_size == .UINT16) .UINT16 else .UINT32,
@@ -283,27 +340,33 @@ pub const Shader = struct {
         };
 
         // todo: get these from the ShaderConfig, use intermediate enums
-        pipe_desc.layout.attrs[shaders.ATTR_vs_pos].format = .FLOAT3;
-        pipe_desc.layout.attrs[shaders.ATTR_vs_color0].format = .UBYTE4N;
-        pipe_desc.layout.attrs[shaders.ATTR_vs_texcoord0].format = .FLOAT2;
+        pipe_desc.layout.attrs[shader_default.ATTR_vs_pos].format = .FLOAT3;
+        pipe_desc.layout.attrs[shader_default.ATTR_vs_color0].format = .UBYTE4N;
+        pipe_desc.layout.attrs[shader_default.ATTR_vs_texcoord0].format = .FLOAT2;
 
         // apply blending values
         pipe_desc.colors[0].blend = convertBlendMode(cfg.blend_mode);
 
         defer next_shader_handle += 1;
-        return Shader { .sokol_pipeline = sg.makePipeline(pipe_desc), .handle = next_shader_handle };
+        return Shader {
+            .sokol_pipeline = sg.makePipeline(pipe_desc),
+            .sokol_shader_desc = shader_desc,
+            .handle = next_shader_handle,
+
+            .fs_texture_slots = num_fs_images,
+        };
     }
 
     pub fn apply(self: *Shader) void {
         if(self.sokol_pipeline == null)
             return;
 
-        const vs_params = shaders.VsParams{
+        const vs_params = shader_default.VsParams{
             .mvp = state.projection.mul(state.view).mul(state.model),
             .in_color = self.params.draw_color,
         };
 
-        const fs_params = shaders.FsParams{
+        const fs_params = shader_default.FsParams{
             .in_color_override = self.params.color_override,
         };
 
@@ -378,6 +441,9 @@ pub const MaterialConfig = struct {
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
     index_size: IndexSize = .UINT32,
+
+    // the parent shader to base us on
+    shader: ?Shader = null,
 };
 
 pub const Material = struct {
@@ -414,14 +480,23 @@ pub const Material = struct {
         if(cfg.texture_4 != null)
             material.textures[4] = cfg.texture_4;
 
+        // TODO: Shader loading from files, using Sokol's YAML output
+        var shader_desc: sg.ShaderDesc = undefined;
+
+        if(cfg.shader != null) {
+            shader_desc = cfg.shader.?.sokol_shader_desc;
+        } else {
+            shader_desc = shader_default.defaultShaderDesc(sg.queryBackend());
+        }
+
         // make a shader out of our options
-        material.shader = Shader.init(.{
+        material.shader = Shader.initSokolShader(.{
             .cull_mode = cfg.cull_mode,
             .blend_mode = cfg.blend_mode,
             .depth_write_enabled = cfg.depth_write_enabled,
             .depth_compare = cfg.depth_compare,
             .index_size = cfg.index_size,
-        });
+        }, shader_desc);
 
         return material;
     }
@@ -475,7 +550,7 @@ pub fn init() !void {
     state.debug_draw_bindings.fs.samplers[0] = sg.makeSampler(.{});
 
     // Use the default shader for debug drawing
-    state.debug_shader = Shader.init(.{});
+    state.debug_shader = Shader.initDefault(.{});
 
     // Setup some debug textures
     tex_white = createSolidTexture(0xFFFFFFFF);
@@ -597,12 +672,12 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
     model = model.mul(Mat4.translate(translate_vec));
     model = model.mul(Mat4.scale(scale_vec));
 
-    const vs_params = shaders.VsParams{
+    const vs_params = shader_default.VsParams{
         .mvp = proj.mul(view).mul(model),
         .in_color = color.toArray(),
     };
 
-    const fs_params = shaders.FsParams{
+    const fs_params = shader_default.FsParams{
         .in_color_override = state.debug_shader.params.color_override,
     };
 
