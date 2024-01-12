@@ -27,6 +27,21 @@ bindZigLibrary("graphics", @import("api/graphics.zig"));
 
 Delve will use the `assets/main.lua` Lua file for scripting unless given a new path on the command line during startup.
 
+## 2D and 3D rendering
+
+Rendering uses the Sokol framework to use modern, cross platform graphics APIs. Supports Vulkan, Metal, DirectX 11/12, OpenGL 3/ES, and WebGPU.
+
+Batched 2d shape rendering:
+
+![delve-framework-2](https://github.com/Interrupt/delve-framework/assets/1374/48665a57-ba2b-44c2-a520-39b885c42de1)
+
+GLTF mesh rendering:
+
+![delve-framework-8](https://github.com/Interrupt/delve-framework/assets/1374/215754b4-f186-419a-842e-cb38a4e2c88f)
+
+
+
+
 ## Modules, all the way down
 
 In the Delve framework most everything is a module, so that applications can use just the functionality they want as well as extending the framework as needed. As an example, the scripting layer is a module that registers other modules.
