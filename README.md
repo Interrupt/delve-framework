@@ -27,7 +27,7 @@ bindZigLibrary("graphics", @import("api/graphics.zig"));
 
 Delve will use the `assets/main.lua` Lua file for scripting unless given a new path on the command line during startup.
 
-## Modules, all the wy down
+## Modules, all the way down
 
 In the Delve framework most everything is a module, so that applications can use just the functionality they want as well as extending the framework as needed. As an example, the scripting layer is a module that registers other modules.
 
