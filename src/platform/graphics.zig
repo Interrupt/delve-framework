@@ -1,6 +1,8 @@
 const std = @import("std");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
+const math = @import("../math.zig");
+const sokol_gfx_backend = @import("backends/sokol/graphics.zig");
 
 const sokol = @import("sokol");
 const slog = sokol.log;
@@ -9,13 +11,14 @@ const sapp = sokol.app;
 const sgapp = sokol.app_gfx_glue;
 const debugtext = sokol.debugtext;
 
+
 // compile built-in shaders via:
 // ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl300es:glsl330:wgsl:metal_macos:metal_ios:metal_sim:hlsl4 -f sokol_zig
 const shader_default = @import("../graphics/shaders/default.glsl.zig");
 
-const Vec2 = @import("../math.zig").Vec2;
-const Vec3 = @import("../math.zig").Vec3;
-const Mat4 = @import("../math.zig").Mat4;
+const Vec2 = math.Vec2;
+const Vec3 = math.Vec3;
+const Mat4 = math.Mat4;
 
 pub var tex_white: Texture = undefined;
 pub var tex_black: Texture = undefined;
@@ -119,122 +122,45 @@ pub const BindingConfig = struct {
     index_len: usize = 3200,
 };
 
+pub const BindingsImpl = sokol_gfx_backend.BindingsImpl;
+
 pub const Bindings = struct {
     length: usize,
-    sokol_bindings: ?sg.Bindings,
     config: BindingConfig,
-
-    default_sokol_sampler: sg.Sampler = undefined,
+    impl: BindingsImpl,
 
     pub fn init(cfg: BindingConfig) Bindings {
-        var bindings: Bindings = Bindings {
-            .length = 0,
-            .sokol_bindings = .{},
-            .config = cfg,
-        };
-
-        // Updatable buffers will need to be created ahead-of-time
-        if(cfg.updatable) {
-            bindings.sokol_bindings.?.vertex_buffers[0] = sg.makeBuffer(.{
-                .usage = .STREAM,
-                .size = cfg.vert_len * @sizeOf(Vertex),
-            });
-            bindings.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                .usage = .STREAM,
-                .type = .INDEXBUFFER,
-                .size = cfg.index_len * @sizeOf(u16),
-            });
-        }
-
-        // maybe have a default material instead?
-        const samplerDesc = convertFilterModeToSamplerDesc(.NEAREST);
-        bindings.default_sokol_sampler = sg.makeSampler(samplerDesc);
-        bindings.sokol_bindings.?.fs.samplers[0] = bindings.default_sokol_sampler;
-
-        return bindings;
+        return BindingsImpl.init(cfg);
     }
 
     /// Creates new buffers to hold these vertices and indices
     pub fn set(self: *Bindings, vertices: anytype, indices: anytype, length: usize) void {
-        if(self.sokol_bindings == null) {
-            return;
-        }
-
-        self.length = length;
-        self.sokol_bindings.?.vertex_buffers[0] = sg.makeBuffer(.{
-            .data = sg.asRange(vertices),
-        });
-        self.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-            .type = .INDEXBUFFER,
-            .data = sg.asRange(indices),
-        });
+        BindingsImpl.set(self, vertices, indices, length);
     }
 
     /// Updates the existing buffers with new data
     pub fn update(self: *Bindings, vertices: anytype, indices: anytype, vert_len: usize, index_len: usize) void {
-        if(self.sokol_bindings == null) {
-            return;
-        }
-
-        self.length = index_len;
-
-        if(index_len == 0)
-            return;
-
-        sg.updateBuffer(self.sokol_bindings.?.vertex_buffers[0], sg.asRange(vertices[0..vert_len]));
-        sg.updateBuffer(self.sokol_bindings.?.index_buffer, sg.asRange(indices[0..index_len]));
+        BindingsImpl.update(self, vertices, indices, vert_len, index_len);
     }
 
     /// Sets the texture that will be used to draw this binding
     pub fn setTexture(self: *Bindings, texture: Texture) void {
-        if(texture.sokol_image == null)
-            return;
-
-        // set the texture to the default fragment shader image slot
-        self.sokol_bindings.?.fs.images[0] = texture.sokol_image.?;
+        BindingsImpl.setTexture(self, texture);
     }
 
     /// Sets values from the material that will be used to draw this
     fn updateFromMaterial(self: *Bindings, material: *Material) void {
-        for(0..material.textures.len) |i| {
-            if(material.textures[i] != null)
-                self.sokol_bindings.?.fs.images[i] = material.textures[i].?.sokol_image.?;
-        }
-
-        // how many samplers should we support?
-        self.sokol_bindings.?.fs.samplers[0] = material.sokol_sampler.?;
-
-        // also set shader uniforms here?
+        BindingsImpl.updateFromMaterial(self, material);
     }
 
     /// Destroy our binding
     pub fn destroy(self: *Bindings) void {
-        sg.destroyBuffer(self.sokol_bindings.?.vertex_buffers[0]);
-        sg.destroyBuffer(self.sokol_bindings.?.index_buffer);
-        sg.destroySampler(self.default_sokol_sampler);
+        BindingsImpl.destroy(self);
     }
 
     /// Resize buffers used by our binding. Will destroy buffers and recreate them!
     pub fn resize(self: *Bindings, vertex_len: usize, index_len: usize) void {
-        if(!self.config.updatable)
-            return;
-
-        // debug.log("Resizing buffer! {}x{}", .{vertex_len, index_len});
-
-        // destroy old buffers
-        sg.destroyBuffer(self.sokol_bindings.?.vertex_buffers[0]);
-        sg.destroyBuffer(self.sokol_bindings.?.index_buffer);
-
-        // create new buffers
-        self.sokol_bindings.?.vertex_buffers[0] = sg.makeBuffer(.{
-            .usage = .STREAM,
-            .size = vertex_len * @sizeOf(Vertex),
-        });
-        self.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-            .usage = .STREAM,
-            .type = .INDEXBUFFER,
-            .size = index_len * @sizeOf(u16),
-        });
+        BindingsImpl.resize(self, vertex_len, index_len);
     }
 };
 
@@ -704,13 +630,7 @@ pub fn getDisplayDPIScale() f32 {
 
 /// Draw part of a binding
 pub fn drawSubset(bindings: *Bindings, start: u32, end: u32, shader: *Shader) void {
-    if(bindings.sokol_bindings == null or shader.sokol_pipeline == null)
-        return;
-
-    shader.apply();
-
-    sg.applyBindings(bindings.sokol_bindings.?);
-    sg.draw(start, end, 1);
+    BindingsImpl.drawSubset(bindings, start, end, shader);
 }
 
 /// Draw a whole binding
