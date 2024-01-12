@@ -7,7 +7,7 @@ Delve is a framework for building games written in Zig using Lua for scripting.
 
 ## Design Philosphy
 
-Delve uses Zig to make writing cross platform games easy, and because it is easy to interop with the vast library of existing C/C++ game development libraries.
+Delve uses Zig to make writing cross platform games easy, and because it is easy to interop with the vast library of existing C/C++ game development libraries. Its main goal is to be as cross platform and unopinionated as much as possible, making it easy to switch out implementations as needed.
 
 ## Libraries Used
 
