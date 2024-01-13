@@ -435,7 +435,8 @@ pub const Batcher = struct {
 
         // Make our default uniform blocks
         const vs_params = VSParams {
-            .mvp = graphics.state.projection.mul(graphics.state.view).mul(graphics.state.model),
+            .projViewMatrix = graphics.state.projection.mul(graphics.state.view),
+            .modelMatrix = graphics.state.model,
             .in_color = .{ 1.0, 1.0, 1.0, 1.0 },
         };
 

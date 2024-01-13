@@ -91,7 +91,8 @@ pub const Mesh = struct {
     pub fn draw(self: *Mesh) void {
         // Make our default uniform blocks
         const default_vs_params = VSParams {
-            .mvp = graphics.state.projection.mul(graphics.state.view).mul(graphics.state.model),
+            .projViewMatrix = graphics.state.projection.mul(graphics.state.view),
+            .modelMatrix = graphics.state.model,
             .in_color = self.material.params.draw_color.toArray(),
         };
 

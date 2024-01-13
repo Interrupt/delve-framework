@@ -59,7 +59,8 @@ pub const CullMode = enum(i32) {
 
 /// Default vertex shader uniform block layout
 pub const VSDefaultUniforms = struct {
-    mvp: math.Mat4 align(16),
+    projViewMatrix: math.Mat4 align(16),
+    modelMatrix: math.Mat4,
     in_color: [4]f32 = .{1.0, 1.0, 1.0, 1.0},
 };
 
@@ -591,13 +592,14 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
     model = model.mul(Mat4.scale(scale_vec));
 
     const vs_params = shader_default.VsParams{
-        .mvp = proj.mul(view).mul(model),
-        .in_color = color.toArray(),
+        .u_projViewMatrix = proj.mul(view),
+        .u_modelMatrix = model,
+        .u_color = color.toArray(),
     };
 
     const fs_params = shader_default.FsParams{
-        .in_color_override = state.debug_shader.params.color_override,
-        .alpha_cutoff = 0.0,
+        .u_color_override = state.debug_shader.params.color_override,
+        .u_alpha_cutoff = 0.0,
     };
 
     sg.applyPipeline(state.debug_shader.impl.sokol_pipeline.?);
