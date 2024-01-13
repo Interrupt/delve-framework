@@ -1,8 +1,8 @@
 
 pub const Color = struct {
-    r: f32,
-    g: f32,
-    b: f32,
+    r: f32 = 1.0,
+    g: f32 = 1.0,
+    b: f32 = 1.0,
     a: f32 = 1.0,
 
     pub fn new(r: f32, g: f32, b: f32, a: f32) Color {
@@ -28,10 +28,10 @@ pub const Color = struct {
 };
 
 // Preset colors!
-pub const transparent: Color = Color{.r=0.0,.g=0.0,.b=0.0,.a=0.0};
-pub const white: Color = Color{.r=1.0,.g=1.0,.b=1.0,.a=1.0};
-pub const black: Color = Color{.r=0.0,.g=0.0,.b=0.0,.a=1.0};
-pub const grey: Color = Color{.r=0.5,.g=0.5,.b=0.5,.a=1.0};
-pub const red: Color = Color{.r=1.0,.g=0.0,.b=0.0,.a=1.0};
-pub const green: Color = Color{.r=0.0,.g=1.0,.b=0.0,.a=1.0};
-pub const blue: Color = Color{.r=0.0,.g=0.0,.b=1.0,.a=1.0};
+pub const transparent: Color = Color.new(0.0, 0.0, 0.0, 0.0);
+pub const white: Color = Color.new(1.0, 1.0, 1.0, 1.0);
+pub const black: Color = Color.new(0.0, 0.0, 0.0, 1.0);
+pub const grey: Color = Color.new(0.5, 0.5, 0.5, 1.0);
+pub const red: Color = Color.new(1.0, 0.0, 0.0, 1.0);
+pub const green: Color = Color.new(0.0, 1.0, 0.0, 1.0);
+pub const blue: Color = Color.new(0.0, 0.0, 1.0, 1.0);
