@@ -78,8 +78,7 @@ fn on_draw() void {
     graphics.setView(view, model);
 
     const sin_val = std.math.sin(time * 0.006) + 0.5;
-    const params = graphics.ShaderParams{.draw_color = [_]f32{sin_val, sin_val, sin_val, 1.0}};
-    mesh_test.?.material.setParams(params);
+    mesh_test.?.material.params.draw_color = graphics.Color.new(sin_val, sin_val, sin_val, 1.0);
 
     mesh_test.?.draw();
 }

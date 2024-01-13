@@ -14,7 +14,7 @@ const debugtext = sokol.debugtext;
 
 // compile built-in shaders via:
 // ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl300es:glsl330:wgsl:metal_macos:metal_ios:metal_sim:hlsl4 -f sokol_zig
-const shader_default = @import("../graphics/shaders/default.glsl.zig");
+pub const shader_default = @import("../graphics/shaders/default.glsl.zig");
 
 const Vec2 = math.Vec2;
 const Vec3 = math.Vec3;
@@ -55,6 +55,12 @@ pub const CullMode = enum(i32) {
     NONE,
     FRONT,
     BACK,
+};
+
+// A struct that could contain anything
+pub const Anything = struct {
+    ptr: ?*const anyopaque = null,
+    size: usize = 0,
 };
 
 pub const Vertex = struct {
@@ -164,14 +170,19 @@ pub const Bindings = struct {
     }
 };
 
-pub const IndexSize = enum(u16) {
+pub const IndexSize = enum(i32) {
     UINT16,
     UINT32,
 };
 
-pub const FilterMode = enum(u16) {
+pub const FilterMode = enum(i32) {
     NEAREST,
     LINEAR,
+};
+
+pub const ShaderStage = enum(i32) {
+    VS,
+    FS,
 };
 
 pub const ShaderConfig = struct {
@@ -188,12 +199,40 @@ pub const ShaderParams = struct {
     color_override: [4]f32 = [_]f32 { 0.0, 0.0, 0.0, 0.0 },
 };
 
+pub const ShaderUniformType = enum(i32) {
+    FLOAT,
+    VEC2,
+    VEC3,
+    VEC4,
+    INT,
+    MAT4,
+    VEC4_ARRAY,
+    MAT4_ARRAY,
+};
+
+pub const ShaderUniform = struct {
+    data_float: ?f32 = null,
+    data_vec2: ?Vec2 = null,
+    data_vec3: ?Vec3 = null,
+    // data_vec4: ?Color,
+    data_int: ?i32 = null,
+    data_mat4: ?Mat4 = null,
+    // data_vec4_array: [:0]Mat4,
+    data_mat4_array: [:null]?Mat4 = undefined,
+    uniform_type: ShaderUniformType,
+};
+
 pub const ShaderImpl = sokol_gfx_backend.ShaderImpl;
 
 pub var next_shader_handle: u32 = 0;
 pub const Shader = struct {
     handle: u32,
     params: ShaderParams = ShaderParams{},
+
+    // the 0 block is always bound by default to include the view and model matrix
+    // so these are actually blocks 1-4
+    fs_uniform_blocks: [3]?Anything = [_]?Anything{ null } ** 3,
+    vs_uniform_blocks: [3]?Anything = [_]?Anything{ null } ** 3,
 
     fs_texture_slots: u8 = 1,
     fs_sampler_slots: u8 = 1,
@@ -227,8 +266,15 @@ pub const Shader = struct {
         ShaderImpl.apply(self);
     }
 
-    pub fn setParams(self: *Shader, params: ShaderParams) void {
-        ShaderImpl.setParams(self, params);
+    pub fn setUniformBlock(self: *Shader, stage: ShaderStage, slot: u8, data: Anything) void {
+        switch(stage) {
+            .VS => {
+                self.vs_uniform_blocks[slot] = data;
+            },
+            .FS => {
+                self.fs_uniform_blocks[slot] = data;
+            },
+        }
     }
 };
 
@@ -298,6 +344,11 @@ pub const MaterialConfig = struct {
     shader: ?Shader = null,
 };
 
+pub const MaterialParams = struct {
+    draw_color: Color = Color.white(),
+    color_override: Color = Color.new(0.0, 0.0, 0.0, 0.0),
+};
+
 pub const Material = struct {
     textures: [5]?Texture = [_]?Texture{null} ** 5,
     shader: Shader = undefined,
@@ -306,6 +357,8 @@ pub const Material = struct {
     depth_write_enabled: bool,
     depth_compare: CompareFunc,
     cull_mode: CullMode,
+
+    params: MaterialParams = MaterialParams{},
 
     sokol_sampler: ?sg.Sampler = null,
 
@@ -346,12 +399,19 @@ pub const Material = struct {
         return material;
     }
 
-    /// Sets shader parameters
-    pub fn setParams(self: *Material, params: ShaderParams) void {
-        self.shader.params = params;
+    pub fn setUniformBlock(self: *Shader, stage: ShaderStage, slot: u8, data: Anything) void {
+        switch(stage) {
+            .VS => {
+                self.vs_uniform_blocks[slot] = data;
+            },
+            .FS => {
+                self.fs_uniform_blocks[slot] = data;
+            },
+        }
     }
 };
 
+// TODO: Move the view state into a Camera struct
 pub const state = struct {
     var debug_draw_bindings: sg.Bindings = .{};
     var debug_draw_pipeline: sg.Pipeline = .{};
@@ -362,10 +422,6 @@ pub const state = struct {
     pub var view: Mat4 = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, Vec3.zero(), Vec3.up());
     pub var model: Mat4 = Mat4.zero();
 };
-
-pub fn getViewState() state {
-    return state;
-}
 
 var default_pass_action: sg.PassAction = .{};
 
@@ -673,4 +729,24 @@ fn convertFilterModeToSamplerDesc(filter: FilterMode) sg.SamplerDesc {
         .mag_filter = filter_mode,
         .mipmap_filter = filter_mode,
     };
+}
+
+// Taken from sokol_zig gfx, uses this to pass untyped data around
+pub fn asAnything(val: anytype) Anything {
+    const type_info = @typeInfo(@TypeOf(val));
+    switch (type_info) {
+        .Pointer => {
+            switch (type_info.Pointer.size) {
+                .One => return .{ .ptr = val, .size = @sizeOf(type_info.Pointer.child) },
+                .Slice => return .{ .ptr = val.ptr, .size = @sizeOf(type_info.Pointer.child) * val.len },
+                else => @compileError("FIXME: Pointer type!"),
+            }
+        },
+        .Struct, .Array => {
+            @compileError("Structs and arrays must be passed as pointers to asAnything");
+        },
+        else => {
+            @compileError("Cannot convert to range!");
+        },
+    }
 }

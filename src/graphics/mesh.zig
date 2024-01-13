@@ -3,6 +3,7 @@ const std = @import("std");
 const graphics = @import("../platform/graphics.zig");
 const debug = @import("../debug.zig");
 const zmesh = @import("zmesh");
+const math = @import("../math.zig");
 
 const Vertex = graphics.Vertex;
 
@@ -84,6 +85,29 @@ pub const Mesh = struct {
     }
 
     pub fn draw(self: *Mesh) void {
+        // Make our default uniform blocks
+        const VSParams = struct {
+            mvp: math.Mat4 align(16),
+            in_color: [4]f32 align(16),
+        };
+
+        const FSParams = struct {
+            in_color_override: [4]f32 align(16),
+        };
+
+        const vs_params = VSParams {
+            .mvp = graphics.state.projection.mul(graphics.state.view).mul(graphics.state.model),
+            .in_color = self.material.params.draw_color.toArray(),
+        };
+
+        const fs_params = FSParams {
+            .in_color_override = self.material.params.color_override.toArray(),
+        };
+
+        // set our shader params
+        self.material.shader.setUniformBlock(.FS, 0, graphics.asAnything(&fs_params));
+        self.material.shader.setUniformBlock(.VS, 0, graphics.asAnything(&vs_params));
+
         graphics.drawWithMaterial(&self.bindings, &self.material);
     }
 };

@@ -1,8 +1,8 @@
 
+const std = @import("std");
 const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
 const images = @import("../images.zig");
-const std = @import("std");
 const math = @import("../math.zig");
 
 const Vertex = graphics.Vertex;
@@ -429,6 +429,29 @@ pub const Batcher = struct {
     pub fn draw(self: *Batcher) void {
         if(self.index_pos == 0)
             return;
+
+        // Make our default uniform blocks
+        const VSParams = struct {
+            mvp: Mat4 align(16),
+            in_color: [4]f32 align(16),
+        };
+
+        const FSParams = struct {
+            in_color_override: [4]f32 align(16),
+        };
+
+        const vs_params = VSParams {
+            .mvp = graphics.state.projection.mul(graphics.state.view).mul(graphics.state.model),
+            .in_color = .{ 1.0, 1.0, 1.0, 1.0 },
+        };
+
+        const fs_params = FSParams {
+            .in_color_override = .{0.0, 0.0, 0.0, 0.0},
+        };
+
+        // set our shader params
+        self.shader.setUniformBlock(.FS, 0, graphics.asAnything(&fs_params));
+        self.shader.setUniformBlock(.VS, 0, graphics.asAnything(&vs_params));
 
         graphics.draw(&self.bindings, &self.shader);
     }

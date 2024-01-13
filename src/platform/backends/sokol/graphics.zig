@@ -236,21 +236,18 @@ pub const ShaderImpl = struct {
         if(self.impl.sokol_pipeline == null)
             return;
 
-        // get current view state
-        const state = graphics.state;
-
-        const vs_params = shader_default.VsParams{
-            .mvp = state.projection.mul(state.view).mul(state.model),
-            .in_color = self.params.draw_color,
-        };
-
-        const fs_params = shader_default.FsParams{
-            .in_color_override = self.params.color_override,
-        };
-
         sg.applyPipeline(self.impl.sokol_pipeline.?);
-        sg.applyUniforms(.VS, 0, sg.asRange(&vs_params));
-        sg.applyUniforms(.FS, 0, sg.asRange(&fs_params));
+
+        // apply uniform blocks
+        for(self.vs_uniform_blocks, 0..) |block, i| {
+            if(block) |b|
+                sg.applyUniforms(.VS, @intCast(i), sg.Range{ .ptr = b.ptr, .size = b.size });
+        }
+
+        for(self.fs_uniform_blocks, 0..) |block, i| {
+            if(block) |b|
+                sg.applyUniforms(.FS, @intCast(i), sg.Range{ .ptr = b.ptr, .size = b.size });
+        }
     }
 
     pub fn setParams(self: *Shader, params: graphics.ShaderParams) void {
