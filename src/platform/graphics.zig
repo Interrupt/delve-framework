@@ -57,6 +57,17 @@ pub const CullMode = enum(i32) {
     BACK,
 };
 
+/// Default vertex shader uniform block layout
+pub const VSDefaultUniforms = struct {
+    mvp: math.Mat4 align(16),
+    in_color: [4]f32,
+};
+
+/// Default fragment shader uniform block layout
+pub const FSDefaultUniforms = struct {
+    in_color_override: [4]f32 align(16),
+};
+
 // A struct that could contain anything
 pub const Anything = struct {
     ptr: ?*const anyopaque = null,
@@ -102,6 +113,10 @@ pub const Color = struct {
 
     pub fn black() Color {
        return Color{.r=0.0,.g=0.0,.b=0.0,.a=1.0};
+    }
+
+    pub fn transparent() Color {
+       return Color{.r=0.0,.g=0.0,.b=0.0,.a=0.0};
     }
 
     pub fn grey() Color {
@@ -229,8 +244,7 @@ pub const Shader = struct {
     handle: u32,
     params: ShaderParams = ShaderParams{},
 
-    // the 0 block is always bound by default to include the view and model matrix
-    // so these are actually blocks 1-4
+    // uniform blocks to use for the next draw call
     fs_uniform_blocks: [3]?Anything = [_]?Anything{ null } ** 3,
     vs_uniform_blocks: [3]?Anything = [_]?Anything{ null } ** 3,
 
@@ -264,9 +278,17 @@ pub const Shader = struct {
 
     pub fn apply(self: *Shader) void {
         ShaderImpl.apply(self);
+
+        // Reset uniform blocks, to avoid use-after-free
+        for(0 .. self.vs_uniform_blocks.len) |i| {
+            self.vs_uniform_blocks[i] = null;
+        }
+        for(0 .. self.fs_uniform_blocks.len) |i| {
+            self.fs_uniform_blocks[i] = null;
+        }
     }
 
-    pub fn setUniformBlock(self: *Shader, stage: ShaderStage, slot: u8, data: Anything) void {
+    pub fn applyUniformBlock(self: *Shader, stage: ShaderStage, slot: u8, data: Anything) void {
         switch(stage) {
             .VS => {
                 self.vs_uniform_blocks[slot] = data;

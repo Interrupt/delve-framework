@@ -16,6 +16,9 @@ var batch_allocator = batch_gpa.allocator();
 const max_indices = 64000;
 const max_vertices = max_indices;
 
+const VSParams = graphics.VSDefaultUniforms;
+const FSParams = graphics.FSDefaultUniforms;
+
 /// Keeps track of a sub region of a texture
 pub const TextureRegion = struct {
     u: f32 = 0,
@@ -431,15 +434,6 @@ pub const Batcher = struct {
             return;
 
         // Make our default uniform blocks
-        const VSParams = struct {
-            mvp: Mat4 align(16),
-            in_color: [4]f32 align(16),
-        };
-
-        const FSParams = struct {
-            in_color_override: [4]f32 align(16),
-        };
-
         const vs_params = VSParams {
             .mvp = graphics.state.projection.mul(graphics.state.view).mul(graphics.state.model),
             .in_color = .{ 1.0, 1.0, 1.0, 1.0 },
@@ -449,9 +443,9 @@ pub const Batcher = struct {
             .in_color_override = .{0.0, 0.0, 0.0, 0.0},
         };
 
-        // set our shader params
-        self.shader.setUniformBlock(.FS, 0, graphics.asAnything(&fs_params));
-        self.shader.setUniformBlock(.VS, 0, graphics.asAnything(&vs_params));
+        // set our default vs/fs shader uniforms to the 0 slots
+        self.shader.applyUniformBlock(.FS, 0, graphics.asAnything(&fs_params));
+        self.shader.applyUniformBlock(.VS, 0, graphics.asAnything(&vs_params));
 
         graphics.draw(&self.bindings, &self.shader);
     }

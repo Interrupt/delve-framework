@@ -10,6 +10,10 @@ const Vertex = graphics.Vertex;
 var mesh_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = mesh_gpa.allocator();
 
+// Default vertex and fragment shader params
+const VSParams = graphics.VSDefaultUniforms;
+const FSParams = graphics.FSDefaultUniforms;
+
 pub const MeshConfig = struct {
     material: ?graphics.Material = null,
 };
@@ -86,27 +90,18 @@ pub const Mesh = struct {
 
     pub fn draw(self: *Mesh) void {
         // Make our default uniform blocks
-        const VSParams = struct {
-            mvp: math.Mat4 align(16),
-            in_color: [4]f32 align(16),
-        };
-
-        const FSParams = struct {
-            in_color_override: [4]f32 align(16),
-        };
-
-        const vs_params = VSParams {
+        const default_vs_params = VSParams {
             .mvp = graphics.state.projection.mul(graphics.state.view).mul(graphics.state.model),
             .in_color = self.material.params.draw_color.toArray(),
         };
 
-        const fs_params = FSParams {
+        const default_fs_params = FSParams {
             .in_color_override = self.material.params.color_override.toArray(),
         };
 
-        // set our shader params
-        self.material.shader.setUniformBlock(.FS, 0, graphics.asAnything(&fs_params));
-        self.material.shader.setUniformBlock(.VS, 0, graphics.asAnything(&vs_params));
+        // set our default vs/fs shader uniforms to the 0 slots
+        self.material.shader.applyUniformBlock(.FS, 0, graphics.asAnything(&default_fs_params));
+        self.material.shader.applyUniformBlock(.VS, 0, graphics.asAnything(&default_vs_params));
 
         graphics.drawWithMaterial(&self.bindings, &self.material);
     }
