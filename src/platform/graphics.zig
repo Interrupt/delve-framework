@@ -94,6 +94,67 @@ pub const Vertex = struct {
     }
 };
 
+pub const Camera = struct {
+    position: Vec3 = Vec3.new(0, 0, 0),
+    dir: Vec3 = Vec3.new(0, 0, 1),
+    up: Vec3 = Vec3.up(),
+
+    fov: f32 = 60.0,
+    near: f32 = 0.001,
+    far: f32 = 100.0,
+
+    projection: Mat4 = Mat4.identity(),
+    view: Mat4 = Mat4.identity(),
+
+    aspect: f32 = undefined,
+    viewport_width: f32 = undefined,
+    viewport_height: f32 = undefined,
+
+    pub fn init(fov: f32, near: f32, far: f32, up: Vec3) Camera {
+        var cam = Camera{};
+        cam.setViewport(sapp.widthf(), sapp.heightf());
+        cam.setPerspective(fov, near, far);
+        cam.up = up;
+        return cam;
+    }
+
+    pub fn setViewport(self: *Camera, width: f32, height: f32) void {
+        self.aspect = width / height;
+        self.viewport_width = width;
+        self.viewport_height = height;
+    }
+
+    pub fn setPerspective(self: *Camera, fov: f32, near: f32, far: f32) void {
+        self.fov = fov;
+        self.near = near;
+        self.far = far;
+    }
+
+    pub fn setPosition(self: *Camera, pos: Vec3) void {
+        self.position = pos;
+    }
+
+    pub fn setDirection(self: *Camera, dir: Vec3) void {
+        self.dir = dir.norm();
+    }
+
+    pub fn update(self: *Camera) void {
+        self.projection = Mat4.persp(self.fov, self.aspect, self.near, self.far);
+        self.view = Mat4.lookat(self.position.add(self.dir), self.position, self.up);
+    }
+
+    pub fn apply(self: *Camera) void {
+        self.update();
+        applyCamera(self);
+    }
+};
+
+fn applyCamera(camera: *Camera) void {
+    state.view = camera.view;
+    state.projection = camera.projection;
+    state.viewProj = camera.view.mul(camera.projection);
+}
+
 // TODO: Move this to somewhere else. color.zig?
 pub const Color = struct {
     r: f32,
@@ -425,7 +486,6 @@ pub const Material = struct {
     }
 };
 
-// TODO: Move the view state into a Camera struct
 pub const state = struct {
     var debug_draw_bindings: sg.Bindings = .{};
     var debug_draw_pipeline: sg.Pipeline = .{};
@@ -434,6 +494,7 @@ pub const state = struct {
     // 3d view matrices
     pub var projection = Mat4.persp(60.0, 1.28, 0.01, 50.0);
     pub var view: Mat4 = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, Vec3.zero(), Vec3.up());
+    pub var viewProj: Mat4 = Mat4.identity();
     pub var model: Mat4 = Mat4.zero();
 };
 
@@ -529,6 +590,10 @@ pub fn setClearColor(color: Color) void {
 
 pub fn setView(view_matrix: Mat4, model_matrix: Mat4) void {
     state.view = view_matrix;
+    state.model = model_matrix;
+}
+
+pub fn setModelMatrix(model_matrix: Mat4) void {
     state.model = model_matrix;
 }
 

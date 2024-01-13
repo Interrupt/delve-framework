@@ -14,6 +14,8 @@ const emissive_shader_builtin = @import("../graphics/shaders/emissive.glsl.zig")
 var time: f32 = 0.0;
 var mesh_test: ?mesh.Mesh = null;
 
+var camera: graphics.Camera = undefined;
+
 // -- This module exercises loading and drawing a mesh --
 
 pub fn registerModule() !void {
@@ -30,6 +32,8 @@ pub fn registerModule() !void {
 
 fn on_init() void {
     debug.log("Mesh example module initializing", .{});
+
+    camera = graphics.Camera.init(60.0, 0.01, 50.0, math.Vec3.up());
 
     const base_texture_file = "meshes/SciFiHelmet_BaseColor_512.png";
     var base_img: images.Image = images.loadFile(base_texture_file) catch {
@@ -70,12 +74,13 @@ fn on_draw() void {
     if(mesh_test == null)
         return;
 
-    var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, math.Vec3.zero(), math.Vec3.up());
-    var model = math.Mat4.translate(.{ .x = 2.0, .y = 0.0, .z = 0.0});
-    model = model.mul(math.Mat4.rotate(time * 0.6, .{ .x = 0.0, .y = 1.0, .z = 0.0 }));
+    camera.setPosition(math.Vec3.new(0.0, 0.0, 0.0));
+    camera.setDirection(math.Vec3.new(0.0, 0.0, 1.0));
+    camera.apply();
 
-    graphics.setProjectionPerspective(60.0, 0.01, 50.0);
-    graphics.setView(view, model);
+    var model = math.Mat4.translate(.{ .x = 2.0, .y = 0.0, .z = -5.0});
+    model = model.mul(math.Mat4.rotate(time * 0.6, .{ .x = 0.0, .y = 1.0, .z = 0.0 }));
+    graphics.setModelMatrix(model);
 
     const sin_val = std.math.sin(time * 0.006) + 0.5;
     mesh_test.?.material.params.draw_color = graphics.Color.new(sin_val, sin_val, sin_val, 1.0);
