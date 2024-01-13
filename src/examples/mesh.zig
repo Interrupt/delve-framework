@@ -85,22 +85,19 @@ fn on_draw() void {
     if(mesh_test == null)
         return;
 
-    // Apply the camera to update the graphics state
     // There is a built in fly mode, but you can also just set the position / direction
     camera.runFlyCamera(1.0, false);
-    camera.apply();
+    const proj_view_matrix = camera.getProjView();
 
     var model = Mat4.translate(Vec3.new(2.0, 0.0, -3.0));
     model = model.mul(Mat4.rotate(time * 0.6, Vec3.new(0.0, 1.0, 0.0 )));
-    graphics.setModelMatrix(model);
 
     const sin_val = std.math.sin(time * 0.006) + 0.5;
     mesh_test.?.material.params.draw_color = Color.new(sin_val, sin_val, sin_val, 1.0);
-    mesh_test.?.draw();
+    mesh_test.?.draw(proj_view_matrix, model);
 
     model = Mat4.translate(Vec3.new(-2.0, 0.0, -3.0 ));
-    graphics.setModelMatrix(model);
-    mesh_test.?.draw();
+    mesh_test.?.draw(proj_view_matrix, model);
 }
 
 fn on_cleanup() void {

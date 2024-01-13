@@ -1,6 +1,7 @@
 const std = @import("std");
 const ziglua = @import("ziglua");
 const app = @import("../app.zig");
+const papp = @import("../platform/app.zig");
 const debug = @import("../debug.zig");
 const text_module = @import("text.zig");
 const math = @import("../math.zig");
@@ -31,13 +32,11 @@ pub fn libTick(tick: u64) void {
 /// Called at the end of a frame
 pub fn libDraw() void {
     var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5 }, math.Vec3.zero(), math.Vec3.up());
+    var proj = math.Mat4.ortho(0.0, @floatFromInt(papp.getWidth()), 0.0, @floatFromInt(papp.getHeight()), 0.001, 10.0);
     var model = math.Mat4.translate(.{ .x = 0.0, .y = 0.0, .z = -2.5 });
 
-    graphics.setProjectionOrtho(0.001, 10.0, true);
-    graphics.setView(view, model);
-
     shape_batch.apply();
-    shape_batch.draw();
+    shape_batch.draw(proj.mul(view), model);
 }
 
 /// Called when things are shutting down

@@ -4,6 +4,7 @@ const debug = @import("../debug.zig");
 const images = @import("../images.zig");
 const graphics = @import("../platform/graphics.zig");
 const input = @import("../platform/input.zig");
+const papp = @import("../platform/app.zig");
 const math = @import("../math.zig");
 const modules = @import("../modules.zig");
 
@@ -125,7 +126,7 @@ fn on_tick(tick: u64) void {
 
 fn on_draw() void {
     // Draw with a 60 degree fov
-    graphics.setProjectionPerspective(60.0, 0.01, 50.0);
+    const projection = math.Mat4.persp(60.0, papp.getAspectRatio(), 0.01, 50.0);
 
     const mouse_pos = input.getMousePosition();
     const view_translate = math.Vec3 { .x = -3.5 + mouse_pos.x * 0.007, .y = 1 + -mouse_pos.y * 0.0075, .z = 0 };
@@ -134,8 +135,7 @@ fn on_draw() void {
     view = view.mul(math.Mat4.translate(view_translate));
     view = view.mul(math.Mat4.rotate(25.0, .{ .x = 0.0, .y = 1.0, .z = 0.0 }));
 
-    graphics.setView(view, math.Mat4.identity());
-    test_batch.draw();
+    test_batch.draw(projection.mul(view), math.Mat4.identity());
 }
 
 fn on_cleanup() void {

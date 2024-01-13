@@ -111,8 +111,9 @@ pub const Camera = struct {
         self.view = Mat4.lookat(self.position.add(self.direction), self.position, self.up);
     }
 
-    pub fn apply(self: *Camera) void {
+    /// Applies projection and view, returns a projection * view matrix
+    pub fn getProjView(self: *Camera) Mat4 {
         self.update();
-        graphics.setViewState(self.view, self.projection);
+        return self.projection.mul(self.view);
     }
 };

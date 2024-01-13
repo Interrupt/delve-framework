@@ -34,6 +34,10 @@ pub fn getHeight() i32 {
     return AppBackend.getHeight();
 }
 
+pub fn getAspectRatio() f32 {
+    return @as(f32, @floatFromInt(getWidth())) / @as(f32, @floatFromInt(getHeight()));
+}
+
 fn on_init() void {
     // Start graphics first
     gfx.init() catch {

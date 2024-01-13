@@ -94,11 +94,11 @@ pub const Mesh = struct {
         self.bindings.destroy();
     }
 
-    pub fn draw(self: *Mesh) void {
+    pub fn draw(self: *Mesh, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
         // Make our default uniform blocks
         const default_vs_params = VSParams {
-            .projViewMatrix = graphics.state.projection.mul(graphics.state.view),
-            .modelMatrix = graphics.state.model,
+            .projViewMatrix = proj_view_matrix,
+            .modelMatrix = model_matrix,
             .in_color = self.material.params.draw_color.toArray(),
         };
 

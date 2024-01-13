@@ -169,10 +169,10 @@ pub const SpriteBatcher = struct {
     }
 
     /// Draws all the batches
-    pub fn draw(self: *SpriteBatcher) void {
+    pub fn draw(self: *SpriteBatcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
         var it = self.batches.iterator();
         while(it.next()) |batcher| {
-            batcher.value_ptr.draw();
+            batcher.value_ptr.draw(proj_view_matrix, model_matrix);
         }
     }
 
@@ -429,14 +429,14 @@ pub const Batcher = struct {
     }
 
     /// Submit a draw call to draw all shapes for this batch
-    pub fn draw(self: *Batcher) void {
+    pub fn draw(self: *Batcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
         if(self.index_pos == 0)
             return;
 
         // Make our default uniform blocks
         const vs_params = VSParams {
-            .projViewMatrix = graphics.state.projection.mul(graphics.state.view),
-            .modelMatrix = graphics.state.model,
+            .projViewMatrix = proj_view_matrix,
+            .modelMatrix = model_matrix,
             .in_color = .{ 1.0, 1.0, 1.0, 1.0 },
         };
 
