@@ -15,11 +15,9 @@ var texture_1: graphics.Texture = undefined;
 var texture_2: graphics.Texture = undefined;
 
 var shader_opaque: graphics.Shader = undefined;
-var shader_add: graphics.Shader = undefined;
 var shader_blend: graphics.Shader = undefined;
 
 var test_batch: batcher.SpriteBatcher = undefined;
-var view: math.Mat4 = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, math.Vec3.zero(), math.Vec3.up());
 
 const stress_test_count = 10000;
 
@@ -126,12 +124,12 @@ fn on_tick(tick: u64) void {
 
 fn on_draw() void {
     // Draw with a 60 degree fov
-    const projection = math.Mat4.persp(60.0, papp.getAspectRatio(), 0.01, 50.0);
+    const projection = graphics.getProjectionPerspective(60.0, 0.01, 50.0);
 
     const mouse_pos = input.getMousePosition();
     const view_translate = math.Vec3 { .x = -3.5 + mouse_pos.x * 0.007, .y = 1 + -mouse_pos.y * 0.0075, .z = 0 };
 
-    view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, math.Vec3.zero(), math.Vec3.up());
+    var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, math.Vec3.zero(), math.Vec3.up());
     view = view.mul(math.Mat4.translate(view_translate));
     view = view.mul(math.Mat4.rotate(25.0, .{ .x = 0.0, .y = 1.0, .z = 0.0 }));
 

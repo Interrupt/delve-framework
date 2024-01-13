@@ -32,7 +32,7 @@ pub fn libTick(tick: u64) void {
 /// Called at the end of a frame
 pub fn libDraw() void {
     var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5 }, math.Vec3.zero(), math.Vec3.up());
-    var proj = math.Mat4.ortho(0.0, @floatFromInt(papp.getWidth()), 0.0, @floatFromInt(papp.getHeight()), 0.001, 10.0);
+    var proj = graphics.getProjectionOrtho(0.001, 10.0, true);
     var model = math.Mat4.translate(.{ .x = 0.0, .y = 0.0, .z = -2.5 });
 
     shape_batch.apply();
