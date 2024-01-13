@@ -87,7 +87,7 @@ fn on_draw() void {
 
     // Apply the camera to update the graphics state
     // There is a built in fly mode, but you can also just set the position / direction
-    camera.runFlyCamera(1.0, true);
+    camera.runFlyCamera(1.0, false);
     camera.apply();
 
     var model = Mat4.translate(Vec3.new(2.0, 0.0, -3.0));

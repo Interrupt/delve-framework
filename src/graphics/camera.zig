@@ -25,44 +25,56 @@ pub const Camera = struct {
     _viewport_width: f32 = undefined,
     _viewport_height: f32 = undefined,
 
+    /// Create a new camera
     pub fn init(fov: f32, near: f32, far: f32, up: Vec3) Camera {
         var cam = Camera{};
         cam.setViewport(@floatFromInt(app.getWidth()), @floatFromInt(app.getHeight()));
-        cam.setPerspective(fov, near, far);
+        cam.fov = fov;
+        cam.near = near;
+        cam.far = far;
         cam.up = up;
         return cam;
     }
 
+    /// Set our aspect ratio based on the given width and height
     pub fn setViewport(self: *Camera, width: f32, height: f32) void {
         self.aspect = width / height;
         self._viewport_width = width;
         self._viewport_height = height;
     }
 
-    pub fn setPerspective(self: *Camera, fov: f32, near: f32, far: f32) void {
-        self.fov = fov;
-        self.near = near;
-        self.far = far;
-    }
-
+    /// Get the direction 90 degrees to the right of our direction
     pub fn getRightDirection(self: *Camera) Vec3 {
         return self.up.cross(self.direction);
     }
 
+    /// Move the camera along its direction
     pub fn moveForward(self: *Camera, amount: f32) void {
         self.position = self.position.add(self.direction.scale(-amount));
     }
 
+    /// Move the camera along its right direction
     pub fn moveRight(self: *Camera, amount: f32) void {
         self.position = self.position.add(self.getRightDirection().scale(amount));
     }
 
+    /// Rotate the camera around an axis
     pub fn rotate(self: *Camera, angle: f32, axis: Vec3) void {
         self.direction = self.direction.rotate(angle, axis);
     }
 
-    /// A simple FPS flying camera, for debugging
-    pub fn runFlyCamera(self: *Camera, speed: f32, use_mouse: bool) void {
+    /// Rotate the camera around its up axis
+    pub fn yaw(self: *Camera, angle: f32) void {
+        self.rotate(angle, self.up);
+    }
+
+    /// Rotate the camera around its right direction
+    pub fn pitch(self: *Camera, angle: f32) void {
+        self.rotate(angle, self.getRightDirection());
+    }
+
+    /// A simple FPS flying camera, for examples and debugging
+    pub fn runFlyCamera(self: *Camera, speed: f32, use_mouselook: bool) void {
         const flyspeed = speed * 0.1;
 
         if(input.isKeyPressed(.W)) {
@@ -76,22 +88,22 @@ pub const Camera = struct {
             self.moveRight(flyspeed);
         }
         if(input.isKeyPressed(.LEFT)) {
-            self.rotate(0.03, self.up);
+            self.yaw(0.03);
         } else if(input.isKeyPressed(.RIGHT)) {
-            self.rotate(-0.03, self.up);
+            self.yaw(-0.03);
         }
         if(input.isKeyPressed(.UP)) {
-            self.rotate(0.03, self.getRightDirection());
+            self.pitch(0.03);
         } else if(input.isKeyPressed(.DOWN)) {
-            self.rotate(-0.03, self.getRightDirection());
+            self.pitch(-0.03);
         }
 
-        if(!use_mouse)
+        if(!use_mouselook)
             return;
 
         const mouseDelta = input.getMouseDelta();
-        self.rotate(mouseDelta.x * -0.01, self.up);
-        self.rotate(mouseDelta.y * -0.01, self.getRightDirection());
+        self.yaw(mouseDelta.x * -0.01);
+        self.pitch(mouseDelta.y * -0.01);
     }
 
     fn update(self: *Camera) void {
