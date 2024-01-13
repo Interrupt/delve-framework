@@ -2,6 +2,7 @@ const app = @import("../app.zig");
 const debug = @import("../debug.zig");
 const gfx = @import("graphics.zig");
 const modules = @import("../modules.zig");
+const time = @import("std").time;
 const sokol_app_backend = @import("backends/sokol/app.zig");
 
 // Actual app backend, implementation could be switched out here
@@ -65,12 +66,11 @@ fn on_cleanup() void {
     gfx.deinit();
 }
 
-var tick: u64 = 0;
 fn on_frame() void {
-    tick += 1;
+    const delta_time = calcDeltaTime();
 
     // tick first
-    modules.tickModules(tick);
+    modules.tickModules(delta_time);
 
     // then draw!
     gfx.startFrame();
@@ -79,4 +79,21 @@ fn on_frame() void {
 
     // tell modules this frame is done
     modules.postDrawModules();
+}
+
+var last_now: time.Instant = undefined;
+var has_last_now: bool = false;
+
+/// Get time elapsed since last tick
+fn calcDeltaTime() f32 {
+    const now = time.Instant.now() catch { return 0; };
+    defer last_now = now;
+
+    if(!has_last_now) {
+        has_last_now = true;
+        return 0.0;
+    }
+
+    const nanos_since = now.since(last_now);
+    return 1000000000.0 / @as(f32, @floatFromInt(nanos_since));
 }

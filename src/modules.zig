@@ -13,7 +13,7 @@ pub const Module = struct {
     init_fn: ?*const fn () void = null,
     start_fn: ?*const fn () void = null,
     stop_fn: ?*const fn () void = null,
-    tick_fn: ?*const fn (u64) void = null,
+    tick_fn: ?*const fn (f32) void = null,
     draw_fn: ?*const fn () void = null,
     post_draw_fn: ?*const fn () void = null,
     cleanup_fn: ?*const fn () void = null,
@@ -64,11 +64,11 @@ pub fn stopModules() void {
 }
 
 /// Calls the tick function of all modules
-pub fn tickModules(tick: u64) void {
+pub fn tickModules(delta_time: f32) void {
     var it = modules.iterator();
     while(it.next()) |module| {
         if(module.value_ptr.tick_fn != null)
-            module.value_ptr.tick_fn.?(tick);
+            module.value_ptr.tick_fn.?(delta_time);
     }
 }
 

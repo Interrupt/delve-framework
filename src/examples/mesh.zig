@@ -77,8 +77,11 @@ fn on_init() void {
     mesh_test = mesh.Mesh.initFromFile("meshes/SciFiHelmet.gltf", .{.material = material});
 }
 
-fn on_tick(tick: u64) void {
-    time = @floatFromInt(tick);
+fn on_tick(delta: f32) void {
+    // There is a built in fly mode, but you can also just set the position / direction
+    camera.runFlyCamera(delta * 0.01, false);
+
+    time += delta * 0.01;
 }
 
 fn on_draw() void {
@@ -86,8 +89,6 @@ fn on_draw() void {
     if(mesh_test == null)
         return;
 
-    // There is a built in fly mode, but you can also just set the position / direction
-    camera.runFlyCamera(1.0, false);
     const proj_view_matrix = camera.getProjView();
 
     var model = Mat4.translate(Vec3.new(2.0, 0.0, -3.0));

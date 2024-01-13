@@ -48,8 +48,8 @@ pub fn on_cleanup() void {
 
 }
 
-pub fn on_tick(tick: u64) void {
-    _ = tick;
+pub fn on_tick(delta: f32) void {
+    _ = delta;
 
     lua.callFunction("_update") catch {
         debug.showErrorScreen("Fatal error!");

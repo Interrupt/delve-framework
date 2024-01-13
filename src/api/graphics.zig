@@ -26,8 +26,8 @@ pub fn libInit() void {
 }
 
 /// Called at the start of a frame
-pub fn libTick(tick: u64) void {
-    _ = tick;
+pub fn libTick(delta: f32) void {
+    _ = delta;
     sprite_batch.reset();
 }
 

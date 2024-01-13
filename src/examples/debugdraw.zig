@@ -37,8 +37,8 @@ fn on_init() void {
     texture = graphics.Texture.init(&test_image);
 }
 
-fn on_tick(tick: u64) void {
-    time = @floatFromInt(tick);
+fn on_tick(delta: f32) void {
+    time += delta * 0.01;
 }
 
 fn on_draw() void {

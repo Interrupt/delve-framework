@@ -76,6 +76,7 @@ pub const Camera = struct {
     /// A simple FPS flying camera, for examples and debugging
     pub fn runFlyCamera(self: *Camera, speed: f32, use_mouselook: bool) void {
         const flyspeed = speed * 0.1;
+        const turnspeed = speed * 0.03;
 
         if(input.isKeyPressed(.W)) {
             self.moveForward(flyspeed);
@@ -88,14 +89,14 @@ pub const Camera = struct {
             self.moveRight(flyspeed);
         }
         if(input.isKeyPressed(.LEFT)) {
-            self.yaw(0.03);
+            self.yaw(turnspeed);
         } else if(input.isKeyPressed(.RIGHT)) {
-            self.yaw(-0.03);
+            self.yaw(-turnspeed);
         }
         if(input.isKeyPressed(.UP)) {
-            self.pitch(0.03);
+            self.pitch(turnspeed);
         } else if(input.isKeyPressed(.DOWN)) {
-            self.pitch(-0.03);
+            self.pitch(-turnspeed);
         }
 
         if(!use_mouselook)

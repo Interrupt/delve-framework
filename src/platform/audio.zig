@@ -281,8 +281,8 @@ pub fn enableSpatialAudio(enabled: bool) void {
 }
 
 /// App lifecycle on_tick
-pub fn on_tick(tick: u64) void {
-    _ = tick;
+pub fn on_tick(delta: f32) void {
+    _ = delta;
 
     var it = loaded_sounds.iterator();
     while(it.next()) |sound| {

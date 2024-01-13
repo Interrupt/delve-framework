@@ -63,7 +63,11 @@ fn on_init() void {
     shader_blend = graphics.Shader.initDefault(.{.blend_mode = graphics.BlendMode.BLEND});
 }
 
-fn on_tick(tick: u64) void {
+var tick: u64 = 0;
+fn on_tick(delta: f32) void {
+    _ = delta;
+    tick += 1;
+
     test_batch.reset();
     for(0 .. stress_test_count) |i| {
         const f_i = @as(f32, @floatFromInt(i));
