@@ -60,6 +60,32 @@ pub const CullMode = enum(i32) {
     BACK,
 };
 
+pub const IndexSize = enum(i32) {
+    UINT16,
+    UINT32,
+};
+
+pub const FilterMode = enum(i32) {
+    NEAREST,
+    LINEAR,
+};
+
+pub const ShaderStage = enum(i32) {
+    VS,
+    FS,
+};
+
+pub const ShaderUniformType = enum(i32) {
+    FLOAT,
+    VEC2,
+    VEC3,
+    VEC4,
+    INT,
+    MAT4,
+    VEC4_ARRAY,
+    MAT4_ARRAY,
+};
+
 /// Default vertex shader uniform block layout
 pub const VSDefaultUniforms = struct {
     projViewMatrix: math.Mat4 align(16),
@@ -145,21 +171,6 @@ pub const Bindings = struct {
     }
 };
 
-pub const IndexSize = enum(i32) {
-    UINT16,
-    UINT32,
-};
-
-pub const FilterMode = enum(i32) {
-    NEAREST,
-    LINEAR,
-};
-
-pub const ShaderStage = enum(i32) {
-    VS,
-    FS,
-};
-
 pub const ShaderConfig = struct {
     blend_mode: BlendMode = .NONE,
     depth_write_enabled: bool = true,
@@ -172,17 +183,6 @@ pub const ShaderParams = struct {
     // These should probably be a map instead!
     draw_color: [4]f32 = [_]f32 { 1.0, 1.0, 1.0, 1.0 },
     color_override: [4]f32 = [_]f32 { 0.0, 0.0, 0.0, 0.0 },
-};
-
-pub const ShaderUniformType = enum(i32) {
-    FLOAT,
-    VEC2,
-    VEC3,
-    VEC4,
-    INT,
-    MAT4,
-    VEC4_ARRAY,
-    MAT4_ARRAY,
 };
 
 pub const ShaderUniform = struct {
