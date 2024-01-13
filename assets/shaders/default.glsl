@@ -32,6 +32,7 @@ uniform texture2D tex;
 uniform sampler smp;
 uniform fs_params {
     vec4 in_color_override;
+    float alpha_cutoff;
 };
 
 in vec4 color;
@@ -42,7 +43,7 @@ void main() {
     vec4 c = texture(sampler2D(tex, smp), uv) * color;
 
     // to make sprite drawing easier, discard full alpha pixels
-    if(c.a == 0.0) {
+    if(c.a <= alpha_cutoff) {
         discard;
     }
 

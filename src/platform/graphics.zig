@@ -60,12 +60,13 @@ pub const CullMode = enum(i32) {
 /// Default vertex shader uniform block layout
 pub const VSDefaultUniforms = struct {
     mvp: math.Mat4 align(16),
-    in_color: [4]f32,
+    in_color: [4]f32 = .{1.0, 1.0, 1.0, 1.0},
 };
 
 /// Default fragment shader uniform block layout
 pub const FSDefaultUniforms = struct {
-    in_color_override: [4]f32 align(16),
+    in_color_override: [4]f32 align(16) = .{0.0, 0.0, 0.0, 0.0},
+    in_alpha_cutoff: f32 = 0.0,
 };
 
 // A struct that could contain anything
@@ -369,6 +370,7 @@ pub const MaterialConfig = struct {
 pub const MaterialParams = struct {
     draw_color: Color = Color.white(),
     color_override: Color = Color.new(0.0, 0.0, 0.0, 0.0),
+    alpha_cutoff: f32 = 0.0,
 };
 
 pub const Material = struct {
@@ -419,17 +421,6 @@ pub const Material = struct {
         }, cfg.shader);
 
         return material;
-    }
-
-    pub fn setUniformBlock(self: *Shader, stage: ShaderStage, slot: u8, data: Anything) void {
-        switch(stage) {
-            .VS => {
-                self.vs_uniform_blocks[slot] = data;
-            },
-            .FS => {
-                self.fs_uniform_blocks[slot] = data;
-            },
-        }
     }
 };
 
@@ -606,6 +597,7 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
 
     const fs_params = shader_default.FsParams{
         .in_color_override = state.debug_shader.params.color_override,
+        .alpha_cutoff = 0.0,
     };
 
     sg.applyPipeline(state.debug_shader.impl.sokol_pipeline.?);

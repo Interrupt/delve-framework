@@ -97,6 +97,7 @@ pub const Mesh = struct {
 
         const default_fs_params = FSParams {
             .in_color_override = self.material.params.color_override.toArray(),
+            .in_alpha_cutoff = self.material.params.alpha_cutoff,
         };
 
         // set our default vs/fs shader uniforms to the 0 slots
