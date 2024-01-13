@@ -10,8 +10,8 @@ const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 
 pub const Camera = struct {
-    pos: Vec3 = Vec3.new(0, 0, 0),
-    dir: Vec3 = Vec3.new(0, 0, 1),
+    position: Vec3 = Vec3.new(0, 0, 0),
+    direction: Vec3 = Vec3.new(0, 0, 1),
     up: Vec3 = Vec3.up(),
 
     fov: f32 = 60.0,
@@ -20,10 +20,10 @@ pub const Camera = struct {
 
     projection: Mat4 = Mat4.identity(),
     view: Mat4 = Mat4.identity(),
-
     aspect: f32 = undefined,
-    viewport_width: f32 = undefined,
-    viewport_height: f32 = undefined,
+
+    _viewport_width: f32 = undefined,
+    _viewport_height: f32 = undefined,
 
     pub fn init(fov: f32, near: f32, far: f32, up: Vec3) Camera {
         var cam = Camera{};
@@ -35,8 +35,8 @@ pub const Camera = struct {
 
     pub fn setViewport(self: *Camera, width: f32, height: f32) void {
         self.aspect = width / height;
-        self.viewport_width = width;
-        self.viewport_height = height;
+        self._viewport_width = width;
+        self._viewport_height = height;
     }
 
     pub fn setPerspective(self: *Camera, fov: f32, near: f32, far: f32) void {
@@ -45,36 +45,20 @@ pub const Camera = struct {
         self.far = far;
     }
 
-    pub fn setPosition(self: *Camera, pos: Vec3) void {
-        self.pos = pos;
-    }
-
-    pub fn getPosition(self: *Camera) Vec3 {
-        return self.pos;
-    }
-
-    pub fn setDirection(self: *Camera, dir: Vec3) void {
-        self.dir = dir.norm();
-    }
-
-    pub fn getDirection(self: *Camera) Vec3 {
-        return self.dir;
-    }
-
     pub fn getRightDirection(self: *Camera) Vec3 {
-        return self.up.cross(self.dir);
+        return self.up.cross(self.direction);
     }
 
     pub fn moveForward(self: *Camera, amount: f32) void {
-        self.pos = self.pos.add(self.dir.scale(-amount));
+        self.position = self.position.add(self.direction.scale(-amount));
     }
 
     pub fn moveRight(self: *Camera, amount: f32) void {
-        self.pos = self.pos.add(self.getRightDirection().scale(amount));
+        self.position = self.position.add(self.getRightDirection().scale(amount));
     }
 
     pub fn rotate(self: *Camera, angle: f32, axis: Vec3) void {
-        self.dir = self.dir.rotate(angle, axis);
+        self.direction = self.direction.rotate(angle, axis);
     }
 
     /// A simple FPS flying camera, for debugging
@@ -112,7 +96,7 @@ pub const Camera = struct {
 
     fn update(self: *Camera) void {
         self.projection = Mat4.persp(self.fov, self.aspect, self.near, self.far);
-        self.view = Mat4.lookat(self.pos.add(self.dir), self.pos, self.up);
+        self.view = Mat4.lookat(self.position.add(self.direction), self.position, self.up);
     }
 
     pub fn apply(self: *Camera) void {

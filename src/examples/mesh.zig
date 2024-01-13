@@ -10,6 +10,10 @@ const mesh = @import("../graphics/mesh.zig");
 
 const emissive_shader_builtin = @import("../graphics/shaders/emissive.glsl.zig");
 
+const Vec3 = math.Vec3;
+const Mat4 = math.Mat4;
+const Color = graphics.Color;
+
 var time: f32 = 0.0;
 var mesh_test: ?mesh.Mesh = null;
 var camera: cam.Camera = undefined;
@@ -31,37 +35,44 @@ pub fn registerModule() !void {
 fn on_init() void {
     debug.log("Mesh example module initializing", .{});
 
-    camera = cam.Camera.init(90.0, 0.01, 50.0, math.Vec3.up());
-    camera.setPosition(math.Vec3.new(0.0, 0.0, 0.0));
-    camera.setDirection(math.Vec3.new(0.0, 0.0, 1.0));
+    graphics.setClearColor(Color.white());
 
+    // Make a perspective camera, with a 90 degree FOV
+    camera = cam.Camera.init(90.0, 0.01, 50.0, Vec3.up());
+    camera.position = Vec3.new(0.0, 0.0, 0.0);
+    camera.direction = Vec3.new(0.0, 0.0, 1.0);
+
+    // Load the base color texture for the mesh
     const base_texture_file = "meshes/SciFiHelmet_BaseColor_512.png";
     var base_img: images.Image = images.loadFile(base_texture_file) catch {
         debug.log("Assets: Error loading image asset: {s}", .{base_texture_file});
         return;
     };
+    const tex_base = graphics.Texture.init(&base_img);
 
+    // Load the emissive texture for the mesh
     const emissive_texture_file = "meshes/SciFiHelmet_Emissive_512.png";
     var emissive_img: images.Image = images.loadFile(emissive_texture_file) catch {
         debug.log("Assets: Error loading image asset: {s}", .{emissive_texture_file});
         return;
     };
-
-    const tex_base = graphics.Texture.init(&base_img);
     const tex_emissive = graphics.Texture.init(&emissive_img);
 
+    // Make our emissive shader from one that is pre-compiled
     const shader = graphics.Shader.initFromBuiltin(.{}, emissive_shader_builtin);
     if(shader == null) {
         debug.log("Could not get emissive shader", .{});
         return;
     }
 
+    // Create a material out of our shader and textures
     const material = graphics.Material.init(.{
+        .shader = shader.?,
         .texture_0 = tex_base,
         .texture_1 = tex_emissive,
-        .shader = shader.?,
     });
 
+    // Load our mesh!
     mesh_test = mesh.Mesh.initFromFile("meshes/SciFiHelmet.gltf", .{.material = material});
 }
 
@@ -70,20 +81,25 @@ fn on_tick(tick: u64) void {
 }
 
 fn on_draw() void {
-    // draw the test mesh
+    // Exit early if we have no mesh loaded
     if(mesh_test == null)
         return;
 
-    camera.runFlyCamera(1.0, false);
+    // Apply the camera to update the graphics state
+    // There is a built in fly mode, but you can also just set the position / direction
+    camera.runFlyCamera(1.0, true);
     camera.apply();
 
-    var model = math.Mat4.translate(.{ .x = 2.0, .y = 0.0, .z = -3.0});
-    model = model.mul(math.Mat4.rotate(time * 0.6, .{ .x = 0.0, .y = 1.0, .z = 0.0 }));
+    var model = Mat4.translate(Vec3.new(2.0, 0.0, -3.0));
+    model = model.mul(Mat4.rotate(time * 0.6, Vec3.new(0.0, 1.0, 0.0 )));
     graphics.setModelMatrix(model);
 
     const sin_val = std.math.sin(time * 0.006) + 0.5;
-    mesh_test.?.material.params.draw_color = graphics.Color.new(sin_val, sin_val, sin_val, 1.0);
+    mesh_test.?.material.params.draw_color = Color.new(sin_val, sin_val, sin_val, 1.0);
+    mesh_test.?.draw();
 
+    model = Mat4.translate(Vec3.new(-2.0, 0.0, -3.0 ));
+    graphics.setModelMatrix(model);
     mesh_test.?.draw();
 }
 
