@@ -35,7 +35,13 @@ pub const Mesh = struct {
 
         var mesh_indices = std.ArrayList(u32).init(allocator);
         var mesh_positions = std.ArrayList([3]f32).init(allocator);
+        var mesh_normals = std.ArrayList([3]f32).init(allocator);
         var mesh_texcoords = std.ArrayList([2]f32).init(allocator);
+
+        defer mesh_indices.deinit();
+        defer mesh_positions.deinit();
+        defer mesh_normals.deinit();
+        defer mesh_texcoords.deinit();
 
         zmesh.io.appendMeshPrimitive(
             data, // *zmesh.io.cgltf.Data
@@ -43,7 +49,7 @@ pub const Mesh = struct {
             0, // gltf primitive index (submesh index)
             &mesh_indices,
             &mesh_positions,
-            null, // normals (optional)
+            &mesh_normals, // normals (optional)
             &mesh_texcoords, // texcoords (optional)
             null, // tangents (optional)
         ) catch {
