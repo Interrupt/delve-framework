@@ -1,5 +1,6 @@
 const std = @import("std");
 const cam = @import("../graphics/camera.zig");
+const colors = @import("../colors.zig");
 const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
 const images = @import("../images.zig");
@@ -12,7 +13,7 @@ const emissive_shader_builtin = @import("../graphics/shaders/emissive.glsl.zig")
 
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
-const Color = graphics.Color;
+const Color = colors.Color;
 
 var time: f32 = 0.0;
 var mesh_test: ?mesh.Mesh = null;
@@ -35,7 +36,7 @@ pub fn registerModule() !void {
 fn on_init() void {
     debug.log("Mesh example module initializing", .{});
 
-    graphics.setClearColor(Color.white());
+    graphics.setClearColor(colors.white);
 
     // Make a perspective camera, with a 90 degree FOV
     camera = cam.Camera.init(90.0, 0.01, 50.0, Vec3.up());

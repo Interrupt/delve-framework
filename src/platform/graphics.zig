@@ -1,4 +1,5 @@
 const std = @import("std");
+const colors = @import("../colors.zig");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
 const math = @import("../math.zig");
@@ -20,6 +21,7 @@ pub const shader_default = @import("../graphics/shaders/default.glsl.zig");
 const Vec2 = math.Vec2;
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
+pub const Color = colors.Color;
 
 pub var tex_white: Texture = undefined;
 pub var tex_black: Texture = undefined;
@@ -92,51 +94,6 @@ pub const Vertex = struct {
         ret.y = vec.y;
         ret.z = vec.z;
         return ret;
-    }
-};
-
-// TODO: Move this to somewhere else. color.zig?
-pub const Color = struct {
-    r: f32,
-    g: f32,
-    b: f32,
-    a: f32 = 1.0,
-
-    pub fn new(r: f32, g: f32, b: f32, a: f32) Color {
-       return Color{.r=r,.g=g,.b=b,.a=a};
-    }
-
-    pub fn fromArray(val: [4]f32) Color {
-       return Color{.r=val[0],.g=val[1],.b=val[2],.a=val[3]};
-    }
-
-    pub fn white() Color {
-       return Color{.r=1.0,.g=1.0,.b=1.0,.a=1.0};
-    }
-
-    pub fn black() Color {
-       return Color{.r=0.0,.g=0.0,.b=0.0,.a=1.0};
-    }
-
-    pub fn transparent() Color {
-       return Color{.r=0.0,.g=0.0,.b=0.0,.a=0.0};
-    }
-
-    pub fn grey() Color {
-       return Color{.r=0.5,.g=0.5,.b=0.5,.a=1.0};
-    }
-
-    pub fn toInt(self: Color) u32 {
-        var c: u32 = 0;
-        c |= @intFromFloat(self.r * 0x000000FF);
-        c |= @intFromFloat(self.g * 0x0000FF00);
-        c |= @intFromFloat(self.b * 0x00FF0000);
-        c |= @intFromFloat(self.a * 0xFF000000);
-        return c;
-    }
-
-    pub fn toArray(self: Color) [4]f32 {
-        return [_]f32 { self.r, self.g, self.b, self.a };
     }
 };
 
@@ -370,8 +327,8 @@ pub const MaterialConfig = struct {
 };
 
 pub const MaterialParams = struct {
-    draw_color: Color = Color.white(),
-    color_override: Color = Color.new(0.0, 0.0, 0.0, 0.0),
+    draw_color: Color = colors.white,
+    color_override: Color = colors.transparent,
     alpha_cutoff: f32 = 0.0,
 };
 

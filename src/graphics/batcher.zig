@@ -1,6 +1,7 @@
 
 const std = @import("std");
 const debug = @import("../debug.zig");
+const colors = @import("../colors.zig");
 const graphics = @import("../platform/graphics.zig");
 const images = @import("../images.zig");
 const math = @import("../math.zig");
@@ -47,7 +48,7 @@ const BatcherConfig = struct {
 pub const SpriteBatcher = struct {
     batches: std.AutoArrayHashMap(u32, Batcher) = undefined,
     transform: Mat4 = Mat4.identity(),
-    draw_color: graphics.Color = graphics.Color.white(),
+    draw_color: colors.Color = colors.white,
     config: BatcherConfig = BatcherConfig{},
     current_batch_key: u32 = 0,
     current_tex: graphics.Texture = undefined,
