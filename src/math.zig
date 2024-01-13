@@ -6,8 +6,9 @@
 //
 //  Ported from HandmadeMath.h
 //------------------------------------------------------------------------------
-const assert = @import("std").debug.assert;
-const math = @import("std").math;
+const std = @import("std");
+const assert = std.debug.assert;
+const math = std.math;
 
 fn radians(deg: f32) f32 {
     return deg * (math.pi / 180.0);
@@ -144,6 +145,24 @@ pub const Vec3 = extern struct {
         res.y += 1.0 * right.m[3][1];
         res.z += 1.0 * right.m[3][2];
         return res;
+    }
+
+    pub fn rotate(left: *const Vec3, angle: f32, axis: Vec3) Vec3 {
+        // Using the Euler–Rodrigues formula
+        const axis_norm = axis.norm();
+
+        const half_angle = angle * 0.5;
+        const angle_sin = std.math.sin(half_angle);
+        const angle_cos = std.math.cos(half_angle);
+
+        const w = axis_norm.scale(angle_sin);
+        const wv = w.cross(left.*);
+        const wwv = w.cross(wv);
+
+        const swv = wv.scale(angle_cos * 2.0);
+        const swwv = wwv.scale(2.0);
+
+        return left.add(swv).add(swwv);
     }
 };
 

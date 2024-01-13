@@ -74,20 +74,7 @@ pub const Camera = struct {
     }
 
     pub fn rotate(self: *Camera, angle: f32, axis: Vec3) void {
-        const axis_norm = axis.norm();
-
-        const half_angle = angle * 0.5;
-        const angle_sin = std.math.sin(half_angle);
-        const angle_cos = std.math.cos(half_angle);
-
-        const w = axis_norm.scale(angle_sin);
-        const wv = w.cross(self.dir);
-        const wwv = w.cross(wv);
-
-        const swv = wv.scale(angle_cos * 2.0);
-        const swwv = wwv.scale(2.0);
-
-        self.dir = self.dir.add(swv).add(swwv);
+        self.dir = self.dir.rotate(angle, axis);
     }
 
     /// A simple FPS flying camera, for debugging
