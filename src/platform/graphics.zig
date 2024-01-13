@@ -2,6 +2,7 @@ const std = @import("std");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
 const math = @import("../math.zig");
+const papp = @import("app.zig");
 const sokol_gfx_backend = @import("backends/sokol/graphics.zig");
 
 const sokol = @import("sokol");
@@ -429,12 +430,6 @@ pub const state = struct {
     var debug_draw_bindings: sg.Bindings = .{};
     var debug_draw_pipeline: sg.Pipeline = .{};
     var debug_shader: Shader = undefined;
-
-    // 3d view matrices
-    pub var projection = Mat4.persp(60.0, 1.28, 0.01, 50.0);
-    pub var view: Mat4 = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, Vec3.zero(), Vec3.up());
-    pub var viewProj: Mat4 = Mat4.identity();
-    pub var model: Mat4 = Mat4.zero();
 };
 
 var default_pass_action: sg.PassAction = .{};
@@ -482,12 +477,6 @@ pub fn init() !void {
         .clear_value = .{ .r = 0.0, .g = 0.0, .b = 0.0, .a = 1 },
     };
 
-    // Set our initial view projection
-    setProjectionPerspective(60.0, 0.01, 50.0);
-
-    // Setup initial view state
-    state.view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, Vec3.zero(), Vec3.up());
-
     debug.log("Graphics subsystem started successfully", .{});
 }
 
@@ -527,37 +516,20 @@ pub fn setClearColor(color: Color) void {
     };
 }
 
-pub fn setViewState(view_matrix: Mat4, projection_matrix: Mat4) void {
-    state.view = view_matrix;
-    state.projection = projection_matrix;
-    state.viewProj = view_matrix.mul(projection_matrix);
+pub fn getProjectionPerspective(fov: f32, near: f32, far: f32) Mat4 {
+    const aspect = papp.getAspectRatio();
+    return Mat4.persp(fov, aspect, near, far);
 }
 
-pub fn setView(view_matrix: Mat4, model_matrix: Mat4) void {
-    state.view = view_matrix;
-    state.model = model_matrix;
-    state.viewProj = state.view.mul(state.projection);
-}
-
-pub fn setModelMatrix(model_matrix: Mat4) void {
-    state.model = model_matrix;
-}
-
-pub fn setProjectionPerspective(fov: f32, near: f32, far: f32) void {
-    const aspect = sapp.widthf() / sapp.heightf();
-    state.projection = Mat4.persp(fov, aspect, near, far);
-}
-
-pub fn setProjectionOrtho(near: f32, far: f32, flip_y: bool) void {
+pub fn getProjectionOrtho(near: f32, far: f32, flip_y: bool) Mat4 {
     if(flip_y) {
-        state.projection = Mat4.ortho(0.0, sapp.widthf(), sapp.heightf(), 0.0, near, far);
-        return;
+        return Mat4.ortho(0.0, sapp.widthf(), sapp.heightf(), 0.0, near, far);
     }
-    state.projection = Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), near, far);
+    return Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), near, far);
 }
 
-pub fn setProjectionOrthoCustom(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) void {
-    state.projection = Mat4.ortho(left, right, bottom, top, near, far);
+pub fn getProjectionOrthoCustom(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) Mat4 {
+    return Mat4.ortho(left, right, bottom, top, near, far);
 }
 
 pub fn setDebugTextColor4f(r: f32, g: f32, b: f32, a: f32) void {
