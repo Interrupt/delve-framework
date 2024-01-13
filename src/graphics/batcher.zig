@@ -312,7 +312,7 @@ pub const Batcher = struct {
     /// Add a line to the batch
     pub fn addLine(self: *Batcher, from: Vec2, to: Vec2, width: f32, region: TextureRegion, color: u32) void {
         const normal = to.sub(from).norm();
-        const right = Vec2.mul(&Vec2{.x=-normal.y, .y=normal.x}, width * 0.5);
+        const right = Vec2.scale(&Vec2{.x=-normal.y, .y=normal.x}, width * 0.5);
 
         const v0 = from.add(right);
         const v1 = to.add(right);

@@ -94,67 +94,6 @@ pub const Vertex = struct {
     }
 };
 
-pub const Camera = struct {
-    position: Vec3 = Vec3.new(0, 0, 0),
-    dir: Vec3 = Vec3.new(0, 0, 1),
-    up: Vec3 = Vec3.up(),
-
-    fov: f32 = 60.0,
-    near: f32 = 0.001,
-    far: f32 = 100.0,
-
-    projection: Mat4 = Mat4.identity(),
-    view: Mat4 = Mat4.identity(),
-
-    aspect: f32 = undefined,
-    viewport_width: f32 = undefined,
-    viewport_height: f32 = undefined,
-
-    pub fn init(fov: f32, near: f32, far: f32, up: Vec3) Camera {
-        var cam = Camera{};
-        cam.setViewport(sapp.widthf(), sapp.heightf());
-        cam.setPerspective(fov, near, far);
-        cam.up = up;
-        return cam;
-    }
-
-    pub fn setViewport(self: *Camera, width: f32, height: f32) void {
-        self.aspect = width / height;
-        self.viewport_width = width;
-        self.viewport_height = height;
-    }
-
-    pub fn setPerspective(self: *Camera, fov: f32, near: f32, far: f32) void {
-        self.fov = fov;
-        self.near = near;
-        self.far = far;
-    }
-
-    pub fn setPosition(self: *Camera, pos: Vec3) void {
-        self.position = pos;
-    }
-
-    pub fn setDirection(self: *Camera, dir: Vec3) void {
-        self.dir = dir.norm();
-    }
-
-    pub fn update(self: *Camera) void {
-        self.projection = Mat4.persp(self.fov, self.aspect, self.near, self.far);
-        self.view = Mat4.lookat(self.position.add(self.dir), self.position, self.up);
-    }
-
-    pub fn apply(self: *Camera) void {
-        self.update();
-        applyCamera(self);
-    }
-};
-
-fn applyCamera(camera: *Camera) void {
-    state.view = camera.view;
-    state.projection = camera.projection;
-    state.viewProj = camera.view.mul(camera.projection);
-}
-
 // TODO: Move this to somewhere else. color.zig?
 pub const Color = struct {
     r: f32,
@@ -588,9 +527,16 @@ pub fn setClearColor(color: Color) void {
     };
 }
 
+pub fn setViewState(view_matrix: Mat4, projection_matrix: Mat4) void {
+    state.view = view_matrix;
+    state.projection = projection_matrix;
+    state.viewProj = view_matrix.mul(projection_matrix);
+}
+
 pub fn setView(view_matrix: Mat4, model_matrix: Mat4) void {
     state.view = view_matrix;
     state.model = model_matrix;
+    state.viewProj = state.view.mul(state.projection);
 }
 
 pub fn setModelMatrix(model_matrix: Mat4) void {

@@ -17,7 +17,6 @@ pub fn init() !void {
     });
 }
 
-
 pub fn deinit() void {
     debug.log("App stopping", .{});
     AppBackend.deinit();
@@ -25,6 +24,14 @@ pub fn deinit() void {
 
 pub fn startMainLoop(config: app.AppConfig) void {
     AppBackend.startMainLoop(config);
+}
+
+pub fn getWidth() i32 {
+    return AppBackend.getWidth();
+}
+
+pub fn getHeight() i32 {
+    return AppBackend.getHeight();
 }
 
 fn on_init() void {

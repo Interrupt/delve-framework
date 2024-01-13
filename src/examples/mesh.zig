@@ -1,20 +1,18 @@
 const std = @import("std");
-const assets = @import("../api/assets.zig");
-const batcher = @import("../graphics/batcher.zig");
+const cam = @import("../graphics/camera.zig");
 const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
 const images = @import("../images.zig");
 const input = @import("../platform/input.zig");
 const math = @import("../math.zig");
 const modules = @import("../modules.zig");
-
 const mesh = @import("../graphics/mesh.zig");
+
 const emissive_shader_builtin = @import("../graphics/shaders/emissive.glsl.zig");
 
 var time: f32 = 0.0;
 var mesh_test: ?mesh.Mesh = null;
-
-var camera: graphics.Camera = undefined;
+var camera: cam.Camera = undefined;
 
 // -- This module exercises loading and drawing a mesh --
 
@@ -33,7 +31,9 @@ pub fn registerModule() !void {
 fn on_init() void {
     debug.log("Mesh example module initializing", .{});
 
-    camera = graphics.Camera.init(60.0, 0.01, 50.0, math.Vec3.up());
+    camera = cam.Camera.init(90.0, 0.01, 50.0, math.Vec3.up());
+    camera.setPosition(math.Vec3.new(0.0, 0.0, 0.0));
+    camera.setDirection(math.Vec3.new(0.0, 0.0, 1.0));
 
     const base_texture_file = "meshes/SciFiHelmet_BaseColor_512.png";
     var base_img: images.Image = images.loadFile(base_texture_file) catch {
@@ -74,11 +74,10 @@ fn on_draw() void {
     if(mesh_test == null)
         return;
 
-    camera.setPosition(math.Vec3.new(0.0, 0.0, 0.0));
-    camera.setDirection(math.Vec3.new(0.0, 0.0, 1.0));
+    camera.runFlyCamera(1.0, false);
     camera.apply();
 
-    var model = math.Mat4.translate(.{ .x = 2.0, .y = 0.0, .z = -5.0});
+    var model = math.Mat4.translate(.{ .x = 2.0, .y = 0.0, .z = -3.0});
     model = model.mul(math.Mat4.rotate(time * 0.6, .{ .x = 0.0, .y = 1.0, .z = 0.0 }));
     graphics.setModelMatrix(model);
 

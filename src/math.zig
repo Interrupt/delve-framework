@@ -45,8 +45,12 @@ pub const Vec2 = extern struct {
         return Vec2{ .x = left.x - right.x, .y = left.y - right.y };
     }
 
-    pub fn mul(v: *const Vec2, s: f32) Vec2 {
+    pub fn scale(v: *const Vec2, s: f32) Vec2 {
         return Vec2{ .x = v.x * s, .y = v.y * s };
+    }
+
+    pub fn mul(left: *const Vec2, right: Vec2) Vec2 {
+        return Vec2{ .x = left.x * right.x, .y = left.y * right.y };
     }
 
     pub fn norm(v: *const Vec2) Vec2 {
@@ -100,8 +104,12 @@ pub const Vec3 = extern struct {
         return Vec3{ .x = left.x - right.x, .y = left.y - right.y, .z = left.z - right.z };
     }
 
-    pub fn mul(v: *const Vec3, s: f32) Vec3 {
+    pub fn scale(v: *const Vec3, s: f32) Vec3 {
         return Vec3{ .x = v.x * s, .y = v.y * s, .z = v.z * s };
+    }
+
+    pub fn mul(left: *const Vec3, right: Vec3) Vec3 {
+        return Vec3{ .x = left.x * right.x, .y = left.y * right.y, .z = left.z * right.z };
     }
 
     pub fn norm(v: *const Vec3) Vec3 {

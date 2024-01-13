@@ -100,4 +100,12 @@ pub const App = struct {
             .win32_console_attach = true,
         });
     }
+
+    pub fn getWidth() i32 {
+        return sapp.width();
+    }
+
+    pub fn getHeight() i32 {
+        return sapp.height();
+    }
 };

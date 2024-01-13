@@ -140,6 +140,9 @@ const state = struct {
     var mouse_x: f32 = 0;
     var mouse_y: f32 = 0;
 
+    var last_mouse_x: f32 = 0;
+    var last_mouse_y: f32 = 0;
+
     var keyboard_pressed: [512]bool = undefined;
     var keyboard_just_pressed: [512]bool = undefined;
 
@@ -177,6 +180,10 @@ fn on_post_draw() void {
     for(0 .. state.mouse_just_pressed.len) |i| {
         state.mouse_just_pressed[i] = false;
     }
+
+    // keep track of where the mouse was at the end of this frame
+    state.last_mouse_x = state.mouse_x;
+    state.last_mouse_y = state.mouse_y;
 }
 
 /// Returns the current mouse position
@@ -223,10 +230,19 @@ pub fn isMouseButtonJustPressed(button: MouseButtons) bool {
     return state.mouse_just_pressed[button_idx];
 }
 
+var is_first_mouse_move = true;
+
 /// Update the mouse movement state
 pub fn onMouseMoved(x: f32, y: f32) void {
     state.mouse_x = x;
     state.mouse_y = y;
+
+    // There is no last mouse event until we move once
+    if(is_first_mouse_move) {
+        is_first_mouse_move = false;
+        state.last_mouse_x = x;
+        state.last_mouse_y = y;
+    }
 }
 
 /// Update the keypress state when a key is pressed down
@@ -275,4 +291,9 @@ pub fn onMouseUp(btn: i32) void {
     if(btn < state.mouse_pressed.len) {
         state.mouse_pressed[@intCast(btn)] = false;
     }
+}
+
+/// Difference in mouse position from last frame
+pub fn getMouseDelta() math.Vec2 {
+    return math.Vec2.new(state.mouse_x - state.last_mouse_x, state.mouse_y - state.last_mouse_y);
 }
