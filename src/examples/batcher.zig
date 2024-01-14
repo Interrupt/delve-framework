@@ -64,15 +64,16 @@ fn on_init() void {
 }
 
 var tick: u64 = 0;
+var time: f32 = 0;
 fn on_tick(delta: f32) void {
-    _ = delta;
     tick += 1;
+    time += delta * 100.0;
 
     test_batch.reset();
     for(0 .. stress_test_count) |i| {
         const f_i = @as(f32, @floatFromInt(i));
-        const x_pos = std.math.sin(@as(f32, @floatFromInt(tick * i)) * 0.0001) * (1.0 + (f_i * 0.05));
-        const y_pos = std.math.cos(@as(f32, @floatFromInt(tick * i)) * 0.0001) * (0.5 + (f_i * 0.05));
+        const x_pos = std.math.sin((time * f_i) * 0.0001) * (1.0 + (f_i * 0.05));
+        const y_pos = std.math.cos((time * f_i) * 0.0001) * (0.5 + (f_i * 0.05));
 
         var tex: graphics.Texture = undefined;
         var shader: graphics.Shader = undefined;
@@ -110,8 +111,8 @@ fn on_tick(delta: f32) void {
     test_batch.useShader(shader_blend);
 
     // test a line!
-    const ly1 = std.math.sin(@as(f32, @floatFromInt(tick)) * 0.01);
-    const ly2 = std.math.cos(@as(f32, @floatFromInt(tick)) * 0.012);
+    const ly1 = std.math.sin(time * 0.01);
+    const ly2 = std.math.cos(time * 0.012);
 
     test_batch.setTransformMatrix(math.Mat4.identity());
     test_batch.addLine(graphics.tex_black, math.vec2(0, ly1), math.vec2(2, ly2), 0.05, batcher.TextureRegion.default(), 0xFFFFFFFF);
