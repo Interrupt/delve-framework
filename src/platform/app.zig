@@ -82,7 +82,7 @@ fn on_frame() void {
 }
 
 var last_now: time.Instant = undefined;
-var has_last_now: bool = false;
+var reset_delta: bool = true;
 
 var fps: i32 = 0;
 var fps_framecount: i64 = 0;
@@ -95,9 +95,10 @@ fn calcDeltaTime() f32 {
     defer last_now = now;
     defer fps_framecount += 1;
 
-    if(!has_last_now) {
-        has_last_now = true;
+    if(reset_delta) {
+        reset_delta = false;
         fps_start = now;
+        fps_framecount = 0;
         return 0.0;
     }
 
@@ -119,4 +120,9 @@ fn calcDeltaTime() f32 {
 /// Returns the current frames per second
 pub fn getFPS() i32 {
     return fps;
+}
+
+/// Ask to reset the delta time, use to avoid hitching
+pub fn resetDeltaTime() void {
+    reset_delta = true;
 }
