@@ -9,6 +9,7 @@ const modules = @import("../modules.zig");
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = gpa.allocator();
 
+var show_fps: bool = true;
 var last_fps_str: ?[:0]u8 = null;
 var last_fps: i32 = -1;
 
@@ -25,7 +26,10 @@ pub fn registerModule() !void {
 }
 
 pub fn on_cleanup() void {
-
+    if(last_fps_str != null) {
+        allocator.free(last_fps_str.?);
+        last_fps_str = null;
+    }
 }
 
 pub fn on_tick(delta: f32) void {
@@ -33,6 +37,9 @@ pub fn on_tick(delta: f32) void {
 }
 
 pub fn on_draw() void {
+    if(!show_fps)
+        return;
+
     // This should only change once a second
     const fps = papp.getFPS();
     defer last_fps = fps;
