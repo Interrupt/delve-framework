@@ -16,6 +16,7 @@ pub const AppConfig = struct {
     title: [:0]const u8 = "Delve Framework",
     width: i32 = 960,
     height: i32 = 540,
+    target_fps: ?i32 = null,
 };
 
 pub fn setAssetsPath(path: [:0]const u8) !void {

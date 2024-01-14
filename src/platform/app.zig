@@ -8,6 +8,9 @@ const sokol_app_backend = @import("backends/sokol/app.zig");
 // Actual app backend, implementation could be switched out here
 const AppBackend = sokol_app_backend.App;
 
+var target_fps: ?u64 = null;
+var target_fps_ns: u64 = undefined;
+
 pub fn init() !void {
     debug.log("App starting", .{});
 
@@ -24,6 +27,9 @@ pub fn deinit() void {
 }
 
 pub fn startMainLoop(config: app.AppConfig) void {
+    if(config.target_fps) |target|
+        setTargetFPS(target);
+
     AppBackend.startMainLoop(config);
 }
 
@@ -66,8 +72,11 @@ fn on_cleanup() void {
     gfx.deinit();
 }
 
+var frame_start: time.Instant = undefined;
 fn on_frame() void {
-    const delta_time = calcDeltaTime();
+    // time management
+    frame_start = time.Instant.now() catch { return; };
+    const delta_time = calcDeltaTime(frame_start);
 
     // tick first
     modules.tickModules(delta_time);
@@ -79,6 +88,17 @@ fn on_frame() void {
 
     // tell modules this frame is done
     modules.postDrawModules();
+
+    if(target_fps == null)
+        return;
+
+    // Try to hit our target FPS!
+    const frame_end = time.Instant.now() catch { return; };
+    const frame_len_ns = frame_end.since(frame_start);
+
+    if(frame_len_ns < target_fps_ns) {
+        time.sleep(target_fps_ns - frame_len_ns);
+    }
 }
 
 var last_now: time.Instant = undefined;
@@ -89,9 +109,7 @@ var fps_framecount: i64 = 0;
 var fps_start: time.Instant = undefined;
 
 /// Get time elapsed since last tick. Also calculate the FPS!
-fn calcDeltaTime() f32 {
-    const now = time.Instant.now() catch { return 0; };
-
+fn calcDeltaTime(now: time.Instant) f32 {
     defer last_now = now;
     defer fps_framecount += 1;
 
@@ -125,4 +143,12 @@ pub fn getFPS() i32 {
 /// Ask to reset the delta time, use to avoid hitching
 pub fn resetDeltaTime() void {
     reset_delta = true;
+}
+
+/// Set a FPS target to aim for
+pub fn setTargetFPS(fps_target: i32) void {
+    target_fps = @intCast(fps_target);
+
+    const target_fps_f: f64 = @floatFromInt(target_fps.?);
+    target_fps_ns = @intFromFloat((1.0 / target_fps_f) * 1000 * 1000 * 1000);
 }
