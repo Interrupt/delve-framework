@@ -1,6 +1,7 @@
 const std = @import("std");
 const debug = @import("debug.zig");
 const images = @import("images.zig");
+const colors = @import("colors.zig");
 const modules = @import("modules.zig");
 const scripting = @import("scripting/manager.zig");
 
@@ -10,7 +11,6 @@ const input = @import("platform/input.zig");
 const audio = @import("platform/audio.zig");
 
 pub var assets_path: [:0]const u8 = "assets";
-pub var palette: images.Image = undefined;
 
 pub const AppConfig = struct {
     title: [:0]const u8 = "Delve Framework",
@@ -37,10 +37,6 @@ pub fn start(config: AppConfig) !void {
     debug.log("Assets Path: {s}", .{assets_path});
     try std.os.chdirZ(assets_path);
 
-    // Load the palette
-    palette = try images.loadFile("palette.gif");
-    defer palette.destroy();
-
     // Kick off the game loop! This will also start and stop the subsystems.
     app_backend.startMainLoop(config);
 
@@ -48,6 +44,7 @@ pub fn start(config: AppConfig) !void {
 }
 
 pub fn startSubsystems() !void {
+    try colors.loadPalette();
     try input.init();
     try scripting.init();
     try audio.init();

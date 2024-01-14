@@ -2,6 +2,7 @@ const std = @import("std");
 const math = std.math;
 const ziglua = @import("ziglua");
 const app = @import("../app.zig");
+const colors = @import("../colors.zig");
 const images = @import("../images.zig");
 const debug = @import("../debug.zig");
 const gfx = @import("../platform/graphics.zig");
@@ -96,18 +97,14 @@ pub fn getTextHeight(text_string: [*:0]const u8, width: i32) i32 {
 }
 
 pub fn drawGlyph(char: u8, x: i32, y: i32, color: u32) void {
-    // Four bytes per color
-    var color_idx = color * app.palette.channels;
-
-    if (color_idx >= app.palette.height * app.palette.pitch)
-        color_idx = 0;
-
-    const pal_r = app.palette.raw[color_idx];
-    const pal_g = app.palette.raw[color_idx + 1];
-    const pal_b = app.palette.raw[color_idx + 2];
+    const pal_color = colorFromPalette(color);
 
     // TODO: This should blit part of a texture to the screen, not use the debug text stuff!
     gfx.setDebugTextScale(1.0, 1.0);
-    gfx.setDebugTextColor4b(pal_r, pal_g, pal_b, 0xFF);
+    gfx.setDebugTextColor4f(pal_color.r, pal_color.g, pal_color.b, pal_color.a);
     gfx.drawDebugTextChar(@floatFromInt(x), @floatFromInt(y), char);
+}
+
+fn colorFromPalette(pal_color: u32) colors.Color {
+    return colors.getColorFromPalette(pal_color);
 }

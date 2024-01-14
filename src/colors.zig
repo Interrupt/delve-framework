@@ -1,3 +1,7 @@
+const images = @import("images.zig");
+const graphics = @import("platform/graphics.zig");
+
+pub var palette_img: images.Image = undefined;
 
 pub const Color = struct {
     r: f32 = 1.0,
@@ -35,3 +39,42 @@ pub const grey: Color = Color.new(0.5, 0.5, 0.5, 1.0);
 pub const red: Color = Color.new(1.0, 0.0, 0.0, 1.0);
 pub const green: Color = Color.new(0.0, 1.0, 0.0, 1.0);
 pub const blue: Color = Color.new(0.0, 0.0, 1.0, 1.0);
+
+// Also hold a global color palette
+pub var palette: [64]Color = [_]Color {Color{}} ** 64;
+
+// Load a new palette!
+pub fn loadPalette() !void {
+    palette_img = try images.loadFile("palette.gif");
+    defer palette_img.destroy();
+
+    // Load the colors into the palette
+    for(0..palette_img.width * palette_img.height) |i| {
+        var color_idx = i * palette_img.channels;
+
+        if(i >= palette.len)
+            break;
+
+        if (color_idx >= palette_img.height * palette_img.pitch)
+            break;
+
+        const r = palette_img.raw[color_idx];
+        const g = palette_img.raw[color_idx + 1];
+        const b = palette_img.raw[color_idx + 2];
+
+        const c = graphics.Color{
+            .r = @as(f32, @floatFromInt(r)) / 256.0,
+            .g = @as(f32, @floatFromInt(g)) / 256.0,
+            .b = @as(f32, @floatFromInt(b)) / 256.0,
+        };
+
+        palette[i] = c;
+    }
+}
+
+pub fn getColorFromPalette(pal_idx: u32) Color {
+    if(pal_idx > palette.len)
+        return Color{};
+
+    return palette[pal_idx];
+}

@@ -3,6 +3,7 @@ const ziglua = @import("ziglua");
 const app = @import("../app.zig");
 const papp = @import("../platform/app.zig");
 const debug = @import("../debug.zig");
+const colors = @import("../colors.zig");
 const text_module = @import("text.zig");
 const math = @import("../math.zig");
 const graphics = @import("../platform/graphics.zig");
@@ -101,18 +102,5 @@ pub fn text(text_string: [*:0]const u8, x_pos: i32, y_pos: i32, color_idx: u32) 
 }
 
 fn colorFromPalette(pal_color: u32) graphics.Color {
-    var color_idx = pal_color * app.palette.channels;
-
-    if (color_idx >= app.palette.height * app.palette.pitch)
-        color_idx = app.palette.pitch - 4;
-
-    const r = app.palette.raw[color_idx];
-    const g = app.palette.raw[color_idx + 1];
-    const b = app.palette.raw[color_idx + 2];
-
-    return graphics.Color{
-        .r = @as(f32, @floatFromInt(r)) / 256.0,
-        .g = @as(f32, @floatFromInt(g)) / 256.0,
-        .b = @as(f32, @floatFromInt(b)) / 256.0,
-    };
+    return colors.getColorFromPalette(pal_color);
 }
