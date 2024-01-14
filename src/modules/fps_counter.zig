@@ -67,3 +67,7 @@ pub fn drawFPS(fps_string: [:0]u8) void {
     graphics.setDebugTextColor4b(0x88, 0x88, 0x88, 0xFF);
     graphics.drawDebugText(2, 2, fps_string);
 }
+
+pub fn showFPS(enabled: bool) void {
+    show_fps = enabled;
+}
