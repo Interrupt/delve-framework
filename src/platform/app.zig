@@ -84,16 +84,39 @@ fn on_frame() void {
 var last_now: time.Instant = undefined;
 var has_last_now: bool = false;
 
-/// Get time elapsed since last tick
+var fps: i32 = 0;
+var fps_framecount: i64 = 0;
+var fps_start: time.Instant = undefined;
+
+/// Get time elapsed since last tick. Also calculate the FPS!
 fn calcDeltaTime() f32 {
     const now = time.Instant.now() catch { return 0; };
+
     defer last_now = now;
+    defer fps_framecount += 1;
 
     if(!has_last_now) {
         has_last_now = true;
+        fps_start = now;
         return 0.0;
     }
 
+    // calculate the fps by counting frames each second
     const nanos_since = now.since(last_now);
-    return 1000000000.0 / @as(f32, @floatFromInt(nanos_since));
+    const nanos_since_fps = now.since(fps_start);
+
+    if(nanos_since_fps >= 1000000000) {
+        fps = @intCast(fps_framecount);
+        fps_framecount = 0;
+        fps_start = now;
+
+        // debug.log("FPS: {d}", .{fps});
+    }
+
+    return @as(f32, @floatFromInt(nanos_since)) / 1000000000.0;
+}
+
+/// Returns the current frames per second
+pub fn getFPS() i32 {
+    return fps;
 }

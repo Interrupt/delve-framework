@@ -1,4 +1,5 @@
 const std = @import("std");
+const app = @import("../platform/app.zig");
 const batcher = @import("../graphics/batcher.zig");
 const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
@@ -38,7 +39,7 @@ fn on_init() void {
 }
 
 fn on_tick(delta: f32) void {
-    time += delta * 0.01;
+    time += delta * 100.0;
 }
 
 fn on_draw() void {
