@@ -72,10 +72,9 @@ fn on_cleanup() void {
     gfx.deinit();
 }
 
-var frame_start: time.Instant = undefined;
 fn on_frame() void {
     // time management
-    frame_start = time.Instant.now() catch { return; };
+    const frame_start = time.Instant.now() catch { return; };
     const delta_time = calcDeltaTime(frame_start);
 
     // tick first
