@@ -44,13 +44,14 @@ pub fn start(config: AppConfig) !void {
 }
 
 pub fn startSubsystems() !void {
-    try colors.loadPalette();
+    try colors.init();
     try input.init();
     try scripting.init();
     try audio.init();
 }
 
 pub fn stopSubsystems() void {
+    colors.deinit();
     input.deinit();
     scripting.deinit();
     audio.deinit();
