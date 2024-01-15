@@ -1,3 +1,4 @@
+const debug = @import("debug.zig");
 const images = @import("images.zig");
 const graphics = @import("platform/graphics.zig");
 
@@ -27,6 +28,20 @@ pub const Color = struct {
         c |= @intFromFloat(self.b * 0x00FF0000);
         c |= @intFromFloat(self.a * 0xFF000000);
         return c;
+    }
+
+    pub fn fromInt(i_color: u32) Color {
+        const r_byte: u32 = (i_color & 0x000000FF);
+        const g_byte: u32 = (i_color & 0x0000FF00) >> 8;
+        const b_byte: u32 = (i_color & 0x00FF0000) >> 16;
+        const a_byte: u32 = (i_color & 0xFF000000) >> 24;
+
+        const r: f32 = @as(f32, @floatFromInt(r_byte)) / 255.0;
+        const g: f32 = @as(f32, @floatFromInt(g_byte)) / 255.0;
+        const b: f32 = @as(f32, @floatFromInt(b_byte)) / 255.0;
+        const a: f32 = @as(f32, @floatFromInt(a_byte)) / 255.0;
+
+        return Color.new(r, g, b, a);
     }
 
     pub fn toArray(self: Color) [4]f32 {

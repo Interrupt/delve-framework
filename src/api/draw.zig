@@ -64,21 +64,21 @@ pub fn line(start_x :f32, start_y: f32, end_x: f32, end_y: f32, line_width: f32,
     const end = Vec2 { .x = end_x, .y = end_y };
     const color = colorFromPalette(pal_color);
 
-    shape_batch.addLine(start, end, line_width, batcher.TextureRegion.default(), color.toInt());
+    shape_batch.addLine(start, end, line_width, batcher.TextureRegion.default(), color);
 }
 
 pub fn filled_circle(x: f32, y: f32, radius: f32, pal_color: u32) void {
     const pos = Vec2{ .x = x, .y = y };
     const color = colorFromPalette(pal_color);
 
-    shape_batch.addCircle(pos, radius, 16, batcher.TextureRegion.default(), color.toInt());
+    shape_batch.addCircle(pos, radius, 16, batcher.TextureRegion.default(), color);
 }
 
 pub fn circle(x: f32, y: f32, radius: f32, line_width: f32, pal_color: u32) void {
     const pos = Vec2{ .x = x, .y = y };
     const color = colorFromPalette(pal_color);
 
-    shape_batch.addLineCircle(pos, radius, 16, line_width, batcher.TextureRegion.default(), color.toInt());
+    shape_batch.addLineCircle(pos, radius, 16, line_width, batcher.TextureRegion.default(), color);
 }
 
 pub fn rectangle(start_x: f32, start_y: f32, width: f32, height: f32, line_width: f32, pal_color: u32) void {
@@ -86,7 +86,7 @@ pub fn rectangle(start_x: f32, start_y: f32, width: f32, height: f32, line_width
     const size = Vec2.new(width, height);
     const color = colorFromPalette(pal_color);
 
-    shape_batch.addLineRectangle(pos, size, line_width, batcher.TextureRegion.default(), color.toInt());
+    shape_batch.addLineRectangle(pos, size, line_width, batcher.TextureRegion.default(), color);
 }
 
 pub fn filled_rectangle(start_x: f32, start_y: f32, width: f32, height: f32, pal_color: u32) void {
@@ -94,7 +94,7 @@ pub fn filled_rectangle(start_x: f32, start_y: f32, width: f32, height: f32, pal
     const size = Vec2.new(width, height);
     const color = colorFromPalette(pal_color);
 
-    shape_batch.addRectangle(pos, size, batcher.TextureRegion.default(), color.toInt());
+    shape_batch.addRectangle(pos, size, batcher.TextureRegion.default(), color);
 }
 
 pub fn text(text_string: [*:0]const u8, x_pos: i32, y_pos: i32, color_idx: u32) void {

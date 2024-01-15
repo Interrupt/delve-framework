@@ -10,6 +10,7 @@ const Vertex = graphics.Vertex;
 const Vec2 = math.Vec2;
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
+const Color = colors.Color;
 
 var batch_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var batch_allocator = batch_gpa.allocator();
@@ -90,7 +91,7 @@ pub const SpriteBatcher = struct {
     }
 
     /// Add a rectangle to the current batch
-    pub fn addRectangle(self: *SpriteBatcher, texture: graphics.Texture, pos: Vec2, size: Vec2, region: TextureRegion, color: u32) void {
+    pub fn addRectangle(self: *SpriteBatcher, texture: graphics.Texture, pos: Vec2, size: Vec2, region: TextureRegion, color: Color) void {
         self.useTexture(texture);
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
@@ -101,7 +102,7 @@ pub const SpriteBatcher = struct {
     }
 
     /// Add a rectangle of lines to the current batch
-    pub fn addLineRectangle(self: *SpriteBatcher, texture: graphics.Texture, pos: Vec2, size: Vec2, line_width: f32, region: TextureRegion, color: u32) void {
+    pub fn addLineRectangle(self: *SpriteBatcher, texture: graphics.Texture, pos: Vec2, size: Vec2, line_width: f32, region: TextureRegion, color: Color) void {
         self.useTexture(texture);
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
@@ -112,7 +113,7 @@ pub const SpriteBatcher = struct {
     }
 
     /// Add an equilateral triangle to the current batch
-    pub fn addTriangle(self: *SpriteBatcher, texture: graphics.Texture, pos: Vec2, size: Vec2, region: TextureRegion, color: u32) void {
+    pub fn addTriangle(self: *SpriteBatcher, texture: graphics.Texture, pos: Vec2, size: Vec2, region: TextureRegion, color: Color) void {
         self.useTexture(texture);
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
@@ -123,7 +124,7 @@ pub const SpriteBatcher = struct {
     }
 
     /// Adds a freeform triangle to the current batch
-    pub fn addTriangleFromVecs(self: *SpriteBatcher, texture: graphics.Texture, v0: Vec2, v1: Vec2, v2: Vec2, uv0: Vec2, uv1: Vec2, uv2: Vec2, color: u32) void {
+    pub fn addTriangleFromVecs(self: *SpriteBatcher, texture: graphics.Texture, v0: Vec2, v1: Vec2, v2: Vec2, uv0: Vec2, uv1: Vec2, uv2: Vec2, color: Color) void {
         self.useTexture(texture);
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
@@ -134,7 +135,7 @@ pub const SpriteBatcher = struct {
     }
 
     /// Adds a textured line to the current batch
-    pub fn addLine(self: *SpriteBatcher, texture: graphics.Texture, from: Vec2, to: Vec2, width: f32, region: TextureRegion, color: u32) void {
+    pub fn addLine(self: *SpriteBatcher, texture: graphics.Texture, from: Vec2, to: Vec2, width: f32, region: TextureRegion, color: Color) void {
         self.useTexture(texture);
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
@@ -266,7 +267,7 @@ pub const Batcher = struct {
     }
 
     /// Add a four sided quad shape to the batch
-    pub fn addQuad(self: *Batcher, v0: Vec2, v1: Vec2, v2: Vec2, v3: Vec2, tex_region: TextureRegion, color: u32) void {
+    pub fn addQuad(self: *Batcher, v0: Vec2, v1: Vec2, v2: Vec2, v3: Vec2, tex_region: TextureRegion, color: Color) void {
         self.growBuffersToFit(self.vertex_pos + 4, self.index_pos + 6) catch {
             return;
         };
@@ -277,12 +278,13 @@ pub const Batcher = struct {
         const v = region.v;
         const u_2 = region.u_2;
         const v_2 = region.v_2;
+        const color_i = color.toInt();
 
         const verts = &[_]Vertex{
-            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color, .u = u, .v = v },
-            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color, .u = u_2, .v = v },
-            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color, .u = u_2, .v = v_2},
-            .{ .x = v3.x, .y = v3.y, .z = 0, .color = color, .u = u, .v = v_2},
+            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color_i, .u = u, .v = v },
+            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color_i, .u = u_2, .v = v },
+            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_i, .u = u_2, .v = v_2},
+            .{ .x = v3.x, .y = v3.y, .z = 0, .color = color_i, .u = u, .v = v_2},
         };
 
         const indices = &[_]u16{ 0, 1, 2, 0, 2, 3 };
@@ -301,7 +303,7 @@ pub const Batcher = struct {
     }
 
     /// Add a rectangle to the batch
-    pub fn addRectangle(self: *Batcher, pos: Vec2, size: Vec2, region: TextureRegion, color: u32) void {
+    pub fn addRectangle(self: *Batcher, pos: Vec2, size: Vec2, region: TextureRegion, color: Color) void {
         const v0 = pos.add(Vec2{.x = 0, .y = size.y});
         const v1 = pos.add(Vec2{.x = size.x, .y = size.y});
         const v2 = pos.add(Vec2{.x = size.x, .y = 0});
@@ -311,7 +313,7 @@ pub const Batcher = struct {
     }
 
     /// Add a line to the batch
-    pub fn addLine(self: *Batcher, from: Vec2, to: Vec2, width: f32, region: TextureRegion, color: u32) void {
+    pub fn addLine(self: *Batcher, from: Vec2, to: Vec2, width: f32, region: TextureRegion, color: Color) void {
         const normal = to.sub(from).norm();
         const right = Vec2.scale(&Vec2{.x=-normal.y, .y=normal.x}, width * 0.5);
 
@@ -325,7 +327,7 @@ pub const Batcher = struct {
     }
 
     /// Add a rectangle made of lines to the batch
-    pub fn addLineRectangle(self: *Batcher, pos: Vec2, size: Vec2, line_width: f32, region: TextureRegion, color: u32) void {
+    pub fn addLineRectangle(self: *Batcher, pos: Vec2, size: Vec2, line_width: f32, region: TextureRegion, color: Color) void {
         const w: f32 = line_width * 0.5;
 
         // top and bottom
@@ -338,7 +340,7 @@ pub const Batcher = struct {
     }
 
     /// Adds an equilateral triangle to the batch
-    pub fn addTriangle(self: *Batcher, pos: Vec2, size: Vec2, tex_region: TextureRegion, color: u32) void {
+    pub fn addTriangle(self: *Batcher, pos: Vec2, size: Vec2, tex_region: TextureRegion, color: Color) void {
         const region = if(self.flip_tex_y) tex_region.flipY() else tex_region;
 
         const v0: Vec2 = Vec2{.x = pos.x + size.x / 2.0, .y = pos.y + size.y};
@@ -355,15 +357,17 @@ pub const Batcher = struct {
     }
 
     /// Add a freeform triangle to the batch
-    pub fn addTriangleFromVecs(self: *Batcher, v0: Vec2, v1: Vec2, v2: Vec2, uv0: Vec2, uv1: Vec2, uv2: Vec2, color: u32) void {
+    pub fn addTriangleFromVecs(self: *Batcher, v0: Vec2, v1: Vec2, v2: Vec2, uv0: Vec2, uv1: Vec2, uv2: Vec2, color: Color) void {
         self.growBuffersToFit(self.vertex_pos + 3, self.index_pos + 3) catch {
             return;
         };
 
+        const color_i = color.toInt();
+
         const verts = &[_]Vertex{
-            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color, .u = uv0.x, .v = uv0.y },
-            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color, .u = uv1.x, .v = uv1.y },
-            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color, .u = uv2.x, .v = uv2.y },
+            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color_i, .u = uv0.x, .v = uv0.y },
+            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color_i, .u = uv1.x, .v = uv1.y },
+            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_i, .u = uv2.x, .v = uv2.y },
         };
 
         const indices = &[_]u16{ 0, 1, 2 };
@@ -382,7 +386,7 @@ pub const Batcher = struct {
     }
 
     /// Adds a circle to the batch
-    pub fn addCircle(self: *Batcher, center: Vec2, radius: f32, steps: i32, region: TextureRegion, color: u32) void {
+    pub fn addCircle(self: *Batcher, center: Vec2, radius: f32, steps: i32, region: TextureRegion, color: Color) void {
         var last = angleToVector(0, radius);
 
         const tau = std.math.pi * 2.0;
@@ -403,7 +407,7 @@ pub const Batcher = struct {
     }
 
     /// Adds an outlined circle to the batch
-    pub fn addLineCircle(self: *Batcher, center: Vec2, radius: f32, steps: i32, line_width: f32, region: TextureRegion, color: u32) void {
+    pub fn addLineCircle(self: *Batcher, center: Vec2, radius: f32, steps: i32, line_width: f32, region: TextureRegion, color: Color) void {
         var last = angleToVector(0, radius);
 
         for(0 .. @intCast(steps+1)) |i| {

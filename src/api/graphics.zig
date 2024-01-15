@@ -4,6 +4,7 @@ const ziglua = @import("ziglua");
 const main = @import("../main.zig");
 const papp = @import("../platform/app.zig");
 const debug = @import("../debug.zig");
+const colors = @import("../colors.zig");
 const assets = @import("assets.zig");
 const images = @import("../images.zig");
 const graphics = @import("../platform/graphics.zig");
@@ -75,5 +76,5 @@ pub fn blit(texture_handle: u32, source_x: f32, source_y: f32, source_width: f32
         math.Vec2{.x=0, .y=0},
         math.Vec2{.x=dest_width, .y=dest_height},
         region,
-        0xFFFFFFFF);
+        colors.white);
 }

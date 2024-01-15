@@ -1,12 +1,15 @@
 const std = @import("std");
 const batcher = @import("../graphics/batcher.zig");
 const debug = @import("../debug.zig");
+const colors = @import("../colors.zig");
 const images = @import("../images.zig");
 const graphics = @import("../platform/graphics.zig");
 const input = @import("../platform/input.zig");
 const papp = @import("../platform/app.zig");
 const math = @import("../math.zig");
 const modules = @import("../modules.zig");
+
+const Color = colors.Color;
 
 pub const test_asset_1 = @embedFile("../static/test.png");
 pub const test_asset_2 = @embedFile("../static/test2.gif");
@@ -98,13 +101,13 @@ fn on_tick(delta: f32) void {
             transform = transform.mul(math.Mat4.rotate(f_i * 3.0, .{ .x = 1.0, .y = 1.0, .z = 0.0 }));
             test_batch.setTransformMatrix(transform);
 
-            test_batch.addRectangle(tex, math.Vec2{.x=0, .y=0}, math.Vec2{.x=0.5, .y=0.5}, batcher.TextureRegion.default(), 0xFFFFFFFF);
+            test_batch.addRectangle(tex, math.Vec2{.x=0, .y=0}, math.Vec2{.x=0.5, .y=0.5}, batcher.TextureRegion.default(), colors.white);
         } else {
             transform = math.Mat4.translate(.{ .x = -x_pos, .y = y_pos, .z = f_i * -0.1 });
             transform = transform.mul(math.Mat4.rotate(f_i * 3.0, .{ .x = 0.0, .y = -1.0, .z = 0.0 }));
             test_batch.setTransformMatrix(transform);
 
-            test_batch.addTriangle(tex, math.Vec2{.x=0, .y=0}, math.Vec2{.x=0.5, .y=0.5}, batcher.TextureRegion.default(), 0xFFFFFFFF);
+            test_batch.addTriangle(tex, math.Vec2{.x=0, .y=0}, math.Vec2{.x=0.5, .y=0.5}, batcher.TextureRegion.default(), colors.white);
         }
     }
 
@@ -115,14 +118,14 @@ fn on_tick(delta: f32) void {
     const ly2 = std.math.cos(time * 0.012);
 
     test_batch.setTransformMatrix(math.Mat4.identity());
-    test_batch.addLine(graphics.tex_black, math.vec2(0, ly1), math.vec2(2, ly2), 0.05, batcher.TextureRegion.default(), 0xFFFFFFFF);
+    test_batch.addLine(graphics.tex_black, math.vec2(0, ly1), math.vec2(2, ly2), 0.05, batcher.TextureRegion.default(), colors.white);
 
     // test a line rectangle!
-    test_batch.addLineRectangle(graphics.tex_white, math.vec2(-2.5, 0), math.vec2(2, 0.5), 0.05, batcher.TextureRegion.default(), 0xFF000000);
+    test_batch.addLineRectangle(graphics.tex_white, math.vec2(-2.5, 0), math.vec2(2, 0.5), 0.05, batcher.TextureRegion.default(), colors.black);
     test_batch.setTransformMatrix(math.Mat4.translate(math.vec3(0,0,-0.001)));
 
     // test a filled rectangle!
-    test_batch.addRectangle(graphics.tex_white, math.vec2(-2.5, 0), math.vec2(2, 0.5), batcher.TextureRegion.default(), 0xAA0000FF);
+    test_batch.addRectangle(graphics.tex_white, math.vec2(-2.5, 0), math.vec2(2, 0.5), batcher.TextureRegion.default(), Color.fromInt(0xAA0000FF));
 
     test_batch.apply();
 }
