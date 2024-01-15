@@ -46,34 +46,36 @@ pub const green: Color = Color.new(0.0, 1.0, 0.0, 1.0);
 pub const blue: Color = Color.new(0.0, 0.0, 1.0, 1.0);
 
 pub fn init() !void {
-    try loadBuiltinPalette();
+    palette = try loadBuiltinPalette();
 }
 
 pub fn deinit() void { }
 
 /// Sets the palette using the statically included default
-pub fn loadBuiltinPalette() !void {
+pub fn loadBuiltinPalette() ![64]Color {
     var palette_img = try images.loadBytes(builtin_palette);
     defer palette_img.destroy();
 
-    fillPalette(palette_img);
+    return fillPalette(palette_img);
 }
 
 /// Sets the palette from a file
-pub fn loadPaletteFromFile(filename: [:0]const u8) !void {
+pub fn loadPaletteFromFile(filename: [:0]const u8) ![64]Color {
     var palette_img = try images.loadFile(filename);
     defer palette_img.destroy();
 
-    fillPalette(palette_img);
+    return fillPalette(palette_img);
 }
 
 /// Fills the palette from colors from this image
-pub fn fillPalette(palette_img: images.Image) void {
+pub fn fillPalette(palette_img: images.Image) [64]Color {
+    var new_palette: [64]Color = [_]Color {Color{}} ** 64;
+
     // Load the colors into the palette
     for(0..palette_img.width * palette_img.height) |i| {
         var color_idx = i * palette_img.channels;
 
-        if(i >= palette.len)
+        if(i >= new_palette.len)
             break;
 
         if (color_idx >= palette_img.height * palette_img.pitch)
@@ -89,8 +91,10 @@ pub fn fillPalette(palette_img: images.Image) void {
             .b = @as(f32, @floatFromInt(b)) / 256.0,
         };
 
-        palette[i] = c;
+        new_palette[i] = c;
     }
+
+    return new_palette;
 }
 
 /// Returns a color in the palette at the given index
