@@ -176,7 +176,7 @@ pub const ShaderConfig = struct {
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
     cull_mode: CullMode = .NONE,
-    index_size: IndexSize = .UINT16,
+    index_size: IndexSize = .UINT32,
 };
 
 pub const ShaderParams = struct {

@@ -20,6 +20,8 @@ var texture_2: graphics.Texture = undefined;
 var shader_opaque: graphics.Shader = undefined;
 var shader_blend: graphics.Shader = undefined;
 
+var test_material: graphics.Material = undefined;
+
 var test_batch: batcher.SpriteBatcher = undefined;
 
 const stress_test_count = 10000;
@@ -64,6 +66,14 @@ fn on_init() void {
     // make some shaders for testing
     shader_opaque = graphics.Shader.initDefault(.{});
     shader_blend = graphics.Shader.initDefault(.{.blend_mode = graphics.BlendMode.BLEND});
+
+    // Create a test material out of our shader and textures
+    test_material = graphics.Material.init(.{
+        .shader = shader_opaque,
+        .texture_0 = texture_1,
+        .cull_mode = .NONE,
+    });
+
 }
 
 var tick: u64 = 0;
@@ -78,22 +88,17 @@ fn on_tick(delta: f32) void {
         const x_pos = std.math.sin((time * f_i) * 0.0001) * (1.0 + (f_i * 0.05));
         const y_pos = std.math.cos((time * f_i) * 0.0001) * (0.5 + (f_i * 0.05));
 
-        var tex: graphics.Texture = undefined;
-        var shader: graphics.Shader = undefined;
-
         if(@mod(i, 3) == 0) {
-            tex = texture_1;
+            test_batch.useTexture(texture_1);
         } else {
-            tex = texture_2;
+            test_batch.useTexture(texture_2);
         }
 
         if(@mod(i, 5) == 0) {
-            shader = shader_blend;
+            test_batch.useShader(shader_blend);
         } else {
-            shader = shader_opaque;
+            test_batch.useShader(shader_opaque);
         }
-
-        test_batch.useShader(shader);
 
         var transform: math.Mat4 = undefined;
         if(@mod(i, 2) != 0) {
@@ -101,13 +106,13 @@ fn on_tick(delta: f32) void {
             transform = transform.mul(math.Mat4.rotate(f_i * 3.0, .{ .x = 1.0, .y = 1.0, .z = 0.0 }));
             test_batch.setTransformMatrix(transform);
 
-            test_batch.addRectangle(tex, math.Vec2{.x=0, .y=0}, math.Vec2{.x=0.5, .y=0.5}, batcher.TextureRegion.default(), colors.white);
+            test_batch.addRectangle(math.Vec2{.x=0, .y=0}, math.Vec2{.x=0.5, .y=0.5}, batcher.TextureRegion.default(), colors.white);
         } else {
             transform = math.Mat4.translate(.{ .x = -x_pos, .y = y_pos, .z = f_i * -0.1 });
             transform = transform.mul(math.Mat4.rotate(f_i * 3.0, .{ .x = 0.0, .y = -1.0, .z = 0.0 }));
             test_batch.setTransformMatrix(transform);
 
-            test_batch.addTriangle(tex, math.Vec2{.x=0, .y=0}, math.Vec2{.x=0.5, .y=0.5}, batcher.TextureRegion.default(), colors.white);
+            test_batch.addTriangle(math.Vec2{.x=0, .y=0}, math.Vec2{.x=0.5, .y=0.5}, batcher.TextureRegion.default(), colors.white);
         }
     }
 
@@ -118,8 +123,8 @@ fn on_tick(delta: f32) void {
     const line_y_end = std.math.cos(time * 0.012);
 
     test_batch.setTransformMatrix(math.Mat4.identity());
+    test_batch.useTexture(graphics.tex_black);
     test_batch.addLine(
-        graphics.tex_black,
         math.vec2(0, line_y_start),
         math.vec2(2, line_y_end),
         0.05,
@@ -127,8 +132,8 @@ fn on_tick(delta: f32) void {
         colors.white);
 
     // test a line rectangle!
+    test_batch.useTexture(graphics.tex_white);
     test_batch.addLineRectangle(
-        graphics.tex_white,
         math.vec2(-2.5, 0),
         math.vec2(2, 0.5),
         0.05,
@@ -139,11 +144,20 @@ fn on_tick(delta: f32) void {
     // test a filled rectangle!
     test_batch.setTransformMatrix(math.Mat4.translate(math.vec3(0,0,-0.001)));
     test_batch.addRectangle(
-        graphics.tex_white,
         math.vec2(-2.5, 0),
         math.vec2(2, 0.5),
         batcher.TextureRegion.default(),
         colors.cyan.mul(Color{.a = 0.75}));
+
+    // test using a material!
+    test_batch.useMaterial(&test_material);
+    test_batch.setTransformMatrix(math.Mat4.translate(math.vec3(1,-1,-0.001)));
+    test_batch.addRectangle(
+        math.vec2(-1.0, 0),
+        math.vec2(1, 1),
+        batcher.TextureRegion.default(),
+        colors.cyan);
+
 
     test_batch.apply();
 }

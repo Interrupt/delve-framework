@@ -42,7 +42,7 @@ pub const BindingsImpl = struct {
             bindings.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
                 .usage = .STREAM,
                 .type = .INDEXBUFFER,
-                .size = cfg.index_len * @sizeOf(u16),
+                .size = cfg.index_len * @sizeOf(u32),
             });
         }
 
@@ -130,7 +130,7 @@ pub const BindingsImpl = struct {
         self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
             .usage = .STREAM,
             .type = .INDEXBUFFER,
-            .size = index_len * @sizeOf(u16),
+            .size = index_len * @sizeOf(u32),
         });
     }
 

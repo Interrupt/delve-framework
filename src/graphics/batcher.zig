@@ -6,6 +6,9 @@ const graphics = @import("../platform/graphics.zig");
 const images = @import("../images.zig");
 const math = @import("../math.zig");
 
+const autoHash = std.hash.autoHash;
+const Wyhash = std.hash.Wyhash;
+
 const Vertex = graphics.Vertex;
 const Vec2 = math.Vec2;
 const Vec3 = math.Vec3;
@@ -42,22 +45,24 @@ const BatcherConfig = struct {
     min_indices: usize = 128,
     texture: ?graphics.Texture = null,
     shader: ?graphics.Shader = null,
+    material: ?*graphics.Material = null,
     flip_tex_y: bool = false,
 };
 
 /// Handles drawing batches of primitive shapes, bucketed by texture / shader
 pub const SpriteBatcher = struct {
-    batches: std.AutoArrayHashMap(u32, Batcher) = undefined,
+    batches: std.AutoArrayHashMap(u64, Batcher) = undefined,
     transform: Mat4 = Mat4.identity(),
     draw_color: colors.Color = colors.white,
     config: BatcherConfig = BatcherConfig{},
-    current_batch_key: u32 = 0,
+    current_batch_key: u64 = 0,
     current_tex: graphics.Texture = undefined,
     current_shader: graphics.Shader = undefined,
+    current_material: ?*graphics.Material = null,
 
     pub fn init(cfg: BatcherConfig) !SpriteBatcher {
         var sprite_batcher = SpriteBatcher {
-            .batches = std.AutoArrayHashMap(u32, Batcher).init(batch_allocator),
+            .batches = std.AutoArrayHashMap(u64, Batcher).init(batch_allocator),
             .config = cfg
         };
 
@@ -75,12 +80,14 @@ pub const SpriteBatcher = struct {
     pub fn useTexture(self: *SpriteBatcher, texture: graphics.Texture) void {
         self.current_batch_key = makeSpriteBatchKey(texture, self.current_shader);
         self.current_tex = texture;
+        self.current_material = null;
     }
 
     /// Switch the current batch to one for the given shader
     pub fn useShader(self: *SpriteBatcher, shader: graphics.Shader) void {
         self.current_batch_key = makeSpriteBatchKey(self.current_tex, shader);
         self.current_shader = shader;
+        self.current_material = null;
     }
 
     /// Switch the current batch to one for a solid color
@@ -88,11 +95,17 @@ pub const SpriteBatcher = struct {
         var solid_tex: graphics.Texture = graphics.tex_white;
         self.current_batch_key = solid_tex.handle;
         self.current_tex = solid_tex;
+        self.current_material = null;
+    }
+
+    /// Switch the current batch to one for the given material
+    pub fn useMaterial(self: *SpriteBatcher, material: *graphics.Material) void {
+        self.current_batch_key = makeSpriteBatchKeyFromMaterial(material);
+        self.current_material = material;
     }
 
     /// Add a rectangle to the current batch
-    pub fn addRectangle(self: *SpriteBatcher, texture: graphics.Texture, pos: Vec2, size: Vec2, region: TextureRegion, color: Color) void {
-        self.useTexture(texture);
+    pub fn addRectangle(self: *SpriteBatcher, pos: Vec2, size: Vec2, region: TextureRegion, color: Color) void {
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
             return;
@@ -102,8 +115,7 @@ pub const SpriteBatcher = struct {
     }
 
     /// Add a rectangle of lines to the current batch
-    pub fn addLineRectangle(self: *SpriteBatcher, texture: graphics.Texture, pos: Vec2, size: Vec2, line_width: f32, region: TextureRegion, color: Color) void {
-        self.useTexture(texture);
+    pub fn addLineRectangle(self: *SpriteBatcher, pos: Vec2, size: Vec2, line_width: f32, region: TextureRegion, color: Color) void {
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
             return;
@@ -113,8 +125,7 @@ pub const SpriteBatcher = struct {
     }
 
     /// Add an equilateral triangle to the current batch
-    pub fn addTriangle(self: *SpriteBatcher, texture: graphics.Texture, pos: Vec2, size: Vec2, region: TextureRegion, color: Color) void {
-        self.useTexture(texture);
+    pub fn addTriangle(self: *SpriteBatcher, pos: Vec2, size: Vec2, region: TextureRegion, color: Color) void {
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
             return;
@@ -124,8 +135,7 @@ pub const SpriteBatcher = struct {
     }
 
     /// Adds a freeform triangle to the current batch
-    pub fn addTriangleFromVecs(self: *SpriteBatcher, texture: graphics.Texture, v0: Vec2, v1: Vec2, v2: Vec2, uv0: Vec2, uv1: Vec2, uv2: Vec2, color: Color) void {
-        self.useTexture(texture);
+    pub fn addTriangleFromVecs(self: *SpriteBatcher, v0: Vec2, v1: Vec2, v2: Vec2, uv0: Vec2, uv1: Vec2, uv2: Vec2, color: Color) void {
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
             return;
@@ -135,8 +145,7 @@ pub const SpriteBatcher = struct {
     }
 
     /// Adds a textured line to the current batch
-    pub fn addLine(self: *SpriteBatcher, texture: graphics.Texture, from: Vec2, to: Vec2, width: f32, region: TextureRegion, color: Color) void {
-        self.useTexture(texture);
+    pub fn addLine(self: *SpriteBatcher, from: Vec2, to: Vec2, width: f32, region: TextureRegion, color: Color) void {
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if(batcher == null)
             return;
@@ -152,10 +161,14 @@ pub const SpriteBatcher = struct {
         if(batcher != null)
             return batcher;
 
-        // None found, create a new batch with our config values but using a new texture
+        // None found, create a new batch!
         var new_cfg = self.config;
-        new_cfg.texture = self.current_tex;
-        new_cfg.shader = self.current_shader;
+        if(self.current_material == null) {
+            new_cfg.texture = self.current_tex;
+            new_cfg.shader = self.current_shader;
+        } else {
+            new_cfg.material = self.current_material;
+        }
 
         var new_batcher: Batcher = Batcher.init(new_cfg) catch {
             debug.log("Could not create a new batch for SpriteBatch!", .{});
@@ -208,18 +221,26 @@ pub const SpriteBatcher = struct {
     }
 };
 
-fn makeSpriteBatchKey(tex: graphics.Texture, shader: graphics.Shader) u32 {
-    return tex.handle + (shader.handle * 100000);
+fn makeSpriteBatchKey(tex: graphics.Texture, shader: graphics.Shader) u64 {
+    return tex.handle + (shader.handle * 1000000);
+}
+
+fn makeSpriteBatchKeyFromMaterial(material: *const graphics.Material) u64 {
+    // Hash the material, just like an auto map would.
+    var hasher = Wyhash.init(0);
+    autoHash(&hasher, material);
+    return hasher.final();
 }
 
 /// Handles drawing a batch of primitive shapes all with the same texture / shader
 pub const Batcher = struct {
     vertex_buffer: []Vertex,
-    index_buffer: []u16,
+    index_buffer: []u32,
     vertex_pos: usize,
     index_pos: usize,
     bindings: graphics.Bindings,
     shader: graphics.Shader,
+    material: ?*graphics.Material = null,
     transform: Mat4 = Mat4.identity(),
     flip_tex_y: bool = false,
 
@@ -229,9 +250,10 @@ pub const Batcher = struct {
             .vertex_pos = 0,
             .index_pos = 0,
             .vertex_buffer = try batch_allocator.alloc(Vertex, cfg.min_vertices),
-            .index_buffer = try batch_allocator.alloc(u16, cfg.min_indices),
+            .index_buffer = try batch_allocator.alloc(u32, cfg.min_indices),
             .bindings = graphics.Bindings.init(.{.updatable = true, .index_len = cfg.min_indices, .vert_len = cfg.min_vertices}),
             .shader = if(cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{ }),
+            .material = if(cfg.material != null) cfg.material.? else null,
             .flip_tex_y = cfg.flip_tex_y,
         };
 
@@ -287,13 +309,13 @@ pub const Batcher = struct {
             .{ .x = v3.x, .y = v3.y, .z = 0, .color = color_i, .u = u, .v = v_2},
         };
 
-        const indices = &[_]u16{ 0, 1, 2, 0, 2, 3 };
+        const indices = &[_]u32{ 0, 1, 2, 0, 2, 3 };
 
         for(verts, 0..) |vert, i| {
             self.vertex_buffer[self.vertex_pos + i] = Vertex.mulMat4(vert, self.transform);
         }
 
-        const v_pos = @as(u16, @intCast(self.vertex_pos));
+        const v_pos = @as(u32, @intCast(self.vertex_pos));
         for(indices, 0..) |idx, i| {
             self.index_buffer[self.index_pos + i] = idx + v_pos;
         }
@@ -370,13 +392,13 @@ pub const Batcher = struct {
             .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_i, .u = uv2.x, .v = uv2.y },
         };
 
-        const indices = &[_]u16{ 0, 1, 2 };
+        const indices = &[_]u32{ 0, 1, 2 };
 
         for(verts, 0..) |vert, i| {
             self.vertex_buffer[self.vertex_pos + i] = Vertex.mulMat4(vert, self.transform);
         }
 
-        const v_pos = @as(u16, @intCast(self.vertex_pos));
+        const v_pos = @as(u32, @intCast(self.vertex_pos));
         for(indices, 0..) |idx, i| {
             self.index_buffer[self.index_pos + i] = idx + v_pos;
         }
@@ -435,6 +457,15 @@ pub const Batcher = struct {
 
     /// Submit a draw call to draw all shapes for this batch
     pub fn draw(self: *Batcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+        if(self.material == null) {
+            self.drawWithoutMaterial(proj_view_matrix, model_matrix);
+        } else {
+            self.drawWithMaterial(proj_view_matrix, model_matrix);
+        }
+    }
+
+    /// Submit a draw call to draw all shapes for this batch
+    pub fn drawWithoutMaterial(self: *Batcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
         if(self.index_pos == 0)
             return;
 
@@ -454,6 +485,34 @@ pub const Batcher = struct {
         self.shader.applyUniformBlock(.VS, 0, graphics.asAnything(&vs_params));
 
         graphics.draw(&self.bindings, &self.shader);
+    }
+
+    /// Submit a draw call to draw all shapes for this batch
+    pub fn drawWithMaterial(self: *Batcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+        if(self.index_pos == 0)
+            return;
+
+        if(self.material == null)
+            return;
+
+        // Make our default uniform blocks
+        const default_vs_params = VSParams {
+            .projViewMatrix = proj_view_matrix,
+            .modelMatrix = model_matrix,
+            .in_color = self.material.?.params.draw_color.toArray(),
+        };
+
+        const default_fs_params = FSParams {
+            .in_color_override = self.material.?.params.color_override.toArray(),
+            .in_alpha_cutoff = self.material.?.params.alpha_cutoff,
+        };
+
+        // set our default vs/fs shader uniforms to the 0 slots
+        var shader = self.material.?.shader;
+        shader.applyUniformBlock(.FS, 0, graphics.asAnything(&default_fs_params));
+        shader.applyUniformBlock(.VS, 0, graphics.asAnything(&default_vs_params));
+
+        graphics.drawWithMaterial(&self.bindings, self.material.?);
     }
 
     /// Expand the buffers for this batch if needed to fit the new size

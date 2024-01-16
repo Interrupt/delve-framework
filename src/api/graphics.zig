@@ -72,7 +72,8 @@ pub fn blit(texture_handle: u32, source_x: f32, source_y: f32, source_width: f32
         .u_2 = @min((source_x + source_width) * x_aspect, 1.0),
     };
 
-    sprite_batch.addRectangle(loaded_tex.?,
+    sprite_batch.useTexture(loaded_tex.?);
+    sprite_batch.addRectangle(
         math.Vec2{.x=0, .y=0},
         math.Vec2{.x=dest_width, .y=dest_height},
         region,
