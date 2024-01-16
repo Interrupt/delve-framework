@@ -114,14 +114,14 @@ fn on_tick(delta: f32) void {
     test_batch.useShader(shader_blend);
 
     // test a line!
-    const ly1 = std.math.sin(time * 0.01);
-    const ly2 = std.math.cos(time * 0.012);
+    const line_y_start = std.math.sin(time * 0.01);
+    const line_y_end = std.math.cos(time * 0.012);
 
     test_batch.setTransformMatrix(math.Mat4.identity());
     test_batch.addLine(
         graphics.tex_black,
-        math.vec2(0, ly1),
-        math.vec2(2, ly2),
+        math.vec2(0, line_y_start),
+        math.vec2(2, line_y_end),
         0.05,
         batcher.TextureRegion.default(),
         colors.white);
