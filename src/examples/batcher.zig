@@ -20,7 +20,8 @@ var texture_2: graphics.Texture = undefined;
 var shader_opaque: graphics.Shader = undefined;
 var shader_blend: graphics.Shader = undefined;
 
-var test_material: graphics.Material = undefined;
+var test_material_1: graphics.Material = undefined;
+var test_material_2: graphics.Material = undefined;
 
 var test_batch: batcher.SpriteBatcher = undefined;
 
@@ -67,13 +68,20 @@ fn on_init() void {
     shader_opaque = graphics.Shader.initDefault(.{});
     shader_blend = graphics.Shader.initDefault(.{.blend_mode = graphics.BlendMode.BLEND});
 
-    // Create a test material out of our shader and textures
-    test_material = graphics.Material.init(.{
+    // Create some test materials out of our shader and textures
+    test_material_1 = graphics.Material.init(.{
+        .shader = shader_opaque,
+        .texture_0 = graphics.tex_white,
+        .cull_mode = .NONE,
+        .blend_mode = .BLEND,
+    });
+
+    test_material_2 = graphics.Material.init(.{
         .shader = shader_opaque,
         .texture_0 = texture_1,
         .cull_mode = .NONE,
+        .filter = .NEAREST,
     });
-
 }
 
 var tick: u64 = 0;
@@ -141,7 +149,9 @@ fn on_tick(delta: f32) void {
         colors.black);
 
 
-    // test a filled rectangle!
+    // test using materials as well!
+    // test a filled rectangle
+    test_batch.useMaterial(&test_material_1);
     test_batch.setTransformMatrix(math.Mat4.translate(math.vec3(0,0,-0.001)));
     test_batch.addRectangle(
         math.vec2(-2.5, 0),
@@ -149,8 +159,7 @@ fn on_tick(delta: f32) void {
         batcher.TextureRegion.default(),
         colors.cyan.mul(Color{.a = 0.75}));
 
-    // test using a material!
-    test_batch.useMaterial(&test_material);
+    test_batch.useMaterial(&test_material_2);
     test_batch.setTransformMatrix(math.Mat4.translate(math.vec3(1,-1,-0.001)));
     test_batch.addRectangle(
         math.vec2(-1.0, 0),
