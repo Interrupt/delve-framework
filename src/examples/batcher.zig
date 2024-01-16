@@ -118,14 +118,32 @@ fn on_tick(delta: f32) void {
     const ly2 = std.math.cos(time * 0.012);
 
     test_batch.setTransformMatrix(math.Mat4.identity());
-    test_batch.addLine(graphics.tex_black, math.vec2(0, ly1), math.vec2(2, ly2), 0.05, batcher.TextureRegion.default(), colors.white);
+    test_batch.addLine(
+        graphics.tex_black,
+        math.vec2(0, ly1),
+        math.vec2(2, ly2),
+        0.05,
+        batcher.TextureRegion.default(),
+        colors.white);
 
     // test a line rectangle!
-    test_batch.addLineRectangle(graphics.tex_white, math.vec2(-2.5, 0), math.vec2(2, 0.5), 0.05, batcher.TextureRegion.default(), colors.black);
-    test_batch.setTransformMatrix(math.Mat4.translate(math.vec3(0,0,-0.001)));
+    test_batch.addLineRectangle(
+        graphics.tex_white,
+        math.vec2(-2.5, 0),
+        math.vec2(2, 0.5),
+        0.05,
+        batcher.TextureRegion.default(),
+        colors.black);
+
 
     // test a filled rectangle!
-    test_batch.addRectangle(graphics.tex_white, math.vec2(-2.5, 0), math.vec2(2, 0.5), batcher.TextureRegion.default(), Color.fromInt(0xAA0000FF));
+    test_batch.setTransformMatrix(math.Mat4.translate(math.vec3(0,0,-0.001)));
+    test_batch.addRectangle(
+        graphics.tex_white,
+        math.vec2(-2.5, 0),
+        math.vec2(2, 0.5),
+        batcher.TextureRegion.default(),
+        colors.cyan.mul(Color{.a = 0.75}));
 
     test_batch.apply();
 }
