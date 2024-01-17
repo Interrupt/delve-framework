@@ -6,6 +6,7 @@ const graphics = @import("../platform/graphics.zig");
 const images = @import("../images.zig");
 const math = @import("../math.zig");
 
+// needed to hash materials into keys
 const autoHash = std.hash.autoHash;
 const Wyhash = std.hash.Wyhash;
 

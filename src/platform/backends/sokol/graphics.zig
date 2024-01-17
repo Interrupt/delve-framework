@@ -21,10 +21,12 @@ pub const Shader = graphics.Shader;
 pub const BindingsImpl = struct {
     sokol_bindings: ?sg.Bindings,
     default_sokol_sampler: sg.Sampler = undefined,
+    index_type_size: u8 = @sizeOf(u32),
 
     pub fn init(cfg: graphics.BindingConfig) Bindings {
         var bindingsImpl = BindingsImpl {
             .sokol_bindings = .{},
+            .index_type_size = if(cfg.index_size == .UINT16) @sizeOf(u16) else @sizeOf(u32),
         };
 
         var bindings: Bindings = Bindings {
@@ -42,7 +44,7 @@ pub const BindingsImpl = struct {
             bindings.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
                 .usage = .STREAM,
                 .type = .INDEXBUFFER,
-                .size = cfg.index_len * @sizeOf(u32),
+                .size = cfg.index_len * bindingsImpl.index_type_size,
             });
         }
 
@@ -130,7 +132,7 @@ pub const BindingsImpl = struct {
         self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
             .usage = .STREAM,
             .type = .INDEXBUFFER,
-            .size = index_len * @sizeOf(u32),
+            .size = index_len * self.impl.index_type_size,
         });
     }
 
@@ -213,7 +215,7 @@ pub const ShaderImpl = struct {
             .cull_mode = convertCullMode(cfg.cull_mode),
         };
 
-        // todo: get these from the ShaderConfig, use intermediate enums
+        // TODO: pass forward the desc from metadata
         pipe_desc.layout.attrs[shader_default.ATTR_vs_pos].format = .FLOAT3;
         pipe_desc.layout.attrs[shader_default.ATTR_vs_color0].format = .UBYTE4N;
         pipe_desc.layout.attrs[shader_default.ATTR_vs_texcoord0].format = .FLOAT2;

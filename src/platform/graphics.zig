@@ -127,6 +127,7 @@ pub const BindingConfig = struct {
     updatable: bool = false,
     vert_len: usize = 3200,
     index_len: usize = 3200,
+    index_size: IndexSize = .UINT32,
 };
 
 pub const BindingsImpl = sokol_gfx_backend.BindingsImpl;
