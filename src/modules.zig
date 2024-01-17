@@ -14,6 +14,7 @@ pub const Module = struct {
     start_fn: ?*const fn () void = null,
     stop_fn: ?*const fn () void = null,
     tick_fn: ?*const fn (f32) void = null,
+    pre_draw_fn: ?*const fn () void = null,
     draw_fn: ?*const fn () void = null,
     post_draw_fn: ?*const fn () void = null,
     cleanup_fn: ?*const fn () void = null,
@@ -72,6 +73,15 @@ pub fn tickModules(delta_time: f32) void {
     }
 }
 
+/// Calls the pre-draw function of all modules. Happens before rendering
+pub fn preDrawModules() void {
+    var it = modules.iterator();
+    while(it.next()) |module| {
+        if(module.value_ptr.pre_draw_fn != null)
+            module.value_ptr.pre_draw_fn.?();
+    }
+}
+
 /// Calls the draw function of all modules
 pub fn drawModules() void {
     var it = modules.iterator();
@@ -81,7 +91,7 @@ pub fn drawModules() void {
     }
 }
 
-/// Calls the post-draw function of all modules. Happens at the end of a frame
+/// Calls the post-draw function of all modules. Happens at the end of a frame, after rendering.
 pub fn postDrawModules() void {
     var it = modules.iterator();
     while(it.next()) |module| {

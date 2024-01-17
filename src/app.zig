@@ -17,6 +17,8 @@ pub const AppConfig = struct {
     width: i32 = 960,
     height: i32 = 540,
     target_fps: ?i32 = null,
+    use_fixed_timestep: bool = false,
+    fixed_timestep_delta: f32 = 1.0 / 60.0,
 };
 
 pub fn setAssetsPath(path: [:0]const u8) !void {

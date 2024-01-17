@@ -96,6 +96,12 @@ fn bindZigLibrary(comptime name: [:0]const u8, comptime zigfile: anytype) !void 
     if(@hasDecl(zigfile, "libDraw")) {
         scriptApiModule.draw_fn = zigfile.libDraw;
     }
+    if(@hasDecl(zigfile, "libPreDraw")) {
+        scriptApiModule.pre_draw_fn = zigfile.libPreDraw;
+    }
+    if(@hasDecl(zigfile, "libPostDraw")) {
+        scriptApiModule.post_draw_fn = zigfile.libPostDraw;
+    }
     if(@hasDecl(zigfile, "libCleanup")) {
         scriptApiModule.cleanup_fn = zigfile.libCleanup;
     }

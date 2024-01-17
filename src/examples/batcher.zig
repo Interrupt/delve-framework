@@ -33,7 +33,7 @@ pub fn registerModule() !void {
     const batcherExample = modules.Module {
         .name = "batcher_example",
         .init_fn = on_init,
-        .tick_fn = on_tick,
+        .pre_draw_fn = pre_draw,
         .draw_fn = on_draw,
         .cleanup_fn = on_cleanup,
     };
@@ -86,9 +86,9 @@ fn on_init() void {
 
 var tick: u64 = 0;
 var time: f32 = 0;
-fn on_tick(delta: f32) void {
+fn pre_draw() void {
     tick += 1;
-    time += delta * 100.0;
+    time += (1.0 / 60.0) * 100.0;
 
     test_batch.reset();
     for(0 .. stress_test_count) |i| {
