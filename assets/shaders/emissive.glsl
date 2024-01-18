@@ -49,16 +49,15 @@ void main() {
         discard;
     }
 
-    // to also make sprite flash effects easier, allow a color to take over the final output
-    float override_mod = 1.0 - u_color_override.a;
-    c.rgb = (c.rgb * override_mod) + (u_color_override.rgb * u_color_override.a);
-
     // add the emissive term
     vec4 e = texture(sampler2D(tex_emissive, smp), uv);
 
     float e_amt = min(e.r + e.g + e.b, 1.0);
     c.rgb = (c.rgb * (1.0 - e_amt)) + (e.rgb);
-    // c.rgb = (c.rgb * (1.0 - e.rgb)) + (e.rgb);
+
+    // for flash effects, allow a color to take over the final output
+    float override_mod = 1.0 - u_color_override.a;
+    c.rgb = (c.rgb * override_mod) + (u_color_override.rgb * u_color_override.a);
 
     frag_color = c;
 }
