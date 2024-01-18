@@ -87,6 +87,10 @@ pub const Mesh = struct {
             material = cfg.material.?;
         }
 
+        // Make our default uniform blocks
+        material.vs_uniforms = graphics.MaterialUniformBlock.init(allocator);
+        material.fs_uniforms = graphics.MaterialUniformBlock.init(allocator);
+
         return Mesh{ .bindings = bindings, .material = material};
     }
 
@@ -95,21 +99,24 @@ pub const Mesh = struct {
     }
 
     pub fn draw(self: *Mesh, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
-        // Make our default uniform blocks
-        const default_vs_params = VSParams {
-            .projViewMatrix = proj_view_matrix,
-            .modelMatrix = model_matrix,
-            .in_color = self.material.params.draw_color.toArray(),
-        };
+        // set the default vertex shader uniform block
+        var vs_uniforms = &self.material.vs_uniforms.?;
+        vs_uniforms.begin();
+        vs_uniforms.addMatrix("u_projViewMatrix", proj_view_matrix);
+        vs_uniforms.addMatrix("u_modelMatrix", model_matrix);
+        vs_uniforms.addColor("u_color", self.material.params.draw_color);
+        vs_uniforms.end();
 
-        const default_fs_params = FSParams {
-            .in_color_override = self.material.params.color_override.toArray(),
-            .in_alpha_cutoff = self.material.params.alpha_cutoff,
-        };
+        // set the default fragment shader uniform block
+        var fs_uniforms = &self.material.fs_uniforms.?;
+        fs_uniforms.begin();
+        fs_uniforms.addColor("u_color_override", self.material.params.color_override);
+        fs_uniforms.addFloat("u_alpha_cutoff", self.material.params.alpha_cutoff);
+        fs_uniforms.end();
 
-        // set our default vs/fs shader uniforms to the 0 slots
-        self.material.shader.applyUniformBlock(.FS, 0, graphics.asAnything(&default_fs_params));
-        self.material.shader.applyUniformBlock(.VS, 0, graphics.asAnything(&default_vs_params));
+        // set our default vs/fs uniforms to the 0 slots
+        self.material.shader.applyUniformBlock(.VS, 0, graphics.asAnything(self.material.vs_uniforms.?.bytes.items));
+        self.material.shader.applyUniformBlock(.FS, 0, graphics.asAnything(self.material.fs_uniforms.?.bytes.items));
 
         graphics.drawWithMaterial(&self.bindings, &self.material);
     }

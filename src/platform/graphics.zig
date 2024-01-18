@@ -239,14 +239,6 @@ pub const Shader = struct {
 
     pub fn apply(self: *Shader) void {
         ShaderImpl.apply(self);
-
-        // Reset uniform blocks, to avoid use-after-free
-        for(0 .. self.vs_uniform_blocks.len) |i| {
-            self.vs_uniform_blocks[i] = null;
-        }
-        for(0 .. self.fs_uniform_blocks.len) |i| {
-            self.fs_uniform_blocks[i] = null;
-        }
     }
 
     pub fn applyUniformBlock(self: *Shader, stage: ShaderStage, slot: u8, data: Anything) void {
@@ -333,6 +325,106 @@ pub const MaterialParams = struct {
     alpha_cutoff: f32 = 0.0,
 };
 
+pub const MaterialUniformBlock = struct {
+    size: u64 = 0,
+    bytes: std.ArrayList(u8),
+
+    pub fn init(allocator: std.mem.Allocator) MaterialUniformBlock {
+        return MaterialUniformBlock {
+            .bytes = std.ArrayList(u8).init(allocator),
+        };
+    }
+
+    fn addBytesFrom(self: *MaterialUniformBlock, value: anytype) void {
+        self.bytes.appendSlice(std.mem.asBytes(value)) catch {
+            debug.log("Error adding material uniform!", .{});
+            return;
+        };
+        self.size = self.bytes.items.len;
+    }
+
+    /// Reset state for this new frame
+    pub fn begin(self: *MaterialUniformBlock) void {
+        self.bytes.clearRetainingCapacity();
+    }
+
+    /// Commit data for this frame
+    pub fn end(self: *MaterialUniformBlock) void {
+        // might need to add padding! seems to be aligned to 16 byte chunks
+        const sizef: f64 = @floatFromInt(self.size);
+        const commit_next: u64 = @intFromFloat(@ceil(sizef / 16));
+        const commit_size = commit_next * 16;
+
+        if(self.size < commit_size) {
+            const diff_bytes = commit_size - self.size;
+            self.addPadding(diff_bytes);
+        }
+    }
+
+    /// Adds a float to the uniform block
+    pub fn addFloat(self: *MaterialUniformBlock, name: [:0]const u8, val: f32) void {
+        _ = name;
+        self.addBytesFrom(&val);
+    }
+
+    /// Adds a float array to the uniform block
+    pub fn addFloats(self: *MaterialUniformBlock, name: [:0]const u8, val: []f32) void {
+        _ = name;
+        self.addBytesFrom(&val);
+    }
+
+    /// Adds a matrix to the uniform block
+    pub fn addMatrix(self: *MaterialUniformBlock, name: [:0]const u8, val: math.Mat4) void {
+        _ = name;
+        self.addBytesFrom(&val);
+    }
+
+    pub fn addVec2(self: *MaterialUniformBlock, name: [:0]const u8, val: Vec2) void {
+        _ = name;
+        self.addBytesFrom(&val);
+    }
+
+    pub fn addVec3(self: *MaterialUniformBlock, name: [:0]const u8, val: Vec3) void {
+        _ = name;
+        self.addBytesFrom(&val);
+    }
+
+    /// Adds a color to the uniform block
+    pub fn addColor(self: *MaterialUniformBlock, name: [:0]const u8, val: Color) void {
+        _ = name;
+        self.addBytesFrom(&val.toArray());
+    }
+
+    /// Adds [num] bytes of padding
+    pub fn addPadding(self: *MaterialUniformBlock, num: u64) void {
+        defer self.size = self.bytes.items.len;
+
+        // let the compiler help us for some common padding values
+        if(num == 4) {
+            const padv: u32 = 0;
+            self.bytes.appendSlice(std.mem.asBytes(&padv)) catch { return; };
+            return;
+        }
+        if(num == 8) {
+            const padv: u64 = 0;
+            self.bytes.appendSlice(std.mem.asBytes(&padv)) catch { return; };
+            return;
+        }
+        if(num == 12) {
+            const padv: [3]u32 = [_]u32{0} ** 3;
+            self.bytes.appendSlice(std.mem.asBytes(&padv)) catch { return; };
+            return;
+        }
+
+        // harder case, just add them one by one
+        for(0..num) |i| {
+            _ = i;
+            const padv: u8 = 0;
+            self.bytes.appendSlice(std.mem.asBytes(&padv)) catch { return; };
+        }
+    }
+};
+
 pub const Material = struct {
     textures: [5]?Texture = [_]?Texture{null} ** 5,
     shader: Shader = undefined,
@@ -343,6 +435,10 @@ pub const Material = struct {
     cull_mode: CullMode,
 
     params: MaterialParams = MaterialParams{},
+
+    // hold our shader uniforms!
+    vs_uniforms: ?MaterialUniformBlock = null,
+    fs_uniforms: ?MaterialUniformBlock = null,
 
     sokol_sampler: ?sg.Sampler = null,
 
