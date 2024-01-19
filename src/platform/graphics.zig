@@ -513,15 +513,35 @@ pub const Material = struct {
         self.shader.applyUniformBlock(stage, 0, asAnything(u_block.bytes.items));
     }
 
-    pub fn applyDefaultUniforms(self: *Material) void {
-        // set the default vertex shader uniform block (vs block 0)
-        if(self.vs_uniforms[0] != null) {
-            self.applyDefaultUniformBlock(.VS, self.default_vs_uniform_layout, &self.vs_uniforms[0].?);
+    pub fn applyUniforms(self: *Material) void {
+        // If no default layout is set, we'll treat the first uniform block like any other
+        // otherwise, we start custom blocks at index 1.
+        const has_default_vs: bool = self.default_vs_uniform_layout.len > 0;
+        const has_default_fs: bool = self.default_fs_uniform_layout.len > 0;
+
+        const vs_start_idx: u8 = if(has_default_vs) 0 else 1;
+        const fs_start_idx: u8 = if(has_default_fs) 0 else 1;
+
+        // Apply default uniform vars first
+        if(has_default_vs) {
+            if(self.vs_uniforms[0] != null)
+                self.applyDefaultUniformBlock(.VS, self.default_vs_uniform_layout, &self.vs_uniforms[0].?);
+        }
+        if(has_default_fs) {
+            if(self.fs_uniforms[0] != null)
+                self.applyDefaultUniformBlock(.FS, self.default_fs_uniform_layout, &self.fs_uniforms[0].?);
         }
 
-        // set the default fragment shader uniform block (fs block 0)
-        if(self.fs_uniforms[0] != null) {
-            self.applyDefaultUniformBlock(.FS, self.default_fs_uniform_layout, &self.fs_uniforms[0].?);
+        // Now apply any custom uniform var blocks
+        for(vs_start_idx..self.vs_uniforms.len) |i| {
+            if(self.vs_uniforms[i]) |u_block| {
+                self.shader.applyUniformBlock(.VS, @intCast(i), asAnything(u_block.bytes.items));
+            }
+        }
+        for(fs_start_idx..self.fs_uniforms.len) |i| {
+            if(self.fs_uniforms[i]) |u_block| {
+                self.shader.applyUniformBlock(.FS, @intCast(i), asAnything(u_block.bytes.items));
+            }
         }
     }
 };
@@ -719,7 +739,7 @@ pub fn draw(bindings: *Bindings, shader: *Shader) void {
 /// Draw a part of a binding, using a material
 pub fn drawSubsetWithMaterial(bindings: *Bindings, start: u32, end: u32, material: *Material) void {
     bindings.updateFromMaterial(material);
-    material.applyDefaultUniforms();
+    material.applyUniforms();
     drawSubset(bindings, start, end, &material.shader);
 }
 
