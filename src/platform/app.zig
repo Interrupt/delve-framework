@@ -25,6 +25,10 @@ const state = struct {
     var fps: i32 = 0;
     var fps_framecount: i64 = 0;
     var fps_start: time.Instant = undefined;
+
+    // current tick / time delta
+    var tick: u64 = 0;
+    var delta_time: f32 = 0.0;
 };
 
 pub fn init() !void {
@@ -93,10 +97,11 @@ fn on_cleanup() void {
 
 fn on_frame() void {
     // time management!
-    var delta_time = calcDeltaTime();
+    state.delta_time = calcDeltaTime();
+    state.tick += 1;
 
     if(state.fixed_timestep_delta) |fixed_delta| {
-        state.time_accumulator += delta_time;
+        state.time_accumulator += state.delta_time;
 
         // keep ticking until we catch up to the actual time
         while(state.time_accumulator >= fixed_delta) {
@@ -106,7 +111,7 @@ fn on_frame() void {
         }
     } else {
         // tick as fast as possible!
-        modules.tickModules(delta_time);
+        modules.tickModules(state.delta_time);
     }
 
     // tell modules we are getting ready to draw!
@@ -181,4 +186,12 @@ pub fn setTargetFPS(fps_target: i32) void {
 
 pub fn setFixedTimestep(timestep_delta: f32) void {
     state.fixed_timestep_delta = timestep_delta;
+}
+
+pub fn getCurrentDeltaTime() f32 {
+    return state.delta_time;
+}
+
+pub fn getCurrentTick() u64 {
+    return state.tick;
 }
