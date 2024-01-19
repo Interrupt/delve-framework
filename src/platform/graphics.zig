@@ -519,8 +519,8 @@ pub const Material = struct {
         const has_default_vs: bool = self.default_vs_uniform_layout.len > 0;
         const has_default_fs: bool = self.default_fs_uniform_layout.len > 0;
 
-        const vs_start_idx: u8 = if(has_default_vs) 0 else 1;
-        const fs_start_idx: u8 = if(has_default_fs) 0 else 1;
+        const vs_start_idx: u8 = if(has_default_vs) 1 else 0;
+        const fs_start_idx: u8 = if(has_default_fs) 1 else 0;
 
         // Apply default uniform vars first
         if(has_default_vs) {
