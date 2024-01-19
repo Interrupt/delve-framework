@@ -289,14 +289,14 @@ pub const Texture = struct {
 };
 
 pub const MaterialConfig = struct {
-    // texture slots for easy binding
+    // Texture slots for easy binding
     texture_0: ?Texture = null,
     texture_1: ?Texture = null,
     texture_2: ?Texture = null,
     texture_3: ?Texture = null,
     texture_4: ?Texture = null,
 
-    // material options
+    // Material options
     cull_mode: CullMode = .BACK,
     filter: FilterMode = .LINEAR,
     blend_mode: BlendMode = .NONE,
@@ -304,14 +304,17 @@ pub const MaterialConfig = struct {
     depth_compare: CompareFunc = .LESS_EQUAL,
     index_size: IndexSize = .UINT32,
 
-    // the parent shader to base us on
+    // The parent shader to base us on
     shader: ?Shader = null,
 
-    // the layouts of the default (0th) vertex and fragment shaders
+    // The layouts of the default (0th) vertex and fragment shaders
     default_vs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults {.PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR},
     default_fs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults {.COLOR_OVERRIDE, .ALPHA_CUTOFF},
 
-    // number of uniform blocks to create
+    // Samplers to create. Defaults to making one linearly filtered sampler
+    samplers: []const FilterMode = &[_]FilterMode{.LINEAR},
+
+    // Number of uniform blocks to create. Default to 1 to always make the default block
     num_uniform_vs_blocks: u8 = 1,
     num_uniform_fs_blocks: u8 = 1,
 };
@@ -445,10 +448,10 @@ pub const Material = struct {
     vs_uniforms: [5]?MaterialUniformBlock = [_]?MaterialUniformBlock{null} ** 5,
     fs_uniforms: [5]?MaterialUniformBlock = [_]?MaterialUniformBlock{null} ** 5,
 
-    sokol_sampler: ?sg.Sampler = null,
+    // Hold our samplers
+    sokol_samplers: [5]?sg.Sampler = [_]?sg.Sampler{null} ** 5,
 
     pub fn init(cfg: MaterialConfig) Material {
-        const samplerDesc = convertFilterModeToSamplerDesc(cfg.filter);
         var material = Material {
             .filter = cfg.filter,
             .blend_mode = cfg.blend_mode,
@@ -457,8 +460,13 @@ pub const Material = struct {
             .cull_mode = cfg.cull_mode,
             .default_vs_uniform_layout = cfg.default_vs_uniform_layout,
             .default_fs_uniform_layout = cfg.default_fs_uniform_layout,
-            .sokol_sampler = sg.makeSampler(samplerDesc),
         };
+
+        // Make samplers
+        for(cfg.samplers, 0..) |sampler_filter, i| {
+            const sampler_desc = convertFilterModeToSamplerDesc(sampler_filter);
+            material.sokol_samplers[i] = sg.makeSampler(sampler_desc);
+        }
 
         // ugly!
         if(cfg.texture_0 != null)

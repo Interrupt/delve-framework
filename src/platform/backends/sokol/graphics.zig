@@ -100,8 +100,11 @@ pub const BindingsImpl = struct {
                 self.impl.sokol_bindings.?.fs.images[i] = material.textures[i].?.sokol_image.?;
         }
 
-        // how many samplers should we support?
-        self.impl.sokol_bindings.?.fs.samplers[0] = material.sokol_sampler.?;
+        // bind samplers
+        for(material.sokol_samplers, 0..) |sampler, i| {
+            if(sampler) |s|
+                self.impl.sokol_bindings.?.fs.samplers[i] = s;
+        }
 
         // also set shader uniforms here?
     }
