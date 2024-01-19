@@ -99,11 +99,7 @@ pub const Mesh = struct {
     }
 
     pub fn draw(self: *Mesh, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
-        // set our draw positions
-        self.material.params.proj_view_matrix = proj_view_matrix;
-        self.material.params.model_matrix = model_matrix;
-
-        graphics.drawWithMaterial(&self.bindings, &self.material);
+        graphics.drawWithMaterial(&self.bindings, &self.material, proj_view_matrix, model_matrix);
     }
 };
 

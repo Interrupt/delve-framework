@@ -309,13 +309,11 @@ pub const MaterialConfig = struct {
     default_fs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults {.COLOR_OVERRIDE, .ALPHA_CUTOFF},
 };
 
-/// Material params get binded automatically to the default uniform block (0)
+/// Material params can get binded automatically to the default uniform block (0)
 pub const MaterialParams = struct {
     draw_color: Color = colors.white,
     color_override: Color = colors.transparent,
     alpha_cutoff: f32 = 0.0,
-    proj_view_matrix: Mat4 = Mat4.identity(),
-    model_matrix: Mat4 = Mat4.identity(),
 };
 
 /// Holds the data for and builds a uniform block that can be passed to a shader
@@ -482,7 +480,7 @@ pub const Material = struct {
     }
 
     /// Builds and applys a uniform block from a layout
-    pub fn setDefaultUniformVars(self: *Material, layout: []const MaterialUniformDefaults, u_block: *MaterialUniformBlock) void {
+    pub fn setDefaultUniformVars(self: *Material, layout: []const MaterialUniformDefaults, u_block: *MaterialUniformBlock, proj_view_matrix: Mat4, model_matrix: Mat4) void {
         // Don't do anything if we have no layout for the default block
         if(layout.len == 0)
             return;
@@ -491,10 +489,10 @@ pub const Material = struct {
         for(layout) |item| {
             switch(item) {
                 .PROJECTION_VIEW_MATRIX => {
-                    u_block.addMatrix("u_projViewMatrix", self.params.proj_view_matrix);
+                    u_block.addMatrix("u_projViewMatrix", proj_view_matrix);
                 },
                 .MODEL_MATRIX => {
-                    u_block.addMatrix("u_modelMatrix", self.params.model_matrix);
+                    u_block.addMatrix("u_modelMatrix", model_matrix);
                 },
                 .COLOR => {
                     u_block.addColor("u_color", self.params.draw_color);
@@ -510,7 +508,7 @@ pub const Material = struct {
         u_block.end();
     }
 
-    pub fn applyUniforms(self: *Material) void {
+    pub fn applyUniforms(self: *Material, proj_view_matrix: Mat4, model_matrix: Mat4) void {
         // If no default layout is set, we'll treat the first uniform block like any other
         // otherwise, we start custom blocks at index 1.
         const has_default_vs: bool = self.default_vs_uniform_layout.len > 0;
@@ -519,11 +517,11 @@ pub const Material = struct {
         // Set our default uniform vars first
         if(has_default_vs) {
             if(self.vs_uniforms[0] != null)
-                self.setDefaultUniformVars(self.default_vs_uniform_layout, &self.vs_uniforms[0].?);
+                self.setDefaultUniformVars(self.default_vs_uniform_layout, &self.vs_uniforms[0].?, proj_view_matrix, model_matrix);
         }
         if(has_default_fs) {
             if(self.fs_uniforms[0] != null)
-                self.setDefaultUniformVars(self.default_fs_uniform_layout, &self.fs_uniforms[0].?);
+                self.setDefaultUniformVars(self.default_fs_uniform_layout, &self.fs_uniforms[0].?, proj_view_matrix, model_matrix);
         }
 
         // Now apply all uniform var blocks
@@ -731,15 +729,15 @@ pub fn draw(bindings: *Bindings, shader: *Shader) void {
 }
 
 /// Draw a part of a binding, using a material
-pub fn drawSubsetWithMaterial(bindings: *Bindings, start: u32, end: u32, material: *Material) void {
+pub fn drawSubsetWithMaterial(bindings: *Bindings, start: u32, end: u32, material: *Material, proj_view_matrix: Mat4, model_matrix: Mat4) void {
     bindings.updateFromMaterial(material);
-    material.applyUniforms();
+    material.applyUniforms(proj_view_matrix, model_matrix);
     drawSubset(bindings, start, end, &material.shader);
 }
 
 /// Draw a whole binding, using a material
-pub fn drawWithMaterial(bindings: *Bindings, material: *Material) void {
-    drawSubsetWithMaterial(bindings, 0, @intCast(bindings.length), material);
+pub fn drawWithMaterial(bindings: *Bindings, material: *Material, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+    drawSubsetWithMaterial(bindings, 0, @intCast(bindings.length), material, proj_view_matrix, model_matrix);
 }
 
 /// Returns a small 2x2 solid color texture

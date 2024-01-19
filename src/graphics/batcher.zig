@@ -496,11 +496,7 @@ pub const Batcher = struct {
         if(self.material == null)
             return;
 
-        // set positions
-        self.material.?.params.proj_view_matrix = proj_view_matrix;
-        self.material.?.params.model_matrix = model_matrix;
-
-        graphics.drawWithMaterial(&self.bindings, self.material.?);
+        graphics.drawWithMaterial(&self.bindings, self.material.?, proj_view_matrix, model_matrix);
     }
 
     /// Expand the buffers for this batch if needed to fit the new size
