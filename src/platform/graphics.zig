@@ -303,6 +303,10 @@ pub const MaterialConfig = struct {
 
     // the parent shader to base us on
     shader: ?Shader = null,
+
+    // the layouts of the default (0th) vertex and fragment shaders
+    default_vs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults {.PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR},
+    default_fs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults {.COLOR_OVERRIDE, .ALPHA_CUTOFF},
 };
 
 /// Material params get binded automatically to the default uniform block (0)
@@ -429,8 +433,8 @@ pub const Material = struct {
     params: MaterialParams = MaterialParams{},
 
     /// Holds what will be automatically binded by the material
-    default_vs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults {.PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR},
-    default_fs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults {.COLOR_OVERRIDE, .ALPHA_CUTOFF},
+    default_vs_uniform_layout: []const MaterialUniformDefaults,
+    default_fs_uniform_layout: []const MaterialUniformDefaults,
 
     /// Hold our shader uniforms
     vs_uniforms: [5]?MaterialUniformBlock = [_]?MaterialUniformBlock{null} ** 5,
@@ -446,6 +450,8 @@ pub const Material = struct {
             .depth_write_enabled = cfg.depth_write_enabled,
             .depth_compare = cfg.depth_compare,
             .cull_mode = cfg.cull_mode,
+            .default_vs_uniform_layout = cfg.default_vs_uniform_layout,
+            .default_fs_uniform_layout = cfg.default_fs_uniform_layout,
             .sokol_sampler = sg.makeSampler(samplerDesc),
         };
 
