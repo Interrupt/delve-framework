@@ -298,7 +298,6 @@ pub const MaterialConfig = struct {
 
     // Material options
     cull_mode: CullMode = .BACK,
-    filter: FilterMode = .LINEAR,
     blend_mode: BlendMode = .NONE,
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
@@ -431,7 +430,6 @@ pub const MaterialUniformBlock = struct {
 pub const Material = struct {
     textures: [5]?Texture = [_]?Texture{null} ** 5,
     shader: Shader = undefined,
-    filter: FilterMode,
     blend_mode: BlendMode,
     depth_write_enabled: bool,
     depth_compare: CompareFunc,
@@ -453,7 +451,6 @@ pub const Material = struct {
 
     pub fn init(cfg: MaterialConfig) Material {
         var material = Material {
-            .filter = cfg.filter,
             .blend_mode = cfg.blend_mode,
             .depth_write_enabled = cfg.depth_write_enabled,
             .depth_compare = cfg.depth_compare,
@@ -462,13 +459,13 @@ pub const Material = struct {
             .default_fs_uniform_layout = cfg.default_fs_uniform_layout,
         };
 
-        // Make samplers
+        // Make samplers from filter modes
         for(cfg.samplers, 0..) |sampler_filter, i| {
             const sampler_desc = convertFilterModeToSamplerDesc(sampler_filter);
             material.sokol_samplers[i] = sg.makeSampler(sampler_desc);
         }
 
-        // ugly!
+        // Set textures. ugly!
         if(cfg.texture_0 != null)
             material.textures[0] = cfg.texture_0;
         if(cfg.texture_1 != null)
@@ -480,14 +477,13 @@ pub const Material = struct {
         if(cfg.texture_4 != null)
             material.textures[4] = cfg.texture_4;
 
+        // Create uniform blocks based on how many we were asked for
         for(0..cfg.num_uniform_vs_blocks) |i| {
             material.vs_uniforms[i] = MaterialUniformBlock.init();
         }
         for(0..cfg.num_uniform_fs_blocks) |i| {
             material.fs_uniforms[i] = MaterialUniformBlock.init();
         }
-
-        // TODO: Shader loading from files, using Sokol's YAML output
 
         // make a shader out of our options
         material.shader = Shader.cloneFromShader(.{
