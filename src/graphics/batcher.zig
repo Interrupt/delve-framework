@@ -496,22 +496,9 @@ pub const Batcher = struct {
         if(self.material == null)
             return;
 
-        // Make our default uniform blocks
-        const default_vs_params = VSParams {
-            .projViewMatrix = proj_view_matrix,
-            .modelMatrix = model_matrix,
-            .in_color = self.material.?.params.draw_color.toArray(),
-        };
-
-        const default_fs_params = FSParams {
-            .in_color_override = self.material.?.params.color_override.toArray(),
-            .in_alpha_cutoff = self.material.?.params.alpha_cutoff,
-        };
-
-        // set our default vs/fs shader uniforms to the 0 slots
-        var shader = self.material.?.shader;
-        shader.applyUniformBlock(.FS, 0, graphics.asAnything(&default_fs_params));
-        shader.applyUniformBlock(.VS, 0, graphics.asAnything(&default_vs_params));
+        // set positions
+        self.material.?.params.proj_view_matrix = proj_view_matrix;
+        self.material.?.params.model_matrix = model_matrix;
 
         graphics.drawWithMaterial(&self.bindings, self.material.?);
     }

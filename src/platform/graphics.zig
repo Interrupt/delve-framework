@@ -75,15 +75,13 @@ pub const ShaderStage = enum(i32) {
     FS,
 };
 
-pub const ShaderUniformType = enum(i32) {
-    FLOAT,
-    VEC2,
-    VEC3,
-    VEC4,
-    INT,
-    MAT4,
-    VEC4_ARRAY,
-    MAT4_ARRAY,
+/// The set of material uniforms that can be binded automatically
+pub const MaterialUniformDefaults = enum(i32) {
+    PROJECTION_VIEW_MATRIX,
+    MODEL_MATRIX,
+    COLOR,
+    COLOR_OVERRIDE,
+    ALPHA_CUTOFF,
 };
 
 /// Default vertex shader uniform block layout
@@ -184,18 +182,6 @@ pub const ShaderParams = struct {
     // These should probably be a map instead!
     draw_color: [4]f32 = [_]f32 { 1.0, 1.0, 1.0, 1.0 },
     color_override: [4]f32 = [_]f32 { 0.0, 0.0, 0.0, 0.0 },
-};
-
-pub const ShaderUniform = struct {
-    data_float: ?f32 = null,
-    data_vec2: ?Vec2 = null,
-    data_vec3: ?Vec3 = null,
-    // data_vec4: ?Color,
-    data_int: ?i32 = null,
-    data_mat4: ?Mat4 = null,
-    // data_vec4_array: [:0]Mat4,
-    data_mat4_array: [:null]?Mat4 = undefined,
-    uniform_type: ShaderUniformType,
 };
 
 pub const ShaderImpl = sokol_gfx_backend.ShaderImpl;
@@ -319,12 +305,16 @@ pub const MaterialConfig = struct {
     shader: ?Shader = null,
 };
 
+/// Material params get binded automatically to the default uniform block (0)
 pub const MaterialParams = struct {
     draw_color: Color = colors.white,
     color_override: Color = colors.transparent,
     alpha_cutoff: f32 = 0.0,
+    proj_view_matrix: Mat4 = Mat4.identity(),
+    model_matrix: Mat4 = Mat4.identity(),
 };
 
+/// Holds the data for and builds a uniform block that can be passed to a shader
 pub const MaterialUniformBlock = struct {
     size: u64 = 0,
     bytes: std.ArrayList(u8),
@@ -425,6 +415,7 @@ pub const MaterialUniformBlock = struct {
     }
 };
 
+/// A material for drawing, consists of a shader and potentially many textures
 pub const Material = struct {
     textures: [5]?Texture = [_]?Texture{null} ** 5,
     shader: Shader = undefined,
@@ -434,11 +425,16 @@ pub const Material = struct {
     depth_compare: CompareFunc,
     cull_mode: CullMode,
 
+    // Material params are used for automatic binding
     params: MaterialParams = MaterialParams{},
 
-    // hold our shader uniforms!
-    vs_uniforms: ?MaterialUniformBlock = null,
-    fs_uniforms: ?MaterialUniformBlock = null,
+    /// Holds what will be automatically binded by the material
+    default_vs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults {.PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR},
+    default_fs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults {.COLOR_OVERRIDE, .ALPHA_CUTOFF},
+
+    /// Hold our shader uniforms
+    vs_uniforms: [5]?MaterialUniformBlock = [_]?MaterialUniformBlock{null} ** 5,
+    fs_uniforms: [5]?MaterialUniformBlock = [_]?MaterialUniformBlock{null} ** 5,
 
     sokol_sampler: ?sg.Sampler = null,
 
@@ -477,6 +473,50 @@ pub const Material = struct {
         }, cfg.shader);
 
         return material;
+    }
+
+    /// Builds and applys a uniform block from a layout
+    pub fn applyDefaultUniformBlock(self: *Material, stage: ShaderStage, layout: []const MaterialUniformDefaults, u_block: *MaterialUniformBlock) void {
+        // Don't do anything if we have no layout for the default block
+        if(layout.len == 0)
+            return;
+
+        u_block.begin();
+        for(layout) |item| {
+            switch(item) {
+                .PROJECTION_VIEW_MATRIX => {
+                    u_block.addMatrix("u_projViewMatrix", self.params.proj_view_matrix);
+                },
+                .MODEL_MATRIX => {
+                    u_block.addMatrix("u_modelMatrix", self.params.model_matrix);
+                },
+                .COLOR => {
+                    u_block.addColor("u_color", self.params.draw_color);
+                },
+                .COLOR_OVERRIDE => {
+                    u_block.addColor("u_colorOverride", self.params.color_override);
+                },
+                .ALPHA_CUTOFF => {
+                    u_block.addFloat("u_alphaCutoff", self.params.alpha_cutoff);
+                }
+            }
+        }
+        u_block.end();
+
+        // actually apply to the shader
+        self.shader.applyUniformBlock(stage, 0, asAnything(u_block.bytes.items));
+    }
+
+    pub fn applyDefaultUniforms(self: *Material) void {
+        // set the default vertex shader uniform block (vs block 0)
+        if(self.vs_uniforms[0] != null) {
+            self.applyDefaultUniformBlock(.VS, self.default_vs_uniform_layout, &self.vs_uniforms[0].?);
+        }
+
+        // set the default fragment shader uniform block (fs block 0)
+        if(self.fs_uniforms[0] != null) {
+            self.applyDefaultUniformBlock(.FS, self.default_fs_uniform_layout, &self.fs_uniforms[0].?);
+        }
     }
 };
 
@@ -673,6 +713,7 @@ pub fn draw(bindings: *Bindings, shader: *Shader) void {
 /// Draw a part of a binding, using a material
 pub fn drawSubsetWithMaterial(bindings: *Bindings, start: u32, end: u32, material: *Material) void {
     bindings.updateFromMaterial(material);
+    material.applyDefaultUniforms();
     drawSubset(bindings, start, end, &material.shader);
 }
 

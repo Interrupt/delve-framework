@@ -88,8 +88,8 @@ pub const Mesh = struct {
         }
 
         // Make our default uniform blocks
-        material.vs_uniforms = graphics.MaterialUniformBlock.init(allocator);
-        material.fs_uniforms = graphics.MaterialUniformBlock.init(allocator);
+        material.vs_uniforms[0] = graphics.MaterialUniformBlock.init(allocator);
+        material.fs_uniforms[0] = graphics.MaterialUniformBlock.init(allocator);
 
         return Mesh{ .bindings = bindings, .material = material};
     }
@@ -99,24 +99,9 @@ pub const Mesh = struct {
     }
 
     pub fn draw(self: *Mesh, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
-        // set the default vertex shader uniform block
-        var vs_uniforms = &self.material.vs_uniforms.?;
-        vs_uniforms.begin();
-        vs_uniforms.addMatrix("u_projViewMatrix", proj_view_matrix);
-        vs_uniforms.addMatrix("u_modelMatrix", model_matrix);
-        vs_uniforms.addColor("u_color", self.material.params.draw_color);
-        vs_uniforms.end();
-
-        // set the default fragment shader uniform block
-        var fs_uniforms = &self.material.fs_uniforms.?;
-        fs_uniforms.begin();
-        fs_uniforms.addColor("u_color_override", self.material.params.color_override);
-        fs_uniforms.addFloat("u_alpha_cutoff", self.material.params.alpha_cutoff);
-        fs_uniforms.end();
-
-        // set our default vs/fs uniforms to the 0 slots
-        self.material.shader.applyUniformBlock(.VS, 0, graphics.asAnything(self.material.vs_uniforms.?.bytes.items));
-        self.material.shader.applyUniformBlock(.FS, 0, graphics.asAnything(self.material.fs_uniforms.?.bytes.items));
+        // set our draw positions
+        self.material.params.proj_view_matrix = proj_view_matrix;
+        self.material.params.model_matrix = model_matrix;
 
         graphics.drawWithMaterial(&self.bindings, &self.material);
     }
