@@ -482,7 +482,7 @@ pub const Material = struct {
     }
 
     /// Builds and applys a uniform block from a layout
-    pub fn applyDefaultUniformBlock(self: *Material, stage: ShaderStage, layout: []const MaterialUniformDefaults, u_block: *MaterialUniformBlock) void {
+    pub fn setDefaultUniformVars(self: *Material, layout: []const MaterialUniformDefaults, u_block: *MaterialUniformBlock) void {
         // Don't do anything if we have no layout for the default block
         if(layout.len == 0)
             return;
@@ -508,9 +508,6 @@ pub const Material = struct {
             }
         }
         u_block.end();
-
-        // actually apply to the shader
-        self.shader.applyUniformBlock(stage, 0, asAnything(u_block.bytes.items));
     }
 
     pub fn applyUniforms(self: *Material) void {
@@ -519,26 +516,23 @@ pub const Material = struct {
         const has_default_vs: bool = self.default_vs_uniform_layout.len > 0;
         const has_default_fs: bool = self.default_fs_uniform_layout.len > 0;
 
-        const vs_start_idx: u8 = if(has_default_vs) 1 else 0;
-        const fs_start_idx: u8 = if(has_default_fs) 1 else 0;
-
-        // Apply default uniform vars first
+        // Set our default uniform vars first
         if(has_default_vs) {
             if(self.vs_uniforms[0] != null)
-                self.applyDefaultUniformBlock(.VS, self.default_vs_uniform_layout, &self.vs_uniforms[0].?);
+                self.setDefaultUniformVars(self.default_vs_uniform_layout, &self.vs_uniforms[0].?);
         }
         if(has_default_fs) {
             if(self.fs_uniforms[0] != null)
-                self.applyDefaultUniformBlock(.FS, self.default_fs_uniform_layout, &self.fs_uniforms[0].?);
+                self.setDefaultUniformVars(self.default_fs_uniform_layout, &self.fs_uniforms[0].?);
         }
 
-        // Now apply any custom uniform var blocks
-        for(vs_start_idx..self.vs_uniforms.len) |i| {
+        // Now apply all uniform var blocks
+        for(0..self.vs_uniforms.len) |i| {
             if(self.vs_uniforms[i]) |u_block| {
                 self.shader.applyUniformBlock(.VS, @intCast(i), asAnything(u_block.bytes.items));
             }
         }
-        for(fs_start_idx..self.fs_uniforms.len) |i| {
+        for(0..self.fs_uniforms.len) |i| {
             if(self.fs_uniforms[i]) |u_block| {
                 self.shader.applyUniformBlock(.FS, @intCast(i), asAnything(u_block.bytes.items));
             }
