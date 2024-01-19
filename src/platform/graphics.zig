@@ -13,6 +13,9 @@ const sapp = sokol.app;
 const sgapp = sokol.app_gfx_glue;
 const debugtext = sokol.debugtext;
 
+// general allocator for graphics functions
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+var allocator = gpa.allocator();
 
 // compile built-in shaders via:
 // ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl300es:glsl330:wgsl:metal_macos:metal_ios:metal_sim:hlsl4 -f sokol_zig
@@ -307,6 +310,10 @@ pub const MaterialConfig = struct {
     // the layouts of the default (0th) vertex and fragment shaders
     default_vs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults {.PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR},
     default_fs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults {.COLOR_OVERRIDE, .ALPHA_CUTOFF},
+
+    // number of uniform blocks to create
+    num_uniform_vs_blocks: u8 = 1,
+    num_uniform_fs_blocks: u8 = 1,
 };
 
 /// Material params can get binded automatically to the default uniform block (0)
@@ -321,7 +328,7 @@ pub const MaterialUniformBlock = struct {
     size: u64 = 0,
     bytes: std.ArrayList(u8),
 
-    pub fn init(allocator: std.mem.Allocator) MaterialUniformBlock {
+    pub fn init() MaterialUniformBlock {
         return MaterialUniformBlock {
             .bytes = std.ArrayList(u8).init(allocator),
         };
@@ -465,6 +472,13 @@ pub const Material = struct {
         if(cfg.texture_4 != null)
             material.textures[4] = cfg.texture_4;
 
+        for(0..cfg.num_uniform_vs_blocks) |i| {
+            material.vs_uniforms[i] = MaterialUniformBlock.init();
+        }
+        for(0..cfg.num_uniform_fs_blocks) |i| {
+            material.fs_uniforms[i] = MaterialUniformBlock.init();
+        }
+
         // TODO: Shader loading from files, using Sokol's YAML output
 
         // make a shader out of our options
@@ -477,6 +491,15 @@ pub const Material = struct {
         }, cfg.shader);
 
         return material;
+    }
+
+    pub fn deinit(self: *Material) void {
+        for(self.vs_uniforms) |vsu| {
+            allocator.free(vsu);
+        }
+        for(self.fs_uniforms) |fsu| {
+            allocator.free(fsu);
+        }
     }
 
     /// Builds and applys a uniform block from a layout
@@ -527,12 +550,14 @@ pub const Material = struct {
         // Now apply all uniform var blocks
         for(0..self.vs_uniforms.len) |i| {
             if(self.vs_uniforms[i]) |u_block| {
-                self.shader.applyUniformBlock(.VS, @intCast(i), asAnything(u_block.bytes.items));
+                if(u_block.size > 0)
+                    self.shader.applyUniformBlock(.VS, @intCast(i), asAnything(u_block.bytes.items));
             }
         }
         for(0..self.fs_uniforms.len) |i| {
             if(self.fs_uniforms[i]) |u_block| {
-                self.shader.applyUniformBlock(.FS, @intCast(i), asAnything(u_block.bytes.items));
+                if(u_block.size > 0)
+                    self.shader.applyUniformBlock(.FS, @intCast(i), asAnything(u_block.bytes.items));
             }
         }
     }

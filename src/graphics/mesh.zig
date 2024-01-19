@@ -87,10 +87,6 @@ pub const Mesh = struct {
             material = cfg.material.?;
         }
 
-        // Make our default uniform blocks
-        material.vs_uniforms[0] = graphics.MaterialUniformBlock.init(allocator);
-        material.fs_uniforms[0] = graphics.MaterialUniformBlock.init(allocator);
-
         return Mesh{ .bindings = bindings, .material = material};
     }
 
