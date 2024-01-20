@@ -304,15 +304,13 @@ pub const ShaderImpl = struct {
 
         // Optional attributes: Normals and Tangents
         var attr_idx: u8 = 3;
-        var buffer_idx: u8 = 1;
-        if(cfg.has_normals) {
+        if(cfg.normal_buffer_idx) |buffer_idx| {
             pipe_desc.layout.attrs[attr_idx].format = .FLOAT3; // normals
             pipe_desc.layout.attrs[attr_idx].buffer_index = buffer_idx;
             attr_idx += 1;
-            buffer_idx += 1;
         }
 
-        if(cfg.has_tangents) {
+        if(cfg.tangent_buffer_idx) |buffer_idx| {
             pipe_desc.layout.attrs[attr_idx].format = .FLOAT4; // tangents
             pipe_desc.layout.attrs[attr_idx].buffer_index = buffer_idx;
         }

@@ -181,8 +181,8 @@ pub const ShaderConfig = struct {
     depth_compare: CompareFunc = .LESS_EQUAL,
     cull_mode: CullMode = .NONE,
     index_size: IndexSize = .UINT32,
-    has_normals: bool = false,
-    has_tangents: bool = false,
+    normal_buffer_idx: ?u8 = null,
+    tangent_buffer_idx: ?u8 = null,
 };
 
 pub const ShaderParams = struct {
@@ -456,7 +456,6 @@ pub const Material = struct {
 
     // Hold our samplers
     sokol_samplers: [5]?sg.Sampler = [_]?sg.Sampler{null} ** 5,
-
     pub fn init(cfg: MaterialConfig) Material {
         var material = Material {
             .blend_mode = cfg.blend_mode,
@@ -495,6 +494,19 @@ pub const Material = struct {
             material.fs_uniforms[i] = MaterialUniformBlock.init();
         }
 
+        // Extra buffers start at 1, position color and uv are packed in 0
+        var current_idx: u8 = 1;
+        var normal_buffer_idx: ?u8 = null;
+        var tangent_buffer_idx: ?u8 = null;
+
+        if(cfg.has_normals) {
+            normal_buffer_idx = current_idx;
+            current_idx += 1;
+        }
+        if(cfg.has_tangents) {
+            tangent_buffer_idx = current_idx;
+        }
+
         // make a shader out of our options
         material.shader = Shader.cloneFromShader(.{
             .cull_mode = cfg.cull_mode,
@@ -502,8 +514,8 @@ pub const Material = struct {
             .depth_write_enabled = cfg.depth_write_enabled,
             .depth_compare = cfg.depth_compare,
             .index_size = cfg.index_size,
-            .has_normals = cfg.has_normals,
-            .has_tangents = cfg.has_tangents,
+            .normal_buffer_idx = normal_buffer_idx,
+            .tangent_buffer_idx = tangent_buffer_idx,
         }, cfg.shader);
 
         return material;
