@@ -81,8 +81,8 @@ pub const Mesh = struct {
         });
 
         // add normals and tangents if asked for
-        var normals: ?[][3]f32 = if(cfg.material.?.has_normals) mesh_normals.items else null;
-        var tangents: ?[][4]f32 = if(cfg.material.?.has_tangents) mesh_tangents.items else null;
+        var normals: ?[][3]f32 = if(cfg.material.?.has_normals and mesh_normals.items.len > 0) mesh_normals.items else null;
+        var tangents: ?[][4]f32 = if(cfg.material.?.has_tangents and mesh_tangents.items.len > 0) mesh_tangents.items else null;
 
         bindings.set(vertices, mesh_indices.items, normals, tangents, mesh_indices.items.len);
 
