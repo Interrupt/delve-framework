@@ -17,6 +17,8 @@ uniform vs_params {
 in vec4 pos;
 in vec4 color0;
 in vec2 texcoord0;
+in vec3 normals;
+in vec4 tangents;
 
 out vec4 color;
 out vec2 uv;

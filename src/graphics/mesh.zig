@@ -37,6 +37,7 @@ pub const Mesh = struct {
         var mesh_positions = std.ArrayList([3]f32).init(allocator);
         var mesh_normals = std.ArrayList([3]f32).init(allocator);
         var mesh_texcoords = std.ArrayList([2]f32).init(allocator);
+        var mesh_tangents = std.ArrayList([4]f32).init(allocator);
 
         defer mesh_indices.deinit();
         defer mesh_positions.deinit();
@@ -51,7 +52,7 @@ pub const Mesh = struct {
             &mesh_positions,
             &mesh_normals, // normals (optional)
             &mesh_texcoords, // texcoords (optional)
-            null, // tangents (optional)
+            &mesh_tangents, // tangents (optional)
         ) catch {
             debug.log("Could not process mesh file!", .{});
             return null;
@@ -74,10 +75,16 @@ pub const Mesh = struct {
 
         var bindings = graphics.Bindings.init(.{
             .index_len = mesh_indices.items.len,
-            .vert_len = mesh_positions.items.len
+            .vert_len = mesh_positions.items.len,
+            .normal_buffer_idx = if(cfg.material.?.has_normals) 1 else null,
+            .tangent_buffer_idx = if(cfg.material.?.has_tangents) 2 else null,
         });
 
-        bindings.set(vertices, mesh_indices.items , mesh_indices.items.len);
+        // add normals and tangents if asked for
+        var normals: ?[][3]f32 = if(cfg.material.?.has_normals) mesh_normals.items else null;
+        var tangents: ?[][4]f32 = if(cfg.material.?.has_tangents) mesh_tangents.items else null;
+
+        bindings.set(vertices, mesh_indices.items, normals, tangents, mesh_indices.items.len);
 
         var material: graphics.Material = undefined;
         if(cfg.material == null) {

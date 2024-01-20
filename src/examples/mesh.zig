@@ -71,6 +71,8 @@ fn on_init() void {
         .shader = shader.?,
         .texture_0 = tex_base,
         .texture_1 = tex_emissive,
+        .has_normals = true,
+        .has_tangents = true,
     });
 
     // Load our mesh!

@@ -129,6 +129,8 @@ pub const BindingConfig = struct {
     vert_len: usize = 3200,
     index_len: usize = 3200,
     index_size: IndexSize = .UINT32,
+    normal_buffer_idx: ?u8 = null,
+    tangent_buffer_idx: ?u8 = null,
 };
 
 pub const BindingsImpl = sokol_gfx_backend.BindingsImpl;
@@ -143,8 +145,8 @@ pub const Bindings = struct {
     }
 
     /// Creates new buffers to hold these vertices and indices
-    pub fn set(self: *Bindings, vertices: anytype, indices: anytype, length: usize) void {
-        BindingsImpl.set(self, vertices, indices, length);
+    pub fn set(self: *Bindings, vertices: anytype, indices: anytype, normals: anytype, tangents: anytype, length: usize) void {
+        BindingsImpl.set(self, vertices, indices, normals, tangents, length);
     }
 
     /// Updates the existing buffers with new data
@@ -179,6 +181,8 @@ pub const ShaderConfig = struct {
     depth_compare: CompareFunc = .LESS_EQUAL,
     cull_mode: CullMode = .NONE,
     index_size: IndexSize = .UINT32,
+    has_normals: bool = false,
+    has_tangents: bool = false,
 };
 
 pub const ShaderParams = struct {
@@ -302,6 +306,8 @@ pub const MaterialConfig = struct {
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
     index_size: IndexSize = .UINT32,
+    has_normals: bool = false,
+    has_tangents: bool = false,
 
     // The parent shader to base us on
     shader: ?Shader = null,
@@ -434,6 +440,8 @@ pub const Material = struct {
     depth_write_enabled: bool,
     depth_compare: CompareFunc,
     cull_mode: CullMode,
+    has_normals: bool,
+    has_tangents: bool,
 
     // Material params are used for automatic binding
     params: MaterialParams = MaterialParams{},
@@ -457,6 +465,8 @@ pub const Material = struct {
             .cull_mode = cfg.cull_mode,
             .default_vs_uniform_layout = cfg.default_vs_uniform_layout,
             .default_fs_uniform_layout = cfg.default_fs_uniform_layout,
+            .has_normals = cfg.has_normals,
+            .has_tangents = cfg.has_tangents,
         };
 
         // Make samplers from filter modes
@@ -492,6 +502,8 @@ pub const Material = struct {
             .depth_write_enabled = cfg.depth_write_enabled,
             .depth_compare = cfg.depth_compare,
             .index_size = cfg.index_size,
+            .has_normals = cfg.has_normals,
+            .has_tangents = cfg.has_tangents,
         }, cfg.shader);
 
         return material;
