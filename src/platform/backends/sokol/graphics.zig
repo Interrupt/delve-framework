@@ -297,10 +297,10 @@ pub const ShaderImpl = struct {
             .cull_mode = convertCullMode(cfg.cull_mode),
         };
 
-        // TODO: pass forward the desc from metadata
-        pipe_desc.layout.attrs[0].format = .FLOAT3; // pos
-        pipe_desc.layout.attrs[1].format = .UBYTE4N; // color
-        pipe_desc.layout.attrs[2].format = .FLOAT2; // texcoord0
+        // Set the vertex attributes
+        for(cfg.vertex_attributes, 0..) |attr, idx| {
+            pipe_desc.layout.attrs[idx].format = convertVertexFormat(attr.attr_type);
+        }
 
         // Optional attributes: Normals and Tangents
         var attr_idx: u8 = 3;
@@ -326,6 +326,7 @@ pub const ShaderImpl = struct {
             },
             .handle = graphics.next_shader_handle,
             .fs_texture_slots = num_fs_images,
+            .vertex_attributes = cfg.vertex_attributes,
         };
     }
 
@@ -433,5 +434,14 @@ fn convertBlendMode(mode: graphics.BlendMode) sg.BlendState {
                 .op_alpha = sg.BlendOp.ADD,
             };
         },
+    }
+}
+
+fn convertVertexFormat(format: graphics.VertexFormat) sg.VertexFormat {
+    switch(format) {
+        .FLOAT2 => { return .FLOAT2; },
+        .FLOAT3 => { return .FLOAT3; },
+        .FLOAT4 => { return .FLOAT4; },
+        .UBYTE4N => { return .UBYTE4N; },
     }
 }

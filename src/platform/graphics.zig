@@ -175,6 +175,28 @@ pub const Bindings = struct {
     }
 };
 
+pub const VertexFormat = enum(i32) {
+    FLOAT2,
+    FLOAT3,
+    FLOAT4,
+    UBYTE4N,
+};
+
+pub const VertexBinding = enum(i32) {
+    NONE,
+    VERT_POSITIONS,
+    VERT_COLORS,
+    VERT_NORMALS,
+    VERT_TANGENTS,
+    VERT_TEXCOORD,
+};
+
+pub const ShaderAttribute = struct {
+    name: [:0]const u8,
+    attr_type: VertexFormat,
+    binding: VertexBinding = .NONE,
+};
+
 pub const ShaderConfig = struct {
     blend_mode: BlendMode = .NONE,
     depth_write_enabled: bool = true,
@@ -183,6 +205,11 @@ pub const ShaderConfig = struct {
     index_size: IndexSize = .UINT32,
     normal_buffer_idx: ?u8 = null,
     tangent_buffer_idx: ?u8 = null,
+    vertex_attributes: []const ShaderAttribute = &[_]ShaderAttribute{
+        .{ .name = "pos", .attr_type = .FLOAT3, .binding = .VERT_POSITIONS },
+        .{ .name = "color0", .attr_type = .UBYTE4N, .binding = .VERT_COLORS },
+        .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_TEXCOORD },
+    },
 };
 
 pub const ShaderParams = struct {
@@ -197,6 +224,8 @@ pub var next_shader_handle: u32 = 0;
 pub const Shader = struct {
     handle: u32,
     params: ShaderParams = ShaderParams{},
+
+    vertex_attributes: []const ShaderAttribute,
 
     // uniform blocks to use for the next draw call
     fs_uniform_blocks: [3]?Anything = [_]?Anything{ null } ** 3,
