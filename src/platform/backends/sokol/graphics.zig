@@ -18,6 +18,9 @@ pub const Vertex = graphics.Vertex;
 pub const Texture = graphics.Texture;
 pub const Shader = graphics.Shader;
 
+// the list of layouts to automatically create Pipelines for
+const common_vertex_layouts = graphics.getCommonVertexLayouts();
+
 pub const BindingsImpl = struct {
     sokol_bindings: ?sg.Bindings,
     default_sokol_sampler: sg.Sampler = undefined,
@@ -33,6 +36,7 @@ pub const BindingsImpl = struct {
             .length = 0,
             .impl = bindingsImpl,
             .config = cfg,
+            .vertex_layout = cfg.vertex_layout,
         };
 
         // Updatable buffers will need to be created ahead-of-time
@@ -175,40 +179,51 @@ pub const BindingsImpl = struct {
     }
 
     pub fn drawSubset(bindings: *Bindings, start: u32, end: u32, shader: *Shader) void {
-        if(bindings.impl.sokol_bindings == null or shader.impl.sokol_pipeline == null)
+        if(bindings.impl.sokol_bindings == null)
             return;
 
-        shader.apply();
+        const applied_shader = shader.apply(bindings.vertex_layout);
+        if(!applied_shader)
+            return;
 
         sg.applyBindings(bindings.impl.sokol_bindings.?);
         sg.draw(start, end, 1);
     }
 };
 
+pub const PipelineBinding = struct {
+    sokol_pipeline: sg.Pipeline,
+    layout: graphics.VertexLayout,
+};
+
 pub const ShaderImpl = struct {
-    sokol_pipeline: ?sg.Pipeline,
+    // sokol_pipeline: ?sg.Pipeline,
+    sokol_shader: sg.Shader,
     sokol_shader_desc: sg.ShaderDesc,
 
+    // One shader can have many pipelines, so different VertexLayouts can apply it
+    sokol_pipelines: std.ArrayList(PipelineBinding) = undefined,
+
     /// Create a new shader using the default
-    pub fn initDefault(cfg: graphics.ShaderConfig, layout: graphics.VertexLayout) Shader {
+    pub fn initDefault(cfg: graphics.ShaderConfig) Shader {
         const shader_desc = shader_default.defaultShaderDesc(sg.queryBackend());
-        return initSokolShader(cfg, layout, shader_desc);
+        return initSokolShader(cfg, shader_desc);
     }
 
     /// Creates a shader from a shader built in as a zig file
-    pub fn initFromBuiltin(cfg: graphics.ShaderConfig, layout: graphics.VertexLayout, comptime builtin: anytype) ?Shader {
+    pub fn initFromBuiltin(cfg: graphics.ShaderConfig, comptime builtin: anytype) ?Shader {
         const shader_desc_fn = getBuiltinSokolCreateFunction(builtin);
         if(shader_desc_fn == null)
             return null;
 
-        return initSokolShader(cfg, layout, shader_desc_fn.?(sg.queryBackend()));
+        return initSokolShader(cfg, shader_desc_fn.?(sg.queryBackend()));
     }
 
     pub fn cloneFromShader(cfg: graphics.ShaderConfig, shader: ?Shader) Shader {
         if(shader == null)
-            return initDefault(cfg, graphics.getDefaultVertexLayout());
+            return initDefault(cfg);
 
-        return initSokolShader(cfg, shader.?.vertex_layout, shader.?.impl.sokol_shader_desc);
+        return initSokolShader(cfg, shader.?.impl.sokol_shader_desc);
     }
 
     /// Find the function in the builtin that can actually make the ShaderDesc
@@ -230,10 +245,10 @@ pub const ShaderImpl = struct {
     }
 
     /// Create a shader from a Sokol Shader Description - useful for loading built-in shaders
-    pub fn initSokolShader(cfg: graphics.ShaderConfig, layout: graphics.VertexLayout, shader_desc: sg.ShaderDesc) Shader {
+    pub fn initSokolShader(cfg: graphics.ShaderConfig, shader_desc: sg.ShaderDesc) Shader {
+        var pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator);
         const shader = sg.makeShader(shader_desc);
 
-        // TODO: Fill in the rest of these values!
         var num_fs_images: u8 = 0;
         for(0..5) |i| {
             if(shader_desc.fs.images[i].used) {
@@ -243,51 +258,73 @@ pub const ShaderImpl = struct {
             }
         }
 
-        var pipe_desc: sg.PipelineDesc = .{
-            .index_type = if(layout.index_size == .UINT16) .UINT16 else .UINT32,
-            .shader = shader,
-            .depth = .{
-                .compare = convertCompareFunc(cfg.depth_compare),
-                .write_enabled = cfg.depth_write_enabled,
-            },
-            .cull_mode = convertCullMode(cfg.cull_mode),
-        };
+        for(common_vertex_layouts) |layout| {
+            var pipe_desc: sg.PipelineDesc = .{
+                .index_type = if(layout.index_size == .UINT16) .UINT16 else .UINT32,
+                .shader = shader,
+                .depth = .{
+                    .compare = convertCompareFunc(cfg.depth_compare),
+                    .write_enabled = cfg.depth_write_enabled,
+                },
+                .cull_mode = convertCullMode(cfg.cull_mode),
+            };
 
-        // Set the vertex attributes
-        for(cfg.vertex_attributes, 0..) |attr, idx| {
-            pipe_desc.layout.attrs[idx].format = convertVertexFormat(attr.attr_type);
+            // Set the vertex attributes
+            for(cfg.vertex_attributes, 0..) |attr, idx| {
+                pipe_desc.layout.attrs[idx].format = convertVertexFormat(attr.attr_type);
 
-            // Find which binding slot we should use by looking at our layout
-            for(layout.attributes) |la| {
-                if(attr.binding == la.binding) {
-                    pipe_desc.layout.attrs[idx].buffer_index = la.buffer_slot;
-                    break;
+                // Find which binding slot we should use by looking at our layout
+                for(layout.attributes) |la| {
+                    if(attr.binding == la.binding) {
+                        pipe_desc.layout.attrs[idx].buffer_index = la.buffer_slot;
+                        break;
+                    }
                 }
             }
-        }
 
-        // apply blending values
-        pipe_desc.colors[0].blend = convertBlendMode(cfg.blend_mode);
+            // apply blending values
+            pipe_desc.colors[0].blend = convertBlendMode(cfg.blend_mode);
+
+            // Ready to build our pipeline!
+            var pipeline: sg.Pipeline = sg.makePipeline(pipe_desc);
+
+            // Add this to our list of cached pipelines for this shader
+            pipelines.append(.{.layout = layout, .sokol_pipeline = pipeline}) catch {
+                debug.log("Error appending pipeline!", .{});
+            };
+        }
 
         defer graphics.next_shader_handle += 1;
         return Shader {
             .impl = .{
-                .sokol_pipeline = sg.makePipeline(pipe_desc),
+                .sokol_pipelines = pipelines,
+                .sokol_shader = shader,
                 .sokol_shader_desc = shader_desc,
             },
             .handle = graphics.next_shader_handle,
             .cfg = cfg,
             .fs_texture_slots = num_fs_images,
             .vertex_attributes = cfg.vertex_attributes,
-            .vertex_layout = layout,
         };
     }
 
-    pub fn apply(self: *Shader) void {
-        if(self.impl.sokol_pipeline == null)
-            return;
+    pub fn apply(self: *Shader, layout: graphics.VertexLayout) bool {
+        // Find the pipeline that matches our vertex layout
+        var pipeline: ?sg.Pipeline = null;
+        for(self.impl.sokol_pipelines.items) |p| {
+            if(vertexLayoutsAreEql(p.layout, layout)) {
+                pipeline = p.sokol_pipeline;
+                break;
+            }
+        }
 
-        sg.applyPipeline(self.impl.sokol_pipeline.?);
+        if(pipeline != null) {
+            sg.applyPipeline(pipeline.?);
+        } else {
+            debug.log("Could not find pipeline to apply!", .{});
+            // TODO: Maybe go make it here?
+            return false;
+        }
 
         // apply uniform blocks
         for(self.vs_uniform_blocks, 0..) |block, i| {
@@ -299,6 +336,8 @@ pub const ShaderImpl = struct {
             if(block) |b|
                 sg.applyUniforms(.FS, @intCast(i), sg.Range{ .ptr = b.ptr, .size = b.size });
         }
+
+        return true;
     }
 
     pub fn setParams(self: *Shader, params: graphics.ShaderParams) void {
@@ -397,4 +436,29 @@ fn convertVertexFormat(format: graphics.VertexFormat) sg.VertexFormat {
         .FLOAT4 => { return .FLOAT4; },
         .UBYTE4N => { return .UBYTE4N; },
     }
+}
+
+/// Checking if two vertex layout structs are equal
+fn vertexLayoutsAreEql(a: graphics.VertexLayout, b: graphics.VertexLayout) bool {
+    if(a.has_index_buffer != b.has_index_buffer) {
+        return false;
+    }
+    if(a.index_size != b.index_size) {
+        return false;
+    }
+    if(a.attributes.len != b.attributes.len) {
+        return false;
+    }
+    for(0..a.attributes.len) |i| {
+        const attr_a = a.attributes[i];
+        const attr_b = b.attributes[i];
+        if(attr_a.binding != attr_b.binding)
+            return false;
+        if(attr_a.buffer_slot != attr_b.buffer_slot)
+            return false;
+        if(attr_a.item_size != attr_b.item_size)
+            return false;
+    }
+
+    return true;
 }

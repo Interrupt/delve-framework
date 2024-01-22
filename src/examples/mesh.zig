@@ -62,7 +62,6 @@ fn on_init() void {
     // Make our emissive shader from one that is pre-compiled
     const shader = graphics.Shader.initFromBuiltin(
         .{ .vertex_attributes = mesh.getShaderAttributes() },
-        mesh.getVertexLayout(),
         emissive_shader_builtin);
 
     if(shader == null) {

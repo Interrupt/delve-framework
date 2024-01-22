@@ -3,6 +3,7 @@ const colors = @import("../colors.zig");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
 const math = @import("../math.zig");
+const mesh = @import("../graphics/mesh.zig");
 const papp = @import("app.zig");
 const sokol_gfx_backend = @import("backends/sokol/graphics.zig");
 
@@ -15,7 +16,7 @@ const debugtext = sokol.debugtext;
 
 // general allocator for graphics functions
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = gpa.allocator();
+pub var allocator = gpa.allocator();
 
 // compile built-in shaders via:
 // ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl300es:glsl330:wgsl:metal_macos:metal_ios:metal_sim:hlsl4 -f sokol_zig
@@ -137,6 +138,7 @@ pub const Bindings = struct {
     length: usize,
     config: BindingConfig,
     impl: BindingsImpl,
+    vertex_layout: VertexLayout,
 
     pub fn init(cfg: BindingConfig) Bindings {
         return BindingsImpl.init(cfg);
@@ -232,7 +234,6 @@ pub const Shader = struct {
     params: ShaderParams = ShaderParams{},
 
     vertex_attributes: []const ShaderAttribute,
-    vertex_layout: VertexLayout,
 
     // uniform blocks to use for the next draw call
     fs_uniform_blocks: [3]?Anything = [_]?Anything{ null } ** 3,
@@ -249,8 +250,8 @@ pub const Shader = struct {
     impl: ShaderImpl,
 
     /// Create a new shader using the default
-    pub fn initDefault(cfg: ShaderConfig, layout: VertexLayout) Shader {
-        return ShaderImpl.initDefault(cfg, layout);
+    pub fn initDefault(cfg: ShaderConfig) Shader {
+        return ShaderImpl.initDefault(cfg);
     }
 
     // TODO: Add support for loading shaders from built files as well!
@@ -258,16 +259,16 @@ pub const Shader = struct {
     // we could load that definition and the correct file based on the current backend.
 
     /// Creates a shader from a shader built in as a zig file
-    pub fn initFromBuiltin(cfg: ShaderConfig, layout: VertexLayout, comptime builtin: anytype) ?Shader {
-        return ShaderImpl.initFromBuiltin(cfg, layout, builtin);
+    pub fn initFromBuiltin(cfg: ShaderConfig, comptime builtin: anytype) ?Shader {
+        return ShaderImpl.initFromBuiltin(cfg, builtin);
     }
 
     pub fn cloneFromShader(cfg: ShaderConfig, shader: ?Shader) Shader {
         return ShaderImpl.cloneFromShader(cfg, shader);
     }
 
-    pub fn apply(self: *Shader) void {
-        ShaderImpl.apply(self);
+    pub fn apply(self: *Shader, layout: VertexLayout) bool {
+        return ShaderImpl.apply(self, layout);
     }
 
     pub fn applyUniformBlock(self: *Shader, stage: ShaderStage, slot: u8, data: Anything) void {
@@ -643,7 +644,7 @@ pub fn init() !void {
     state.debug_draw_bindings.fs.samplers[0] = sg.makeSampler(.{});
 
     // Use the default shader for debug drawing
-    state.debug_shader = Shader.initDefault(.{}, getDefaultVertexLayout());
+    state.debug_shader = Shader.initDefault(.{});
 
     // Setup some debug textures
     tex_white = createSolidTexture(0xFFFFFFFF);
@@ -764,7 +765,7 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
         .u_alpha_cutoff = 0.0,
     };
 
-    sg.applyPipeline(state.debug_shader.impl.sokol_pipeline.?);
+    sg.applyPipeline(state.debug_shader.impl.sokol_pipelines.items[0].sokol_pipeline);
     sg.applyUniforms(.VS, 0, sg.asRange(&vs_params));
     sg.applyUniforms(.FS, 0, sg.asRange(&fs_params));
     sg.applyBindings(state.debug_draw_bindings);
@@ -856,10 +857,19 @@ pub fn asAnything(val: anytype) Anything {
     }
 }
 
+/// Returns the default vertex layout
 pub fn getDefaultVertexLayout() VertexLayout {
     return VertexLayout {
         .attributes = &[_]VertexLayoutAttribute{
             .{ .binding = .VERT_PACKED, .buffer_slot = 0, },
         },
+    };
+}
+
+/// Gets a list of commonly used vertex layouts
+pub fn getCommonVertexLayouts() []const VertexLayout {
+    return &[_]VertexLayout {
+        getDefaultVertexLayout(),
+        mesh.getVertexLayout(),
     };
 }

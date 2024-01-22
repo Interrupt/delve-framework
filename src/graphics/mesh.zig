@@ -14,6 +14,8 @@ var allocator = mesh_gpa.allocator();
 const VSParams = graphics.VSDefaultUniforms;
 const FSParams = graphics.FSDefaultUniforms;
 
+const vertex_layout = getVertexLayout();
+
 pub const MeshConfig = struct {
     material: ?graphics.Material = null,
 };
@@ -76,7 +78,7 @@ pub const Mesh = struct {
         var bindings = graphics.Bindings.init(.{
             .index_len = mesh_indices.items.len,
             .vert_len = mesh_positions.items.len,
-            .vertex_layout = getVertexLayout(),
+            .vertex_layout = vertex_layout,
         });
 
         bindings.set(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_indices.items.len);

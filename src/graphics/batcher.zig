@@ -71,7 +71,7 @@ pub const SpriteBatcher = struct {
         const tex = if(cfg.texture != null) cfg.texture.? else graphics.createDebugTexture();
         sprite_batcher.current_tex = tex;
 
-        const shader = if(cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{ }, getVertexLayout());
+        const shader = if(cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{ });
         sprite_batcher.useShader(shader);
 
         return sprite_batcher;
@@ -253,7 +253,7 @@ pub const Batcher = struct {
             .vertex_buffer = try batch_allocator.alloc(Vertex, cfg.min_vertices),
             .index_buffer = try batch_allocator.alloc(u32, cfg.min_indices),
             .bindings = graphics.Bindings.init(.{.updatable = true, .index_len = cfg.min_indices, .vert_len = cfg.min_vertices}),
-            .shader = if(cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{ }, getVertexLayout()),
+            .shader = if(cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{ }),
             .material = if(cfg.material != null) cfg.material.? else null,
             .flip_tex_y = cfg.flip_tex_y,
         };
@@ -535,13 +535,4 @@ pub const Batcher = struct {
 
 fn angleToVector(angle: f32, length: f32) Vec2 {
     return Vec2{ .x = std.math.cos(angle) * length, .y = std.math.sin(angle) * length };
-}
-
-/// Returns the vertex layout used by batches
-pub fn getVertexLayout() graphics.VertexLayout {
-    return graphics.VertexLayout {
-        .attributes = &[_]graphics.VertexLayoutAttribute{
-            .{ .binding = .VERT_PACKED, .buffer_slot = 0, .item_size = @sizeOf(Vertex) },
-        },
-    };
 }
