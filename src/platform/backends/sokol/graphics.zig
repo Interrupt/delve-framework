@@ -84,75 +84,6 @@ pub const BindingsImpl = struct {
                 .data = sg.asRange(indices),
             });
         }
-
-        // // Add vertices first
-        // self.impl.sokol_bindings.?.vertex_buffers[0] = sg.makeBuffer(.{
-        //     .data = sg.asRange(vertices),
-        // });
-
-        // Index buffer next
-        // self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-        //     .type = .INDEXBUFFER,
-        //     .data = sg.asRange(indices),
-        // });
-        //
-        // // Add normals to the binding, if available
-        // if(self.config.normal_buffer_idx) |buffer_idx| {
-        //     var make_default_normals = false;
-        //     switch(@typeInfo(@TypeOf(opt_normals))) {
-        //         .Null => {
-        //             make_default_normals = true;
-        //         },
-        //         .Optional => {
-        //             if(opt_normals) |n| {
-        //                 self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
-        //                     .data = sg.asRange(n),
-        //                 });
-        //             } else {
-        //                 make_default_normals = true;
-        //             }
-        //         },
-        //         else => {
-        //             self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
-        //                 .data = sg.asRange(opt_normals),
-        //             });
-        //         }
-        //     }
-        //     if(make_default_normals) {
-        //         self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
-        //             .data = sg.asRange(&[3]f32{0,0,0}),
-        //         });
-        //     }
-        // }
-        //
-        // // Add tangents to the binding, if available
-        // if(self.config.tangent_buffer_idx) |buffer_idx| {
-        //     var make_default_tangents = false;
-        //     switch(@typeInfo(@TypeOf(opt_tangents))) {
-        //         .Null => {
-        //             make_default_tangents = true;
-        //         },
-        //         .Optional => {
-        //             if(opt_tangents) |t| {
-        //                 self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
-        //                     .data = sg.asRange(t),
-        //                 });
-        //             } else {
-        //                 make_default_tangents = true;
-        //             }
-        //         },
-        //         else => {
-        //             self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
-        //                 .data = sg.asRange(opt_tangents),
-        //             });
-        //         }
-        //     }
-        //     if(make_default_tangents) {
-        //         self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
-        //             .data = sg.asRange(&[4]f32{0,0,0,0}),
-        //         });
-        //     }
-        // }
     }
 
     pub fn update(self: *Bindings, vertices: anytype, indices: anytype, vert_len: usize, index_len: usize) void {
@@ -197,8 +128,13 @@ pub const BindingsImpl = struct {
 
     /// Destroy our binding
     pub fn destroy(self: *Bindings) void {
-        sg.destroyBuffer(self.impl.sokol_bindings.?.vertex_buffers[0]);
-        sg.destroyBuffer(self.impl.sokol_bindings.?.index_buffer);
+        for(self.config.vertex_layout.attributes, 0..) |_, idx| {
+            sg.destroyBuffer(self.impl.sokol_bindings.?.vertex_buffers[idx]);
+        }
+
+        if(self.config.vertex_layout.has_index_buffer)
+            sg.destroyBuffer(self.impl.sokol_bindings.?.index_buffer);
+
         sg.destroySampler(self.impl.default_sokol_sampler);
     }
 
@@ -209,20 +145,30 @@ pub const BindingsImpl = struct {
 
         // debug.log("Resizing buffer! {}x{}", .{vertex_len, index_len});
 
-        // destroy old buffers
-        sg.destroyBuffer(self.impl.sokol_bindings.?.vertex_buffers[0]);
-        sg.destroyBuffer(self.impl.sokol_bindings.?.index_buffer);
+        const vert_layout = self.config.vertex_layout;
+        if(vert_layout.has_index_buffer)
+            sg.destroyBuffer(self.impl.sokol_bindings.?.index_buffer);
+
+        // destroy all the old vertex buffers
+        for(vert_layout.attributes, 0..) |_, idx| {
+            sg.destroyBuffer(self.impl.sokol_bindings.?.vertex_buffers[idx]);
+        }
 
         // create new buffers
-        self.impl.sokol_bindings.?.vertex_buffers[0] = sg.makeBuffer(.{
-            .usage = .STREAM,
-            .size = vertex_len * @sizeOf(Vertex),
-        });
-        self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-            .usage = .STREAM,
-            .type = .INDEXBUFFER,
-            .size = index_len * self.impl.index_type_size,
-        });
+        for(vert_layout.attributes, 0..) |attr, idx| {
+            self.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
+                .usage = .STREAM,
+                .size = vertex_len * attr.item_size,
+            });
+        }
+
+        if(vert_layout.has_index_buffer) {
+            self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
+                .usage = .STREAM,
+                .type = .INDEXBUFFER,
+                .size = index_len * self.impl.index_type_size,
+            });
+        }
     }
 
     pub fn drawSubset(bindings: *Bindings, start: u32, end: u32, shader: *Shader) void {
