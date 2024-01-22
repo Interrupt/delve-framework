@@ -200,6 +200,7 @@ pub const ShaderImpl = struct {
     // sokol_pipeline: ?sg.Pipeline,
     sokol_shader: sg.Shader,
     sokol_shader_desc: sg.ShaderDesc,
+    cfg: graphics.ShaderConfig,
 
     // One shader can have many pipelines, so different VertexLayouts can apply it
     sokol_pipelines: std.ArrayList(PipelineBinding) = undefined,
@@ -244,9 +245,47 @@ pub const ShaderImpl = struct {
         return null;
     }
 
+    fn makePipeline(self: *ShaderImpl, layout: graphics.VertexLayout) sg.Pipeline {
+        var pipe_desc: sg.PipelineDesc = .{
+            .index_type = if(layout.index_size == .UINT16) .UINT16 else .UINT32,
+            .shader = self.sokol_shader,
+            .depth = .{
+                .compare = convertCompareFunc(self.cfg.depth_compare),
+                .write_enabled = self.cfg.depth_write_enabled,
+            },
+            .cull_mode = convertCullMode(self.cfg.cull_mode),
+        };
+
+        // Set the vertex attributes
+        for(self.cfg.vertex_attributes, 0..) |attr, idx| {
+            pipe_desc.layout.attrs[idx].format = convertVertexFormat(attr.attr_type);
+
+            // Find which binding slot we should use by looking at our layout
+            for(layout.attributes) |la| {
+                if(attr.binding == la.binding) {
+                    pipe_desc.layout.attrs[idx].buffer_index = la.buffer_slot;
+                    break;
+                }
+            }
+        }
+
+        // apply blending values
+        pipe_desc.colors[0].blend = convertBlendMode(self.cfg.blend_mode);
+
+        // Ready to build our pipeline!
+        var pipeline: sg.Pipeline = sg.makePipeline(pipe_desc);
+
+        // Add this to our list of cached pipelines for this shader
+        self.sokol_pipelines.append(.{.layout = layout, .sokol_pipeline = pipeline}) catch {
+            debug.log("Error caching pipeline!", .{});
+        };
+
+        return pipeline;
+    }
+
     /// Create a shader from a Sokol Shader Description - useful for loading built-in shaders
     pub fn initSokolShader(cfg: graphics.ShaderConfig, shader_desc: sg.ShaderDesc) Shader {
-        var pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator);
+        // var pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator);
         const shader = sg.makeShader(shader_desc);
 
         var num_fs_images: u8 = 0;
@@ -258,54 +297,62 @@ pub const ShaderImpl = struct {
             }
         }
 
-        for(common_vertex_layouts) |layout| {
-            var pipe_desc: sg.PipelineDesc = .{
-                .index_type = if(layout.index_size == .UINT16) .UINT16 else .UINT32,
-                .shader = shader,
-                .depth = .{
-                    .compare = convertCompareFunc(cfg.depth_compare),
-                    .write_enabled = cfg.depth_write_enabled,
-                },
-                .cull_mode = convertCullMode(cfg.cull_mode),
-            };
-
-            // Set the vertex attributes
-            for(cfg.vertex_attributes, 0..) |attr, idx| {
-                pipe_desc.layout.attrs[idx].format = convertVertexFormat(attr.attr_type);
-
-                // Find which binding slot we should use by looking at our layout
-                for(layout.attributes) |la| {
-                    if(attr.binding == la.binding) {
-                        pipe_desc.layout.attrs[idx].buffer_index = la.buffer_slot;
-                        break;
-                    }
-                }
-            }
-
-            // apply blending values
-            pipe_desc.colors[0].blend = convertBlendMode(cfg.blend_mode);
-
-            // Ready to build our pipeline!
-            var pipeline: sg.Pipeline = sg.makePipeline(pipe_desc);
-
-            // Add this to our list of cached pipelines for this shader
-            pipelines.append(.{.layout = layout, .sokol_pipeline = pipeline}) catch {
-                debug.log("Error appending pipeline!", .{});
-            };
-        }
+        // for(common_vertex_layouts) |layout| {
+        //     var pipe_desc: sg.PipelineDesc = .{
+        //         .index_type = if(layout.index_size == .UINT16) .UINT16 else .UINT32,
+        //         .shader = shader,
+        //         .depth = .{
+        //             .compare = convertCompareFunc(cfg.depth_compare),
+        //             .write_enabled = cfg.depth_write_enabled,
+        //         },
+        //         .cull_mode = convertCullMode(cfg.cull_mode),
+        //     };
+        //
+        //     // Set the vertex attributes
+        //     for(cfg.vertex_attributes, 0..) |attr, idx| {
+        //         pipe_desc.layout.attrs[idx].format = convertVertexFormat(attr.attr_type);
+        //
+        //         // Find which binding slot we should use by looking at our layout
+        //         for(layout.attributes) |la| {
+        //             if(attr.binding == la.binding) {
+        //                 pipe_desc.layout.attrs[idx].buffer_index = la.buffer_slot;
+        //                 break;
+        //             }
+        //         }
+        //     }
+        //
+        //     // apply blending values
+        //     pipe_desc.colors[0].blend = convertBlendMode(cfg.blend_mode);
+        //
+        //     // Ready to build our pipeline!
+        //     var pipeline: sg.Pipeline = sg.makePipeline(pipe_desc);
+        //
+        //     // Add this to our list of cached pipelines for this shader
+        //     pipelines.append(.{.layout = layout, .sokol_pipeline = pipeline}) catch {
+        //         debug.log("Error appending pipeline!", .{});
+        //     };
+        // }
 
         defer graphics.next_shader_handle += 1;
-        return Shader {
+        var built_shader = Shader {
             .impl = .{
-                .sokol_pipelines = pipelines,
+                .sokol_pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator),
                 .sokol_shader = shader,
                 .sokol_shader_desc = shader_desc,
+                .cfg = cfg,
             },
             .handle = graphics.next_shader_handle,
             .cfg = cfg,
             .fs_texture_slots = num_fs_images,
             .vertex_attributes = cfg.vertex_attributes,
         };
+
+        // Cache some common pipelines
+        for(common_vertex_layouts) |l| {
+            _ = built_shader.impl.makePipeline(l);
+        }
+
+        return built_shader;
     }
 
     pub fn apply(self: *Shader, layout: graphics.VertexLayout) bool {
@@ -316,6 +363,10 @@ pub const ShaderImpl = struct {
                 pipeline = p.sokol_pipeline;
                 break;
             }
+        }
+
+        if(pipeline == null) {
+            pipeline = self.impl.makePipeline(layout);
         }
 
         if(pipeline != null) {
