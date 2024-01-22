@@ -146,6 +146,8 @@ pub const BindingsImpl = struct {
         // debug.log("Resizing buffer! {}x{}", .{vertex_len, index_len});
 
         const vert_layout = self.config.vertex_layout;
+
+        // destory the old index buffer
         if(vert_layout.has_index_buffer)
             sg.destroyBuffer(self.impl.sokol_bindings.?.index_buffer);
 
@@ -154,19 +156,20 @@ pub const BindingsImpl = struct {
             sg.destroyBuffer(self.impl.sokol_bindings.?.vertex_buffers[idx]);
         }
 
-        // create new buffers
-        for(vert_layout.attributes, 0..) |attr, idx| {
-            self.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
-                .usage = .STREAM,
-                .size = vertex_len * attr.item_size,
-            });
-        }
-
+        // create new index buffer
         if(vert_layout.has_index_buffer) {
             self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
                 .usage = .STREAM,
                 .type = .INDEXBUFFER,
                 .size = index_len * self.impl.index_type_size,
+            });
+        }
+
+        // create new vertex buffers
+        for(vert_layout.attributes, 0..) |attr, idx| {
+            self.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
+                .usage = .STREAM,
+                .size = vertex_len * attr.item_size,
             });
         }
     }
