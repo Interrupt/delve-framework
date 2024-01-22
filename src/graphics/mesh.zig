@@ -122,3 +122,14 @@ pub fn getVertexLayout() graphics.VertexLayout {
         },
     };
 }
+
+/// Returns the default shader attribute layout used by meshes
+pub fn getShaderAttributes() []const graphics.ShaderAttribute {
+    return &[_]graphics.ShaderAttribute{
+        .{ .name = "pos", .attr_type = .FLOAT3, .binding = .VERT_PACKED},
+        .{ .name = "color0", .attr_type = .UBYTE4N, .binding = .VERT_PACKED},
+        .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_PACKED},
+        .{ .name = "normals", .attr_type = .FLOAT3, .binding = .VERT_NORMALS},
+        .{ .name = "tangents", .attr_type = .FLOAT4, .binding = .VERT_TANGENTS},
+    };
+}
