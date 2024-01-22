@@ -76,15 +76,10 @@ pub const Mesh = struct {
         var bindings = graphics.Bindings.init(.{
             .index_len = mesh_indices.items.len,
             .vert_len = mesh_positions.items.len,
-            .normal_buffer_idx = if(cfg.material.?.has_normals) 1 else null,
-            .tangent_buffer_idx = if(cfg.material.?.has_tangents) 2 else null,
+            .vertex_layout = getVertexLayout(),
         });
 
-        // add normals and tangents if asked for
-        var normals: ?[][3]f32 = if(cfg.material.?.has_normals and mesh_normals.items.len > 0) mesh_normals.items else null;
-        var tangents: ?[][4]f32 = if(cfg.material.?.has_tangents and mesh_tangents.items.len > 0) mesh_tangents.items else null;
-
-        bindings.set(vertices, mesh_indices.items, normals, tangents, mesh_indices.items.len);
+        bindings.set(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_indices.items.len);
 
         var material: graphics.Material = undefined;
         if(cfg.material == null) {
@@ -115,4 +110,15 @@ pub fn createMesh(vertices: []graphics.Vertex, indices: []u32) Mesh {
         },
     };
     return m;
+}
+
+/// Returns the vertex layout used by meshes
+pub fn getVertexLayout() graphics.VertexLayout {
+    return graphics.VertexLayout {
+        .attributes = &[_]graphics.VertexLayoutAttribute{
+            .{ .binding = .VERT_PACKED, .buffer_slot = 0, .item_size = @sizeOf(Vertex) },
+            .{ .binding = .VERT_NORMALS, .buffer_slot = 1, .item_size = @sizeOf([3]f32) },
+            .{ .binding = .VERT_TANGENTS, .buffer_slot = 2, .item_size = @sizeOf([4]f32) },
+        },
+    };
 }

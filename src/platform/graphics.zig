@@ -128,9 +128,7 @@ pub const BindingConfig = struct {
     updatable: bool = false,
     vert_len: usize = 3200,
     index_len: usize = 3200,
-    index_size: IndexSize = .UINT32,
-    normal_buffer_idx: ?u8 = null,
-    tangent_buffer_idx: ?u8 = null,
+    vertex_layout: VertexLayout = getDefaultVertexLayout(),
 };
 
 pub const BindingsImpl = sokol_gfx_backend.BindingsImpl;
@@ -183,18 +181,28 @@ pub const VertexFormat = enum(i32) {
 };
 
 pub const VertexBinding = enum(i32) {
-    NONE,
-    VERT_POSITIONS,
-    VERT_COLORS,
+    VERT_PACKED,
     VERT_NORMALS,
     VERT_TANGENTS,
-    VERT_TEXCOORD,
+};
+
+/// A vertex layout tells a shader how to use its atrributes.
+pub const VertexLayout = struct {
+    attributes: []const VertexLayoutAttribute,
+    has_index_buffer: bool = true,
+    index_size: IndexSize = .UINT32,
+};
+
+pub const VertexLayoutAttribute = struct {
+    binding: VertexBinding = .VERT_PACKED,
+    buffer_slot: u8 = 0,
+    item_size: usize = @sizeOf(Vertex),
 };
 
 pub const ShaderAttribute = struct {
     name: [:0]const u8,
     attr_type: VertexFormat,
-    binding: VertexBinding = .NONE,
+    binding: VertexBinding = .VERT_PACKED,
 };
 
 pub const ShaderConfig = struct {
@@ -202,13 +210,10 @@ pub const ShaderConfig = struct {
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
     cull_mode: CullMode = .NONE,
-    index_size: IndexSize = .UINT32,
-    normal_buffer_idx: ?u8 = null,
-    tangent_buffer_idx: ?u8 = null,
     vertex_attributes: []const ShaderAttribute = &[_]ShaderAttribute{
-        .{ .name = "pos", .attr_type = .FLOAT3, .binding = .VERT_POSITIONS },
-        .{ .name = "color0", .attr_type = .UBYTE4N, .binding = .VERT_COLORS },
-        .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_TEXCOORD },
+        .{ .name = "pos", .attr_type = .FLOAT3, .binding = .VERT_PACKED},
+        .{ .name = "color0", .attr_type = .UBYTE4N, .binding = .VERT_PACKED},
+        .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_PACKED},
     },
 };
 
@@ -223,9 +228,11 @@ pub const ShaderImpl = sokol_gfx_backend.ShaderImpl;
 pub var next_shader_handle: u32 = 0;
 pub const Shader = struct {
     handle: u32,
+    cfg: ShaderConfig,
     params: ShaderParams = ShaderParams{},
 
     vertex_attributes: []const ShaderAttribute,
+    vertex_layout: VertexLayout,
 
     // uniform blocks to use for the next draw call
     fs_uniform_blocks: [3]?Anything = [_]?Anything{ null } ** 3,
@@ -242,8 +249,8 @@ pub const Shader = struct {
     impl: ShaderImpl,
 
     /// Create a new shader using the default
-    pub fn initDefault(cfg: ShaderConfig) Shader {
-        return ShaderImpl.initDefault(cfg);
+    pub fn initDefault(cfg: ShaderConfig, layout: VertexLayout) Shader {
+        return ShaderImpl.initDefault(cfg, layout);
     }
 
     // TODO: Add support for loading shaders from built files as well!
@@ -251,8 +258,8 @@ pub const Shader = struct {
     // we could load that definition and the correct file based on the current backend.
 
     /// Creates a shader from a shader built in as a zig file
-    pub fn initFromBuiltin(cfg: ShaderConfig, comptime builtin: anytype) ?Shader {
-        return ShaderImpl.initFromBuiltin(cfg, builtin);
+    pub fn initFromBuiltin(cfg: ShaderConfig, layout: VertexLayout, comptime builtin: anytype) ?Shader {
+        return ShaderImpl.initFromBuiltin(cfg, layout, builtin);
     }
 
     pub fn cloneFromShader(cfg: ShaderConfig, shader: ?Shader) Shader {
@@ -334,9 +341,6 @@ pub const MaterialConfig = struct {
     blend_mode: BlendMode = .NONE,
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
-    index_size: IndexSize = .UINT32,
-    has_normals: bool = false,
-    has_tangents: bool = false,
 
     // The parent shader to base us on
     shader: ?Shader = null,
@@ -469,8 +473,6 @@ pub const Material = struct {
     depth_write_enabled: bool,
     depth_compare: CompareFunc,
     cull_mode: CullMode,
-    has_normals: bool,
-    has_tangents: bool,
 
     // Material params are used for automatic binding
     params: MaterialParams = MaterialParams{},
@@ -493,8 +495,6 @@ pub const Material = struct {
             .cull_mode = cfg.cull_mode,
             .default_vs_uniform_layout = cfg.default_vs_uniform_layout,
             .default_fs_uniform_layout = cfg.default_fs_uniform_layout,
-            .has_normals = cfg.has_normals,
-            .has_tangents = cfg.has_tangents,
         };
 
         // Make samplers from filter modes
@@ -523,29 +523,14 @@ pub const Material = struct {
             material.fs_uniforms[i] = MaterialUniformBlock.init();
         }
 
-        // Extra buffers start at 1, position color and uv are packed in 0
-        var current_idx: u8 = 1;
-        var normal_buffer_idx: ?u8 = null;
-        var tangent_buffer_idx: ?u8 = null;
-
-        if(cfg.has_normals) {
-            normal_buffer_idx = current_idx;
-            current_idx += 1;
-        }
-        if(cfg.has_tangents) {
-            tangent_buffer_idx = current_idx;
-        }
+        var shader_config = if(cfg.shader != null) cfg.shader.?.cfg else ShaderConfig{};
+        shader_config.cull_mode = cfg.cull_mode;
+        shader_config.blend_mode = cfg.blend_mode;
+        shader_config.depth_write_enabled = cfg.depth_write_enabled;
+        shader_config.depth_compare = cfg.depth_compare;
 
         // make a shader out of our options
-        material.shader = Shader.cloneFromShader(.{
-            .cull_mode = cfg.cull_mode,
-            .blend_mode = cfg.blend_mode,
-            .depth_write_enabled = cfg.depth_write_enabled,
-            .depth_compare = cfg.depth_compare,
-            .index_size = cfg.index_size,
-            .normal_buffer_idx = normal_buffer_idx,
-            .tangent_buffer_idx = tangent_buffer_idx,
-        }, cfg.shader);
+        material.shader = Shader.cloneFromShader(shader_config, cfg.shader);
 
         return material;
     }
@@ -658,7 +643,7 @@ pub fn init() !void {
     state.debug_draw_bindings.fs.samplers[0] = sg.makeSampler(.{});
 
     // Use the default shader for debug drawing
-    state.debug_shader = Shader.initDefault(.{});
+    state.debug_shader = Shader.initDefault(.{}, getDefaultVertexLayout());
 
     // Setup some debug textures
     tex_white = createSolidTexture(0xFFFFFFFF);
@@ -869,4 +854,12 @@ pub fn asAnything(val: anytype) Anything {
             @compileError("Cannot convert to range!");
         },
     }
+}
+
+pub fn getDefaultVertexLayout() VertexLayout {
+    return VertexLayout {
+        .attributes = &[_]VertexLayoutAttribute{
+            .{ .binding = .VERT_PACKED, .buffer_slot = 0, },
+        },
+    };
 }

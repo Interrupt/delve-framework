@@ -60,7 +60,15 @@ fn on_init() void {
     const tex_emissive = graphics.Texture.init(&emissive_img);
 
     // Make our emissive shader from one that is pre-compiled
-    const shader = graphics.Shader.initFromBuiltin(.{}, emissive_shader_builtin);
+    const shader = graphics.Shader.initFromBuiltin(.{
+        .vertex_attributes = &[_]graphics.ShaderAttribute{
+            .{ .name = "pos", .attr_type = .FLOAT3, .binding = .VERT_PACKED},
+            .{ .name = "color0", .attr_type = .UBYTE4N, .binding = .VERT_PACKED},
+            .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_PACKED},
+            .{ .name = "normals", .attr_type = .FLOAT3, .binding = .VERT_NORMALS},
+            .{ .name = "tangents", .attr_type = .FLOAT4, .binding = .VERT_TANGENTS},
+        },
+    }, mesh.getVertexLayout(), emissive_shader_builtin);
     if(shader == null) {
         debug.log("Could not get emissive shader", .{});
         return;
@@ -71,8 +79,6 @@ fn on_init() void {
         .shader = shader.?,
         .texture_0 = tex_base,
         .texture_1 = tex_emissive,
-        .has_normals = true,
-        .has_tangents = true,
     });
 
     // Load our mesh!

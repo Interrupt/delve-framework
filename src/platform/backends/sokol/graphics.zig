@@ -26,7 +26,7 @@ pub const BindingsImpl = struct {
     pub fn init(cfg: graphics.BindingConfig) Bindings {
         var bindingsImpl = BindingsImpl {
             .sokol_bindings = .{},
-            .index_type_size = if(cfg.index_size == .UINT16) @sizeOf(u16) else @sizeOf(u32),
+            .index_type_size = if(cfg.vertex_layout.index_size == .UINT16) @sizeOf(u16) else @sizeOf(u32),
         };
 
         var bindings: Bindings = Bindings {
@@ -37,28 +37,18 @@ pub const BindingsImpl = struct {
 
         // Updatable buffers will need to be created ahead-of-time
         if(cfg.updatable) {
-            bindings.impl.sokol_bindings.?.vertex_buffers[0] = sg.makeBuffer(.{
-                .usage = .STREAM,
-                .size = cfg.vert_len * @sizeOf(Vertex),
-            });
-
-            bindings.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                .usage = .STREAM,
-                .type = .INDEXBUFFER,
-                .size = cfg.index_len * bindingsImpl.index_type_size,
-            });
-
-            if(cfg.normal_buffer_idx) |buffer_idx| {
-                bindings.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
+            for(cfg.vertex_layout.attributes, 0..) |attr, idx| {
+                bindings.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
                     .usage = .STREAM,
-                    .size = cfg.vert_len * @sizeOf([3]f32),
+                    .size = cfg.vert_len * attr.item_size,
                 });
             }
 
-            if(cfg.tangent_buffer_idx) |buffer_idx| {
-                bindings.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
+            if(cfg.vertex_layout.has_index_buffer) {
+                bindings.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
                     .usage = .STREAM,
-                    .size = cfg.vert_len * @sizeOf([4]f32),
+                    .type = .INDEXBUFFER,
+                    .size = cfg.index_len * bindingsImpl.index_type_size,
                 });
             }
         }
@@ -78,74 +68,91 @@ pub const BindingsImpl = struct {
 
         self.length = length;
 
-        // Add vertices first
-        self.impl.sokol_bindings.?.vertex_buffers[0] = sg.makeBuffer(.{
-            .data = sg.asRange(vertices),
-        });
+        for(self.config.vertex_layout.attributes, 0..) |attr, idx| {
+            self.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
+                .data = switch(attr.binding) {
+                    .VERT_PACKED => sg.asRange(vertices),
+                    .VERT_NORMALS => sg.asRange(opt_normals),
+                    .VERT_TANGENTS => sg.asRange(opt_tangents),
+                },
+            });
+        }
+
+        if(self.config.vertex_layout.has_index_buffer) {
+            self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
+                .type = .INDEXBUFFER,
+                .data = sg.asRange(indices),
+            });
+        }
+
+        // // Add vertices first
+        // self.impl.sokol_bindings.?.vertex_buffers[0] = sg.makeBuffer(.{
+        //     .data = sg.asRange(vertices),
+        // });
 
         // Index buffer next
-        self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-            .type = .INDEXBUFFER,
-            .data = sg.asRange(indices),
-        });
-
-        // Add normals to the binding, if available
-        if(self.config.normal_buffer_idx) |buffer_idx| {
-            var make_default_normals = false;
-            switch(@typeInfo(@TypeOf(opt_normals))) {
-                .Null => {
-                    make_default_normals = true;
-                },
-                .Optional => {
-                    if(opt_normals) |n| {
-                        self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
-                            .data = sg.asRange(n),
-                        });
-                    } else {
-                        make_default_normals = true;
-                    }
-                },
-                else => {
-                    self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
-                        .data = sg.asRange(opt_normals),
-                    });
-                }
-            }
-            if(make_default_normals) {
-                self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
-                    .data = sg.asRange(&[3]f32{0,0,0}),
-                });
-            }
-        }
-
-        // Add tangents to the binding, if available
-        if(self.config.tangent_buffer_idx) |buffer_idx| {
-            var make_default_tangents = false;
-            switch(@typeInfo(@TypeOf(opt_tangents))) {
-                .Null => {
-                    make_default_tangents = true;
-                },
-                .Optional => {
-                    if(opt_tangents) |t| {
-                        self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
-                            .data = sg.asRange(t),
-                        });
-                    } else {
-                        make_default_tangents = true;
-                    }
-                },
-                else => {
-                    self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
-                        .data = sg.asRange(opt_tangents),
-                    });
-                }
-            }
-            if(make_default_tangents) {
-                self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
-                    .data = sg.asRange(&[4]f32{0,0,0,0}),
-                });
-            }
-        }
+        // self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
+        //     .type = .INDEXBUFFER,
+        //     .data = sg.asRange(indices),
+        // });
+        //
+        // // Add normals to the binding, if available
+        // if(self.config.normal_buffer_idx) |buffer_idx| {
+        //     var make_default_normals = false;
+        //     switch(@typeInfo(@TypeOf(opt_normals))) {
+        //         .Null => {
+        //             make_default_normals = true;
+        //         },
+        //         .Optional => {
+        //             if(opt_normals) |n| {
+        //                 self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
+        //                     .data = sg.asRange(n),
+        //                 });
+        //             } else {
+        //                 make_default_normals = true;
+        //             }
+        //         },
+        //         else => {
+        //             self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
+        //                 .data = sg.asRange(opt_normals),
+        //             });
+        //         }
+        //     }
+        //     if(make_default_normals) {
+        //         self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
+        //             .data = sg.asRange(&[3]f32{0,0,0}),
+        //         });
+        //     }
+        // }
+        //
+        // // Add tangents to the binding, if available
+        // if(self.config.tangent_buffer_idx) |buffer_idx| {
+        //     var make_default_tangents = false;
+        //     switch(@typeInfo(@TypeOf(opt_tangents))) {
+        //         .Null => {
+        //             make_default_tangents = true;
+        //         },
+        //         .Optional => {
+        //             if(opt_tangents) |t| {
+        //                 self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
+        //                     .data = sg.asRange(t),
+        //                 });
+        //             } else {
+        //                 make_default_tangents = true;
+        //             }
+        //         },
+        //         else => {
+        //             self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
+        //                 .data = sg.asRange(opt_tangents),
+        //             });
+        //         }
+        //     }
+        //     if(make_default_tangents) {
+        //         self.impl.sokol_bindings.?.vertex_buffers[buffer_idx] = sg.makeBuffer(.{
+        //             .data = sg.asRange(&[4]f32{0,0,0,0}),
+        //         });
+        //     }
+        // }
     }
 
     pub fn update(self: *Bindings, vertices: anytype, indices: anytype, vert_len: usize, index_len: usize) void {
@@ -234,25 +241,25 @@ pub const ShaderImpl = struct {
     sokol_shader_desc: sg.ShaderDesc,
 
     /// Create a new shader using the default
-    pub fn initDefault(cfg: graphics.ShaderConfig) Shader {
+    pub fn initDefault(cfg: graphics.ShaderConfig, layout: graphics.VertexLayout) Shader {
         const shader_desc = shader_default.defaultShaderDesc(sg.queryBackend());
-        return initSokolShader(cfg, shader_desc);
+        return initSokolShader(cfg, layout, shader_desc);
     }
 
     /// Creates a shader from a shader built in as a zig file
-    pub fn initFromBuiltin(cfg: graphics.ShaderConfig, comptime builtin: anytype) ?Shader {
+    pub fn initFromBuiltin(cfg: graphics.ShaderConfig, layout: graphics.VertexLayout, comptime builtin: anytype) ?Shader {
         const shader_desc_fn = getBuiltinSokolCreateFunction(builtin);
         if(shader_desc_fn == null)
             return null;
 
-        return initSokolShader(cfg, shader_desc_fn.?(sg.queryBackend()));
+        return initSokolShader(cfg, layout, shader_desc_fn.?(sg.queryBackend()));
     }
 
     pub fn cloneFromShader(cfg: graphics.ShaderConfig, shader: ?Shader) Shader {
         if(shader == null)
-            return initDefault(cfg);
+            return initDefault(cfg, graphics.getDefaultVertexLayout());
 
-        return initSokolShader(cfg, shader.?.impl.sokol_shader_desc);
+        return initSokolShader(cfg, shader.?.vertex_layout, shader.?.impl.sokol_shader_desc);
     }
 
     /// Find the function in the builtin that can actually make the ShaderDesc
@@ -274,7 +281,7 @@ pub const ShaderImpl = struct {
     }
 
     /// Create a shader from a Sokol Shader Description - useful for loading built-in shaders
-    pub fn initSokolShader(cfg: graphics.ShaderConfig, shader_desc: sg.ShaderDesc) Shader {
+    pub fn initSokolShader(cfg: graphics.ShaderConfig, layout: graphics.VertexLayout, shader_desc: sg.ShaderDesc) Shader {
         const shader = sg.makeShader(shader_desc);
 
         // TODO: Fill in the rest of these values!
@@ -288,7 +295,7 @@ pub const ShaderImpl = struct {
         }
 
         var pipe_desc: sg.PipelineDesc = .{
-            .index_type = if(cfg.index_size == .UINT16) .UINT16 else .UINT32,
+            .index_type = if(layout.index_size == .UINT16) .UINT16 else .UINT32,
             .shader = shader,
             .depth = .{
                 .compare = convertCompareFunc(cfg.depth_compare),
@@ -300,19 +307,14 @@ pub const ShaderImpl = struct {
         // Set the vertex attributes
         for(cfg.vertex_attributes, 0..) |attr, idx| {
             pipe_desc.layout.attrs[idx].format = convertVertexFormat(attr.attr_type);
-        }
 
-        // Optional attributes: Normals and Tangents
-        var attr_idx: u8 = 3;
-        if(cfg.normal_buffer_idx) |buffer_idx| {
-            pipe_desc.layout.attrs[attr_idx].format = .FLOAT3; // normals
-            pipe_desc.layout.attrs[attr_idx].buffer_index = buffer_idx;
-            attr_idx += 1;
-        }
-
-        if(cfg.tangent_buffer_idx) |buffer_idx| {
-            pipe_desc.layout.attrs[attr_idx].format = .FLOAT4; // tangents
-            pipe_desc.layout.attrs[attr_idx].buffer_index = buffer_idx;
+            // Find which binding slot we should use by looking at our layout
+            for(layout.attributes) |la| {
+                if(attr.binding == la.binding) {
+                    pipe_desc.layout.attrs[idx].buffer_index = la.buffer_slot;
+                    break;
+                }
+            }
         }
 
         // apply blending values
@@ -325,8 +327,10 @@ pub const ShaderImpl = struct {
                 .sokol_shader_desc = shader_desc,
             },
             .handle = graphics.next_shader_handle,
+            .cfg = cfg,
             .fs_texture_slots = num_fs_images,
             .vertex_attributes = cfg.vertex_attributes,
+            .vertex_layout = layout,
         };
     }
 
