@@ -51,6 +51,8 @@ fn on_draw() void {
     const a_ovr = std.math.sin(time * 0.02) - 0.5; // alpha channel controls how much tinting should occur
 
     graphics.setDebugDrawColorOverride(colors.Color.new(r_ovr, g_ovr, b_ovr, a_ovr));
+    defer graphics.setDebugDrawColorOverride(colors.transparent); // reset when done!
+
     graphics.drawDebugRectangle(texture, 120.0, 200.0, 100.0, 100.0, colors.white);
 
     // Now draw some text
