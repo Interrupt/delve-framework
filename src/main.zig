@@ -13,15 +13,17 @@ pub fn main() !void {
     defer std.process.argsFree(args_allocator, args);
 
     // Set a different assets path if one is given
-    if(args.len >= 2) {
+    if (args.len >= 2) {
         try app.setAssetsPath(args[1]);
     }
 
     // Register the simple lua lifecycle that runs assets/main.lua
     try @import("modules/lua_simple.zig").registerModule();
 
-    // Draw the FPS counter
-    try @import("modules/fps_counter.zig").registerModule();
+    // Enable the FPS counter
+    const fps_module = @import("modules/fps_counter.zig");
+    try fps_module.registerModule();
+    fps_module.showFPS(true);
 
     // Test some example modules
     try @import("examples/mesh.zig").registerModule();
