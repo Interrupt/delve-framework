@@ -152,7 +152,7 @@ const state = struct {
 
 /// Registers the input subsystem as a module
 pub fn registerModule() !void {
-    const inputSubsystem = modules.Module {
+    const inputSubsystem = modules.Module{
         .name = "input_subystem",
         .post_draw_fn = on_post_draw,
     };
@@ -174,10 +174,10 @@ pub fn deinit() void {
 /// App lifecycle event that happens at the end of a frame
 fn on_post_draw() void {
     // reset the 'just pressed' states
-    for(0 .. state.keyboard_just_pressed.len) |i| {
+    for (0..state.keyboard_just_pressed.len) |i| {
         state.keyboard_just_pressed[i] = false;
     }
-    for(0 .. state.mouse_just_pressed.len) |i| {
+    for (0..state.mouse_just_pressed.len) |i| {
         state.mouse_just_pressed[i] = false;
     }
 
@@ -188,7 +188,7 @@ fn on_post_draw() void {
 
 /// Returns the current mouse position
 pub fn getMousePosition() math.Vec2 {
-    return math.Vec2 {
+    return math.Vec2{
         .x = state.mouse_x,
         .y = state.mouse_y,
     };
@@ -197,7 +197,7 @@ pub fn getMousePosition() math.Vec2 {
 /// Returns whether a key is currently pressed
 pub fn isKeyPressed(keycode: KeyCodes) bool {
     const key_idx: usize = @intCast(@intFromEnum(keycode));
-    if(key_idx >= state.keyboard_pressed.len)
+    if (key_idx >= state.keyboard_pressed.len)
         return false;
 
     return state.keyboard_pressed[key_idx];
@@ -206,7 +206,7 @@ pub fn isKeyPressed(keycode: KeyCodes) bool {
 /// Returns whether a key has just been pressed this frame
 pub fn isKeyJustPressed(keycode: KeyCodes) bool {
     const key_idx: usize = @intCast(@intFromEnum(keycode));
-    if(key_idx >= state.keyboard_just_pressed.len)
+    if (key_idx >= state.keyboard_just_pressed.len)
         return false;
 
     return state.keyboard_just_pressed[key_idx];
@@ -215,7 +215,7 @@ pub fn isKeyJustPressed(keycode: KeyCodes) bool {
 /// Returns whether a mouse button is pressed
 pub fn isMouseButtonPressed(button: MouseButtons) bool {
     const button_idx: usize = @intCast(@intFromEnum(button));
-    if(button_idx >= state.mouse_pressed.len)
+    if (button_idx >= state.mouse_pressed.len)
         return false;
 
     return state.mouse_pressed[button_idx];
@@ -224,7 +224,7 @@ pub fn isMouseButtonPressed(button: MouseButtons) bool {
 /// Returns whether a mouse button has just been pressed this frame
 pub fn isMouseButtonJustPressed(button: MouseButtons) bool {
     const button_idx: usize = @intCast(@intFromEnum(button));
-    if(button_idx >= state.mouse_just_pressed.len)
+    if (button_idx >= state.mouse_just_pressed.len)
         return false;
 
     return state.mouse_just_pressed[button_idx];
@@ -238,7 +238,7 @@ pub fn onMouseMoved(x: f32, y: f32) void {
     state.mouse_y = y;
 
     // There is no last mouse event until we move once
-    if(is_first_mouse_move) {
+    if (is_first_mouse_move) {
         is_first_mouse_move = false;
         state.last_mouse_x = x;
         state.last_mouse_y = y;
@@ -247,39 +247,40 @@ pub fn onMouseMoved(x: f32, y: f32) void {
 
 /// Update the keypress state when a key is pressed down
 pub fn onKeyDown(keycode: i32) void {
-    if(keycode < state.keyboard_pressed.len) {
+    if (debug.isConsoleVisible()) {
+        debug.handleKeyDown(keycode);
+        return;
+    }
+
+    if (keycode < state.keyboard_pressed.len) {
         const code: usize = @intCast(keycode);
         state.keyboard_pressed[code] = true;
         state.keyboard_just_pressed[code] = true;
-    }
-
-    if(debug.isConsoleVisible()) {
-        debug.handleKeyDown(keycode);
     }
 }
 
 /// Update the keypress state when a key is let up
 pub fn onKeyUp(keycode: i32) void {
-    if(keycode < state.keyboard_pressed.len) {
+    if (keycode < state.keyboard_pressed.len) {
         state.keyboard_pressed[@intCast(keycode)] = false;
     }
 }
 
 /// React to keyboard characters being pressed
 pub fn onKeyChar(char_code: u32) void {
-    if(char_code == '~') {
+    if (char_code == '~') {
         debug.setConsoleVisible(!debug.isConsoleVisible());
         return;
     }
 
-    if(debug.isConsoleVisible()) {
+    if (debug.isConsoleVisible()) {
         debug.handleKeyboardTextInput(@intCast(char_code));
     }
 }
 
 /// Update mouse button state when buttons are pressed
 pub fn onMouseDown(btn: i32) void {
-    if(btn < state.mouse_pressed.len) {
+    if (btn < state.mouse_pressed.len) {
         const code: usize = @intCast(btn);
         state.mouse_pressed[code] = true;
         state.mouse_just_pressed[code] = true;
@@ -288,7 +289,7 @@ pub fn onMouseDown(btn: i32) void {
 
 /// Update mouse button state when buttons are released
 pub fn onMouseUp(btn: i32) void {
-    if(btn < state.mouse_pressed.len) {
+    if (btn < state.mouse_pressed.len) {
         state.mouse_pressed[@intCast(btn)] = false;
     }
 }
