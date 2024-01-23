@@ -8,6 +8,9 @@ const draw_module = @import("api/draw.zig");
 const console_num_to_show: u32 = 8;
 var console_visible = false;
 
+/// The global log level. Increase to view more logs, decrease to view less.
+pub var log_level = LogLevel.STANDARD;
+
 // Manage our own memory!
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var allocator = gpa.allocator();
@@ -31,6 +34,15 @@ var last_text_height: i32 = 0;
 // Other systems could init the debug system before the app does
 var needs_init: bool = true;
 var needs_deinit: bool = false;
+
+const LogLevel = enum(u32) {
+    FATAL,
+    ERROR,
+    WARNING,
+    STANDARD,
+    INFO,
+    VERBOSE,
+};
 
 /// A Linked List that can manage its own memory
 const LogList = struct {
@@ -124,8 +136,33 @@ pub fn deinit() void {
 }
 
 pub fn log(comptime fmt: []const u8, args: anytype) void {
+    addLogEntry(fmt, args, .STANDARD);
+}
+
+pub fn info(comptime fmt: []const u8, args: anytype) void {
+    addLogEntry(fmt, args, .INFO);
+}
+
+pub fn warning(comptime fmt: []const u8, args: anytype) void {
+    addLogEntry(fmt, args, .WARNING);
+}
+
+pub fn err(comptime fmt: []const u8, args: anytype) void {
+    addLogEntry(fmt, args, .ERROR);
+}
+
+pub fn fatal(comptime fmt: []const u8, args: anytype) void {
+    addLogEntry(fmt, args, .FATAL);
+}
+
+fn addLogEntry(comptime fmt: []const u8, args: anytype, level: LogLevel) void {
     if(needs_init)
         init();
+
+    // Only log if our log level is high enough
+    if(@intFromEnum(log_level) < @intFromEnum(level)) {
+        return;
+    }
 
     const written = std.fmt.allocPrintZ(allocator, fmt, args) catch {
         std.debug.print(fmt ++ "\n", args);
