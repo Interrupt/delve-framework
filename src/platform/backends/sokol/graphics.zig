@@ -183,8 +183,10 @@ pub const BindingsImpl = struct {
             return;
 
         const applied_shader = shader.apply(bindings.vertex_layout);
-        if(!applied_shader)
+        if(!applied_shader) {
+            debug.warning("Could not draw!", .{});
             return;
+        }
 
         sg.applyBindings(bindings.impl.sokol_bindings.?);
         sg.draw(start, end, 1);

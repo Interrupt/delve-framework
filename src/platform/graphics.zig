@@ -607,15 +607,20 @@ pub const Material = struct {
 };
 
 pub const state = struct {
-    var debug_draw_bindings: sg.Bindings = .{};
-    var debug_draw_pipeline: sg.Pipeline = .{};
+    var debug_draw_bindings: Bindings = undefined;
     var debug_shader: Shader = undefined;
+    var debug_material: Material = undefined;
 };
 
 var default_pass_action: sg.PassAction = .{};
 
 pub fn init() !void {
     debug.log("Graphics subsystem starting", .{});
+
+    // Setup some debug textures
+    tex_white = createSolidTexture(0xFFFFFFFF);
+    tex_black = createSolidTexture(0xFF000000);
+    tex_grey = createSolidTexture(0xFF777777);
 
     // Setup debug text rendering
     var text_desc: debugtext.Desc = .{
@@ -625,31 +630,25 @@ pub fn init() !void {
     debugtext.setup(text_desc);
 
     // Create vertex buffer with debug quad vertices
-    state.debug_draw_bindings.vertex_buffers[0] = sg.makeBuffer(.{
-        .data = sg.asRange(&[_]Vertex{
-            .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
-            .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 1, .v = 0 },
-            .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 1, .v = 1},
-            .{ .x = 0.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 1},
-        }),
-    });
+    const debug_vertices = &[_]Vertex{
+        .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
+        .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 1, .v = 0 },
+        .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 1, .v = 1},
+        .{ .x = 0.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 1},
+    };
+    const debug_indices = &[_]u32{ 0, 1, 2, 0, 2, 3 };
 
-    // Debug quad index buffer
-    state.debug_draw_bindings.index_buffer = sg.makeBuffer(.{
-        .type = .INDEXBUFFER,
-        .data = sg.asRange(&[_]u16{ 0, 1, 2, 0, 2, 3 }),
-    });
-
-    // Create a default sampler for the debug draw bindings
-    state.debug_draw_bindings.fs.samplers[0] = sg.makeSampler(.{});
+    state.debug_draw_bindings = Bindings.init(.{});
+    state.debug_draw_bindings.set(debug_vertices, debug_indices, &.{}, &.{}, 6);
 
     // Use the default shader for debug drawing
-    state.debug_shader = Shader.initDefault(.{});
-
-    // Setup some debug textures
-    tex_white = createSolidTexture(0xFFFFFFFF);
-    tex_black = createSolidTexture(0xFF000000);
-    tex_grey = createSolidTexture(0xFF777777);
+    state.debug_shader = Shader.initDefault(.{ .cull_mode = .NONE });
+    state.debug_material = Material.init(.{
+        .shader = state.debug_shader,
+        .texture_0 = tex_white,
+        .cull_mode = .NONE,
+        .blend_mode = .NONE,
+    });
 
     // Set the initial clear color
     default_pass_action.colors[0] = .{
@@ -739,21 +738,24 @@ pub fn setDebugDrawShaderParams(params: ShaderParams) void {
 }
 
 // todo: add color to this and to the shader
+var test_time: f32 = 0.0;
 pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32, color: Color) void {
     // apply the texture
-    state.debug_draw_bindings.fs.images[0] = tex.sokol_image.?;
+    state.debug_draw_bindings.setTexture(tex);
+    state.debug_material.textures[0] = tex_white;
 
     // create a view state
-    const proj = Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), 0.001, 10.0);
+    var proj = getProjectionOrtho(0.001, 10.0, false);
     var view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.0 }, Vec3.zero(), Vec3.up());
 
-    const translate_vec: Vec3 = Vec3{.x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = -1.5};
+    const translate_vec: Vec3 = Vec3{.x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = -2.5};
     const scale_vec: Vec3 = Vec3{.x = width, .y = height, .z = 1.0};
 
     var model = Mat4.identity();
     model = model.mul(Mat4.translate(translate_vec));
     model = model.mul(Mat4.scale(scale_vec));
 
+    // make our shader params
     const vs_params = shader_default.VsParams{
         .u_projViewMatrix = proj.mul(view),
         .u_modelMatrix = model,
@@ -761,17 +763,15 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
     };
 
     const fs_params = shader_default.FsParams{
-        .u_color_override = state.debug_shader.params.color_override,
+        .u_color_override = .{0.0, 0.0, 0.0, 0.0},
         .u_alpha_cutoff = 0.0,
     };
 
-    sg.applyPipeline(state.debug_shader.impl.sokol_pipelines.items[0].sokol_pipeline);
-    sg.applyUniforms(.VS, 0, sg.asRange(&vs_params));
-    sg.applyUniforms(.FS, 0, sg.asRange(&fs_params));
-    sg.applyBindings(state.debug_draw_bindings);
+    // set our default vs/fs shader uniforms to the 0 slots
+    state.debug_shader.applyUniformBlock(.FS, 0, asAnything(&fs_params));
+    state.debug_shader.applyUniformBlock(.VS, 0, asAnything(&vs_params));
 
-    // draw our quad
-    sg.draw(0, 6, 1);
+    draw(&state.debug_draw_bindings, &state.debug_shader);
 }
 
 pub fn getDisplayWidth() i32 {
