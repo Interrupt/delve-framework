@@ -3,6 +3,7 @@ const app = @import("../platform/app.zig");
 const batcher = @import("../graphics/batcher.zig");
 const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
+const colors = @import("../colors.zig");
 const images = @import("../images.zig");
 const input = @import("../platform/input.zig");
 const math = @import("../math.zig");
@@ -49,11 +50,8 @@ fn on_draw() void {
     const b_ovr = std.math.sin(time * 0.01) + 0.5;
     const a_ovr = std.math.sin(time * 0.02) - 0.5; // alpha channel controls how much tinting should occur
 
-    const params = graphics.ShaderParams{.color_override = [_]f32{r_ovr, g_ovr, b_ovr, a_ovr}};
-    graphics.setDebugDrawShaderParams(params);
-    defer graphics.setDebugDrawShaderParams(graphics.ShaderParams{}); // reset when done!
-
-    graphics.drawDebugRectangle(texture, 120.0, 200.0, 100.0, 100.0, graphics.Color{.r=1.0, .g=1.0, .b=1.0, .a=1.0});
+    graphics.setDebugDrawColorOverride(colors.Color.new(r_ovr, g_ovr, b_ovr, a_ovr));
+    graphics.drawDebugRectangle(texture, 120.0, 200.0, 100.0, 100.0, colors.white);
 
     // Now draw some text
     const scale = 1.5 + std.math.sin(time * 0.02) * 0.2;

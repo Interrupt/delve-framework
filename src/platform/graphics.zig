@@ -219,19 +219,12 @@ pub const ShaderConfig = struct {
     },
 };
 
-pub const ShaderParams = struct {
-    // These should probably be a map instead!
-    draw_color: [4]f32 = [_]f32 { 1.0, 1.0, 1.0, 1.0 },
-    color_override: [4]f32 = [_]f32 { 0.0, 0.0, 0.0, 0.0 },
-};
-
 pub const ShaderImpl = sokol_gfx_backend.ShaderImpl;
 
 pub var next_shader_handle: u32 = 0;
 pub const Shader = struct {
     handle: u32,
     cfg: ShaderConfig,
-    params: ShaderParams = ShaderParams{},
 
     vertex_attributes: []const ShaderAttribute,
 
@@ -610,6 +603,7 @@ pub const state = struct {
     var debug_draw_bindings: Bindings = undefined;
     var debug_shader: Shader = undefined;
     var debug_material: Material = undefined;
+    var debug_draw_color_override: Color = colors.transparent;
 };
 
 var default_pass_action: sg.PassAction = .{};
@@ -733,10 +727,6 @@ pub fn setDebugTextScale(x: f32, y: f32) void {
     debugtext.canvas(sapp.widthf() / (x * 2.0), sapp.heightf() / (y * 2.0));
 }
 
-pub fn setDebugDrawShaderParams(params: ShaderParams) void {
-    state.debug_shader.params = params;
-}
-
 // todo: add color to this and to the shader
 var test_time: f32 = 0.0;
 pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32, color: Color) void {
@@ -763,7 +753,7 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
     };
 
     const fs_params = shader_default.FsParams{
-        .u_color_override = .{0.0, 0.0, 0.0, 0.0},
+        .u_color_override = state.debug_draw_color_override.toArray(),
         .u_alpha_cutoff = 0.0,
     };
 
@@ -772,6 +762,10 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
     state.debug_shader.applyUniformBlock(.VS, 0, asAnything(&vs_params));
 
     draw(&state.debug_draw_bindings, &state.debug_shader);
+}
+
+pub fn setDebugDrawColorOverride(color: Color) void {
+    state.debug_draw_color_override = color;
 }
 
 pub fn getDisplayWidth() i32 {
