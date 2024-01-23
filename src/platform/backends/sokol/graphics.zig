@@ -297,41 +297,7 @@ pub const ShaderImpl = struct {
             }
         }
 
-        // for(common_vertex_layouts) |layout| {
-        //     var pipe_desc: sg.PipelineDesc = .{
-        //         .index_type = if(layout.index_size == .UINT16) .UINT16 else .UINT32,
-        //         .shader = shader,
-        //         .depth = .{
-        //             .compare = convertCompareFunc(cfg.depth_compare),
-        //             .write_enabled = cfg.depth_write_enabled,
-        //         },
-        //         .cull_mode = convertCullMode(cfg.cull_mode),
-        //     };
-        //
-        //     // Set the vertex attributes
-        //     for(cfg.vertex_attributes, 0..) |attr, idx| {
-        //         pipe_desc.layout.attrs[idx].format = convertVertexFormat(attr.attr_type);
-        //
-        //         // Find which binding slot we should use by looking at our layout
-        //         for(layout.attributes) |la| {
-        //             if(attr.binding == la.binding) {
-        //                 pipe_desc.layout.attrs[idx].buffer_index = la.buffer_slot;
-        //                 break;
-        //             }
-        //         }
-        //     }
-        //
-        //     // apply blending values
-        //     pipe_desc.colors[0].blend = convertBlendMode(cfg.blend_mode);
-        //
-        //     // Ready to build our pipeline!
-        //     var pipeline: sg.Pipeline = sg.makePipeline(pipe_desc);
-        //
-        //     // Add this to our list of cached pipelines for this shader
-        //     pipelines.append(.{.layout = layout, .sokol_pipeline = pipeline}) catch {
-        //         debug.log("Error appending pipeline!", .{});
-        //     };
-        // }
+        debug.info("Creating shader", .{});
 
         defer graphics.next_shader_handle += 1;
         var built_shader = Shader {
@@ -366,14 +332,14 @@ pub const ShaderImpl = struct {
         }
 
         if(pipeline == null) {
+            debug.info("Shader pipeline not found, creating one now", .{});
             pipeline = self.impl.makePipeline(layout);
         }
 
         if(pipeline != null) {
             sg.applyPipeline(pipeline.?);
         } else {
-            debug.log("Could not find pipeline to apply!", .{});
-            // TODO: Maybe go make it here?
+            debug.warning("Could not get pipeline to apply!", .{});
             return false;
         }
 

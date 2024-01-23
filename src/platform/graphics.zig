@@ -870,6 +870,5 @@ pub fn getDefaultVertexLayout() VertexLayout {
 pub fn getCommonVertexLayouts() []const VertexLayout {
     return &[_]VertexLayout {
         getDefaultVertexLayout(),
-        mesh.getVertexLayout(),
     };
 }
