@@ -1,24 +1,31 @@
 const std = @import("std");
-const app = @import("../platform/app.zig");
-const batcher = @import("../graphics/batcher.zig");
-const debug = @import("../debug.zig");
-const graphics = @import("../platform/graphics.zig");
-const colors = @import("../colors.zig");
-const images = @import("../images.zig");
-const input = @import("../platform/input.zig");
-const math = @import("../math.zig");
-const modules = @import("../modules.zig");
+const delve = @import("delve");
+const app = delve.app;
 
-pub const test_asset = @embedFile("../static/test_transparent.gif");
+const debug = delve.debug;
+const graphics = delve.graphics;
+const colors = delve.colors;
+const images = delve.images;
+const input = delve.input;
+const math = delve.math;
+const modules = delve.modules;
+
+pub const test_asset = @embedFile("static/test_transparent.gif");
 
 var time: f32 = 0.0;
 var texture: graphics.Texture = undefined;
 var test_image: images.Image = undefined;
 
-// -- This module exercises the simple debug drawing functions --
+// This example shows the simple debug drawing functions.
+// These functions are slow, but a quick way to get stuff on screen!
+
+pub fn main() !void {
+    try registerModule();
+    try app.start(app.AppConfig{ .title = "Delve Framework - Debug Draw Example" });
+}
 
 pub fn registerModule() !void {
-    const debugDrawExample = modules.Module {
+    const debugDrawExample = modules.Module{
         .name = "debug_draw_example",
         .init_fn = on_init,
         .tick_fn = on_tick,

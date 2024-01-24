@@ -7,58 +7,79 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const exe = b.addExecutable(.{
-        .name = "delve-framework",
-        .root_source_file = .{ .path = "src/main.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-
-    // Add Ziglua module
     const ziglua = b.dependency("ziglua", .{
         .target = target,
         .optimize = optimize,
     });
 
-    exe.addModule("ziglua", ziglua.module("ziglua"));
-    exe.linkLibrary(ziglua.artifact("lua"));
+    const sokol_module = b.createModule(.{
+        .source_file = .{ .path = "3rdparty/sokol-zig/src/sokol/sokol.zig" },
+    });
 
-    // Include Sokol from submodule
-    const sokol_build = sokol.buildSokol(b, target, optimize, .{}, "3rdparty/sokol-zig/");
-    exe.linkLibrary(sokol_build);
-    exe.addAnonymousModule("sokol", .{ .source_file = .{ .path = "3rdparty/sokol-zig/src/sokol/sokol.zig" } });
-
-    // Add sdb_image single header library for image file format support
-    exe.addCSourceFile(.{ .file = .{ .cwd_relative = "libs/stb_image-2.28/stb_image_impl.c"}, .flags = &[_][]const u8{"-std=c99"}});
-    exe.addIncludePath(.{ .path = "libs/stb_image-2.28"});
-
-    // Add zaudio library
     const zaudio_pkg = zaudio.package(b, target, optimize, .{});
-    zaudio_pkg.link(exe);
-
-    // Add zmesh library
     const zmesh_pkg = zmesh.package(b, target, optimize, .{});
-    zmesh_pkg.link(exe);
 
-    const install_exe = b.addInstallArtifact(exe, .{});
-    b.getInstallStep().dependOn(&install_exe.step);
+    const delve_module = b.addModule("delve", .{
+        .source_file = .{ .path = "src/framework/delve.zig" },
+        .dependencies = &.{
+            .{.name = "ziglua", .module = ziglua.module("ziglua")},
+            .{.name = "sokol", .module = sokol_module},
+            .{.name = "zaudio", .module = zaudio_pkg.zaudio},
+            .{.name = "zmesh", .module = zmesh_pkg.zmesh},
+        },
+    });
 
-    const run_cmd = b.addRunArtifact(exe);
-    run_cmd.step.dependOn(b.getInstallStep());
-
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
-
-    const run_step = b.step("run", "Run the app");
-    run_step.dependOn(&run_cmd.step);
+    buildExample(b, "audio", target, optimize, delve_module);
+    buildExample(b, "sprites", target, optimize, delve_module);
+    buildExample(b, "clear", target, optimize, delve_module);
+    buildExample(b, "debugdraw", target, optimize, delve_module);
+    buildExample(b, "meshes", target, optimize, delve_module);
 
     const exe_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = .{ .path = "src/framework/delve.zig" },
         .target = target,
         .optimize = optimize,
     });
 
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&exe_tests.step);
+}
+
+pub fn linkDelveFramework(b: *std.Build, step: *std.Build.CompileStep, target: anytype, optimize: anytype) void {
+    step.addCSourceFile(.{ .file = .{ .path = "libs/stb_image-2.28/stb_image_impl.c" }, .flags = &[_][]const u8{"-std=c99"} });
+    step.addIncludePath(.{ .path = "libs/stb_image-2.28" });
+
+    const ziglua = b.dependency("ziglua", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    step.linkLibrary(ziglua.artifact("lua"));
+
+    const sokol_build = sokol.buildSokol(b, target, optimize, .{}, "3rdparty/sokol-zig/");
+    step.linkLibrary(sokol_build);
+
+    const zaudio_pkg = zaudio.package(b, target, optimize, .{});
+    zaudio_pkg.link(step);
+
+    const zmesh_pkg = zmesh.package(b, target, optimize, .{});
+    zmesh_pkg.link(step);
+}
+
+pub fn buildExample(b: *std.Build, comptime name: []const u8, target: anytype, optimize: anytype, delve_module: *std.Build.Module) void {
+    const src_main = "src/examples/" ++ name ++ ".zig";
+
+    const example = b.addExecutable(.{
+        .name = name,
+        .root_source_file = .{ .path = src_main },
+        .target = target,
+        .optimize = optimize,
+    });
+
+    example.addModule("delve", delve_module);
+    linkDelveFramework(b, example, target, optimize);
+
+    b.installArtifact(example);
+    const run = b.addRunArtifact(example);
+
+    b.step("run-" ++ name, "Run " ++ name).dependOn(&run.step);
 }
