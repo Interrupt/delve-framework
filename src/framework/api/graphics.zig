@@ -1,7 +1,6 @@
 const std = @import("std");
 const math = @import("../math.zig");
 const ziglua = @import("ziglua");
-const main = @import("../main.zig");
 const papp = @import("../platform/app.zig");
 const debug = @import("../debug.zig");
 const colors = @import("../colors.zig");
@@ -50,11 +49,11 @@ pub fn libCleanup() void {
 /// Draws a section of an image to the screen
 pub fn blit(texture_handle: u32, source_x: f32, source_y: f32, source_width: f32, source_height: f32, dest_x: f32, dest_y: f32, dest_width: f32, dest_height: f32) void {
     var loaded_tex: ?graphics.Texture = assets._getTextureFromHandle(texture_handle);
-    if(loaded_tex == null)
+    if (loaded_tex == null)
         return;
 
     var loaded_img: ?images.Image = assets._getImageFromHandle(texture_handle);
-    if(loaded_img == null)
+    if (loaded_img == null)
         return;
 
     var transform = math.Mat4.translate(.{ .x = dest_x, .y = dest_y, .z = 0.0 });
@@ -64,7 +63,7 @@ pub fn blit(texture_handle: u32, source_x: f32, source_y: f32, source_width: f32
     const y_aspect = 1.0 / @as(f32, @floatFromInt(loaded_img.?.height));
 
     // Snip out just what we were asked to draw
-    var region = batcher.TextureRegion {
+    var region = batcher.TextureRegion{
         .u = @min(source_x * x_aspect, 1.0),
         .v = @min(source_y * y_aspect, 1.0),
         .v_2 = @min((source_y + source_height) * y_aspect, 1.0),
@@ -72,9 +71,5 @@ pub fn blit(texture_handle: u32, source_x: f32, source_y: f32, source_width: f32
     };
 
     sprite_batch.useTexture(loaded_tex.?);
-    sprite_batch.addRectangle(
-        math.Vec2{.x=0, .y=0},
-        math.Vec2{.x=dest_width, .y=dest_height},
-        region,
-        colors.white);
+    sprite_batch.addRectangle(math.Vec2{ .x = 0, .y = 0 }, math.Vec2{ .x = dest_width, .y = dest_height }, region, colors.white);
 }

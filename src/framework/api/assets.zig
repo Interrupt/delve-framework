@@ -1,7 +1,6 @@
 const std = @import("std");
 const math = std.math;
 const ziglua = @import("ziglua");
-const main = @import("../main.zig");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
 const graphics = @import("../platform/graphics.zig");
@@ -70,6 +69,6 @@ pub fn _getImageFromHandle(handle: i64) ?images.Image {
     return image_handles.get(@intCast(handle));
 }
 
-pub fn _getTextureFromHandle(handle: i64) ?graphics.Texture{
+pub fn _getTextureFromHandle(handle: i64) ?graphics.Texture {
     return texture_handles.get(@intCast(handle));
 }
