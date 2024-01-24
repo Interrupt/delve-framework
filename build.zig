@@ -34,6 +34,7 @@ pub fn build(b: *std.Build) void {
     buildExample(b, "clear", target, optimize, delve_module);
     buildExample(b, "debugdraw", target, optimize, delve_module);
     buildExample(b, "meshes", target, optimize, delve_module);
+    buildExample(b, "stresstest", target, optimize, delve_module);
 
     const exe_tests = b.addTest(.{
         .root_source_file = .{ .path = "src/framework/delve.zig" },
