@@ -234,6 +234,10 @@ var is_first_mouse_move = true;
 
 /// Update the mouse movement state
 pub fn onMouseMoved(x: f32, y: f32) void {
+    // ignore mouse movement if the console is up!
+    if (debug.isConsoleVisible())
+        return;
+
     state.mouse_x = x;
     state.mouse_y = y;
 
