@@ -154,8 +154,9 @@ fn pre_draw() void {
     var rnd = RndGen.init(0);
     var random = rnd.random();
 
-    // billboard to face the camera
-    var rot_matrix = math.Mat4.rotate(90 - math.Vec2.new(camera.direction.x, camera.direction.z).angleDegrees(), camera.up);
+    // billboard to face the camera, but ignore the up dir
+    var billboard_dir = math.Vec3.new(camera.direction.x, 0, camera.direction.z).norm();
+    var rot_matrix = math.Mat4.direction(billboard_dir, camera.up);
 
     // reset the sprite batch to clear everything that was added for the previous frame
     sprite_batch.reset();

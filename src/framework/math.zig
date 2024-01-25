@@ -204,6 +204,27 @@ pub const Mat4 = extern struct {
         return res;
     }
 
+    pub fn transpose(self: *const Mat4) Mat4 {
+        var res = Mat4.zero();
+        res.m[0][0] = self.m[0][0];
+        res.m[0][1] = self.m[1][0];
+        res.m[0][2] = self.m[2][0];
+        res.m[0][3] = self.m[3][0];
+        res.m[1][0] = self.m[0][1];
+        res.m[1][1] = self.m[1][1];
+        res.m[1][2] = self.m[2][1];
+        res.m[1][3] = self.m[3][1];
+        res.m[2][0] = self.m[0][2];
+        res.m[2][1] = self.m[1][2];
+        res.m[2][2] = self.m[2][2];
+        res.m[2][3] = self.m[3][2];
+        res.m[3][0] = self.m[0][3];
+        res.m[3][1] = self.m[1][3];
+        res.m[3][2] = self.m[2][3];
+        res.m[3][3] = self.m[3][3];
+        return res;
+    }
+
     pub fn scale(scaleVec3: Vec3) Mat4 {
         var res = Mat4.identity();
         res.m[0][0] = scaleVec3.x;
@@ -265,60 +286,6 @@ pub const Mat4 = extern struct {
         return res;
     }
 
-    pub fn inversePerspective(left: *const Mat4) Mat4 {
-        var res = Mat4.zero();
-
-        res.m[0][0] = 1.0 / left.m[0][0];
-        res.m[1][1] = 1.0 / left.m[1][1];
-        res.m[2][2] = 0.0;
-
-        res.m[2][3] = 1.0 / left.m[3][2];
-        res.m[3][3] = left.m[2][2] * res.m[2][3];
-        res.m[3][2] = left.m[2][3];
-
-        return res;
-    }
-
-    // pub fn inverse(left: *const Mat4) Mat4 {
-    //     var res = Mat4.zero();
-    //
-    //     var c01 = Vec3.fromArray(left[0]).cross(Vec3.fromArray(left[1]));
-    //     var c23 = Vec3.fromArray(left[2]).cross(Vec3.fromArray(left[3]));
-    //     var b10 = Vec3.fromArray(left[0]).scale(left[1][3]).sub(Vec3.fromArray(left[1]).scale(left[0][3]));
-    //     var b32 = Vec3.fromArray(left[2]).scale(left[3][3]).sub(Vec3.fromArray(left[3]).scale(left[2][3]));
-    //
-    //     // const f = center.sub(eye).norm();
-    //     // const s = f.cross(up).norm();
-    //     // const u = s.cross(f);
-    //
-    //     const inv_determinant = 1.0 / (c01.dot(b32) + c23.dot(b10));
-    //     c01 = c01.mul(inv_determinant);
-    //     c23 = c23.mul(inv_determinant);
-    //     b10 = b10.mul(inv_determinant);
-    //     b32 = b32.mul(inv_determinant);
-    //
-    //     res.m[1] = Vec3.fromArray(left.m[1]).cross(b32).add()
-    //
-    //     // res.m[0][0] = s.x;
-    //     // res.m[0][1] = u.x;
-    //     // res.m[0][2] = -f.x;
-    //     //
-    //     // res.m[1][0] = s.y;
-    //     // res.m[1][1] = u.y;
-    //     // res.m[1][2] = -f.y;
-    //     //
-    //     // res.m[2][0] = s.z;
-    //     // res.m[2][1] = u.z;
-    //     // res.m[2][2] = -f.z;
-    //     //
-    //     // res.m[3][0] = -s.dot(eye);
-    //     // res.m[3][1] = -u.dot(eye);
-    //     // res.m[3][2] = f.dot(eye);
-    //     // res.m[3][3] = 1.0;
-    //
-    //     return res;
-    // }
-
     pub fn rotate(angle: f32, axis_unorm: Vec3) Mat4 {
         var res = Mat4.identity();
 
@@ -338,6 +305,48 @@ pub const Mat4 = extern struct {
         res.m[2][2] = (axis.z * axis.z * cos_value) + cos_theta;
 
         return res;
+    }
+
+    pub fn direction(dir_norm: Vec3, axis_norm: Vec3) Mat4 {
+        var res = Mat4.identity();
+
+        // var xaxis: Vec3 = axis_norm.cross(dir_norm);
+        // xaxis = xaxis.norm();
+        //
+        // var yaxis: Vec3 = dir_norm.cross(xaxis);
+        // yaxis = yaxis.norm();
+
+        var dir = dir_norm.norm();
+
+        var xaxis: Vec3 = dir.cross(axis_norm);
+        xaxis = xaxis.norm();
+
+        var yaxis: Vec3 = xaxis.cross(dir_norm);
+        yaxis = yaxis.norm();
+
+        res.m[0][0] = xaxis.x;
+        res.m[0][1] = yaxis.x;
+        res.m[0][2] = dir.x;
+        res.m[1][0] = xaxis.y;
+        res.m[1][1] = yaxis.y;
+        res.m[1][2] = dir.y;
+        res.m[2][0] = xaxis.z;
+        res.m[2][1] = yaxis.z;
+        res.m[2][2] = dir.z;
+
+        // column1.x = xaxis.x;
+        // column1.y = yaxis.x;
+        // column1.z = direction.x;
+        //
+        // column2.x = xaxis.y;
+        // column2.y = yaxis.y;
+        // column2.z = direction.y;
+        //
+        // column3.x = xaxis.z;
+        // column3.y = yaxis.z;
+        // column3.z = direction.z;
+
+        return res.transpose();
     }
 
     pub fn translate(translation: Vec3) Mat4 {

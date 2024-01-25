@@ -78,28 +78,28 @@ pub const Camera = struct {
         const flyspeed = speed * 0.1;
         const turnspeed = speed * 0.03;
 
-        if(input.isKeyPressed(.W)) {
+        if (input.isKeyPressed(.W)) {
             self.moveForward(flyspeed);
-        } else if(input.isKeyPressed(.S)) {
+        } else if (input.isKeyPressed(.S)) {
             self.moveForward(-flyspeed);
         }
-        if(input.isKeyPressed(.A)) {
+        if (input.isKeyPressed(.A)) {
             self.moveRight(-flyspeed);
-        } else if(input.isKeyPressed(.D)) {
+        } else if (input.isKeyPressed(.D)) {
             self.moveRight(flyspeed);
         }
-        if(input.isKeyPressed(.LEFT)) {
+        if (input.isKeyPressed(.LEFT)) {
             self.yaw(turnspeed);
-        } else if(input.isKeyPressed(.RIGHT)) {
+        } else if (input.isKeyPressed(.RIGHT)) {
             self.yaw(-turnspeed);
         }
-        if(input.isKeyPressed(.UP)) {
+        if (input.isKeyPressed(.UP)) {
             self.pitch(turnspeed);
-        } else if(input.isKeyPressed(.DOWN)) {
+        } else if (input.isKeyPressed(.DOWN)) {
             self.pitch(-turnspeed);
         }
 
-        if(!use_mouselook)
+        if (!use_mouselook)
             return;
 
         const mouseDelta = input.getMouseDelta();
