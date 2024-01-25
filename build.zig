@@ -33,6 +33,7 @@ pub fn build(b: *std.Build) void {
     buildExample(b, "sprites", target, optimize, delve_module);
     buildExample(b, "clear", target, optimize, delve_module);
     buildExample(b, "debugdraw", target, optimize, delve_module);
+    buildExample(b, "forest", target, optimize, delve_module);
     buildExample(b, "meshes", target, optimize, delve_module);
     buildExample(b, "stresstest", target, optimize, delve_module);
 

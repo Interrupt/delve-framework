@@ -66,6 +66,14 @@ pub const Vec2 = extern struct {
     pub fn dot(v0: *const Vec2, v1: Vec2) f32 {
         return v0.x * v1.x + v0.y * v1.y;
     }
+
+    pub fn angleRadians(self: *const Vec2) f32 {
+        return std.math.atan2(f32, self.y, self.x);
+    }
+
+    pub fn angleDegrees(self: *const Vec2) f32 {
+        return std.math.atan2(f32, self.y, self.x) * (360.0 / (std.math.tau));
+    }
 };
 
 pub fn vec3(x: f32, y: f32, z: f32) Vec3 {
@@ -257,6 +265,60 @@ pub const Mat4 = extern struct {
         return res;
     }
 
+    pub fn inversePerspective(left: *const Mat4) Mat4 {
+        var res = Mat4.zero();
+
+        res.m[0][0] = 1.0 / left.m[0][0];
+        res.m[1][1] = 1.0 / left.m[1][1];
+        res.m[2][2] = 0.0;
+
+        res.m[2][3] = 1.0 / left.m[3][2];
+        res.m[3][3] = left.m[2][2] * res.m[2][3];
+        res.m[3][2] = left.m[2][3];
+
+        return res;
+    }
+
+    // pub fn inverse(left: *const Mat4) Mat4 {
+    //     var res = Mat4.zero();
+    //
+    //     var c01 = Vec3.fromArray(left[0]).cross(Vec3.fromArray(left[1]));
+    //     var c23 = Vec3.fromArray(left[2]).cross(Vec3.fromArray(left[3]));
+    //     var b10 = Vec3.fromArray(left[0]).scale(left[1][3]).sub(Vec3.fromArray(left[1]).scale(left[0][3]));
+    //     var b32 = Vec3.fromArray(left[2]).scale(left[3][3]).sub(Vec3.fromArray(left[3]).scale(left[2][3]));
+    //
+    //     // const f = center.sub(eye).norm();
+    //     // const s = f.cross(up).norm();
+    //     // const u = s.cross(f);
+    //
+    //     const inv_determinant = 1.0 / (c01.dot(b32) + c23.dot(b10));
+    //     c01 = c01.mul(inv_determinant);
+    //     c23 = c23.mul(inv_determinant);
+    //     b10 = b10.mul(inv_determinant);
+    //     b32 = b32.mul(inv_determinant);
+    //
+    //     res.m[1] = Vec3.fromArray(left.m[1]).cross(b32).add()
+    //
+    //     // res.m[0][0] = s.x;
+    //     // res.m[0][1] = u.x;
+    //     // res.m[0][2] = -f.x;
+    //     //
+    //     // res.m[1][0] = s.y;
+    //     // res.m[1][1] = u.y;
+    //     // res.m[1][2] = -f.y;
+    //     //
+    //     // res.m[2][0] = s.z;
+    //     // res.m[2][1] = u.z;
+    //     // res.m[2][2] = -f.z;
+    //     //
+    //     // res.m[3][0] = -s.dot(eye);
+    //     // res.m[3][1] = -u.dot(eye);
+    //     // res.m[3][2] = f.dot(eye);
+    //     // res.m[3][3] = 1.0;
+    //
+    //     return res;
+    // }
+
     pub fn rotate(angle: f32, axis_unorm: Vec3) Mat4 {
         var res = Mat4.identity();
 
@@ -298,7 +360,7 @@ test "Vec3.new" {
 }
 
 test "Vec3.fromArray" {
-    const v = Vec3.fromArray(.{1.0, 2.0, 3.0});
+    const v = Vec3.fromArray(.{ 1.0, 2.0, 3.0 });
     assert(v.x == 1.0 and v.y == 2.0 and v.z == 3.0);
 }
 
@@ -308,7 +370,7 @@ test "Vec2.zero" {
 }
 
 test "Vec2.fromArray" {
-    const v = Vec2.fromArray(.{1.0, 2.0});
+    const v = Vec2.fromArray(.{ 1.0, 2.0 });
     assert(v.x == 1.0 and v.y == 2.0);
 }
 
@@ -436,15 +498,15 @@ test "Mat4.rotate" {
 }
 
 test "Vec3.mulMat4" {
-    var l = Vec3 {.x = 1.0, .y = 2.0, .z = 3.0};
+    var l = Vec3{ .x = 1.0, .y = 2.0, .z = 3.0 };
     var r = Mat4.identity();
     var v = l.mulMat4(r);
     assert(v.x == 1.0);
     assert(v.y == 2.0);
     assert(v.z == 3.0);
 
-    l = Vec3 {.x = 1.0, .y = 2.0, .z = 3.0};
-    r = Mat4.translate(Vec3 {.x = 2.0, .y = 0.0, .z = -3.0 });
+    l = Vec3{ .x = 1.0, .y = 2.0, .z = 3.0 };
+    r = Mat4.translate(Vec3{ .x = 2.0, .y = 0.0, .z = -3.0 });
     v = l.mulMat4(r);
     assert(v.x == 3.0);
     assert(v.y == 2.0);

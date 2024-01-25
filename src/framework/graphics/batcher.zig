@@ -1,4 +1,3 @@
-
 const std = @import("std");
 const debug = @import("../debug.zig");
 const colors = @import("../colors.zig");
@@ -33,11 +32,15 @@ pub const TextureRegion = struct {
     v_2: f32 = 1.0,
 
     pub fn default() TextureRegion {
-        return .{.u = 0.0, .v = 0.0, .u_2 = 1.0, .v_2 = 1.0};
+        return .{ .u = 0.0, .v = 0.0, .u_2 = 1.0, .v_2 = 1.0 };
     }
 
     pub fn flipY(self: TextureRegion) TextureRegion {
         return .{ .u = self.u, .v = self.v_2, .u_2 = self.u_2, .v_2 = self.v };
+    }
+
+    pub fn getSize(self: TextureRegion) Vec2 {
+        return Vec2.new(self.u_2 - self.u, self.v_2 - self.v);
     }
 };
 
@@ -62,16 +65,13 @@ pub const SpriteBatcher = struct {
     current_material: ?*graphics.Material = null,
 
     pub fn init(cfg: BatcherConfig) !SpriteBatcher {
-        var sprite_batcher = SpriteBatcher {
-            .batches = std.AutoArrayHashMap(u64, Batcher).init(batch_allocator),
-            .config = cfg
-        };
+        var sprite_batcher = SpriteBatcher{ .batches = std.AutoArrayHashMap(u64, Batcher).init(batch_allocator), .config = cfg };
 
         // set initial texture and shader
-        const tex = if(cfg.texture != null) cfg.texture.? else graphics.createDebugTexture();
+        const tex = if (cfg.texture != null) cfg.texture.? else graphics.createDebugTexture();
         sprite_batcher.current_tex = tex;
 
-        const shader = if(cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{ });
+        const shader = if (cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{});
         sprite_batcher.useShader(shader);
 
         return sprite_batcher;
@@ -108,7 +108,7 @@ pub const SpriteBatcher = struct {
     /// Add a rectangle to the current batch
     pub fn addRectangle(self: *SpriteBatcher, pos: Vec2, size: Vec2, region: TextureRegion, color: Color) void {
         var batcher: ?*Batcher = self.getCurrentBatcher();
-        if(batcher == null)
+        if (batcher == null)
             return;
 
         batcher.?.transform = self.transform;
@@ -118,7 +118,7 @@ pub const SpriteBatcher = struct {
     /// Add a rectangle of lines to the current batch
     pub fn addLineRectangle(self: *SpriteBatcher, pos: Vec2, size: Vec2, line_width: f32, region: TextureRegion, color: Color) void {
         var batcher: ?*Batcher = self.getCurrentBatcher();
-        if(batcher == null)
+        if (batcher == null)
             return;
 
         batcher.?.transform = self.transform;
@@ -128,7 +128,7 @@ pub const SpriteBatcher = struct {
     /// Add an equilateral triangle to the current batch
     pub fn addTriangle(self: *SpriteBatcher, pos: Vec2, size: Vec2, region: TextureRegion, color: Color) void {
         var batcher: ?*Batcher = self.getCurrentBatcher();
-        if(batcher == null)
+        if (batcher == null)
             return;
 
         batcher.?.transform = self.transform;
@@ -138,7 +138,7 @@ pub const SpriteBatcher = struct {
     /// Adds a freeform triangle to the current batch
     pub fn addTriangleFromVecs(self: *SpriteBatcher, v0: Vec2, v1: Vec2, v2: Vec2, uv0: Vec2, uv1: Vec2, uv2: Vec2, color: Color) void {
         var batcher: ?*Batcher = self.getCurrentBatcher();
-        if(batcher == null)
+        if (batcher == null)
             return;
 
         batcher.?.transform = self.transform;
@@ -148,7 +148,7 @@ pub const SpriteBatcher = struct {
     /// Adds a textured line to the current batch
     pub fn addLine(self: *SpriteBatcher, from: Vec2, to: Vec2, width: f32, region: TextureRegion, color: Color) void {
         var batcher: ?*Batcher = self.getCurrentBatcher();
-        if(batcher == null)
+        if (batcher == null)
             return;
 
         batcher.?.transform = self.transform;
@@ -159,12 +159,12 @@ pub const SpriteBatcher = struct {
     pub fn getCurrentBatcher(self: *SpriteBatcher) ?*Batcher {
         // Return an existing batch if available
         var batcher: ?*Batcher = self.batches.getPtr(self.current_batch_key);
-        if(batcher != null)
+        if (batcher != null)
             return batcher;
 
         // None found, create a new batch!
         var new_cfg = self.config;
-        if(self.current_material == null) {
+        if (self.current_material == null) {
             new_cfg.texture = self.current_tex;
             new_cfg.shader = self.current_shader;
         } else {
@@ -187,7 +187,7 @@ pub const SpriteBatcher = struct {
     /// Draws all the batches
     pub fn draw(self: *SpriteBatcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
         var it = self.batches.iterator();
-        while(it.next()) |batcher| {
+        while (it.next()) |batcher| {
             batcher.value_ptr.draw(proj_view_matrix, model_matrix);
         }
     }
@@ -195,7 +195,7 @@ pub const SpriteBatcher = struct {
     /// Reset the batches for this frame
     pub fn reset(self: *SpriteBatcher) void {
         var it = self.batches.iterator();
-        while(it.next()) |batcher| {
+        while (it.next()) |batcher| {
             batcher.value_ptr.reset();
         }
     }
@@ -203,7 +203,7 @@ pub const SpriteBatcher = struct {
     /// Free the batches
     pub fn deinit(self: *SpriteBatcher) void {
         var it = self.batches.iterator();
-        while(it.next()) |batcher| {
+        while (it.next()) |batcher| {
             batcher.value_ptr.deinit();
         }
     }
@@ -216,7 +216,7 @@ pub const SpriteBatcher = struct {
     /// Updates all bindings for this frame with the current data
     pub fn apply(self: *SpriteBatcher) void {
         var it = self.batches.iterator();
-        while(it.next()) |batcher| {
+        while (it.next()) |batcher| {
             batcher.value_ptr.apply();
         }
     }
@@ -247,18 +247,18 @@ pub const Batcher = struct {
 
     /// Setup and return a new Batcher
     pub fn init(cfg: BatcherConfig) !Batcher {
-        var batcher: Batcher = Batcher {
+        var batcher: Batcher = Batcher{
             .vertex_pos = 0,
             .index_pos = 0,
             .vertex_buffer = try batch_allocator.alloc(Vertex, cfg.min_vertices),
             .index_buffer = try batch_allocator.alloc(u32, cfg.min_indices),
-            .bindings = graphics.Bindings.init(.{.updatable = true, .index_len = cfg.min_indices, .vert_len = cfg.min_vertices}),
-            .shader = if(cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{ }),
-            .material = if(cfg.material != null) cfg.material.? else null,
+            .bindings = graphics.Bindings.init(.{ .updatable = true, .index_len = cfg.min_indices, .vert_len = cfg.min_vertices }),
+            .shader = if (cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{}),
+            .material = if (cfg.material != null) cfg.material.? else null,
             .flip_tex_y = cfg.flip_tex_y,
         };
 
-        if(cfg.texture == null) {
+        if (cfg.texture == null) {
             batcher.setTexture(graphics.tex_white);
         } else {
             batcher.setTexture(cfg.texture.?);
@@ -295,7 +295,7 @@ pub const Batcher = struct {
             return;
         };
 
-        const region = if(self.flip_tex_y) tex_region.flipY() else tex_region;
+        const region = if (self.flip_tex_y) tex_region.flipY() else tex_region;
 
         const u = region.u;
         const v = region.v;
@@ -306,18 +306,18 @@ pub const Batcher = struct {
         const verts = &[_]Vertex{
             .{ .x = v0.x, .y = v0.y, .z = 0, .color = color_i, .u = u, .v = v },
             .{ .x = v1.x, .y = v1.y, .z = 0, .color = color_i, .u = u_2, .v = v },
-            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_i, .u = u_2, .v = v_2},
-            .{ .x = v3.x, .y = v3.y, .z = 0, .color = color_i, .u = u, .v = v_2},
+            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_i, .u = u_2, .v = v_2 },
+            .{ .x = v3.x, .y = v3.y, .z = 0, .color = color_i, .u = u, .v = v_2 },
         };
 
         const indices = &[_]u32{ 0, 1, 2, 0, 2, 3 };
 
-        for(verts, 0..) |vert, i| {
+        for (verts, 0..) |vert, i| {
             self.vertex_buffer[self.vertex_pos + i] = Vertex.mulMat4(vert, self.transform);
         }
 
         const v_pos = @as(u32, @intCast(self.vertex_pos));
-        for(indices, 0..) |idx, i| {
+        for (indices, 0..) |idx, i| {
             self.index_buffer[self.index_pos + i] = idx + v_pos;
         }
 
@@ -327,9 +327,9 @@ pub const Batcher = struct {
 
     /// Add a rectangle to the batch
     pub fn addRectangle(self: *Batcher, pos: Vec2, size: Vec2, region: TextureRegion, color: Color) void {
-        const v0 = pos.add(Vec2{.x = 0, .y = size.y});
-        const v1 = pos.add(Vec2{.x = size.x, .y = size.y});
-        const v2 = pos.add(Vec2{.x = size.x, .y = 0});
+        const v0 = pos.add(Vec2{ .x = 0, .y = size.y });
+        const v1 = pos.add(Vec2{ .x = size.x, .y = size.y });
+        const v2 = pos.add(Vec2{ .x = size.x, .y = 0 });
         const v3 = pos;
 
         self.addQuad(v0, v1, v2, v3, region, color);
@@ -338,7 +338,7 @@ pub const Batcher = struct {
     /// Add a line to the batch
     pub fn addLine(self: *Batcher, from: Vec2, to: Vec2, width: f32, region: TextureRegion, color: Color) void {
         const normal = to.sub(from).norm();
-        const right = Vec2.scale(&Vec2{.x=-normal.y, .y=normal.x}, width * 0.5);
+        const right = Vec2.scale(&Vec2{ .x = -normal.y, .y = normal.x }, width * 0.5);
 
         const v0 = from.add(right);
         const v1 = to.add(right);
@@ -364,11 +364,11 @@ pub const Batcher = struct {
 
     /// Adds an equilateral triangle to the batch
     pub fn addTriangle(self: *Batcher, pos: Vec2, size: Vec2, tex_region: TextureRegion, color: Color) void {
-        const region = if(self.flip_tex_y) tex_region.flipY() else tex_region;
+        const region = if (self.flip_tex_y) tex_region.flipY() else tex_region;
 
-        const v0: Vec2 = Vec2{.x = pos.x + size.x / 2.0, .y = pos.y + size.y};
+        const v0: Vec2 = Vec2{ .x = pos.x + size.x / 2.0, .y = pos.y + size.y };
         const v1: Vec2 = pos;
-        const v2: Vec2 = Vec2{.x = pos.x + size.x, .y = pos.y };
+        const v2: Vec2 = Vec2{ .x = pos.x + size.x, .y = pos.y };
 
         const u_mid = (region.u + region.u_2) / 2.0;
 
@@ -395,12 +395,12 @@ pub const Batcher = struct {
 
         const indices = &[_]u32{ 0, 1, 2 };
 
-        for(verts, 0..) |vert, i| {
+        for (verts, 0..) |vert, i| {
             self.vertex_buffer[self.vertex_pos + i] = Vertex.mulMat4(vert, self.transform);
         }
 
         const v_pos = @as(u32, @intCast(self.vertex_pos));
-        for(indices, 0..) |idx, i| {
+        for (indices, 0..) |idx, i| {
             self.index_buffer[self.index_pos + i] = idx + v_pos;
         }
 
@@ -420,7 +420,7 @@ pub const Batcher = struct {
         const uv1 = Vec2.zero();
         const uv2 = Vec2.zero();
 
-        for(0 .. @intCast(steps+1)) |i| {
+        for (0..@intCast(steps + 1)) |i| {
             const if32: f32 = @floatFromInt(i);
             const next = angleToVector(if32 / @as(f32, @floatFromInt(steps)) * tau, radius);
 
@@ -433,7 +433,7 @@ pub const Batcher = struct {
     pub fn addLineCircle(self: *Batcher, center: Vec2, radius: f32, steps: i32, line_width: f32, region: TextureRegion, color: Color) void {
         var last = angleToVector(0, radius);
 
-        for(0 .. @intCast(steps+1)) |i| {
+        for (0..@intCast(steps + 1)) |i| {
             const if32: f32 = @floatFromInt(i);
             const next = angleToVector(if32 / @as(f32, @floatFromInt(steps)) * std.math.tau, radius);
 
@@ -458,7 +458,7 @@ pub const Batcher = struct {
 
     /// Submit a draw call to draw all shapes for this batch
     pub fn draw(self: *Batcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
-        if(self.material == null) {
+        if (self.material == null) {
             self.drawWithoutMaterial(proj_view_matrix, model_matrix);
         } else {
             self.drawWithMaterial(proj_view_matrix, model_matrix);
@@ -467,18 +467,18 @@ pub const Batcher = struct {
 
     /// Submit a draw call to draw all shapes for this batch
     pub fn drawWithoutMaterial(self: *Batcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
-        if(self.index_pos == 0)
+        if (self.index_pos == 0)
             return;
 
         // Make our default uniform blocks
-        const vs_params = VSParams {
+        const vs_params = VSParams{
             .projViewMatrix = proj_view_matrix,
             .modelMatrix = model_matrix,
             .in_color = .{ 1.0, 1.0, 1.0, 1.0 },
         };
 
-        const fs_params = FSParams {
-            .in_color_override = .{0.0, 0.0, 0.0, 0.0},
+        const fs_params = FSParams{
+            .in_color_override = .{ 0.0, 0.0, 0.0, 0.0 },
         };
 
         // set our default vs/fs shader uniforms to the 0 slots
@@ -490,10 +490,10 @@ pub const Batcher = struct {
 
     /// Submit a draw call to draw all shapes for this batch
     pub fn drawWithMaterial(self: *Batcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
-        if(self.index_pos == 0)
+        if (self.index_pos == 0)
             return;
 
-        if(self.material == null)
+        if (self.material == null)
             return;
 
         graphics.drawWithMaterial(&self.bindings, self.material.?, proj_view_matrix, model_matrix);
@@ -501,14 +501,14 @@ pub const Batcher = struct {
 
     /// Expand the buffers for this batch if needed to fit the new size
     fn growBuffersToFit(self: *Batcher, needed_vertices: usize, needed_indices: usize) !void {
-        if(needed_vertices > max_vertices or needed_indices > max_indices) {
-            debug.log("Can't grow buffer to fit!: verts:{d} idxs:{d}", .{needed_vertices, needed_indices});
+        if (needed_vertices > max_vertices or needed_indices > max_indices) {
+            debug.log("Can't grow buffer to fit!: verts:{d} idxs:{d}", .{ needed_vertices, needed_indices });
             return;
         }
 
         var needs_resize = false;
 
-        if(self.vertex_buffer.len < needed_vertices) {
+        if (self.vertex_buffer.len < needed_vertices) {
             // debug.log("Growing vertex buffer to {d}", .{self.vertex_buffer.len * 2});
             self.vertex_buffer = batch_allocator.realloc(self.vertex_buffer, self.vertex_buffer.len * 2) catch {
                 debug.log("Could not allocate needed vertices! Needed {d}", .{needed_vertices});
@@ -516,7 +516,7 @@ pub const Batcher = struct {
             };
             needs_resize = true;
         }
-        if(self.index_buffer.len < needed_indices) {
+        if (self.index_buffer.len < needed_indices) {
             // debug.log("Growing index buffer to {d}", .{self.index_buffer.len * 2});
             self.index_buffer = batch_allocator.realloc(self.index_buffer, self.index_buffer.len * 2) catch {
                 debug.log("Could not allocate needed indices! Needed {d}", .{needed_indices});
@@ -525,7 +525,7 @@ pub const Batcher = struct {
             needs_resize = true;
         }
 
-        if(!needs_resize)
+        if (!needs_resize)
             return;
 
         // debug.log("Resizing buffer to {d}x{d}", .{self.vertex_buffer.len, self.index_buffer.len});
