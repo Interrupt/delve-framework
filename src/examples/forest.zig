@@ -22,7 +22,8 @@ var shader_blend: graphics.Shader = undefined;
 var sprite_batch: batcher.SpriteBatcher = undefined;
 var camera: cam.Camera = undefined;
 
-// This is an example of using the sprite batcher to draw a forest
+// This is an example of using the sprite batcher to draw a forest!
+// shows off: sprite batches, texture regions, billboarding, cameras
 
 pub fn main() !void {
     try registerModule();
@@ -152,11 +153,14 @@ fn on_tick(delta: f32) void {
     }
 }
 
+var time: f64 = 0.0;
 fn pre_draw() void {
-    var rnd = RndGen.init(0);
+    var rnd = RndGen.init(0); // reset the random seed every frame
     var random = rnd.random();
 
-    // billboard to face the camera, but ignore the up dir
+    time += delve.platform_app.getCurrentDeltaTime();
+
+    // set up a matrix that will billboard to face the camera, but ignore the up dir
     var billboard_dir = math.Vec3.new(camera.direction.x, 0, camera.direction.z).norm();
     var rot_matrix = math.Mat4.direction(billboard_dir, camera.up);
 
@@ -174,6 +178,7 @@ fn pre_draw() void {
 
     sprite_batch.addRectangle(ground_size.scale(-0.5), ground_size, batcher.TextureRegion.default(), ground_color);
 
+    // now add all the foliage
     for (0..foliage_count) |i| {
         _ = i;
         sprite_batch.useTexture(tex_treesheet);
@@ -184,12 +189,16 @@ fn pre_draw() void {
         var transform = math.Mat4.translate(math.Vec3.new(x_pos, draw_y_offset, z_pos));
         transform = transform.mul(rot_matrix);
 
-        sprite_batch.setTransformMatrix(transform);
-
         // make mostly grass
         var make_grass: bool = random.float(f32) < 0.8;
         var atlas = if (make_grass) grass_sprites else tree_sprites;
         var foliage_scale: f32 = if (make_grass) grass_scale else tree_scale;
+
+        const wave_offset: f32 = random.float(f32) * 1000.0;
+        const wave_amount: f32 = if (make_grass) 5 else 1;
+        const wave_speed: f32 = if (make_grass) 1 else 0.25;
+        transform = transform.mul(math.Mat4.rotate(@floatCast(std.math.sin(wave_offset + time * wave_speed) * wave_amount), math.Vec3.new(0, 0, 1)));
+        sprite_batch.setTransformMatrix(transform);
 
         // grab a random region from the atlas
         const sprite_idx = random.intRangeLessThan(usize, 0, atlas.len);
