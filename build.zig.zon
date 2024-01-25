@@ -8,8 +8,8 @@
             .hash = "1220d14df5c57d4c3fafe26191fcc3b32c23ffd319e7f5d839d2ace030372f1f85b4",
         },
         .zigstr = .{
-            .url = "https://github.com/jecolon/zigstr/archive/refs/tags/v0.11.1.tar.gz",
-            .hash = "12206f2450d6c269835adc8bf676c97db4355dff06848e2a30dfd66bdb767e7d2742",
+            .url = "https://codeberg.org/dude_the_builder/zigstr/archive/v0.11.2.tar.gz",
+            .hash = "12208129a4af2c2954a9d2049072fe98e35763c7e8a33aa34e3204caa5fa792f8b5f",
         },
     }
 }
