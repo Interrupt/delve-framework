@@ -41,7 +41,7 @@ pub fn registerModule() !void {
     try modules.registerModule(forestExample);
 }
 
-const tree_sprites: []const batcher.TextureRegion = &[_]batcher.TextureRegion{
+const grass_sprites: []const batcher.TextureRegion = &[_]batcher.TextureRegion{
     batcher.TextureRegion{ // grass 1
         .u = 0.0,
         .v = 0.8,
@@ -66,6 +66,9 @@ const tree_sprites: []const batcher.TextureRegion = &[_]batcher.TextureRegion{
         .u_2 = 0.275,
         .v_2 = 1.0,
     },
+};
+
+const tree_sprites: []const batcher.TextureRegion = &[_]batcher.TextureRegion{
     batcher.TextureRegion{ // fir tall
         .u = 0.275,
         .v = 0.015,
@@ -92,6 +95,24 @@ const tree_sprites: []const batcher.TextureRegion = &[_]batcher.TextureRegion{
     },
 };
 
+// color palette!
+var sky_color = colors.Color.newBytes(255, 247, 229, 255);
+var ground_color = colors.Color.newBytes(255, 179, 105, 255).mul(colors.light_grey);
+var foliage_tint = colors.white;
+
+// alternate night colors
+// var sky_color = colors.Color.newBytes(20, 20, 80, 255).mul(colors.grey);
+// var ground_color = colors.navy.mul(colors.dark_grey);
+// var foliage_tint = colors.navy.mul(colors.grey);
+
+// draw options
+var draw_y_offset: f32 = -0.2;
+var tree_scale: f32 = 7.0;
+var grass_scale: f32 = 4.0;
+var size_variance: f32 = 0.25;
+var foliage_count: u32 = 3200;
+var foliage_spread: f32 = 120.0;
+
 fn on_init() void {
     debug.log("Forest example module initializing", .{});
 
@@ -108,15 +129,15 @@ fn on_init() void {
     };
     tex_treesheet = graphics.Texture.init(&treesheet_img);
 
-    // make a shaders
+    // make our default shader
     shader_blend = graphics.Shader.initDefault(.{ .blend_mode = .NONE, .cull_mode = .NONE });
 
     // set the sky color
-    graphics.setClearColor(colors.cyan);
+    graphics.setClearColor(sky_color);
 
     // Make a perspective camera, with a 90 degree FOV
     camera = cam.Camera.init(90.0, 0.01, 100.0, math.Vec3.up());
-    camera.position = math.Vec3.new(0.0, 0.0, -60.0);
+    camera.position = math.Vec3.new(0.0, 0.0, -foliage_spread / 2);
     camera.direction = math.Vec3.new(0.0, 0.0, 1.0);
 }
 
@@ -129,11 +150,7 @@ fn on_tick(delta: f32) void {
     }
 }
 
-var tick: u64 = 0;
-var time: f32 = 0;
 fn pre_draw() void {
-    tick += 1;
-    time += (1.0 / 60.0) * 100.0;
     var rnd = RndGen.init(0);
     var random = rnd.random();
 
@@ -147,34 +164,40 @@ fn pre_draw() void {
     sprite_batch.useShader(shader_blend);
     sprite_batch.useTexture(graphics.tex_white);
 
-    const ground_size = math.Vec2.new(120, 120);
-    var ground_transform = math.Mat4.translate(math.Vec3.new(0, 0, (ground_size.y * -0.5)));
+    const ground_size = math.Vec2.new(foliage_spread, foliage_spread);
+    var ground_transform = math.Mat4.translate(math.Vec3.new(0, draw_y_offset, (ground_size.y * -0.5)));
     ground_transform = ground_transform.mul(math.Mat4.rotate(90, math.Vec3.new(1, 0, 0)));
     sprite_batch.setTransformMatrix(ground_transform);
 
-    sprite_batch.addRectangle(ground_size.scale(-0.5), ground_size, batcher.TextureRegion.default(), colors.tan);
+    sprite_batch.addRectangle(ground_size.scale(-0.5), ground_size, batcher.TextureRegion.default(), ground_color);
 
-    for (0..1500) |i| {
+    for (0..foliage_count) |i| {
         _ = i;
         sprite_batch.useTexture(tex_treesheet);
 
-        const horiz_spread = 120.0;
-        const dist_spread = 120.0;
+        const x_pos: f32 = (random.float(f32) * foliage_spread) - foliage_spread * 0.5;
+        const z_pos: f32 = (random.float(f32) * foliage_spread) - foliage_spread;
 
-        const x_pos: f32 = (random.float(f32) * horiz_spread) - horiz_spread * 0.5;
-        const z_pos: f32 = (random.float(f32) * dist_spread) - dist_spread;
-
-        var transform = math.Mat4.translate(math.Vec3.new(x_pos, 0, z_pos));
+        var transform = math.Mat4.translate(math.Vec3.new(x_pos, draw_y_offset, z_pos));
         transform = transform.mul(rot_matrix);
 
         sprite_batch.setTransformMatrix(transform);
 
-        const sprite_idx = random.intRangeLessThan(usize, 0, tree_sprites.len);
-        const tex_region = tree_sprites[sprite_idx];
-        var reg_size = tex_region.getSize().mul(math.Vec2.new(2.1, 1)).scale(8);
+        // make mostly grass
+        var make_grass: bool = random.float(f32) < 0.8;
+        var atlas = if (make_grass) grass_sprites else tree_sprites;
+        var foliage_scale: f32 = if (make_grass) grass_scale else tree_scale;
 
-        const tree_size = reg_size.scale(random.float(f32) + 0.55);
-        sprite_batch.addRectangle(math.Vec2{ .x = tree_size.x * -0.5, .y = 0 }, tree_size, tex_region, colors.white);
+        // grab a random region from the atlas
+        const sprite_idx = random.intRangeLessThan(usize, 0, atlas.len);
+        const tex_region = atlas[sprite_idx];
+
+        // size the rectangle based on the size of the sprite in the atlas
+        var reg_size = tex_region.getSize().mul(math.Vec2.new(2.1, 1)).scale(foliage_scale);
+
+        // add some random scaling, then draw!
+        const rand_size = reg_size.scale(1.0 + random.float(f32) * (foliage_scale * size_variance));
+        sprite_batch.addRectangle(math.Vec2{ .x = rand_size.x * -0.5, .y = 0 }, rand_size, tex_region, foliage_tint);
     }
 
     sprite_batch.apply();

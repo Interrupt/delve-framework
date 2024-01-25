@@ -6,7 +6,7 @@ const graphics = @import("platform/graphics.zig");
 const builtin_palette = @embedFile("static/palette.gif");
 
 /// The global color palette
-pub var palette: [64]Color = [_]Color {Color{}} ** 64;
+pub var palette: [64]Color = [_]Color{Color{}} ** 64;
 
 pub const Color = struct {
     r: f32 = 1.0,
@@ -16,22 +16,17 @@ pub const Color = struct {
 
     /// Make a new color
     pub fn new(r: f32, g: f32, b: f32, a: f32) Color {
-       return Color{.r=r,.g=g,.b=b,.a=a};
+        return Color{ .r = r, .g = g, .b = b, .a = a };
     }
 
     /// Make a new color, using bytes
     pub fn newBytes(r: u8, g: u8, b: u8, a: u8) Color {
-       return Color{
-            .r=@as(f32, @floatFromInt(r)) / 255.0,
-            .g=@as(f32, @floatFromInt(g)) / 255.0,
-            .b=@as(f32, @floatFromInt(b)) / 255.0,
-            .a=@as(f32, @floatFromInt(a)) / 255.0
-        };
+        return Color{ .r = @as(f32, @floatFromInt(r)) / 255.0, .g = @as(f32, @floatFromInt(g)) / 255.0, .b = @as(f32, @floatFromInt(b)) / 255.0, .a = @as(f32, @floatFromInt(a)) / 255.0 };
     }
 
     /// Turn an array of floats into a color
     pub fn fromArray(val: [4]f32) Color {
-       return Color{.r=val[0],.g=val[1],.b=val[2],.a=val[3]};
+        return Color{ .r = val[0], .g = val[1], .b = val[2], .a = val[3] };
     }
 
     /// Convert this color to a packed int
@@ -61,7 +56,7 @@ pub const Color = struct {
 
     /// Output an array of floats from the channels
     pub fn toArray(self: Color) [4]f32 {
-        return [_]f32 { self.r, self.g, self.b, self.a };
+        return [_]f32{ self.r, self.g, self.b, self.a };
     }
 
     /// Get a color multiplied by these colors
@@ -90,8 +85,8 @@ pub const transparent: Color = Color.new(0.0, 0.0, 0.0, 0.0);
 pub const white: Color = Color.new(1.0, 1.0, 1.0, 1.0);
 pub const black: Color = Color.new(0.0, 0.0, 0.0, 1.0);
 pub const grey: Color = Color.new(0.5, 0.5, 0.5, 1.0);
-pub const light_grey: Color = Color.new(0.25, 0.25, 0.25, 1.0);
-pub const dark_grey: Color = Color.new(0.75, 0.75, 0.75, 1.0);
+pub const dark_grey: Color = Color.new(0.25, 0.25, 0.25, 1.0);
+pub const light_grey: Color = Color.new(0.75, 0.75, 0.75, 1.0);
 pub const red: Color = Color.new(1.0, 0.0, 0.0, 1.0);
 pub const green: Color = Color.new(0.0, 1.0, 0.0, 1.0);
 pub const blue: Color = Color.new(0.0, 0.0, 1.0, 1.0);
@@ -112,7 +107,7 @@ pub fn init() !void {
     palette = try loadBuiltinPalette();
 }
 
-pub fn deinit() void { }
+pub fn deinit() void {}
 
 /// Sets the palette using the statically included default
 pub fn loadBuiltinPalette() ![64]Color {
@@ -132,13 +127,13 @@ pub fn loadPaletteFromFile(filename: [:0]const u8) ![64]Color {
 
 /// Returns a palette from colors in this image
 pub fn fillPalette(palette_img: images.Image) [64]Color {
-    var new_palette: [64]Color = [_]Color {Color{}} ** 64;
+    var new_palette: [64]Color = [_]Color{Color{}} ** 64;
 
     // Load the colors into the palette
-    for(0..palette_img.width * palette_img.height) |i| {
+    for (0..palette_img.width * palette_img.height) |i| {
         var color_idx = i * palette_img.channels;
 
-        if(i >= new_palette.len)
+        if (i >= new_palette.len)
             break;
 
         if (color_idx >= palette_img.height * palette_img.pitch)
@@ -162,7 +157,7 @@ pub fn fillPalette(palette_img: images.Image) [64]Color {
 
 /// Returns a color in the palette at the given index
 pub fn getColorFromPalette(pal_idx: u32) Color {
-    if(pal_idx > palette.len)
+    if (pal_idx > palette.len)
         return Color{};
 
     return palette[pal_idx];
