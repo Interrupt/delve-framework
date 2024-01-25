@@ -310,41 +310,21 @@ pub const Mat4 = extern struct {
     pub fn direction(dir_norm: Vec3, axis_norm: Vec3) Mat4 {
         var res = Mat4.identity();
 
-        // var xaxis: Vec3 = axis_norm.cross(dir_norm);
-        // xaxis = xaxis.norm();
-        //
-        // var yaxis: Vec3 = dir_norm.cross(xaxis);
-        // yaxis = yaxis.norm();
-
-        var dir = dir_norm.norm();
-
-        var xaxis: Vec3 = dir.cross(axis_norm);
+        var xaxis: Vec3 = axis_norm.cross(dir_norm);
         xaxis = xaxis.norm();
 
-        var yaxis: Vec3 = xaxis.cross(dir_norm);
+        var yaxis: Vec3 = dir_norm.cross(xaxis);
         yaxis = yaxis.norm();
 
         res.m[0][0] = xaxis.x;
         res.m[0][1] = yaxis.x;
-        res.m[0][2] = dir.x;
+        res.m[0][2] = dir_norm.x;
         res.m[1][0] = xaxis.y;
         res.m[1][1] = yaxis.y;
-        res.m[1][2] = dir.y;
+        res.m[1][2] = dir_norm.y;
         res.m[2][0] = xaxis.z;
         res.m[2][1] = yaxis.z;
-        res.m[2][2] = dir.z;
-
-        // column1.x = xaxis.x;
-        // column1.y = yaxis.x;
-        // column1.z = direction.x;
-        //
-        // column2.x = xaxis.y;
-        // column2.y = yaxis.y;
-        // column2.z = direction.y;
-        //
-        // column3.x = xaxis.z;
-        // column3.y = yaxis.z;
-        // column3.z = direction.z;
+        res.m[2][2] = dir_norm.z;
 
         return res.transpose();
     }
