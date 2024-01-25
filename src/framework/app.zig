@@ -37,7 +37,7 @@ pub fn start(config: AppConfig) !void {
 
     // Change the working dir to where the assets are
     debug.log("Assets Path: {s}", .{assets_path});
-    try std.os.chdirZ(assets_path);
+    try std.os.chdir(assets_path[0..assets_path.len]);
 
     // Kick off the game loop! This will also start and stop the subsystems.
     app_backend.startMainLoop(config);
