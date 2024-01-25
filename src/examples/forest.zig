@@ -183,6 +183,7 @@ fn pre_draw() void {
         _ = i;
         sprite_batch.useTexture(tex_treesheet);
 
+        // give each piece of foliage a random position
         const x_pos: f32 = (random.float(f32) * foliage_spread) - foliage_spread * 0.5;
         const z_pos: f32 = (random.float(f32) * foliage_spread) - foliage_spread;
 
@@ -194,10 +195,14 @@ fn pre_draw() void {
         var atlas = if (make_grass) grass_sprites else tree_sprites;
         var foliage_scale: f32 = if (make_grass) grass_scale else tree_scale;
 
+        // make foliage wave in the wind!
         const wave_offset: f32 = random.float(f32) * 1000.0;
         const wave_amount: f32 = if (make_grass) 5 else 1;
         const wave_speed: f32 = if (make_grass) 1 else 0.25;
+
         transform = transform.mul(math.Mat4.rotate(@floatCast(std.math.sin(wave_offset + time * wave_speed) * wave_amount), math.Vec3.new(0, 0, 1)));
+
+        // have everything needed to tell the sprite batcher where to draw our sprite now
         sprite_batch.setTransformMatrix(transform);
 
         // grab a random region from the atlas
@@ -208,8 +213,8 @@ fn pre_draw() void {
         var reg_size = tex_region.getSize().mul(math.Vec2.new(2.1, 1)).scale(foliage_scale);
 
         // add some random scaling, then draw!
-        const rand_size = reg_size.scale(1.0 + random.float(f32) * (foliage_scale * size_variance));
-        sprite_batch.addRectangle(math.Vec2{ .x = rand_size.x * -0.5, .y = 0 }, rand_size, tex_region, foliage_tint);
+        const size = reg_size.scale(1.0 + random.float(f32) * (foliage_scale * size_variance));
+        sprite_batch.addRectangle(math.Vec2{ .x = size.x * -0.5, .y = 0 }, size, tex_region, foliage_tint);
     }
 
     sprite_batch.apply();
