@@ -22,10 +22,10 @@ pub fn build(b: *std.Build) void {
     const delve_module = b.addModule("delve", .{
         .source_file = .{ .path = "src/framework/delve.zig" },
         .dependencies = &.{
-            .{.name = "ziglua", .module = ziglua.module("ziglua")},
-            .{.name = "sokol", .module = sokol_module},
-            .{.name = "zaudio", .module = zaudio_pkg.zaudio},
-            .{.name = "zmesh", .module = zmesh_pkg.zmesh},
+            .{ .name = "ziglua", .module = ziglua.module("ziglua") },
+            .{ .name = "sokol", .module = sokol_module },
+            .{ .name = "zaudio", .module = zaudio_pkg.zaudio },
+            .{ .name = "zmesh", .module = zmesh_pkg.zmesh },
         },
     });
 
@@ -34,6 +34,7 @@ pub fn build(b: *std.Build) void {
     buildExample(b, "clear", target, optimize, delve_module);
     buildExample(b, "debugdraw", target, optimize, delve_module);
     buildExample(b, "forest", target, optimize, delve_module);
+    buildExample(b, "lua", target, optimize, delve_module);
     buildExample(b, "meshes", target, optimize, delve_module);
     buildExample(b, "stresstest", target, optimize, delve_module);
 

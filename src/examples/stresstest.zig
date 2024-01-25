@@ -17,6 +17,7 @@ pub fn main() !void {
     try debugdraw_example.registerModule();
     try meshes_example.registerModule();
     try sprites_example.registerModule();
+    // try forest_example.registerModule();
 
     try app.start(app.AppConfig{ .title = "Delve Framework - Stress Test" });
 }
