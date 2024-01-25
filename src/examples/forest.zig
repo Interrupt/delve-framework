@@ -14,6 +14,7 @@ const input = delve.input;
 const papp = delve.platform_app;
 const math = delve.math;
 const modules = delve.modules;
+const fps_module = delve.module_fps_counter;
 
 var tex_treesheet: graphics.Texture = undefined;
 var shader_blend: graphics.Shader = undefined;
@@ -25,6 +26,7 @@ var camera: cam.Camera = undefined;
 
 pub fn main() !void {
     try registerModule();
+    try fps_module.registerModule();
     try app.start(app.AppConfig{ .title = "Delve Framework - Sprite Batch Forest Example" });
 }
 
