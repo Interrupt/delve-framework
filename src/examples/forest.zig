@@ -20,6 +20,7 @@ var tex_treesheet: graphics.Texture = undefined;
 var shader_blend: graphics.Shader = undefined;
 
 var sprite_batch: batcher.SpriteBatcher = undefined;
+var grass_batch: batcher.SpriteBatcher = undefined;
 var camera: cam.Camera = undefined;
 
 // This is an example of using the sprite batcher to draw a forest!
@@ -124,6 +125,11 @@ fn on_init() void {
         return;
     };
 
+    grass_batch = batcher.SpriteBatcher.init(.{}) catch {
+        debug.showErrorScreen("Fatal error during batch init!");
+        return;
+    };
+
     // Load some trees in a spritesheet
     const treesheet_path = "sprites/treesheet.png";
     var treesheet_img: images.Image = images.loadFile(treesheet_path) catch {
@@ -163,6 +169,9 @@ fn pre_draw() void {
     // set up a matrix that will billboard to face the camera, but ignore the up dir
     var billboard_dir = math.Vec3.new(camera.direction.x, 0, camera.direction.z).norm();
     var rot_matrix = math.Mat4.direction(billboard_dir, camera.up);
+
+    // make our grass, if needed
+    addGrass();
 
     // reset the sprite batch to clear everything that was added for the previous frame
     sprite_batch.reset();
@@ -220,8 +229,71 @@ fn pre_draw() void {
     sprite_batch.apply();
 }
 
+var last_grass_position: math.Vec3 = undefined;
+var made_grass: bool = false;
+fn addGrass() void {
+    const pos = camera.position;
+    const grass_area: f32 = 30;
+    const grass_size: f32 = 2.0;
+
+    // only remake the grass when we have moved far enough since last time
+    if (made_grass and pos.sub(last_grass_position).len() < 5)
+        return;
+
+    // keep track of when we did this last!
+    made_grass = true;
+    last_grass_position = pos;
+
+    const grass_width: f32 = grass_area / 2.0;
+    const start_x_pos: f32 = std.math.floor(pos.x);
+    const start_z_pos: f32 = std.math.floor(pos.z);
+
+    grass_batch.reset();
+    grass_batch.useShader(shader_blend);
+    grass_batch.useTexture(tex_treesheet);
+
+    // we'll make grass in cells
+    for (0..grass_area) |x| {
+        for (0..grass_area) |z| {
+            var fx: f32 = @floatFromInt(x);
+            var fz: f32 = @floatFromInt(z);
+
+            // cell position
+            const xpos: f32 = start_x_pos + fx - (grass_width);
+            const zpos: f32 = start_z_pos + fz - (grass_width);
+
+            // seed random from this cell position
+            var rnd = RndGen.init(std.math.absCast(@as(i32, @intFromFloat(xpos + (zpos * 10000)))));
+            var random = rnd.random();
+
+            // make multiple grass pieces for this cell!
+            for (0..10) |_| {
+                const x_offset: f32 = random.float(f32) - 0.5;
+                const z_offset: f32 = random.float(f32) - 0.5;
+                const tex_region = grass_sprites[random.intRangeLessThan(usize, 0, grass_sprites.len)];
+
+                var draw_pos = math.Vec3.new(xpos + x_offset, 0, zpos + z_offset);
+                var rot_matrix = math.Mat4.rotate(random.float(f32) * 360, camera.up);
+                var transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
+
+                grass_batch.setTransformMatrix(transform);
+
+                // size the rectangle based on the size of the sprite in the atlas
+                var size = tex_region.getSize().mul(math.Vec2.new(2.1, 1)).scale(grass_size);
+                size = size.scale(1.0 + random.float(f32) * 0.5);
+
+                // add some random scaling, then draw!
+                grass_batch.addRectangle(math.Vec2{ .x = size.x * -0.5, .y = 0 }, size, tex_region, foliage_tint);
+            }
+        }
+    }
+
+    grass_batch.apply();
+}
+
 fn on_draw() void {
     const proj_view_mat = camera.getProjView();
+    grass_batch.draw(proj_view_mat, math.Mat4.identity());
     sprite_batch.draw(proj_view_mat, math.Mat4.identity());
 }
 
