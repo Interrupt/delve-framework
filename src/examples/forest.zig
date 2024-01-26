@@ -99,6 +99,11 @@ const tree_sprites: []const batcher.TextureRegion = &[_]batcher.TextureRegion{
     },
 };
 
+const grass_state = struct {
+    var last_position: math.Vec3 = undefined;
+    var made: bool = false;
+};
+
 // color palette!
 var sky_color = colors.Color.newBytes(255, 247, 229, 255);
 var ground_color = colors.Color.newBytes(255, 179, 105, 255).mul(colors.light_grey);
@@ -171,21 +176,13 @@ fn pre_draw() void {
     var rot_matrix = math.Mat4.direction(billboard_dir, camera.up);
 
     // make our grass, if needed
-    addGrass();
+    addGrass(camera.position, 30, 1.25, 1.0);
 
     // reset the sprite batch to clear everything that was added for the previous frame
     sprite_batch.reset();
 
-    // add a ground plane
-    sprite_batch.useShader(shader_blend);
-    sprite_batch.useTexture(graphics.tex_white);
-
-    const ground_size = math.Vec2.new(foliage_spread, foliage_spread);
-    var ground_transform = math.Mat4.translate(math.Vec3.new(0, draw_y_offset, (ground_size.y * -0.5)));
-    ground_transform = ground_transform.mul(math.Mat4.rotate(90, math.Vec3.new(1, 0, 0)));
-    sprite_batch.setTransformMatrix(ground_transform);
-
-    sprite_batch.addRectangle(ground_size.scale(-0.5), ground_size, batcher.TextureRegion.default(), ground_color);
+    // make the ground plane
+    addGround(math.Vec2.new(foliage_spread, foliage_spread));
 
     // now add all the foliage
     for (0..foliage_count) |i| {
@@ -226,25 +223,35 @@ fn pre_draw() void {
         sprite_batch.addRectangle(math.Vec2{ .x = size.x * -0.5, .y = 0 }, size, tex_region, foliage_tint);
     }
 
+    // save the state of the batch so it can be drawn
     sprite_batch.apply();
 }
 
-var last_grass_position: math.Vec3 = undefined;
-var made_grass: bool = false;
-fn addGrass() void {
-    const pos = camera.position;
-    const grass_area: f32 = 30;
-    const grass_size: f32 = 2.0;
+/// Add the ground plane to the sprite batch
+fn addGround(ground_size: math.Vec2) void {
+    sprite_batch.useShader(shader_blend);
+    sprite_batch.useTexture(graphics.tex_white);
 
+    // ground plane needs to be big enough to cover where the trees will be
+    var ground_transform = math.Mat4.translate(math.Vec3.new(0, draw_y_offset, (ground_size.y * -0.5)));
+    ground_transform = ground_transform.mul(math.Mat4.rotate(90, math.Vec3.new(1, 0, 0)));
+
+    // Add the ground plane rectangle
+    sprite_batch.setTransformMatrix(ground_transform);
+    sprite_batch.addRectangle(ground_size.scale(-0.5), ground_size, batcher.TextureRegion.default(), ground_color);
+}
+
+/// Makes grass in cells around the position.
+fn addGrass(pos: math.Vec3, grass_area: u32, grass_size: f32, density: f32) void {
     // only remake the grass when we have moved far enough since last time
-    if (made_grass and pos.sub(last_grass_position).len() < 5)
+    if (grass_state.made and pos.sub(grass_state.last_position).len() < 5)
         return;
 
     // keep track of when we did this last!
-    made_grass = true;
-    last_grass_position = pos;
+    grass_state.made = true;
+    grass_state.last_position = pos;
 
-    const grass_width: f32 = grass_area / 2.0;
+    const grass_width: f32 = @floatFromInt(grass_area / 2);
     const start_x_pos: f32 = std.math.floor(pos.x);
     const start_z_pos: f32 = std.math.floor(pos.z);
 
@@ -266,8 +273,10 @@ fn addGrass() void {
             var rnd = RndGen.init(std.math.absCast(@as(i32, @intFromFloat(xpos + (zpos * 10000)))));
             var random = rnd.random();
 
+            const grass_count: u32 = @intFromFloat(density * 10.0);
+
             // make multiple grass pieces for this cell!
-            for (0..10) |_| {
+            for (0..grass_count) |_| {
                 const x_offset: f32 = random.float(f32) - 0.5;
                 const z_offset: f32 = random.float(f32) - 0.5;
                 const tex_region = grass_sprites[random.intRangeLessThan(usize, 0, grass_sprites.len)];
@@ -280,7 +289,7 @@ fn addGrass() void {
 
                 // size the rectangle based on the size of the sprite in the atlas
                 var size = tex_region.getSize().mul(math.Vec2.new(2.1, 1)).scale(grass_size);
-                size = size.scale(1.0 + random.float(f32) * 0.5);
+                size = size.scale(1.0 + random.float(f32) * 1);
 
                 // add some random scaling, then draw!
                 grass_batch.addRectangle(math.Vec2{ .x = size.x * -0.5, .y = 0 }, size, tex_region, foliage_tint);
@@ -288,6 +297,8 @@ fn addGrass() void {
         }
     }
 
+    // save the state of the grass batch so it can be drawn
+    // this draw state will be kept until the next reset!
     grass_batch.apply();
 }
 
