@@ -20,6 +20,7 @@ var tex_treesheet: graphics.Texture = undefined;
 var shader_blend: graphics.Shader = undefined;
 
 var sprite_batch: batcher.SpriteBatcher = undefined;
+var grass_batch: batcher.SpriteBatcher = undefined;
 var camera: cam.Camera = undefined;
 
 // This is an example of using the sprite batcher to draw a forest!
@@ -98,6 +99,11 @@ const tree_sprites: []const batcher.TextureRegion = &[_]batcher.TextureRegion{
     },
 };
 
+const grass_state = struct {
+    var last_position: math.Vec3 = undefined;
+    var made: bool = false;
+};
+
 // color palette!
 var sky_color = colors.Color.newBytes(255, 247, 229, 255);
 var ground_color = colors.Color.newBytes(255, 179, 105, 255).mul(colors.light_grey);
@@ -120,6 +126,11 @@ fn on_init() void {
     debug.log("Forest example module initializing", .{});
 
     sprite_batch = batcher.SpriteBatcher.init(.{}) catch {
+        debug.showErrorScreen("Fatal error during batch init!");
+        return;
+    };
+
+    grass_batch = batcher.SpriteBatcher.init(.{}) catch {
         debug.showErrorScreen("Fatal error during batch init!");
         return;
     };
@@ -164,19 +175,14 @@ fn pre_draw() void {
     var billboard_dir = math.Vec3.new(camera.direction.x, 0, camera.direction.z).norm();
     var rot_matrix = math.Mat4.direction(billboard_dir, camera.up);
 
+    // make our grass, if needed
+    addGrass(camera.position, 30, 1.25, 1.0);
+
     // reset the sprite batch to clear everything that was added for the previous frame
     sprite_batch.reset();
 
-    // add a ground plane
-    sprite_batch.useShader(shader_blend);
-    sprite_batch.useTexture(graphics.tex_white);
-
-    const ground_size = math.Vec2.new(foliage_spread, foliage_spread);
-    var ground_transform = math.Mat4.translate(math.Vec3.new(0, draw_y_offset, (ground_size.y * -0.5)));
-    ground_transform = ground_transform.mul(math.Mat4.rotate(90, math.Vec3.new(1, 0, 0)));
-    sprite_batch.setTransformMatrix(ground_transform);
-
-    sprite_batch.addRectangle(ground_size.scale(-0.5), ground_size, batcher.TextureRegion.default(), ground_color);
+    // make the ground plane
+    addGround(math.Vec2.new(foliage_spread, foliage_spread));
 
     // now add all the foliage
     for (0..foliage_count) |i| {
@@ -217,11 +223,90 @@ fn pre_draw() void {
         sprite_batch.addRectangle(math.Vec2{ .x = size.x * -0.5, .y = 0 }, size, tex_region, foliage_tint);
     }
 
+    // save the state of the batch so it can be drawn
     sprite_batch.apply();
+}
+
+/// Add the ground plane to the sprite batch
+fn addGround(ground_size: math.Vec2) void {
+    sprite_batch.useShader(shader_blend);
+    sprite_batch.useTexture(graphics.tex_white);
+
+    // ground plane needs to be big enough to cover where the trees will be
+    var ground_transform = math.Mat4.translate(math.Vec3.new(0, draw_y_offset, (ground_size.y * -0.5)));
+    ground_transform = ground_transform.mul(math.Mat4.rotate(90, math.Vec3.new(1, 0, 0)));
+
+    // Add the ground plane rectangle
+    sprite_batch.setTransformMatrix(ground_transform);
+    sprite_batch.addRectangle(ground_size.scale(-0.5), ground_size, batcher.TextureRegion.default(), ground_color);
+}
+
+/// Makes grass in cells around the position.
+fn addGrass(pos: math.Vec3, grass_area: u32, grass_size: f32, density: f32) void {
+    // only remake the grass when we have moved far enough since last time
+    if (grass_state.made and pos.sub(grass_state.last_position).len() < 5)
+        return;
+
+    // keep track of when we did this last!
+    grass_state.made = true;
+    grass_state.last_position = pos;
+
+    const grass_width: f32 = @floatFromInt(grass_area / 2);
+    const start_x_pos: f32 = std.math.floor(pos.x);
+    const start_z_pos: f32 = std.math.floor(pos.z);
+
+    grass_batch.reset();
+    grass_batch.useShader(shader_blend);
+    grass_batch.useTexture(tex_treesheet);
+
+    // we'll make grass in cells
+    for (0..grass_area) |x| {
+        for (0..grass_area) |z| {
+            var fx: f32 = @floatFromInt(x);
+            var fz: f32 = @floatFromInt(z);
+
+            // cell position
+            const xpos: f32 = start_x_pos + fx - (grass_width);
+            const zpos: f32 = start_z_pos + fz - (grass_width);
+
+            // seed random from this cell position
+            var rnd = RndGen.init(std.math.absCast(@as(i32, @intFromFloat(xpos + (zpos * 10000)))));
+            var random = rnd.random();
+
+            const grass_count: u32 = @intFromFloat(density * 10.0);
+
+            // make multiple grass pieces for this cell!
+            for (0..grass_count) |_| {
+                const x_offset: f32 = random.float(f32) - 0.5;
+                const z_offset: f32 = random.float(f32) - 0.5;
+
+                const sprite_idx: usize = if (random.float(f32) < 0.85) 2 else 0;
+                const tex_region = grass_sprites[sprite_idx];
+
+                var draw_pos = math.Vec3.new(xpos + x_offset, 0, zpos + z_offset);
+                var rot_matrix = math.Mat4.rotate(random.float(f32) * 360, camera.up);
+                var transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
+
+                grass_batch.setTransformMatrix(transform);
+
+                // size the rectangle based on the size of the sprite in the atlas
+                var size = tex_region.getSize().mul(math.Vec2.new(2.1, 1)).scale(grass_size);
+                size = size.scale(1.0 + random.float(f32) * 1);
+
+                // add some random scaling, then draw!
+                grass_batch.addRectangle(math.Vec2{ .x = size.x * -0.5, .y = 0 }, size, tex_region, foliage_tint);
+            }
+        }
+    }
+
+    // save the state of the grass batch so it can be drawn
+    // this draw state will be kept until the next reset!
+    grass_batch.apply();
 }
 
 fn on_draw() void {
     const proj_view_mat = camera.getProjView();
+    grass_batch.draw(proj_view_mat, math.Mat4.identity());
     sprite_batch.draw(proj_view_mat, math.Mat4.identity());
 }
 
