@@ -279,7 +279,9 @@ fn addGrass(pos: math.Vec3, grass_area: u32, grass_size: f32, density: f32) void
             for (0..grass_count) |_| {
                 const x_offset: f32 = random.float(f32) - 0.5;
                 const z_offset: f32 = random.float(f32) - 0.5;
-                const tex_region = grass_sprites[random.intRangeLessThan(usize, 0, grass_sprites.len)];
+
+                const sprite_idx: usize = if (random.float(f32) < 0.85) 2 else 0;
+                const tex_region = grass_sprites[sprite_idx];
 
                 var draw_pos = math.Vec3.new(xpos + x_offset, 0, zpos + z_offset);
                 var rot_matrix = math.Mat4.rotate(random.float(f32) * 360, camera.up);
