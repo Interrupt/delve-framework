@@ -109,7 +109,7 @@ pub const Camera = struct {
 
     fn update(self: *Camera) void {
         self.projection = Mat4.persp(self.fov, self.aspect, self.near, self.far);
-        self.view = Mat4.lookat(self.position.add(self.direction), self.position, self.up);
+        self.view = Mat4.lookat(self.position, self.position.sub(self.direction), self.up);
     }
 
     /// Applies projection and view, returns a projection * view matrix
