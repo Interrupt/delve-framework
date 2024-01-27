@@ -303,8 +303,7 @@ pub fn setConsoleVisible(is_visible: bool) void {
         mouse_was_captured = papp.isMouseCaptured();
         papp.captureMouse(false);
     } else {
-        if (mouse_was_captured)
-            papp.captureMouse(true);
+        papp.captureMouse(mouse_was_captured);
     }
 }
 
