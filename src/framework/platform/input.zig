@@ -190,6 +190,10 @@ fn on_post_draw() void {
     // keep track of where the mouse was at the end of this frame
     state.last_mouse_x = state.mouse_x;
     state.last_mouse_y = state.mouse_y;
+
+    // reset the mouse delta state.
+    state.mouse_dx = 0;
+    state.mouse_dy = 0;
 }
 
 /// Returns the current mouse position
@@ -241,11 +245,8 @@ var is_first_mouse_move = true;
 /// Update the mouse movement state
 pub fn onMouseMoved(x: f32, y: f32, dx: f32, dy: f32) void {
     // ignore mouse movement if the console is up!
-    if (debug.isConsoleVisible()) {
-        state.mouse_dx = 0;
-        state.mouse_dy = 0;
+    if (debug.isConsoleVisible())
         return;
-    }
 
     state.mouse_x = x;
     state.mouse_y = y;
