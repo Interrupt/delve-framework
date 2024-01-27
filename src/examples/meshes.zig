@@ -47,7 +47,7 @@ fn on_init() void {
     graphics.setClearColor(colors.white);
 
     // Make a perspective camera, with a 90 degree FOV
-    camera = cam.Camera.init(90.0, 0.01, 50.0, Vec3.up());
+    camera = cam.Camera.initThirdPerson(90.0, 0.01, 50.0, 4.0, Vec3.up());
     camera.position = Vec3.new(0.0, 0.0, 0.0);
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
@@ -88,7 +88,7 @@ fn on_init() void {
 
 fn on_tick(delta: f32) void {
     // There is a built in fly mode, but you can also just set the position / direction
-    camera.runFlyCamera(100 * delta, false);
+    camera.runFlyCamera(4 * delta, 1.75 * delta, false);
 
     time += delta * 100;
 }

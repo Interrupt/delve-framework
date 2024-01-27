@@ -9,6 +9,7 @@ const Vec2 = math.Vec2;
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 
+/// Basic camera system with support for first and third person modes
 pub const Camera = struct {
     position: Vec3 = Vec3.new(0, 0, 0),
     direction: Vec3 = Vec3.new(0, 0, 1),
@@ -22,6 +23,11 @@ pub const Camera = struct {
     view: Mat4 = Mat4.identity(),
     aspect: f32 = undefined,
 
+    third_person: bool = false,
+    boom_arm_length: f32 = 10.0,
+
+    mouselook_scale: f32 = 0.35,
+
     _viewport_width: f32 = undefined,
     _viewport_height: f32 = undefined,
 
@@ -33,6 +39,13 @@ pub const Camera = struct {
         cam.near = near;
         cam.far = far;
         cam.up = up;
+        return cam;
+    }
+
+    pub fn initThirdPerson(fov: f32, near: f32, far: f32, cam_distance: f32, up: Vec3) Camera {
+        var cam = init(fov, near, far, up);
+        cam.third_person = true;
+        cam.boom_arm_length = cam_distance;
         return cam;
     }
 
@@ -74,41 +87,47 @@ pub const Camera = struct {
     }
 
     /// A simple FPS flying camera, for examples and debugging
-    pub fn runFlyCamera(self: *Camera, speed: f32, use_mouselook: bool) void {
-        const flyspeed = speed * 0.1;
-        const turnspeed = speed * 0.03;
-
+    pub fn runFlyCamera(self: *Camera, move_speed: f32, turn_speed: f32, use_mouselook: bool) void {
         if (input.isKeyPressed(.W)) {
-            self.moveForward(flyspeed);
+            self.moveForward(move_speed);
         } else if (input.isKeyPressed(.S)) {
-            self.moveForward(-flyspeed);
+            self.moveForward(-move_speed);
         }
         if (input.isKeyPressed(.A)) {
-            self.moveRight(-flyspeed);
+            self.moveRight(-move_speed);
         } else if (input.isKeyPressed(.D)) {
-            self.moveRight(flyspeed);
+            self.moveRight(move_speed);
         }
         if (input.isKeyPressed(.LEFT)) {
-            self.yaw(turnspeed);
+            self.yaw(turn_speed);
         } else if (input.isKeyPressed(.RIGHT)) {
-            self.yaw(-turnspeed);
+            self.yaw(-turn_speed);
         }
         if (input.isKeyPressed(.UP)) {
-            self.pitch(turnspeed);
+            self.pitch(turn_speed);
         } else if (input.isKeyPressed(.DOWN)) {
-            self.pitch(-turnspeed);
+            self.pitch(-turn_speed);
         }
 
         if (!use_mouselook)
             return;
 
-        const mouseDelta = input.getMouseDelta();
-        self.yaw(mouseDelta.x * -0.01);
-        self.pitch(mouseDelta.y * -0.01);
+        const mouse_delta = input.getMouseDelta();
+        const mouse_mod: f32 = -self.mouselook_scale;
+        self.yaw(mouse_delta.x * mouse_mod * turn_speed);
+        self.pitch(mouse_delta.y * mouse_mod * turn_speed);
     }
 
     fn update(self: *Camera) void {
         self.projection = Mat4.persp(self.fov, self.aspect, self.near, self.far);
+
+        // third person camera
+        if (self.third_person) {
+            self.view = Mat4.lookat(self.position.add(self.direction.scale(self.boom_arm_length)), self.position, self.up);
+            return;
+        }
+
+        // first person camera
         self.view = Mat4.lookat(self.position, self.position.sub(self.direction), self.up);
     }
 

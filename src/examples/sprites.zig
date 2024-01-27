@@ -41,6 +41,7 @@ pub fn registerModule() !void {
     const batcherExample = modules.Module{
         .name = "batcher_example",
         .init_fn = on_init,
+        .tick_fn = on_tick,
         .pre_draw_fn = pre_draw,
         .draw_fn = on_draw,
         .cleanup_fn = on_cleanup,
@@ -90,6 +91,14 @@ fn on_init() void {
         .cull_mode = .NONE,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
+}
+
+fn on_tick(deltatime: f32) void {
+    _ = deltatime;
+
+    if (input.isKeyJustPressed(.ESCAPE)) {
+        std.os.exit(0);
+    }
 }
 
 var tick: u64 = 0;

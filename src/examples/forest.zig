@@ -156,7 +156,7 @@ fn on_init() void {
 }
 
 fn on_tick(delta: f32) void {
-    camera.runFlyCamera(40 * delta, true);
+    camera.runFlyCamera(4.0 * delta, 1.75 * delta, true);
     camera.position.y = 1.0;
 
     if (input.isKeyJustPressed(.ESCAPE)) {
