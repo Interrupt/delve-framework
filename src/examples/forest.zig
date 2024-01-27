@@ -125,6 +125,9 @@ var foliage_spread: f32 = 120.0;
 fn on_init() void {
     debug.log("Forest example module initializing", .{});
 
+    // capture and hide the mouse!
+    papp.captureMouse(true);
+
     sprite_batch = batcher.SpriteBatcher.init(.{}) catch {
         debug.showErrorScreen("Fatal error during batch init!");
         return;

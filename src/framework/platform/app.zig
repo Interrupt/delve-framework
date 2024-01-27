@@ -29,6 +29,8 @@ const state = struct {
     // current tick / time delta
     var tick: u64 = 0;
     var delta_time: f32 = 0.0;
+
+    var mouse_captured: bool = false;
 };
 
 pub fn init() !void {
@@ -47,10 +49,10 @@ pub fn deinit() void {
 }
 
 pub fn startMainLoop(config: app.AppConfig) void {
-    if(config.target_fps) |target|
+    if (config.target_fps) |target|
         setTargetFPS(target);
 
-    if(config.use_fixed_timestep)
+    if (config.use_fixed_timestep)
         setFixedTimestep(config.fixed_timestep_delta);
 
     AppBackend.startMainLoop(config);
@@ -62,6 +64,11 @@ pub fn getWidth() i32 {
 
 pub fn getHeight() i32 {
     return AppBackend.getHeight();
+}
+
+pub fn captureMouse(captured: bool) void {
+    state.mouse_captured = captured;
+    AppBackend.captureMouse(captured);
 }
 
 pub fn getAspectRatio() f32 {
@@ -100,11 +107,11 @@ fn on_frame() void {
     state.delta_time = calcDeltaTime();
     state.tick += 1;
 
-    if(state.fixed_timestep_delta) |fixed_delta| {
+    if (state.fixed_timestep_delta) |fixed_delta| {
         state.time_accumulator += state.delta_time;
 
         // keep ticking until we catch up to the actual time
-        while(state.time_accumulator >= fixed_delta) {
+        while (state.time_accumulator >= fixed_delta) {
             // fixed timestamp, tick at our constant rate
             modules.tickModules(fixed_delta);
             state.time_accumulator -= fixed_delta;
@@ -128,10 +135,12 @@ fn on_frame() void {
 
 /// Get time elapsed since last tick. Also calculate the FPS!
 fn calcDeltaTime() f32 {
-    var now = time.Instant.now() catch { return 0; };
+    var now = time.Instant.now() catch {
+        return 0;
+    };
     defer state.fps_framecount += 1;
 
-    if(state.reset_delta) {
+    if (state.reset_delta) {
         state.reset_delta = false;
         state.last_delta_calc = now;
         state.fps_start = now;
@@ -139,15 +148,17 @@ fn calcDeltaTime() f32 {
         return 0.0;
     }
 
-    if(state.target_fps != null) {
+    if (state.target_fps != null) {
         // Try to hit our target FPS!
         const frame_len_ns = now.since(state.last_delta_calc);
 
-        if(frame_len_ns < state.target_fps_ns) {
+        if (frame_len_ns < state.target_fps_ns) {
             time.sleep(state.target_fps_ns - frame_len_ns);
 
             // reset our now, since we've pushed things back
-            now = time.Instant.now() catch { return 0; };
+            now = time.Instant.now() catch {
+                return 0;
+            };
         }
     }
 
@@ -155,7 +166,7 @@ fn calcDeltaTime() f32 {
     const nanos_since = now.since(state.last_delta_calc);
     const nanos_since_fps = now.since(state.fps_start);
 
-    if(nanos_since_fps >= 1000000000) {
+    if (nanos_since_fps >= 1000000000) {
         state.fps = @intCast(state.fps_framecount);
         state.fps_framecount = 0;
         state.fps_start = now;

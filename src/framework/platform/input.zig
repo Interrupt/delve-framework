@@ -137,9 +137,15 @@ pub const MouseButtons = enum(i32) {
 
 /// Current input state
 const state = struct {
+    // current pos
     var mouse_x: f32 = 0;
     var mouse_y: f32 = 0;
 
+    // distance from last frame
+    var mouse_dx: f32 = 0;
+    var mouse_dy: f32 = 0;
+
+    // last reported pos
     var last_mouse_x: f32 = 0;
     var last_mouse_y: f32 = 0;
 
@@ -233,13 +239,18 @@ pub fn isMouseButtonJustPressed(button: MouseButtons) bool {
 var is_first_mouse_move = true;
 
 /// Update the mouse movement state
-pub fn onMouseMoved(x: f32, y: f32) void {
+pub fn onMouseMoved(x: f32, y: f32, dx: f32, dy: f32) void {
     // ignore mouse movement if the console is up!
-    if (debug.isConsoleVisible())
+    if (debug.isConsoleVisible()) {
+        state.mouse_dx = 0;
+        state.mouse_dy = 0;
         return;
+    }
 
     state.mouse_x = x;
     state.mouse_y = y;
+    state.mouse_dx = dx;
+    state.mouse_dy = dy;
 
     // There is no last mouse event until we move once
     if (is_first_mouse_move) {
@@ -300,5 +311,5 @@ pub fn onMouseUp(btn: i32) void {
 
 /// Difference in mouse position from last frame
 pub fn getMouseDelta() math.Vec2 {
-    return math.Vec2.new(state.mouse_x - state.last_mouse_x, state.mouse_y - state.last_mouse_y);
+    return math.Vec2.new(state.mouse_dx, state.mouse_dy);
 }

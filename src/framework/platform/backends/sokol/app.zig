@@ -1,4 +1,3 @@
-
 const std = @import("std");
 const main_app = @import("../../../app.zig");
 const debug = @import("../../../debug.zig");
@@ -30,7 +29,7 @@ pub const App = struct {
     pub fn init(cfg: SokolAppConfig) void {
         debug.log("Creating Sokol App backend", .{});
 
-        app = App {
+        app = App{
             .on_init_fn = cfg.on_init_fn,
             .on_frame_fn = cfg.on_frame_fn,
             .on_cleanup_fn = cfg.on_cleanup_fn,
@@ -67,17 +66,17 @@ pub const App = struct {
 
     export fn sokol_input(event: ?*const sapp.Event) void {
         const ev = event.?;
-        if(ev.type == .MOUSE_DOWN) {
+        if (ev.type == .MOUSE_DOWN) {
             input.onMouseDown(@intFromEnum(ev.mouse_button));
-        } else if(ev.type == .MOUSE_UP) {
+        } else if (ev.type == .MOUSE_UP) {
             input.onMouseUp(@intFromEnum(ev.mouse_button));
         } else if (ev.type == .MOUSE_MOVE) {
-            input.onMouseMoved(ev.mouse_x, ev.mouse_y);
-        } else if(ev.type == .KEY_DOWN) {
+            input.onMouseMoved(ev.mouse_x, ev.mouse_y, ev.mouse_dx, ev.mouse_dy);
+        } else if (ev.type == .KEY_DOWN) {
             input.onKeyDown(@intFromEnum(ev.key_code));
-        } else if(ev.type == .KEY_UP) {
+        } else if (ev.type == .KEY_UP) {
             input.onKeyUp(@intFromEnum(ev.key_code));
-        } else if(ev.type == .CHAR) {
+        } else if (ev.type == .CHAR) {
             input.onKeyChar(ev.char_code);
         }
     }
@@ -107,5 +106,9 @@ pub const App = struct {
 
     pub fn getHeight() i32 {
         return sapp.height();
+    }
+
+    pub fn captureMouse(captured: bool) void {
+        sapp.lockMouse(captured);
     }
 };
