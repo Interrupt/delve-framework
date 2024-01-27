@@ -30,7 +30,7 @@ pub const Sound = struct {
     /// Checks if this sound is still alive
     pub fn isAlive(self: *Sound) bool {
         var found = loaded_sounds.get(self.handle);
-        if(found != null)
+        if (found != null)
             return found.ready_for_cleanup;
 
         return true;
@@ -39,14 +39,14 @@ pub const Sound = struct {
     /// Marks this sound as being ready for cleanup
     pub fn requestDestroy(self: *Sound) void {
         var found = loaded_sounds.getPtr(self.handle);
-        if(found) |loaded_sound|
+        if (found) |loaded_sound|
             loaded_sound.ready_for_cleanup = true;
     }
 
     /// Whether this sound needs to be garbage collected
     pub fn needsCleanup(self: *Sound) bool {
         var found = loaded_sounds.getPtr(self.handle);
-        if(found) |loaded_sound|
+        if (found) |loaded_sound|
             return loaded_sound.ready_for_cleanup;
 
         return false;
@@ -54,7 +54,7 @@ pub const Sound = struct {
 
     /// Starts playing this sound
     pub fn start(self: *Sound) void {
-        if(getZaudioSound(self.handle)) |sound| {
+        if (getZaudioSound(self.handle)) |sound| {
             sound.start() catch {
                 debug.log("Could not start sound!", .{});
                 return;
@@ -64,7 +64,7 @@ pub const Sound = struct {
 
     /// Stops this sound
     pub fn stop(self: *Sound) void {
-        if(getZaudioSound(self.handle)) |sound| {
+        if (getZaudioSound(self.handle)) |sound| {
             sound.stop() catch {
                 debug.log("Could not stop sound!", .{});
                 return;
@@ -74,33 +74,33 @@ pub const Sound = struct {
 
     /// Makes this sound loop, default is to not
     pub fn setLooping(self: *Sound, looping: bool) void {
-        if(getZaudioSound(self.handle)) |sound|
+        if (getZaudioSound(self.handle)) |sound|
             sound.setLooping(looping);
     }
 
     /// Sets the volume for this sound
     pub fn setVolume(self: *Sound, volume: f32) void {
-        if(getZaudioSound(self.handle)) |sound|
+        if (getZaudioSound(self.handle)) |sound|
             sound.setVolume(volume);
     }
 
     /// Sets the pitch for this sound
     pub fn setPitch(self: *Sound, pitch: f32) void {
-        if(getZaudioSound(self.handle)) |sound|
+        if (getZaudioSound(self.handle)) |sound|
             sound.setPitch(pitch);
     }
 
     /// Sets the panning for this sound
     pub fn setPan(self: *Sound, pan: f32) void {
-        if(getZaudioSound(self.handle)) |sound|
+        if (getZaudioSound(self.handle)) |sound|
             sound.setPan(pan);
     }
 
     /// Sets the position of this sound
     pub fn setPosition(self: *Sound, pos: [3]f32, dir: [3]f32, vel: [3]f32) void {
-        if(getZaudioSound(self.handle)) |sound| {
+        if (getZaudioSound(self.handle)) |sound| {
             // Make sure this sound is spatialized! Will be absolute by default
-            if(sound.getPositioning() != zaudio.Positioning.relative)
+            if (sound.getPositioning() != zaudio.Positioning.relative)
                 sound.setPositioning(zaudio.Positioning.relative);
 
             sound.setPosition(pos);
@@ -111,7 +111,7 @@ pub const Sound = struct {
 
     /// Gets if the sound is playing
     pub fn getIsPlaying(self: *Sound) bool {
-        if(getZaudioSound(self.handle)) |sound|
+        if (getZaudioSound(self.handle)) |sound|
             return sound.isPlaying();
 
         return false;
@@ -119,7 +119,7 @@ pub const Sound = struct {
 
     /// Whether or not the sound has played all the way through
     pub fn getIsDone(self: *Sound) bool {
-        if(getZaudioSound(self.handle)) |sound|
+        if (getZaudioSound(self.handle)) |sound|
             return sound.isAtEnd();
 
         return true;
@@ -127,7 +127,7 @@ pub const Sound = struct {
 
     /// Gets if the sound is looping
     pub fn getLooping(self: *Sound) bool {
-        if(getZaudioSound(self.handle)) |sound|
+        if (getZaudioSound(self.handle)) |sound|
             return sound.getLooping();
 
         return false;
@@ -135,7 +135,7 @@ pub const Sound = struct {
 
     /// Gets the current volume
     pub fn getVolume(self: *Sound) f32 {
-        if(getZaudioSound(self.handle)) |sound|
+        if (getZaudioSound(self.handle)) |sound|
             return sound.getVolume();
 
         return 1.0;
@@ -143,7 +143,7 @@ pub const Sound = struct {
 
     /// Gets the current pitch
     pub fn getPitch(self: *Sound) f32 {
-        if(getZaudioSound(self.handle)) |sound|
+        if (getZaudioSound(self.handle)) |sound|
             return sound.getPitch();
 
         return 1.0;
@@ -151,7 +151,7 @@ pub const Sound = struct {
 
     /// Gets the current pan
     pub fn getPan(self: *Sound) f32 {
-        if(getZaudioSound(self.handle)) |sound|
+        if (getZaudioSound(self.handle)) |sound|
             return sound.getPan();
 
         return 1.0;
@@ -160,8 +160,8 @@ pub const Sound = struct {
 
 /// Registers the audio subsystem as a module
 pub fn registerModule() !void {
-    const audioSubsystem = modules.Module {
-        .name = "audio_subystem",
+    const audioSubsystem = modules.Module{
+        .name = "subsystem.audio",
         .tick_fn = on_tick,
         .cleanup_fn = on_cleanup,
     };
@@ -186,7 +186,7 @@ pub fn init() !void {
 pub fn deinit() void {
     loaded_sounds.deinit();
 
-    if(zaudio_engine) |engine|
+    if (zaudio_engine) |engine|
         engine.destroy();
 
     zaudio.deinit();
@@ -195,12 +195,12 @@ pub fn deinit() void {
 /// Loads and plays a piece of music
 pub fn playMusic(filename: [:0]const u8, volume: f32, loop: bool) ?Sound {
     var sound = loadSound(filename, true) catch {
-        debug.log("Could not load music file! ({s})", .{ filename });
+        debug.log("Could not load music file! ({s})", .{filename});
         return null;
     };
 
     // Just do one handle lookup here
-    if(getZaudioSound(sound.handle)) |zaudio_sound| {
+    if (getZaudioSound(sound.handle)) |zaudio_sound| {
         zaudio_sound.setVolume(volume);
         zaudio_sound.setLooping(loop);
         zaudio_sound.start() catch {
@@ -214,12 +214,12 @@ pub fn playMusic(filename: [:0]const u8, volume: f32, loop: bool) ?Sound {
 /// Loads and plays a sound effect
 pub fn playSound(filename: [:0]const u8, volume: f32) ?Sound {
     var sound = loadSound(filename, false) catch {
-        debug.log("Could not load sound file! ({s})", .{ filename });
+        debug.log("Could not load sound file! ({s})", .{filename});
         return null;
     };
 
     // Just do one handle lookup here
-    if(getZaudioSound(sound.handle)) |zaudio_sound| {
+    if (getZaudioSound(sound.handle)) |zaudio_sound| {
         zaudio_sound.setVolume(volume);
         zaudio_sound.start() catch {
             sound.requestDestroy();
@@ -241,41 +241,41 @@ pub fn loadSound(filename: [:0]const u8, stream: bool) !Sound {
     const handle = next_sound_idx;
     next_sound_idx += 1;
 
-    try loaded_sounds.put(handle, LoadedSound{.handle = handle, .zaudio_sound = zaudio_sound});
-    return Sound { .handle = next_sound_idx - 1, .is_streaming = stream };
+    try loaded_sounds.put(handle, LoadedSound{ .handle = handle, .zaudio_sound = zaudio_sound });
+    return Sound{ .handle = next_sound_idx - 1, .is_streaming = stream };
 }
 
 /// Sets the position of our listener for spatial audio
 pub fn setListenerPosition(pos: [3]f32) void {
-   if(zaudio_engine) |engine| {
+    if (zaudio_engine) |engine| {
         engine.setListenerPosition(0, pos);
     }
 }
 
 /// Sets the direction of our listener for spatial audio
 pub fn setListenerDirection(dir: [3]f32) void {
-   if(zaudio_engine) |engine| {
+    if (zaudio_engine) |engine| {
         engine.setListenerDirection(0, dir);
     }
 }
 
 /// Sets the velocity of our listener for spatial audio
 pub fn setListenerVelocity(vel: [3]f32) void {
-   if(zaudio_engine) |engine| {
+    if (zaudio_engine) |engine| {
         engine.setListenerVelocity(0, vel);
     }
 }
 
 /// Sets the 'up' value for the listener
 pub fn setListenerWorldUp(up: [3]f32) void {
-   if(zaudio_engine) |engine| {
+    if (zaudio_engine) |engine| {
         engine.setListenerWorldUp(0, up);
     }
 }
 
 /// Enables spatial audio
 pub fn enableSpatialAudio(enabled: bool) void {
-    if(zaudio_engine) |engine| {
+    if (zaudio_engine) |engine| {
         engine.setListenerEnabled(0, enabled);
     }
 }
@@ -285,11 +285,11 @@ pub fn on_tick(delta: f32) void {
     _ = delta;
 
     var it = loaded_sounds.iterator();
-    while(it.next()) |sound| {
+    while (it.next()) |sound| {
         var needs_destroy = sound.value_ptr.ready_for_cleanup;
 
-        if(!needs_destroy) {
-            if(sound.value_ptr.zaudio_sound) |zaudio_sound| {
+        if (!needs_destroy) {
+            if (sound.value_ptr.zaudio_sound) |zaudio_sound| {
                 needs_destroy = zaudio_sound.isAtEnd();
             } else {
                 // How did a null zaudio sound get in here?
@@ -298,11 +298,11 @@ pub fn on_tick(delta: f32) void {
             }
         }
 
-        if(!needs_destroy)
+        if (!needs_destroy)
             continue;
 
         // debug.log("Cleaning up sound.", .{});
-        if(sound.value_ptr.zaudio_sound) |zaudio_sound| {
+        if (sound.value_ptr.zaudio_sound) |zaudio_sound| {
             zaudio_sound.destroy();
         }
         _ = loaded_sounds.swapRemove(sound.value_ptr.handle);
@@ -316,8 +316,8 @@ pub fn on_tick(delta: f32) void {
 /// App lifecycle on_cleanup
 pub fn on_cleanup() void {
     var it = loaded_sounds.iterator();
-    while(it.next()) |sound| {
-        if(sound.value_ptr.zaudio_sound) |zaudio_sound| {
+    while (it.next()) |sound| {
+        if (sound.value_ptr.zaudio_sound) |zaudio_sound| {
             debug.log("Cleaning up sound.", .{});
             zaudio_sound.destroy();
         }
@@ -328,8 +328,8 @@ pub fn on_cleanup() void {
 fn getZaudioSound(handle: u64) ?*zaudio.Sound {
     // Need to do a little dance to get the actual zaudio sound pointer
     var found = loaded_sounds.getPtr(handle);
-    if(found) |loaded_sound| {
-        if(loaded_sound.zaudio_sound) |sound|
+    if (found) |loaded_sound| {
+        if (loaded_sound.zaudio_sound) |sound|
             return sound;
     }
 

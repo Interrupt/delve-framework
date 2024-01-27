@@ -159,7 +159,7 @@ const state = struct {
 /// Registers the input subsystem as a module
 pub fn registerModule() !void {
     const inputSubsystem = modules.Module{
-        .name = "input_subystem",
+        .name = "subsystem.input",
         .post_draw_fn = on_post_draw,
     };
 
