@@ -71,6 +71,10 @@ pub fn captureMouse(captured: bool) void {
     AppBackend.captureMouse(captured);
 }
 
+pub fn isMouseCaptured() bool {
+    return state.mouse_captured;
+}
+
 pub fn getAspectRatio() f32 {
     return @as(f32, @floatFromInt(getWidth())) / @as(f32, @floatFromInt(getHeight()));
 }

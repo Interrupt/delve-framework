@@ -2,6 +2,7 @@ const std = @import("std");
 const lua = @import("scripting/lua.zig");
 const colors = @import("colors.zig");
 const gfx = @import("platform/graphics.zig");
+const papp = @import("platform/app.zig");
 const text_module = @import("api/text.zig");
 const draw_module = @import("api/draw.zig");
 
@@ -113,7 +114,7 @@ const LogList = struct {
 };
 
 pub fn init() void {
-    if(!needs_init)
+    if (!needs_init)
         return;
     needs_init = false;
     needs_deinit = true;
@@ -124,7 +125,7 @@ pub fn init() void {
 }
 
 pub fn deinit() void {
-    if(!needs_deinit)
+    if (!needs_deinit)
         return;
     needs_deinit = false;
     needs_init = true;
@@ -156,11 +157,11 @@ pub fn fatal(comptime fmt: []const u8, args: anytype) void {
 }
 
 fn addLogEntry(comptime fmt: []const u8, args: anytype, level: LogLevel) void {
-    if(needs_init)
+    if (needs_init)
         init();
 
     // Only log if our log level is high enough
-    if(@intFromEnum(log_level) < @intFromEnum(level)) {
+    if (@intFromEnum(log_level) < @intFromEnum(level)) {
         return;
     }
 
@@ -241,7 +242,7 @@ pub fn drawConsole(draw_bg: bool) void {
     var res_h: i32 = gfx.getDisplayHeight();
     _ = res_h;
 
-    if(draw_bg) {
+    if (draw_bg) {
         drawConsoleBackground();
     }
 
@@ -291,11 +292,20 @@ pub fn drawConsoleBackground() void {
     gfx.drawDebugRectangle(gfx.tex_white, 0.0, draw_height, res_w, 2.0, colors.grey);
 }
 
+var mouse_was_captured: bool = false;
 pub fn setConsoleVisible(is_visible: bool) void {
     if (console_visible == is_visible)
         return;
 
     console_visible = is_visible;
+
+    if (console_visible) {
+        mouse_was_captured = papp.isMouseCaptured();
+        papp.captureMouse(false);
+    } else {
+        if (mouse_was_captured)
+            papp.captureMouse(true);
+    }
 }
 
 pub fn isConsoleVisible() bool {
@@ -304,10 +314,10 @@ pub fn isConsoleVisible() bool {
 
 pub fn handleKeyboardTextInput(char: u8) void {
     // Handle some special cases first
-    if(char == 127) {
+    if (char == 127) {
         handleKeyboardBackspace();
         return;
-    } else if(char == 13) {
+    } else if (char == 13) {
         runPendingCommand();
         return;
     }
@@ -316,16 +326,16 @@ pub fn handleKeyboardTextInput(char: u8) void {
 }
 
 pub fn handleKeyDown(keycode: i32) void {
-    if(keycode == 264) { // DOWN
+    if (keycode == 264) { // DOWN
         scrollCommandFromHistory(1);
-    } else if(keycode == 265) { // UP
+    } else if (keycode == 265) { // UP
         scrollCommandFromHistory(-1);
     }
 }
 
 pub fn handleKeyboardBackspace() void {
     const len = pending_cmd.items.len;
-    if(len == 0)
+    if (len == 0)
         return;
 
     _ = pending_cmd.orderedRemove(len - 1);
