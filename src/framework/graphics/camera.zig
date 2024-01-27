@@ -14,11 +14,17 @@ pub const CameraMode = enum(i32) {
     THIRD_PERSON,
 };
 
+const angle_to_radians: f32 = 57.29578;
+
 /// Basic camera system with support for first and third person modes
 pub const Camera = struct {
     position: Vec3 = Vec3.new(0, 0, 0),
     direction: Vec3 = Vec3.new(0, 0, 1),
     up: Vec3 = Vec3.up(),
+
+    yaw_angle: f32 = 0.0,
+    pitch_angle: f32 = 0.0,
+    roll_angle: f32 = 0.0,
 
     fov: f32 = 60.0,
     near: f32 = 0.001,
@@ -76,19 +82,31 @@ pub const Camera = struct {
         self.position = self.position.add(self.getRightDirection().scale(amount));
     }
 
-    /// Rotate the camera around an axis
-    pub fn rotate(self: *Camera, angle: f32, axis: Vec3) void {
-        self.direction = self.direction.rotate(angle, axis);
+    pub fn updateDirection(self: *Camera) void {
+        var dir = math.Vec3.new(0, 0, 1);
+        dir = dir.rotate(self.pitch_angle, math.Vec3.new(1, 0, 0));
+        dir = dir.rotate(self.yaw_angle, math.Vec3.new(0, 1, 0));
+        self.direction = dir;
     }
 
-    /// Rotate the camera around its up axis
+    /// Rotate the camera left and right
     pub fn yaw(self: *Camera, angle: f32) void {
-        self.rotate(angle, self.up);
+        self.yaw_angle += angle;
+        // self.roll_angle += angle;
+        self.updateDirection();
     }
 
-    /// Rotate the camera around its right direction
+    /// Rotate the camera up and down
     pub fn pitch(self: *Camera, angle: f32) void {
-        self.rotate(angle, self.getRightDirection());
+        self.pitch_angle += angle;
+        self.pitch_angle = std.math.clamp(self.pitch_angle, -90, 90);
+        self.updateDirection();
+    }
+
+    /// Rotate the camera around its view direction
+    pub fn roll(self: *Camera, angle: f32) void {
+        self.roll_angle += angle;
+        self.updateDirection();
     }
 
     /// A simple FPS flying camera, for examples and debugging
@@ -133,7 +151,9 @@ pub const Camera = struct {
         }
 
         // first person camera
-        self.view = Mat4.lookat(self.position, self.position.sub(self.direction), self.up);
+        self.view = Mat4.lookat(Vec3.zero(), Vec3.zero().sub(self.direction), self.up);
+        self.view = self.view.mul(Mat4.rotate(self.roll_angle, self.direction));
+        self.view = self.view.mul(Mat4.translate(self.position.scale(-1)));
     }
 
     /// Applies projection and view, returns a projection * view matrix

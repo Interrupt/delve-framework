@@ -159,7 +159,7 @@ pub const Vec3 = extern struct {
         // Using the Euler–Rodrigues formula
         const axis_norm = axis.norm();
 
-        const half_angle = angle * 0.5;
+        const half_angle = radians(angle) * 0.5;
         const angle_sin = std.math.sin(half_angle);
         const angle_cos = std.math.cos(half_angle);
 
