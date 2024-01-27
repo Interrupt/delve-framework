@@ -154,13 +154,14 @@ fn on_init() void {
 
     // Make a perspective camera, with a 90 degree FOV
     camera = cam.Camera.init(90.0, 0.01, 100.0, math.Vec3.up());
-    camera.position = math.Vec3.new(0.0, 0.0, -foliage_spread / 2);
+    camera.move_mode = .WALK;
+
+    camera.position = math.Vec3.new(0.0, 1.0, -foliage_spread / 2);
     camera.direction = math.Vec3.new(0.0, 0.0, 1.0);
 }
 
 fn on_tick(delta: f32) void {
-    camera.runFlyCamera(4.0 * delta, 120.0 * delta, true);
-    camera.position.y = 1.0;
+    camera.runSimpleCamera(4.0 * delta, 120.0 * delta, true);
 
     if (input.isKeyJustPressed(.ESCAPE)) {
         std.os.exit(0);

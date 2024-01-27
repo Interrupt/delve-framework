@@ -9,9 +9,14 @@ const Vec2 = math.Vec2;
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 
-pub const CameraMode = enum(i32) {
+pub const ViewMode = enum(i32) {
     FIRST_PERSON,
     THIRD_PERSON,
+};
+
+pub const MoveMode = enum(i32) {
+    FLY,
+    WALK,
 };
 
 const angle_to_radians: f32 = 57.29578;
@@ -34,7 +39,8 @@ pub const Camera = struct {
     view: Mat4 = Mat4.identity(),
     aspect: f32 = undefined,
 
-    mode: CameraMode = .FIRST_PERSON,
+    view_mode: ViewMode = .FIRST_PERSON,
+    move_mode: MoveMode = .FLY,
     boom_arm_length: f32 = 10.0,
 
     mouselook_scale: f32 = 0.35,
@@ -55,7 +61,7 @@ pub const Camera = struct {
 
     pub fn initThirdPerson(fov: f32, near: f32, far: f32, cam_distance: f32, up: Vec3) Camera {
         var cam = init(fov, near, far, up);
-        cam.mode = .THIRD_PERSON;
+        cam.view_mode = .THIRD_PERSON;
         cam.boom_arm_length = cam_distance;
         return cam;
     }
@@ -69,12 +75,23 @@ pub const Camera = struct {
 
     /// Get the direction 90 degrees to the right of our direction
     pub fn getRightDirection(self: *Camera) Vec3 {
-        return self.up.cross(self.direction);
+        return self.up.cross(self.direction).norm();
     }
 
     /// Move the camera along its direction
     pub fn moveForward(self: *Camera, amount: f32) void {
-        self.position = self.position.add(self.direction.scale(-amount));
+        // fly mode
+        if (self.move_mode == .FLY) {
+            self.position = self.position.add(self.direction.scale(-amount));
+            return;
+        }
+
+        // walk mode, ignores pitch!
+        var dir = self.direction;
+        dir.y = 0.0;
+        dir = dir.norm();
+
+        self.position = self.position.add(dir.scale(-amount));
     }
 
     /// Move the camera along its right direction
@@ -92,7 +109,6 @@ pub const Camera = struct {
     /// Rotate the camera left and right
     pub fn yaw(self: *Camera, angle: f32) void {
         self.yaw_angle += angle;
-        // self.roll_angle += angle;
         self.updateDirection();
     }
 
@@ -106,11 +122,10 @@ pub const Camera = struct {
     /// Rotate the camera around its view direction
     pub fn roll(self: *Camera, angle: f32) void {
         self.roll_angle += angle;
-        self.updateDirection();
     }
 
     /// A simple FPS flying camera, for examples and debugging
-    pub fn runFlyCamera(self: *Camera, move_speed: f32, turn_speed: f32, use_mouselook: bool) void {
+    pub fn runSimpleCamera(self: *Camera, move_speed: f32, turn_speed: f32, use_mouselook: bool) void {
         if (input.isKeyPressed(.W)) {
             self.moveForward(move_speed);
         } else if (input.isKeyPressed(.S)) {
@@ -145,7 +160,7 @@ pub const Camera = struct {
         self.projection = Mat4.persp(self.fov, self.aspect, self.near, self.far);
 
         // third person camera
-        if (self.mode == .THIRD_PERSON) {
+        if (self.view_mode == .THIRD_PERSON) {
             self.view = Mat4.lookat(self.position.add(self.direction.scale(self.boom_arm_length)), self.position, self.up);
             return;
         }

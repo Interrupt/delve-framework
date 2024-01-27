@@ -88,7 +88,7 @@ fn on_init() void {
 
 fn on_tick(delta: f32) void {
     // There is a built in fly mode, but you can also just set the position / direction
-    camera.runFlyCamera(4 * delta, 120 * delta, false);
+    camera.runSimpleCamera(4 * delta, 120 * delta, false);
 
     time += delta * 100;
 }
