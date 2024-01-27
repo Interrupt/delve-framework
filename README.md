@@ -69,3 +69,21 @@ Some example modules are included automatically to exercise some code paths, the
 * [Sprite Batch Example](src/examples/batcher.zig)
 * [Mesh Drawing Example](src/examples/mesh.zig)
 * [Debug Drawing Example](src/examples/debugdraw.zig)
+
+## Building the examples
+
+Clone the repo, and pull the submodules with `git submodule --init`
+```sh
+# just build
+zig build
+
+# build and run an example
+zig build run-audio
+zig build run-clear
+zig build run-debugdraw
+zig build run-forest
+zig build run-lua
+zig build run-meshes
+zig build run-sprites
+zig build run-stresstest
+```
