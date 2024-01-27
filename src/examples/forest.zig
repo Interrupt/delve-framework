@@ -4,17 +4,17 @@ const app = delve.app;
 
 const RndGen = std.rand.DefaultPrng;
 
-const batcher = delve.graphics_batcher;
+const batcher = delve.graphics.batcher;
 const debug = delve.debug;
-const cam = delve.graphics_camera;
+const cam = delve.graphics.camera;
 const colors = delve.colors;
 const images = delve.images;
-const graphics = delve.graphics;
-const input = delve.input;
-const papp = delve.platform_app;
+const graphics = delve.platform.graphics;
+const input = delve.platform.input;
+const papp = delve.platform.app;
 const math = delve.math;
 const modules = delve.modules;
-const fps_module = delve.module_fps_counter;
+const fps_module = delve.module.fps_counter;
 
 var tex_treesheet: graphics.Texture = undefined;
 var shader_blend: graphics.Shader = undefined;
@@ -172,7 +172,7 @@ fn pre_draw() void {
     var rnd = RndGen.init(0); // reset the random seed every frame
     var random = rnd.random();
 
-    time += delve.platform_app.getCurrentDeltaTime();
+    time += papp.getCurrentDeltaTime();
 
     // set up a matrix that will billboard to face the camera, but ignore the up dir
     var billboard_dir = math.Vec3.new(camera.direction.x, 0, camera.direction.z).norm();

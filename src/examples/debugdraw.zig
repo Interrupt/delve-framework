@@ -3,7 +3,7 @@ const delve = @import("delve");
 const app = delve.app;
 
 const debug = delve.debug;
-const graphics = delve.graphics;
+const graphics = delve.platform.graphics;
 const colors = delve.colors;
 const images = delve.images;
 const input = delve.input;

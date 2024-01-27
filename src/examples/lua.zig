@@ -1,8 +1,8 @@
 const delve = @import("delve");
 const app = delve.app;
 
-const lua_module = delve.module_lua_simple;
-const fps_module = delve.module_fps_counter;
+const lua_module = delve.module.lua_simple;
+const fps_module = delve.module.fps_counter;
 
 // This example shows how to integrate with lua scripting
 

@@ -2,11 +2,11 @@ const std = @import("std");
 const delve = @import("delve");
 const app = delve.app;
 
-const audio = delve.audio;
-const debug = delve.debug;
+const audio = delve.platform.audio;
 const colors = delve.colors;
-const graphics = delve.graphics;
-const input = delve.input;
+const debug = delve.debug;
+const graphics = delve.platform.graphics;
+const input = delve.platform.input;
 const modules = delve.modules;
 
 var music_test: ?audio.Sound = null;

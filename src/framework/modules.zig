@@ -22,7 +22,7 @@ pub const Module = struct {
 
 /// Registers a module to tie it into the app lifecycle
 pub fn registerModule(module: Module) !void {
-    if(needs_init) {
+    if (needs_init) {
         modules = std.StringArrayHashMap(Module).init(allocator);
         needs_init = false;
     }
@@ -40,8 +40,8 @@ pub fn getModule(module_name: [:0]const u8) ?Module {
 /// Initialize all the modules
 pub fn initModules() void {
     var it = modules.iterator();
-    while(it.next()) |module| {
-        if(module.value_ptr.init_fn != null)
+    while (it.next()) |module| {
+        if (module.value_ptr.init_fn != null)
             module.value_ptr.init_fn.?();
     }
 }
@@ -49,8 +49,8 @@ pub fn initModules() void {
 /// Let all modules know that initialization is done
 pub fn startModules() void {
     var it = modules.iterator();
-    while(it.next()) |module| {
-        if(module.value_ptr.start_fn != null)
+    while (it.next()) |module| {
+        if (module.value_ptr.start_fn != null)
             module.value_ptr.start_fn.?();
     }
 }
@@ -58,8 +58,8 @@ pub fn startModules() void {
 /// Let all modules know that things are stopping
 pub fn stopModules() void {
     var it = modules.iterator();
-    while(it.next()) |module| {
-        if(module.value_ptr.stop_fn != null)
+    while (it.next()) |module| {
+        if (module.value_ptr.stop_fn != null)
             module.value_ptr.stop_fn.?();
     }
 }
@@ -67,8 +67,8 @@ pub fn stopModules() void {
 /// Calls the tick function of all modules
 pub fn tickModules(delta_time: f32) void {
     var it = modules.iterator();
-    while(it.next()) |module| {
-        if(module.value_ptr.tick_fn != null)
+    while (it.next()) |module| {
+        if (module.value_ptr.tick_fn != null)
             module.value_ptr.tick_fn.?(delta_time);
     }
 }
@@ -76,8 +76,8 @@ pub fn tickModules(delta_time: f32) void {
 /// Calls the pre-draw function of all modules. Happens before rendering
 pub fn preDrawModules() void {
     var it = modules.iterator();
-    while(it.next()) |module| {
-        if(module.value_ptr.pre_draw_fn != null)
+    while (it.next()) |module| {
+        if (module.value_ptr.pre_draw_fn != null)
             module.value_ptr.pre_draw_fn.?();
     }
 }
@@ -85,8 +85,8 @@ pub fn preDrawModules() void {
 /// Calls the draw function of all modules
 pub fn drawModules() void {
     var it = modules.iterator();
-    while(it.next()) |module| {
-        if(module.value_ptr.draw_fn != null)
+    while (it.next()) |module| {
+        if (module.value_ptr.draw_fn != null)
             module.value_ptr.draw_fn.?();
     }
 }
@@ -94,8 +94,8 @@ pub fn drawModules() void {
 /// Calls the post-draw function of all modules. Happens at the end of a frame, after rendering.
 pub fn postDrawModules() void {
     var it = modules.iterator();
-    while(it.next()) |module| {
-        if(module.value_ptr.post_draw_fn != null)
+    while (it.next()) |module| {
+        if (module.value_ptr.post_draw_fn != null)
             module.value_ptr.post_draw_fn.?();
     }
 }
@@ -103,8 +103,8 @@ pub fn postDrawModules() void {
 /// Calls the cleanup function of all modules
 pub fn cleanupModules() void {
     var it = modules.iterator();
-    while(it.next()) |module| {
-        if(module.value_ptr.cleanup_fn != null)
+    while (it.next()) |module| {
+        if (module.value_ptr.cleanup_fn != null)
             module.value_ptr.cleanup_fn.?();
     }
 }

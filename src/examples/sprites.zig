@@ -2,13 +2,13 @@ const std = @import("std");
 const delve = @import("delve");
 const app = delve.app;
 
-const batcher = delve.graphics_batcher;
+const batcher = delve.graphics.batcher;
 const debug = delve.debug;
 const colors = delve.colors;
 const images = delve.images;
-const graphics = delve.graphics;
-const input = delve.input;
-const papp = delve.platform_app;
+const graphics = delve.platform.graphics;
+const input = delve.platform.input;
+const papp = delve.platform.app;
 const math = delve.math;
 const modules = delve.modules;
 

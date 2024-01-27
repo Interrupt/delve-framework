@@ -1,7 +1,7 @@
 const delve = @import("delve");
 const app = delve.app;
 
-const fps_module = delve.module_fps_counter;
+const fps_module = delve.module.fps_counter;
 const audio_example = @import("audio.zig");
 const debugdraw_example = @import("debugdraw.zig");
 const meshes_example = @import("meshes.zig");

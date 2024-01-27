@@ -2,17 +2,17 @@ const std = @import("std");
 const delve = @import("delve");
 const app = delve.app;
 
-const cam = delve.graphics_camera;
+const cam = delve.graphics.camera;
 const colors = delve.colors;
 const debug = delve.debug;
-const graphics = delve.graphics;
+const graphics = delve.platform.graphics;
 const images = delve.images;
-const input = delve.input;
+const input = delve.platform.input;
 const math = delve.math;
 const modules = delve.modules;
-const mesh = delve.graphics_mesh;
+const mesh = delve.graphics.mesh;
 
-const emissive_shader_builtin = delve.shader_default_emissive;
+const emissive_shader_builtin = delve.shaders.default_emissive;
 
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
