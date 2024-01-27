@@ -9,6 +9,11 @@ const Vec2 = math.Vec2;
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 
+pub const CameraMode = enum(i32) {
+    FIRST_PERSON,
+    THIRD_PERSON,
+};
+
 /// Basic camera system with support for first and third person modes
 pub const Camera = struct {
     position: Vec3 = Vec3.new(0, 0, 0),
@@ -23,7 +28,7 @@ pub const Camera = struct {
     view: Mat4 = Mat4.identity(),
     aspect: f32 = undefined,
 
-    third_person: bool = false,
+    mode: CameraMode = .FIRST_PERSON,
     boom_arm_length: f32 = 10.0,
 
     mouselook_scale: f32 = 0.35,
@@ -44,7 +49,7 @@ pub const Camera = struct {
 
     pub fn initThirdPerson(fov: f32, near: f32, far: f32, cam_distance: f32, up: Vec3) Camera {
         var cam = init(fov, near, far, up);
-        cam.third_person = true;
+        cam.mode = .THIRD_PERSON;
         cam.boom_arm_length = cam_distance;
         return cam;
     }
@@ -122,7 +127,7 @@ pub const Camera = struct {
         self.projection = Mat4.persp(self.fov, self.aspect, self.near, self.far);
 
         // third person camera
-        if (self.third_person) {
+        if (self.mode == .THIRD_PERSON) {
             self.view = Mat4.lookat(self.position.add(self.direction.scale(self.boom_arm_length)), self.position, self.up);
             return;
         }
