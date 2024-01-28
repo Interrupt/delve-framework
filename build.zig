@@ -36,8 +36,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     };
 
+    // make the Delve library as a static lib
     const lib = b.addStaticLibrary(lib_opts);
-    linkDelveFramework(b, lib, target, optimize);
+    makeDelveLibrary(b, lib, target, optimize);
     b.installArtifact(lib);
 
     buildExample(b, "audio", target, optimize, delve_module, lib);
@@ -59,7 +60,7 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&exe_tests.step);
 }
 
-pub fn linkDelveFramework(b: *std.Build, step: *std.Build.CompileStep, target: anytype, optimize: anytype) void {
+pub fn makeDelveLibrary(b: *std.Build, step: *std.Build.CompileStep, target: anytype, optimize: anytype) void {
     step.addCSourceFile(.{ .file = .{ .path = "libs/stb_image-2.28/stb_image_impl.c" }, .flags = &[_][]const u8{"-std=c99"} });
     step.addIncludePath(.{ .path = "libs/stb_image-2.28" });
 
