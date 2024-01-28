@@ -78,13 +78,9 @@ pub fn linkDelveFramework(b: *std.Build, step: *std.Build.CompileStep, target: a
     });
     step.linkLibrary(ziglua.artifact("lua"));
 
+    // let users of our library get access to some headers
     step.installHeader("libs/stb_image-2.28/stb_image.h", "stb_image.h");
-
-    // why do we have to install these? Shouldn't the ziglua lib have them already?
-    step.installHeader("libs/ziglua/lib/lua-5.4/src/lua.h", "lua/lua.h");
-    step.installHeader("libs/ziglua/lib/lua-5.4/src/luaconf.h", "lua/luaconf.h");
-    step.installHeader("libs/ziglua/lib/lua-5.4/src/lualib.h", "lua/lualib.h");
-    step.installHeader("libs/ziglua/lib/lua-5.4/src/lauxlib.h", "lua/lauxlib.h");
+    step.installLibraryHeaders(ziglua.artifact("lua"));
 }
 
 pub fn buildExample(b: *std.Build, comptime name: []const u8, target: anytype, optimize: anytype, delve_module: *std.Build.Module, lib: *std.Build.CompileStep) void {
