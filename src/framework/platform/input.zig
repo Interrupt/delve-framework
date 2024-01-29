@@ -141,9 +141,14 @@ const state = struct {
     var mouse_x: f32 = 0;
     var mouse_y: f32 = 0;
 
-    // distance from last frame
+    // distance from last tick
     var mouse_dx: f32 = 0;
     var mouse_dy: f32 = 0;
+
+    // distance from last frame
+    // split from last tick, because we might want to instantly respond to mouse input
+    var mouse_frame_dx: f32 = 0;
+    var mouse_frame_dy: f32 = 0;
 
     // last reported pos
     var last_mouse_x: f32 = 0;
@@ -160,6 +165,7 @@ const state = struct {
 pub fn registerModule() !void {
     const inputSubsystem = modules.Module{
         .name = "subsystem.input",
+        .post_tick_fn = on_post_tick,
         .post_draw_fn = on_post_draw,
     };
 
@@ -177,8 +183,8 @@ pub fn deinit() void {
     debug.log("Input subsystem stopping", .{});
 }
 
-/// App lifecycle event that happens at the end of a frame
-fn on_post_draw() void {
+/// App lifecycle event that happens after ticking
+fn on_post_tick() void {
     // reset the 'just pressed' states
     for (0..state.keyboard_just_pressed.len) |i| {
         state.keyboard_just_pressed[i] = false;
@@ -194,6 +200,12 @@ fn on_post_draw() void {
     // reset the mouse delta state.
     state.mouse_dx = 0;
     state.mouse_dy = 0;
+}
+
+fn on_post_draw() void {
+    // reset the mouse delta state.
+    state.mouse_frame_dx = 0;
+    state.mouse_frame_dy = 0;
 }
 
 /// Returns the current mouse position
@@ -250,8 +262,10 @@ pub fn onMouseMoved(x: f32, y: f32, dx: f32, dy: f32) void {
 
     state.mouse_x = x;
     state.mouse_y = y;
-    state.mouse_dx = dx;
-    state.mouse_dy = dy;
+    state.mouse_dx += dx;
+    state.mouse_dy += dy;
+    state.mouse_frame_dx += dx;
+    state.mouse_frame_dy += dy;
 
     // There is no last mouse event until we move once
     if (is_first_mouse_move) {
