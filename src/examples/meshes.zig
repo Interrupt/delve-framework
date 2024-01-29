@@ -91,6 +91,9 @@ fn on_tick(delta: f32) void {
     camera.runSimpleCamera(4 * delta, 120 * delta, false);
 
     time += delta * 100;
+
+    if (input.isKeyJustPressed(.ESCAPE))
+        std.os.exit(0);
 }
 
 fn on_draw() void {

@@ -54,6 +54,9 @@ fn on_tick(delta: f32) void {
     if (input.isMouseButtonJustPressed(input.MouseButtons.LEFT)) {
         sound_test = audio.playSound("sample-shoot.wav", 0.1);
     }
+
+    if (input.isKeyJustPressed(.ESCAPE))
+        std.os.exit(0);
 }
 
 fn on_draw() void {
