@@ -11,7 +11,9 @@ Done:
 [x] Input
 [x] Audio
 [x] Basic Lua integration
+[x] Module system
 [x] Sprite batches
 [x] Mesh Rendering
+[x] Game loop with optional FPS target
 [x] Simple Camera
 [x] Sprite batch example (Forest!)
