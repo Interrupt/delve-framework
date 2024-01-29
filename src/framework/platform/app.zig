@@ -152,7 +152,7 @@ fn calcDeltaTime() f32 {
     if (state.reset_delta) {
         state.reset_delta = false;
         state.game_loop_timer.reset();
-        return 0.0;
+        return 1.0 / 60.0;
     }
 
     if (state.target_fps != null) {
