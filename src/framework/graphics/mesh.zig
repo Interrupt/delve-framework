@@ -1,4 +1,3 @@
-
 const std = @import("std");
 const graphics = @import("../platform/graphics.zig");
 const debug = @import("../debug.zig");
@@ -29,7 +28,7 @@ pub const Mesh = struct {
         defer zmesh.deinit();
 
         const data = zmesh.io.parseAndLoadFile(filename) catch {
-            debug.log("Could not load mesh file {s}", .{ filename });
+            debug.log("Could not load mesh file {s}", .{filename});
             return null;
         };
 
@@ -67,7 +66,7 @@ pub const Mesh = struct {
             return null;
         };
 
-        for(mesh_positions.items, mesh_texcoords.items, 0..) |vert, texcoord, i| {
+        for (mesh_positions.items, mesh_texcoords.items, 0..) |vert, texcoord, i| {
             vertices[i].x = vert[0];
             vertices[i].y = vert[1];
             vertices[i].z = vert[2];
@@ -75,23 +74,15 @@ pub const Mesh = struct {
             vertices[i].v = texcoord[1];
         }
 
-        var bindings = graphics.Bindings.init(.{
-            .index_len = mesh_indices.items.len,
-            .vert_len = mesh_positions.items.len,
-            .vertex_layout = vertex_layout,
-        });
-
-        bindings.set(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_indices.items.len);
-
         var material: graphics.Material = undefined;
-        if(cfg.material == null) {
+        if (cfg.material == null) {
             var tex = graphics.createDebugTexture();
             material = graphics.Material.init(.{ .texture_0 = tex });
         } else {
             material = cfg.material.?;
         }
 
-        return Mesh{ .bindings = bindings, .material = material};
+        return createMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, material);
     }
 
     pub fn deinit(self: *Mesh) void {
@@ -103,20 +94,26 @@ pub const Mesh = struct {
     }
 };
 
-pub fn createMesh(vertices: []graphics.Vertex, indices: []u32) Mesh {
-    const m: Mesh = Mesh {
-        .bindings = graphics.Bindings{
-            .vertex_buffer = vertices,
-            .index_buffer = indices,
-            .bindings = *graphics.createBindings(vertices, indices),
-        },
+/// Create a mesh out of some vertex data
+pub fn createMesh(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: graphics.Material) Mesh {
+    var bindings = graphics.Bindings.init(.{
+        .index_len = indices.len,
+        .vert_len = vertices.len,
+        .vertex_layout = vertex_layout,
+    });
+
+    bindings.set(vertices, indices, normals, tangents, indices.len);
+
+    const m: Mesh = Mesh{
+        .bindings = bindings,
+        .material = material,
     };
     return m;
 }
 
 /// Returns the vertex layout used by meshes
 pub fn getVertexLayout() graphics.VertexLayout {
-    return graphics.VertexLayout {
+    return graphics.VertexLayout{
         .attributes = &[_]graphics.VertexLayoutAttribute{
             .{ .binding = .VERT_PACKED, .buffer_slot = 0, .item_size = @sizeOf(Vertex) },
             .{ .binding = .VERT_NORMALS, .buffer_slot = 1, .item_size = @sizeOf([3]f32) },
@@ -128,10 +125,10 @@ pub fn getVertexLayout() graphics.VertexLayout {
 /// Returns the default shader attribute layout used by meshes
 pub fn getShaderAttributes() []const graphics.ShaderAttribute {
     return &[_]graphics.ShaderAttribute{
-        .{ .name = "pos", .attr_type = .FLOAT3, .binding = .VERT_PACKED},
-        .{ .name = "color0", .attr_type = .UBYTE4N, .binding = .VERT_PACKED},
-        .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_PACKED},
-        .{ .name = "normals", .attr_type = .FLOAT3, .binding = .VERT_NORMALS},
-        .{ .name = "tangents", .attr_type = .FLOAT4, .binding = .VERT_TANGENTS},
+        .{ .name = "pos", .attr_type = .FLOAT3, .binding = .VERT_PACKED },
+        .{ .name = "color0", .attr_type = .UBYTE4N, .binding = .VERT_PACKED },
+        .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_PACKED },
+        .{ .name = "normals", .attr_type = .FLOAT3, .binding = .VERT_NORMALS },
+        .{ .name = "tangents", .attr_type = .FLOAT4, .binding = .VERT_TANGENTS },
     };
 }
