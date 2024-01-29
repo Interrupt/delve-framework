@@ -8,6 +8,9 @@ const sokol_app_backend = @import("backends/sokol/app.zig");
 // Actual app backend, implementation could be switched out here
 const AppBackend = sokol_app_backend.App;
 
+const NS_PER_SECOND: i64 = 1_000_000_000;
+const NS_PER_SECOND_F: f32 = 1_000_000_000.0;
+
 const state = struct {
     // FPS cap vars, if set
     var target_fps: ?u64 = null;
@@ -168,13 +171,13 @@ fn calcDeltaTime() f32 {
     const nanos_since_tick = state.game_loop_timer.lap();
     const nanos_since_fps = state.fps_update_timer.read();
 
-    if (nanos_since_fps >= 1_000_000_000) {
+    if (nanos_since_fps >= NS_PER_SECOND) {
         state.fps = @intCast(state.fps_framecount);
         state.fps_update_timer.reset();
         state.fps_framecount = 0;
     }
 
-    return @as(f32, @floatFromInt(nanos_since_tick)) / 1_000_000_000.0;
+    return @as(f32, @floatFromInt(nanos_since_tick)) / NS_PER_SECOND_F;
 }
 
 /// Returns the current frames per second
@@ -192,7 +195,7 @@ pub fn setTargetFPS(fps_target: i32) void {
     state.target_fps = @intCast(fps_target);
 
     const target_fps_f: f64 = @floatFromInt(state.target_fps.?);
-    state.target_fps_ns = @intFromFloat((1.0 / target_fps_f) * 1_000_000_000);
+    state.target_fps_ns = @intFromFloat((1.0 / target_fps_f) * NS_PER_SECOND);
 }
 
 pub fn setFixedTimestep(timestep_delta: f32) void {
