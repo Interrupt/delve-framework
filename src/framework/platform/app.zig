@@ -16,18 +16,24 @@ const state = struct {
     // Fixed timestamp length, if set
     var fixed_timestep_delta: ?f32 = null;
 
+    // game loop timers
+    var game_loop_timer: time.Timer = undefined;
+    var fps_update_timer: time.Timer = undefined;
+
     // delta time vars
-    var last_delta_calc: time.Instant = undefined;
     var reset_delta: bool = true;
+
+    // fixed tick game loops need to keep track of a time accumulator
     var time_accumulator: f32 = 0.0;
 
-    // fps calc, every second
+    // current fps, updated every second
     var fps: i32 = 0;
     var fps_framecount: i64 = 0;
-    var fps_start: time.Instant = undefined;
 
-    // current tick / time delta
+    // current tick
     var tick: u64 = 0;
+
+    // current delta time
     var delta_time: f32 = 0.0;
 
     var mouse_captured: bool = false;
@@ -41,6 +47,9 @@ pub fn init() !void {
         .on_cleanup_fn = on_cleanup,
         .on_frame_fn = on_frame,
     });
+
+    state.game_loop_timer = try time.Timer.start();
+    state.fps_update_timer = try time.Timer.start();
 }
 
 pub fn deinit() void {
@@ -139,46 +148,34 @@ fn on_frame() void {
 
 /// Get time elapsed since last tick. Also calculate the FPS!
 fn calcDeltaTime() f32 {
-    var now = time.Instant.now() catch {
-        return 0;
-    };
     defer state.fps_framecount += 1;
 
     if (state.reset_delta) {
         state.reset_delta = false;
-        state.last_delta_calc = now;
-        state.fps_start = now;
-        state.fps_framecount = 0;
+        state.game_loop_timer.reset();
         return 0.0;
     }
 
     if (state.target_fps != null) {
         // Try to hit our target FPS!
-        const frame_len_ns = now.since(state.last_delta_calc);
+        const frame_len_ns = state.game_loop_timer.read();
 
         if (frame_len_ns < state.target_fps_ns) {
             time.sleep(state.target_fps_ns - frame_len_ns);
-
-            // reset our now, since we've pushed things back
-            now = time.Instant.now() catch {
-                return 0;
-            };
         }
     }
 
     // calculate the fps by counting frames each second
-    const nanos_since = now.since(state.last_delta_calc);
-    const nanos_since_fps = now.since(state.fps_start);
+    const nanos_since_tick = state.game_loop_timer.lap();
+    const nanos_since_fps = state.fps_update_timer.read();
 
-    if (nanos_since_fps >= 1000000000) {
+    if (nanos_since_fps >= 1_000_000_000) {
         state.fps = @intCast(state.fps_framecount);
+        state.fps_update_timer.reset();
         state.fps_framecount = 0;
-        state.fps_start = now;
-        // debug.log("FPS: {d}", .{fps});
     }
 
-    state.last_delta_calc = now;
-    return @as(f32, @floatFromInt(nanos_since)) / 1000000000.0;
+    return @as(f32, @floatFromInt(nanos_since_tick)) / 1_000_000_000.0;
 }
 
 /// Returns the current frames per second
@@ -196,7 +193,7 @@ pub fn setTargetFPS(fps_target: i32) void {
     state.target_fps = @intCast(fps_target);
 
     const target_fps_f: f64 = @floatFromInt(state.target_fps.?);
-    state.target_fps_ns = @intFromFloat((1.0 / target_fps_f) * 1000000000);
+    state.target_fps_ns = @intFromFloat((1.0 / target_fps_f) * 1_000_000_000);
 }
 
 pub fn setFixedTimestep(timestep_delta: f32) void {
