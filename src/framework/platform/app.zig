@@ -119,6 +119,7 @@ fn on_frame() void {
     // time management!
     state.delta_time = calcDeltaTime();
     state.tick += 1;
+    state.fps_framecount += 1;
 
     if (state.fixed_timestep_delta) |fixed_delta| {
         state.time_accumulator += state.delta_time;
@@ -148,8 +149,6 @@ fn on_frame() void {
 
 /// Get time elapsed since last tick. Also calculate the FPS!
 fn calcDeltaTime() f32 {
-    defer state.fps_framecount += 1;
-
     if (state.reset_delta) {
         state.reset_delta = false;
         state.game_loop_timer.reset();
