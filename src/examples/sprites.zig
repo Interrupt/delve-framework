@@ -81,16 +81,18 @@ fn on_init() void {
     test_material_1 = graphics.Material.init(.{
         .shader = shader_opaque,
         .texture_0 = graphics.tex_white,
-        .cull_mode = .NONE,
+        .cull_mode = .BACK,
         .blend_mode = .BLEND,
     });
 
     test_material_2 = graphics.Material.init(.{
         .shader = shader_opaque,
         .texture_0 = texture_1,
-        .cull_mode = .NONE,
+        .cull_mode = .BACK,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
+
+    graphics.setClearColor(colors.white);
 }
 
 fn on_tick(deltatime: f32) void {

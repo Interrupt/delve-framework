@@ -321,10 +321,10 @@ pub const Batcher = struct {
         const color_i = color.toInt();
 
         const verts = &[_]Vertex{
-            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color_i, .u = u, .v = v },
-            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color_i, .u = u_2, .v = v },
-            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_i, .u = u_2, .v = v_2 },
-            .{ .x = v3.x, .y = v3.y, .z = 0, .color = color_i, .u = u, .v = v_2 },
+            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color_i, .u = u, .v = v_2 },
+            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color_i, .u = u_2, .v = v_2 },
+            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_i, .u = u_2, .v = v },
+            .{ .x = v3.x, .y = v3.y, .z = 0, .color = color_i, .u = u, .v = v },
         };
 
         const indices = &[_]u32{ 0, 1, 2, 0, 2, 3 };
@@ -344,10 +344,10 @@ pub const Batcher = struct {
 
     /// Add a rectangle to the batch
     pub fn addRectangle(self: *Batcher, pos: Vec2, size: Vec2, region: TextureRegion, color: Color) void {
-        const v0 = pos.add(Vec2{ .x = 0, .y = size.y });
-        const v1 = pos.add(Vec2{ .x = size.x, .y = size.y });
-        const v2 = pos.add(Vec2{ .x = size.x, .y = 0 });
-        const v3 = pos;
+        const v0 = pos;
+        const v1 = pos.add(Vec2{ .x = size.x, .y = 0 });
+        const v2 = pos.add(Vec2{ .x = size.x, .y = size.y });
+        const v3 = pos.add(Vec2{ .x = 0, .y = size.y });
 
         self.addQuad(v0, v1, v2, v3, region, color);
     }
@@ -357,10 +357,10 @@ pub const Batcher = struct {
         const normal = to.sub(from).norm();
         const right = Vec2.scale(&Vec2{ .x = -normal.y, .y = normal.x }, width * 0.5);
 
-        const v0 = from.add(right);
-        const v1 = to.add(right);
-        const v2 = to.sub(right);
-        const v3 = from.sub(right);
+        const v0 = from.sub(right);
+        const v1 = to.sub(right);
+        const v2 = to.add(right);
+        const v3 = from.add(right);
 
         // A line with a width is really just a quad
         self.addQuad(v0, v1, v2, v3, region, color);

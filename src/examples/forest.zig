@@ -262,7 +262,7 @@ fn addGround(ground_size: math.Vec2) void {
 
     // ground plane needs to be big enough to cover where the trees will be
     var ground_transform = math.Mat4.translate(math.Vec3.new(0, draw_y_offset, (ground_size.y * -0.5)));
-    ground_transform = ground_transform.mul(math.Mat4.rotate(90, math.Vec3.new(1, 0, 0)));
+    ground_transform = ground_transform.mul(math.Mat4.rotate(-90, math.Vec3.new(1, 0, 0)));
 
     // Add the ground plane rectangle
     sprite_batch.setTransformMatrix(ground_transform);

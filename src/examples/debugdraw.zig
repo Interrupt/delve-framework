@@ -6,7 +6,7 @@ const debug = delve.debug;
 const graphics = delve.platform.graphics;
 const colors = delve.colors;
 const images = delve.images;
-const input = delve.input;
+const input = delve.platform.input;
 const math = delve.math;
 const modules = delve.modules;
 

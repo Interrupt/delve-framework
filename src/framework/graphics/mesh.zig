@@ -111,6 +111,8 @@ pub fn createMesh(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32
     return m;
 }
 
+// TODO: Api to build a mesh at runtime!
+
 /// Returns the vertex layout used by meshes
 pub fn getVertexLayout() graphics.VertexLayout {
     return graphics.VertexLayout{
