@@ -12,13 +12,19 @@ const NS_PER_SECOND: i64 = 1_000_000_000;
 const NS_PER_SECOND_F: f32 = 1_000_000_000.0;
 const NS_FPS_LIMIT_OVERHEAD = 1_250_000; // tuned to ensure consistent frame pacing
 
+const DeltaTime = struct {
+    f_delta_time: f32,
+    ns_delta_time: u64,
+};
+
 const state = struct {
     // FPS cap vars, if set
     var target_fps: ?u64 = null;
     var target_fps_ns: u64 = undefined;
 
     // Fixed timestamp length, if set
-    var fixed_timestep_delta: ?f32 = null;
+    var fixed_timestep_delta_ns: ?u64 = null;
+    var fixed_timestep_delta_f: f32 = 0.0;
 
     // game loop timers
     var game_loop_timer: time.Timer = undefined;
@@ -28,7 +34,7 @@ const state = struct {
     var reset_delta: bool = true;
 
     // fixed tick game loops need to keep track of a time accumulator
-    var time_accumulator: f32 = 0.0;
+    var time_accumulator_ns: u64 = 0;
 
     // current fps, updated every second
     var fps: i32 = 0;
@@ -121,18 +127,20 @@ fn on_cleanup() void {
 
 fn on_frame() void {
     // time management!
-    state.delta_time = calcDeltaTime();
+    const delta = calcDeltaTime();
+    state.delta_time = delta.f_delta_time;
+
     state.tick += 1;
     state.fps_framecount += 1;
 
-    if (state.fixed_timestep_delta) |fixed_delta| {
-        state.time_accumulator += state.delta_time;
+    if (state.fixed_timestep_delta_ns) |fixed_delta_ns| {
+        state.time_accumulator_ns += delta.ns_delta_time;
 
         // keep ticking until we catch up to the actual time
-        while (state.time_accumulator >= fixed_delta) {
+        while (state.time_accumulator_ns >= fixed_delta_ns) {
             // fixed timestamp, tick at our constant rate
-            modules.tickModules(fixed_delta);
-            state.time_accumulator -= fixed_delta;
+            modules.tickModules(state.fixed_timestep_delta_f);
+            state.time_accumulator_ns -= fixed_delta_ns;
         }
     } else {
         // tick as fast as possible!
@@ -182,11 +190,11 @@ fn limitFps() void {
 }
 
 /// Get time elapsed since last tick. Also calculate the FPS!
-fn calcDeltaTime() f32 {
+fn calcDeltaTime() DeltaTime {
     if (state.reset_delta) {
         state.reset_delta = false;
         state.game_loop_timer.reset();
-        return 1.0 / 60.0;
+        return DeltaTime{ .f_delta_time = 1.0 / 60.0, .ns_delta_time = 60 / NS_PER_SECOND };
     }
 
     // calculate the fps by counting frames each second
@@ -199,7 +207,10 @@ fn calcDeltaTime() f32 {
         state.fps_framecount = 0;
     }
 
-    return @as(f32, @floatFromInt(nanos_since_tick)) / NS_PER_SECOND_F;
+    return DeltaTime{
+        .f_delta_time = @as(f32, @floatFromInt(nanos_since_tick)) / NS_PER_SECOND_F,
+        .ns_delta_time = nanos_since_tick,
+    };
 }
 
 /// Returns the current frames per second
@@ -221,7 +232,8 @@ pub fn setTargetFPS(fps_target: i32) void {
 }
 
 pub fn setFixedTimestep(timestep_delta: f32) void {
-    state.fixed_timestep_delta = timestep_delta;
+    state.fixed_timestep_delta_ns = @intFromFloat(timestep_delta * NS_PER_SECOND_F);
+    state.fixed_timestep_delta_f = timestep_delta;
 }
 
 pub fn getCurrentDeltaTime() f32 {

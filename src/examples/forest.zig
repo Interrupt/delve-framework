@@ -146,8 +146,9 @@ fn on_init() void {
     // capture and hide the mouse!
     papp.captureMouse(true);
 
-    // set a FPS limit, to test that as well
+    // set a FPS limit and fixed timestep to test that as well
     papp.setTargetFPS(60);
+    papp.setFixedTimestep(1.0 / 60.0);
 
     sprite_batch = batcher.SpriteBatcher.init(.{}) catch {
         debug.showErrorScreen("Fatal error during batch init!");
