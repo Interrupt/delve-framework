@@ -10,6 +10,7 @@ const AppBackend = sokol_app_backend.App;
 
 const NS_PER_SECOND: i64 = 1_000_000_000;
 const NS_PER_SECOND_F: f32 = 1_000_000_000.0;
+const NS_FPS_LIMIT_OVERHEAD = 1_250_000; // tuned to ensure consistent frame pacing
 
 const state = struct {
     // FPS cap vars, if set
@@ -148,6 +149,36 @@ fn on_frame() void {
 
     // tell modules this frame is done
     modules.postDrawModules();
+
+    // keep under our FPS limit, if needed
+    limitFps();
+}
+
+fn limitFps() void {
+    if (state.target_fps != null) {
+        // Try to hit our target FPS!
+
+        // Easy case, just stop here if we are under the target frame length
+        const initial_frame_ns = state.game_loop_timer.read();
+        if (initial_frame_ns >= state.target_fps_ns)
+            return;
+
+        // Harder case, we are faster than the target frame length.
+        // Note: time.sleep does not ensure consistent timing.
+        // Due to this we need to sleep most of the time, but busy loop the rest.
+
+        const frame_len_ns = initial_frame_ns + NS_FPS_LIMIT_OVERHEAD;
+        if (frame_len_ns < state.target_fps_ns) {
+            time.sleep(state.target_fps_ns - frame_len_ns);
+        }
+
+        // Eat up the rest of the time in a busy loop to ensure consistent frame pacing
+        while (true) {
+            const cur_frame_len_ns = state.game_loop_timer.read();
+            if (cur_frame_len_ns >= state.target_fps_ns)
+                break;
+        }
+    }
 }
 
 /// Get time elapsed since last tick. Also calculate the FPS!
@@ -156,15 +187,6 @@ fn calcDeltaTime() f32 {
         state.reset_delta = false;
         state.game_loop_timer.reset();
         return 1.0 / 60.0;
-    }
-
-    if (state.target_fps != null) {
-        // Try to hit our target FPS!
-        const frame_len_ns = state.game_loop_timer.read();
-
-        if (frame_len_ns < state.target_fps_ns) {
-            time.sleep(state.target_fps_ns - frame_len_ns);
-        }
     }
 
     // calculate the fps by counting frames each second
