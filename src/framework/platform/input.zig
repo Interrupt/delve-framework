@@ -165,7 +165,6 @@ const state = struct {
 pub fn registerModule() !void {
     const inputSubsystem = modules.Module{
         .name = "subsystem.input",
-        .post_tick_fn = on_post_tick,
         .post_draw_fn = on_post_draw,
     };
 
@@ -184,7 +183,7 @@ pub fn deinit() void {
 }
 
 /// App lifecycle event that happens after ticking
-fn on_post_tick() void {
+fn on_post_draw() void {
     // reset the 'just pressed' states
     for (0..state.keyboard_just_pressed.len) |i| {
         state.keyboard_just_pressed[i] = false;
@@ -200,9 +199,7 @@ fn on_post_tick() void {
     // reset the mouse delta state.
     state.mouse_dx = 0;
     state.mouse_dy = 0;
-}
 
-fn on_post_draw() void {
     // reset the mouse delta state.
     state.mouse_frame_dx = 0;
     state.mouse_frame_dy = 0;

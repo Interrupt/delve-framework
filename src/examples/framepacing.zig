@@ -21,6 +21,8 @@ const state = struct {
     var start_x: f32 = 120.0;
     var x_pos: f32 = 120.0;
     var x_pos_delta: f32 = 120.0;
+    var x_pos_fixed: f32 = 120.0;
+    var speed: f32 = 300.0;
 };
 
 // This example shows the simple debug drawing functions.
@@ -37,6 +39,7 @@ pub fn registerModule() !void {
         .name = "frame_pacing_test",
         .init_fn = on_init,
         .tick_fn = on_tick,
+        .fixed_tick_fn = on_fixed_tick,
         .draw_fn = on_draw,
         .cleanup_fn = on_cleanup,
     };
@@ -60,8 +63,8 @@ fn on_init() void {
 }
 
 fn on_tick(delta: f32) void {
-    state.x_pos += (1.0 / 60.0) * 300.0;
-    state.x_pos_delta += delta * 300.0;
+    state.x_pos += (1.0 / 60.0) * state.speed;
+    state.x_pos_delta += delta * state.speed;
 
     if(state.x_pos > 600.0)
         state.x_pos = 0.0;
@@ -73,10 +76,28 @@ fn on_tick(delta: f32) void {
         std.os.exit(0);
 }
 
+fn on_fixed_tick(fixed_delta: f32) void {
+    state.x_pos_fixed += fixed_delta * state.speed;
+
+    if(state.x_pos_fixed > 600.0)
+        state.x_pos_fixed = 0.0;
+}
+
 fn on_draw() void {
     // Draw our debug cat image, but use the color override to tint it!
-    graphics.drawDebugRectangle(texture, state.start_x + state.x_pos, 120.0, 100.0, 100.0, colors.white);
-    graphics.drawDebugRectangle(texture, state.start_x + state.x_pos_delta, 260.0, 100.0, 100.0, colors.white);
+    var y_pos: f32 = 100.0;
+    const y_spacing: f32 = 120.0;
+
+    graphics.drawDebugText(10, y_pos - 30, "raw tick:");
+    graphics.drawDebugRectangle(texture, state.start_x + state.x_pos, y_pos, 100.0, 100.0, colors.white);
+    y_pos += y_spacing;
+
+    graphics.drawDebugText(10, y_pos - 90, "delta tick:");
+    graphics.drawDebugRectangle(texture, state.start_x + state.x_pos_delta, y_pos, 100.0, 100.0, colors.white);
+    y_pos += y_spacing;
+
+    graphics.drawDebugText(10, y_pos - 150, "fixed tick:");
+    graphics.drawDebugRectangle(texture, state.start_x + state.x_pos_fixed, y_pos, 100.0, 100.0, colors.white);
 }
 
 fn on_cleanup() void {

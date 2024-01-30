@@ -22,9 +22,9 @@ const state = struct {
     var target_fps: ?u64 = null;
     var target_fps_ns: u64 = undefined;
 
-    // Fixed timestamp length, if set
-    var fixed_timestep_delta_ns: ?u64 = null;
-    var fixed_timestep_delta_f: f32 = 0.0;
+    // Fixed timestep length - defaults to 40 per second
+    var fixed_timestep_delta_ns: ?u64 = @intFromFloat((1.0 / 40.0) * NS_PER_SECOND_F);
+    var fixed_timestep_delta_f: f32 = 1.0 / 40.0;
 
     // game loop timers
     var game_loop_timer: time.Timer = undefined;
@@ -139,13 +139,12 @@ fn on_frame() void {
         // keep ticking until we catch up to the actual time
         while (state.time_accumulator_ns >= fixed_delta_ns) {
             // fixed timestamp, tick at our constant rate
-            modules.tickModules(state.fixed_timestep_delta_f);
+            modules.fixedTickModules(state.fixed_timestep_delta_f);
             state.time_accumulator_ns -= fixed_delta_ns;
         }
-    } else {
-        // tick as fast as possible!
-        modules.tickModules(state.delta_time);
     }
+
+    modules.tickModules(state.delta_time);
 
     // tell modules we are getting ready to draw!
     modules.preDrawModules();
