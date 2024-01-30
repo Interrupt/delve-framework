@@ -26,14 +26,14 @@ pub fn registerModule() !void {
     try modules.registerModule(fpsCounter);
 }
 
-pub fn on_cleanup() void {
+fn on_cleanup() void {
     if (last_fps_str != null) {
         allocator.free(last_fps_str.?);
         last_fps_str = null;
     }
 }
 
-pub fn on_tick(delta: f32) void {
+fn on_tick(delta: f32) void {
     _ = delta;
 
     if (input.isKeyPressed(.LEFT_SHIFT) and input.isKeyJustPressed(.F)) {
@@ -41,7 +41,7 @@ pub fn on_tick(delta: f32) void {
     }
 }
 
-pub fn on_draw() void {
+fn on_draw() void {
     if (!show_fps)
         return;
 
@@ -67,7 +67,7 @@ pub fn on_draw() void {
     drawFPS(fps_string);
 }
 
-pub fn drawFPS(fps_string: [:0]u8) void {
+fn drawFPS(fps_string: [:0]u8) void {
     graphics.setDebugTextScale(1.0, 1.0);
     graphics.setDebugTextColor4b(0x88, 0x88, 0x88, 0xFF);
     graphics.drawDebugText(2, 2, fps_string);
