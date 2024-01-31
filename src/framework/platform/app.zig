@@ -25,6 +25,7 @@ const state = struct {
     // Fixed timestep length - defaults to 40 per second
     var fixed_timestep_delta_ns: ?u64 = @intFromFloat((1.0 / 40.0) * NS_PER_SECOND_F);
     var fixed_timestep_delta_f: f32 = 1.0 / 40.0;
+    var fixed_timestep_lerp: f32 = 0.0;
 
     // game loop timers
     var game_loop_timer: time.Timer = undefined;
@@ -46,6 +47,9 @@ const state = struct {
 
     // current delta time
     var delta_time: f32 = 0.0;
+
+    // current elapsed time
+    var game_time: f64 = 0.0;
 
     var mouse_captured: bool = false;
 };
@@ -130,6 +134,7 @@ fn on_frame() void {
     // time management!
     const delta = calcDeltaTime();
     state.delta_time = delta.f_delta_time;
+    state.game_time += state.delta_time;
 
     state.tick += 1;
     state.fps_framecount += 1;
@@ -143,10 +148,14 @@ fn on_frame() void {
             modules.fixedTickModules(state.fixed_timestep_delta_f);
             state.time_accumulator_ns -= fixed_delta_ns;
         }
+
+        // store how far to the next fixed timestep we are
+        state.fixed_timestep_lerp = @as(f32, @floatFromInt(state.time_accumulator_ns)) / @as(f32, @floatFromInt(fixed_delta_ns));
+
+        debug.log("Fixed lerp: {d}", .{state.fixed_timestep_lerp});
     }
 
     modules.tickModules(state.delta_time);
-
     // tell modules we are getting ready to draw!
     modules.preDrawModules();
 
@@ -163,7 +172,7 @@ fn on_frame() void {
 }
 
 fn limitFps() bool {
-    if(state.target_fps == null)
+    if (state.target_fps == null)
         return false;
 
     // Try to hit our target FPS!
@@ -241,15 +250,32 @@ pub fn setTargetFPS(fps_target: i32) void {
     state.target_fps_ns = @intFromFloat((1.0 / target_fps_f) * NS_PER_SECOND);
 }
 
+/// Sets our fixed timestep rate. eg: 1.0 / 60.0 for 60 per second
 pub fn setFixedTimestep(timestep_delta: f32) void {
     state.fixed_timestep_delta_ns = @intFromFloat(timestep_delta * NS_PER_SECOND_F);
     state.fixed_timestep_delta_f = timestep_delta;
 }
 
+/// Returns the current delta time for this frame
 pub fn getCurrentDeltaTime() f32 {
     return state.delta_time;
 }
 
+/// Returns the time elapsed from game start
+pub fn getTime() f64 {
+    return state.game_time;
+}
+
+/// Returns our current tick number
 pub fn getCurrentTick() u64 {
     return state.tick;
+}
+
+/// Returns how far to the next fixed timestep tick we are in the  0..0 to 1.0 range
+/// When the delta is included, also gets premultiplied by the fixed timestep frame delta
+pub fn getFixedTimestepLerp(include_delta: bool) f32 {
+    if (include_delta)
+        return state.fixed_timestep_delta_f * state.fixed_timestep_lerp;
+
+    return state.fixed_timestep_lerp;
 }

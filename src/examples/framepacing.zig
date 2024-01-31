@@ -50,8 +50,8 @@ pub fn registerModule() !void {
 fn on_init() void {
     debug.log("Frame pacing example module initializing", .{});
 
-    papp.setTargetFPS(60);
-    papp.setFixedTimestep(1.0 / 30.0);
+    // papp.setTargetFPS(60);
+    papp.setFixedTimestep(1.0 / 24.0);
 
     fps_module.showFPS(true);
 
@@ -66,10 +66,10 @@ fn on_tick(delta: f32) void {
     state.x_pos += (1.0 / 60.0) * state.speed;
     state.x_pos_delta += delta * state.speed;
 
-    if(state.x_pos > 600.0)
+    if (state.x_pos > 600.0)
         state.x_pos = 0.0;
 
-    if(state.x_pos_delta > 600.0)
+    if (state.x_pos_delta > 600.0)
         state.x_pos_delta = 0.0;
 
     if (input.isKeyJustPressed(.ESCAPE))
@@ -79,14 +79,16 @@ fn on_tick(delta: f32) void {
 fn on_fixed_tick(fixed_delta: f32) void {
     state.x_pos_fixed += fixed_delta * state.speed;
 
-    if(state.x_pos_fixed > 600.0)
+    if (state.x_pos_fixed > 600.0)
         state.x_pos_fixed = 0.0;
 }
 
 fn on_draw() void {
     // Draw our debug cat image, but use the color override to tint it!
-    var y_pos: f32 = 100.0;
+    var y_pos: f32 = 50.0;
     const y_spacing: f32 = 120.0;
+
+    const fixed_timestep_lerp = papp.getFixedTimestepLerp(true);
 
     graphics.drawDebugText(10, y_pos - 30, "raw tick:");
     graphics.drawDebugRectangle(texture, state.start_x + state.x_pos, y_pos, 100.0, 100.0, colors.white);
@@ -98,6 +100,10 @@ fn on_draw() void {
 
     graphics.drawDebugText(10, y_pos - 150, "fixed tick:");
     graphics.drawDebugRectangle(texture, state.start_x + state.x_pos_fixed, y_pos, 100.0, 100.0, colors.white);
+    y_pos += y_spacing;
+
+    graphics.drawDebugText(10, y_pos - 210, "fixed tick with lerp:");
+    graphics.drawDebugRectangle(texture, state.start_x + state.x_pos_fixed + (fixed_timestep_lerp * state.speed), y_pos, 100.0, 100.0, colors.white);
 }
 
 fn on_cleanup() void {
