@@ -103,6 +103,10 @@ pub const navy: Color = Color.newBytes(0, 0, 128, 255);
 pub const maroon: Color = Color.newBytes(130, 0, 0, 255);
 pub const forest_green: Color = Color.newBytes(34, 139, 34, 255);
 
+// preset colors for the examples
+pub const examples_bg_dark: Color = Color.newBytes(22, 22, 35, 255);
+pub const examples_bg_light: Color = Color.newBytes(200, 200, 200, 255);
+
 pub fn init() !void {
     palette = try loadBuiltinPalette();
 }

@@ -44,6 +44,8 @@ fn on_init() void {
         return;
     };
     texture = graphics.Texture.init(&test_image);
+
+    graphics.setClearColor(colors.examples_bg_dark);
 }
 
 fn on_tick(delta: f32) void {

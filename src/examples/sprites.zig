@@ -92,7 +92,7 @@ fn on_init() void {
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
 
-    graphics.setClearColor(colors.white);
+    graphics.setClearColor(colors.examples_bg_light);
 }
 
 fn on_tick(deltatime: f32) void {

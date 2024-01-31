@@ -151,8 +151,6 @@ fn on_frame() void {
 
         // store how far to the next fixed timestep we are
         state.fixed_timestep_lerp = @as(f32, @floatFromInt(state.time_accumulator_ns)) / @as(f32, @floatFromInt(fixed_delta_ns));
-
-        debug.log("Fixed lerp: {d}", .{state.fixed_timestep_lerp});
     }
 
     modules.tickModules(state.delta_time);
