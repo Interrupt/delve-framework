@@ -1,6 +1,6 @@
 .{
-    .name = "delve-framework",
-    .version = "0.0.1",
+    .name = "delve",
+    .version = "0.0.2",
 
     .dependencies = .{
         .ziglua = .{
