@@ -87,3 +87,34 @@ zig build run-meshes
 zig build run-sprites
 zig build run-stresstest
 ```
+
+## Integrating into another Zig project
+
+Add the framework to your build.zig.zon file as a dependency:
+
+```
+.{
+    .name = "my_project",
+    .version = "0.0.1",
+    .dependencies = .{
+        .delve = .{
+            .url = "https://github.com/interrupt/delve-framework/archive/refs/tags/0.0.2.tar.gz",
+            .hash = "1220b7bea202d8eb41a70b1f6fb5511d92d1fde891410de1cb8923b4ebf046f21e7c",
+        },
+    },
+}
+```
+
+Then in your build.zig file, Delve can be included as a dependency:
+
+```
+const delve = b.dependency("delve", .{
+    .target = target,
+    .optimize = optimize,
+});
+
+...
+
+exe.addModule("delve", delve.module("delve"));
+exe.linkLibrary(delve.artifact("delve"));
+```
