@@ -51,7 +51,7 @@ fn on_init() void {
     debug.log("Frame pacing example module initializing", .{});
 
     papp.setTargetFPS(60);
-    // papp.setFixedTimestep(1.0 / 60.0);
+    papp.setFixedTimestep(1.0 / 30.0);
 
     fps_module.showFPS(true);
 

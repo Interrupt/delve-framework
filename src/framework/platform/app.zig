@@ -29,6 +29,7 @@ const state = struct {
     // game loop timers
     var game_loop_timer: time.Timer = undefined;
     var fps_update_timer: time.Timer = undefined;
+    var did_limit_fps: bool = false;
 
     // delta time vars
     var reset_delta: bool = true;
@@ -158,34 +159,37 @@ fn on_frame() void {
     modules.postDrawModules();
 
     // keep under our FPS limit, if needed
-    limitFps();
+    state.did_limit_fps = limitFps();
 }
 
-fn limitFps() void {
-    if (state.target_fps != null) {
-        // Try to hit our target FPS!
+fn limitFps() bool {
+    if(state.target_fps == null)
+        return false;
 
-        // Easy case, just stop here if we are under the target frame length
-        const initial_frame_ns = state.game_loop_timer.read();
-        if (initial_frame_ns >= state.target_fps_ns)
-            return;
+    // Try to hit our target FPS!
 
-        // Harder case, we are faster than the target frame length.
-        // Note: time.sleep does not ensure consistent timing.
-        // Due to this we need to sleep most of the time, but busy loop the rest.
+    // Easy case, just stop here if we are under the target frame length
+    const initial_frame_ns = state.game_loop_timer.read();
+    if (initial_frame_ns >= state.target_fps_ns)
+        return false;
 
-        const frame_len_ns = initial_frame_ns + NS_FPS_LIMIT_OVERHEAD;
-        if (frame_len_ns < state.target_fps_ns) {
-            time.sleep(state.target_fps_ns - frame_len_ns);
-        }
+    // Harder case, we are faster than the target frame length.
+    // Note: time.sleep does not ensure consistent timing.
+    // Due to this we need to sleep most of the time, but busy loop the rest.
 
-        // Eat up the rest of the time in a busy loop to ensure consistent frame pacing
-        while (true) {
-            const cur_frame_len_ns = state.game_loop_timer.read();
-            if (cur_frame_len_ns >= state.target_fps_ns)
-                break;
-        }
+    const frame_len_ns = initial_frame_ns + NS_FPS_LIMIT_OVERHEAD;
+    if (frame_len_ns < state.target_fps_ns) {
+        time.sleep(state.target_fps_ns - frame_len_ns);
     }
+
+    // Eat up the rest of the time in a busy loop to ensure consistent frame pacing
+    while (true) {
+        const cur_frame_len_ns = state.game_loop_timer.read();
+        if (cur_frame_len_ns + 500 >= state.target_fps_ns)
+            break;
+    }
+
+    return true;
 }
 
 /// Get time elapsed since last tick. Also calculate the FPS!
@@ -205,6 +209,13 @@ fn calcDeltaTime() DeltaTime {
         state.fps_update_timer.reset();
         state.fps_framecount = 0;
     }
+
+    // if(state.did_limit_fps) {
+    //     return DeltaTime{
+    //         .f_delta_time = (@as(f32, @floatFromInt(state.target_fps_ns)) / NS_PER_SECOND_F),
+    //         .ns_delta_time = state.target_fps_ns,
+    //     };
+    // }
 
     return DeltaTime{
         .f_delta_time = @as(f32, @floatFromInt(nanos_since_tick)) / NS_PER_SECOND_F,
