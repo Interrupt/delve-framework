@@ -92,7 +92,7 @@ fn on_draw() void {
 
     const fixed_timestep_lerp = papp.getFixedTimestepLerp(true);
 
-    graphics.setDebugTextColor4f(0.9, 0.9, 0.9, 1.0);
+    graphics.setDebugTextColor(colors.Color.new(0.9, 0.9, 0.9, 1.0));
     graphics.drawDebugText(10, y_pos - 30, "raw tick:");
     graphics.drawDebugRectangle(texture, state.start_x + state.x_pos, y_pos, 100.0, 100.0, colors.white);
     y_pos += y_spacing;

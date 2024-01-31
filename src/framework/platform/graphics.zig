@@ -743,14 +743,9 @@ pub fn getProjectionOrthoCustom(left: f32, right: f32, bottom: f32, top: f32, ne
     return Mat4.ortho(left, right, bottom, top, near, far);
 }
 
-/// Sets the color used for debug text drawing, as floats
-pub fn setDebugTextColor4f(r: f32, g: f32, b: f32, a: f32) void {
-    debugtext.color4f(r, g, b, a);
-}
-
-/// Sets the color used for debug text drawing, as bytes
-pub fn setDebugTextColor4b(r: u8, g: u8, b: u8, a: u8) void {
-    debugtext.color4b(r, g, b, a);
+/// Sets the debug text drawing color
+pub fn setDebugTextColor(color: Color) void {
+    debugtext.color4f(color.r, color.g, color.b, color.a);
 }
 
 /// Draws debug text on the screen

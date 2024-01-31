@@ -71,7 +71,7 @@ fn on_draw() void {
     const scale = 1.5 + std.math.sin(time * 0.02) * 0.2;
 
     graphics.setDebugTextScale(scale, scale);
-    graphics.setDebugTextColor4f(1.0, std.math.sin(time * 0.02), 0.0, 1.0);
+    graphics.setDebugTextColor(colors.Color.new(1.0, std.math.sin(time * 0.02), 0.0, 1.0));
     graphics.drawDebugText(2.0 / scale, 240.0 / scale, "This is from the debug draw module!");
 }
 

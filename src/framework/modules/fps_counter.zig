@@ -1,4 +1,5 @@
 const std = @import("std");
+const colors = @import("../colors.zig");
 const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
 const papp = @import("../platform/app.zig");
@@ -69,7 +70,7 @@ fn on_draw() void {
 
 fn drawFPS(fps_string: [:0]u8) void {
     graphics.setDebugTextScale(1.0, 1.0);
-    graphics.setDebugTextColor4b(0x88, 0x88, 0x88, 0xFF);
+    graphics.setDebugTextColor(colors.Color.newBytes(0x88, 0x88, 0x88, 0xFF));
     graphics.drawDebugText(2, 2, fps_string);
 }
 

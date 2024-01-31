@@ -101,7 +101,7 @@ pub fn drawGlyph(char: u8, x: i32, y: i32, color: u32) void {
 
     // TODO: This should blit part of a texture to the screen, not use the debug text stuff!
     gfx.setDebugTextScale(1.0, 1.0);
-    gfx.setDebugTextColor4f(pal_color.r, pal_color.g, pal_color.b, pal_color.a);
+    gfx.setDebugTextColor(pal_color);
     gfx.drawDebugTextChar(@floatFromInt(x), @floatFromInt(y), char);
 }
 

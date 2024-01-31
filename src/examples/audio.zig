@@ -61,7 +61,7 @@ fn on_tick(delta: f32) void {
 
 fn on_draw() void {
     graphics.setDebugTextScale(1, 1);
-    graphics.setDebugTextColor4f(0.6, 0.6, 0.6, 1.0);
+    graphics.setDebugTextColor(colors.Color.new(0.6, 0.6, 0.6, 1.0));
     graphics.drawDebugText(4, 4, "Music should be playing.");
     graphics.drawDebugText(4, 16, "Click to play sounds.");
 }
