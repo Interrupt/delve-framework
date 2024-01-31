@@ -66,13 +66,13 @@ try modules.registerModule(exampleModule);
 
 Some example modules are included automatically to exercise some code paths, these live under `src/examples` and are good examples of how to start using the framework.
 
-* [Sprite Batch Example](src/examples/batcher.zig)
-* [Mesh Drawing Example](src/examples/mesh.zig)
+* [Sprite Batch Example](src/examples/sprites.zig)
+* [Mesh Drawing Example](src/examples/meshes.zig)
 * [Debug Drawing Example](src/examples/debugdraw.zig)
 
 ## Building the examples
 
-Clone the repo, and pull the submodules with `git submodule --init`
+Clone the repo, then from a terminal:
 ```sh
 # just build
 zig build
