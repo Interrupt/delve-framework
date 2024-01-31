@@ -1,6 +1,0 @@
-[submodule "libs/ziglua"]
-	path = libs/ziglua
-	url = https://github.com/natecraddock/ziglua
-[submodule "3rdparty/sokol-zig"]
-	path = 3rdparty/sokol-zig
-	url = https://github.com/floooh/sokol-zig.git
