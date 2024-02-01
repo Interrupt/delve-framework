@@ -65,7 +65,7 @@ function _draw()
     draw.filled_rectangle(box_x, box_y, box_width, box_height, grey)
     draw.filled_rectangle(box_x + border, box_y + border, box_width - border * 2, box_height - border * 2, white)
 
-    text.draw("hello zig, from lua!", (box_x + 48) / 2, (box_y + 17) / 2, black)
+    text.draw("hello zig, from lua!", (box_x + 48), (box_y + 17), black)
     -- graphics.blit(textures, 8, 0, 8, 8, x + 8, y + 8)
     graphics.blit(textures, 16, 0, 16, 16, x + 24, y + 24, 100, 100)
 

@@ -12,6 +12,8 @@ pub fn draw(text_string: [*:0]const u8, x: i32, y: i32, color: u32) void {
     var y_offset: i32 = 0;
 
     var idx: u32 = 0;
+    const text_scale_i: i32 = 2;
+    const glyph_size: i32 = 8 * text_scale_i;
 
     // Draw until hitting the sentinel
     while (true) {
@@ -28,7 +30,7 @@ pub fn draw(text_string: [*:0]const u8, x: i32, y: i32, color: u32) void {
         }
 
         drawGlyph(char, x + x_offset, y + y_offset, color);
-        x_offset += 8;
+        x_offset += glyph_size;
     }
 }
 
@@ -37,7 +39,7 @@ pub fn draw_wrapped(text_string: [*:0]const u8, x: i32, y: i32, width: i32, colo
     var y_offset: i32 = 0;
 
     var idx: u32 = 0;
-    const text_scale_i: i32 = @as(i32, @intFromFloat(gfx.getDebugTextScale()));
+    const text_scale_i: i32 = 2;
     const glyph_size: i32 = 8 * text_scale_i;
 
     // Draw until hitting the sentinel
@@ -70,7 +72,7 @@ pub fn getTextHeight(text_string: [*:0]const u8, width: i32) i32 {
     var y_offset: i32 = 0;
 
     var idx: u32 = 0;
-    const text_scale_i: i32 = @as(i32, @intFromFloat(gfx.getDebugTextScale()));
+    const text_scale_i: i32 = 2;
     const glyph_size: i32 = 8 * text_scale_i;
 
     // Draw until hitting the sentinel
@@ -104,12 +106,9 @@ pub fn drawGlyph(char: u8, x: i32, y: i32, color: u32) void {
     const pal_color = colorFromPalette(color);
 
     // TODO: This should blit part of a texture to the screen, not use the debug text stuff!
+    gfx.setDebugTextScale(1);
     gfx.setDebugTextColor(pal_color);
     gfx.drawDebugTextChar(@floatFromInt(x), @floatFromInt(y), char);
-}
-
-pub fn setTextScale(scale: f32) void {
-    gfx.setDebugTextScale(scale);
 }
 
 fn colorFromPalette(pal_color: u32) colors.Color {
