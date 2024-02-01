@@ -92,20 +92,21 @@ fn on_draw() void {
 
     const fixed_timestep_lerp = papp.getFixedTimestepLerp(true);
 
+    graphics.setDebugTextScale(1);
     graphics.setDebugTextColor(colors.Color.new(0.9, 0.9, 0.9, 1.0));
-    graphics.drawDebugText(10, y_pos - 30, "raw tick:");
+    graphics.drawDebugText(10, y_pos, "raw tick:");
     graphics.drawDebugRectangle(texture, state.start_x + state.x_pos, y_pos, 100.0, 100.0, colors.white);
     y_pos += y_spacing;
 
-    graphics.drawDebugText(10, y_pos - 90, "delta tick:");
+    graphics.drawDebugText(10, y_pos, "delta tick:");
     graphics.drawDebugRectangle(texture, state.start_x + state.x_pos_delta, y_pos, 100.0, 100.0, colors.white);
     y_pos += y_spacing;
 
-    graphics.drawDebugText(10, y_pos - 150, "fixed tick:");
+    graphics.drawDebugText(10, y_pos, "fixed tick:");
     graphics.drawDebugRectangle(texture, state.start_x + state.x_pos_fixed, y_pos, 100.0, 100.0, colors.white);
     y_pos += y_spacing;
 
-    graphics.drawDebugText(10, y_pos - 210, "fixed tick with lerp:");
+    graphics.drawDebugText(10, y_pos, "fixed tick with lerp:");
     graphics.drawDebugRectangle(texture, state.start_x + state.x_pos_fixed + (fixed_timestep_lerp * state.speed), y_pos, 100.0, 100.0, colors.white);
 }
 

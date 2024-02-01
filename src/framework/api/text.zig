@@ -37,6 +37,8 @@ pub fn draw_wrapped(text_string: [*:0]const u8, x: i32, y: i32, width: i32, colo
     var y_offset: i32 = 0;
 
     var idx: u32 = 0;
+    const text_scale_i: i32 = @as(i32, @intFromFloat(gfx.getDebugTextScale()));
+    const glyph_size: i32 = 8 * text_scale_i;
 
     // Draw until hitting the sentinel
     while (true) {
@@ -48,18 +50,18 @@ pub fn draw_wrapped(text_string: [*:0]const u8, x: i32, y: i32, width: i32, colo
 
         if (char == '\n') {
             x_offset = 0;
-            y_offset += 8;
+            y_offset += glyph_size;
             continue;
         }
 
         // Wrap the text if we've gone over the width bounds
-        if (x_offset + 8 > @divFloor(width, 2)) {
+        if (x_offset + glyph_size > @divFloor(width * text_scale_i, 2)) {
             x_offset = 0;
-            y_offset += 8;
+            y_offset += glyph_size;
         }
 
         drawGlyph(char, x + x_offset, y + y_offset, color);
-        x_offset += 8;
+        x_offset += glyph_size;
     }
 }
 
@@ -68,6 +70,8 @@ pub fn getTextHeight(text_string: [*:0]const u8, width: i32) i32 {
     var y_offset: i32 = 0;
 
     var idx: u32 = 0;
+    const text_scale_i: i32 = @as(i32, @intFromFloat(gfx.getDebugTextScale()));
+    const glyph_size: i32 = 8 * text_scale_i;
 
     // Draw until hitting the sentinel
     while (true) {
@@ -79,30 +83,33 @@ pub fn getTextHeight(text_string: [*:0]const u8, width: i32) i32 {
 
         if (char == '\n') {
             x_offset = 0;
-            y_offset += 8;
+            y_offset += glyph_size;
             continue;
         }
 
         // Wrap the text if we've gone over the width bounds
-        if (x_offset + 8 > @divFloor(width, 2)) {
+        if (x_offset + glyph_size > @divFloor(width * text_scale_i, 2)) {
             x_offset = 0;
-            y_offset += 8;
+            y_offset += glyph_size;
         }
 
         // Would have drawn a glyph, update size!
-        x_offset += 8;
+        x_offset += glyph_size;
     }
 
-    return y_offset + 8;
+    return y_offset + glyph_size;
 }
 
 pub fn drawGlyph(char: u8, x: i32, y: i32, color: u32) void {
     const pal_color = colorFromPalette(color);
 
     // TODO: This should blit part of a texture to the screen, not use the debug text stuff!
-    gfx.setDebugTextScale(1.0, 1.0);
     gfx.setDebugTextColor(pal_color);
     gfx.drawDebugTextChar(@floatFromInt(x), @floatFromInt(y), char);
+}
+
+pub fn setTextScale(scale: f32) void {
+    gfx.setDebugTextScale(scale);
 }
 
 fn colorFromPalette(pal_color: u32) colors.Color {

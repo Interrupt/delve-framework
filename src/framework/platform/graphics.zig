@@ -634,6 +634,7 @@ pub const state = struct {
     var debug_shader: Shader = undefined;
     var debug_material: Material = undefined;
     var debug_draw_color_override: Color = colors.transparent;
+    var debug_text_scale: f32 = 1.0;
 };
 
 var default_pass_action: sg.PassAction = .{};
@@ -750,19 +751,26 @@ pub fn setDebugTextColor(color: Color) void {
 
 /// Draws debug text on the screen
 pub fn drawDebugText(x: f32, y: f32, str: [:0]const u8) void {
-    debugtext.pos(x * 0.125, y * 0.125);
+    debugtext.pos(x * (0.125 / state.debug_text_scale), y * (0.125 / state.debug_text_scale));
     debugtext.puts(str);
 }
 
 /// Draws a single debug text character
 pub fn drawDebugTextChar(x: f32, y: f32, char: u8) void {
-    debugtext.pos(x * 0.125, y * 0.125);
+    // debugtext.pos(x * 0.125, y * 0.125);
+    debugtext.pos(x * (0.125 / state.debug_text_scale), y * (0.125 / state.debug_text_scale));
     debugtext.putc(char);
 }
 
 /// Sets the scaling used when drawing debug text
-pub fn setDebugTextScale(x: f32, y: f32) void {
-    debugtext.canvas(sapp.widthf() / (x * 2.0), sapp.heightf() / (y * 2.0));
+pub fn setDebugTextScale(scale: f32) void {
+    debugtext.canvas(sapp.widthf() / (scale * 2.0), sapp.heightf() / (scale * 2.0));
+    state.debug_text_scale = scale * 2.0;
+}
+
+/// Retursn the current text scale for debug text
+pub fn getDebugTextScale() f32 {
+    return state.debug_text_scale;
 }
 
 /// Draws a rectangle using the slow debug draw setup

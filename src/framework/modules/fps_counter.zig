@@ -69,9 +69,9 @@ fn on_draw() void {
 }
 
 fn drawFPS(fps_string: [:0]u8) void {
-    graphics.setDebugTextScale(1.0, 1.0);
+    graphics.setDebugTextScale(1.0);
     graphics.setDebugTextColor(colors.Color.newBytes(0x88, 0x88, 0x88, 0xFF));
-    graphics.drawDebugText(2, 2, fps_string);
+    graphics.drawDebugText(2, 4, fps_string);
 }
 
 pub fn showFPS(enabled: bool) void {

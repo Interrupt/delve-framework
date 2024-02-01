@@ -229,13 +229,15 @@ pub fn drawConsole(draw_bg: bool) void {
         return;
 
     // Reset text drawing scale
-    gfx.setDebugTextScale(1, 1);
+    const text_scale: i32 = 2;
+    const glyph_size: i32 = 8 * text_scale;
+    gfx.setDebugTextScale(text_scale / 2);
 
     // Push text away from the top and left sides
     const padding = 2;
 
     const white_pal_idx = 7;
-    const height_pixels: i32 = @intCast(((console_num_to_show + 1) * 9) + padding);
+    var height_pixels: i32 = @intCast(((console_num_to_show + 1) * 9) + padding + 3);
     last_text_height = height_pixels;
 
     var res_w: i32 = gfx.getDisplayWidth();
@@ -247,18 +249,19 @@ pub fn drawConsole(draw_bg: bool) void {
     }
 
     var y_draw_pos: i32 = (height_pixels - 8) - padding;
+    y_draw_pos *= text_scale;
 
     // Draw the pending command text
     text_module.draw("> ", padding, y_draw_pos, white_pal_idx);
     var pending_cmd_idx: i32 = 0;
     for (pending_cmd.items) |char| {
         pending_cmd_idx += 1;
-        text_module.drawGlyph(char, padding + pending_cmd_idx * 8, y_draw_pos, white_pal_idx);
+        text_module.drawGlyph(char, padding + pending_cmd_idx * glyph_size, y_draw_pos, white_pal_idx);
     }
 
     // Draw the indicator
     pending_cmd_idx += 1;
-    text_module.drawGlyph(221, padding + pending_cmd_idx * 8, y_draw_pos, white_pal_idx);
+    text_module.drawGlyph(221, padding + pending_cmd_idx * glyph_size, y_draw_pos, white_pal_idx);
 
     // add some extra padding between the pending text and the history
     y_draw_pos -= 1;
