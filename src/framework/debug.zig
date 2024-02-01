@@ -237,7 +237,7 @@ pub fn drawConsole(draw_bg: bool) void {
     const padding = 2;
 
     const white_pal_idx = 7;
-    var height_pixels: i32 = @intCast(((console_num_to_show + 1) * 9) + padding + 3);
+    var height_pixels: i32 = @intCast(((console_num_to_show + 1) * 9) + padding + 4);
     last_text_height = height_pixels;
 
     var res_w: i32 = gfx.getDisplayWidth();
