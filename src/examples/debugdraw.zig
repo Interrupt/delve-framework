@@ -72,7 +72,7 @@ fn on_draw() void {
 
     graphics.setDebugTextScale(scale);
     graphics.setDebugTextColor(colors.Color.new(1.0, std.math.sin(time * 0.02), 0.0, 1.0));
-    graphics.drawDebugText(2.0 / scale, 240.0 / scale, "This is from the debug draw module!");
+    graphics.drawDebugText(4.0, 480.0, "This is from the debug draw module!");
 }
 
 fn on_cleanup() void {
