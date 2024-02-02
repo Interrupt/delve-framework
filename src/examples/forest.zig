@@ -16,6 +16,8 @@ const math = delve.math;
 const modules = delve.modules;
 const fps_module = delve.module.fps_counter;
 
+const TextureRegion = delve.graphics.sprites.TextureRegion;
+
 var tex_treesheet: graphics.Texture = undefined;
 var shader_blend: graphics.Shader = undefined;
 
@@ -47,26 +49,26 @@ pub fn registerModule() !void {
     try modules.registerModule(forestExample);
 }
 
-const grass_sprites: []const batcher.TextureRegion = &[_]batcher.TextureRegion{
-    batcher.TextureRegion{ // grass 1
+const grass_sprites: []const TextureRegion = &[_]TextureRegion{
+    TextureRegion{ // grass 1
         .u = 0.0,
         .v = 0.8,
         .u_2 = 0.05,
         .v_2 = 1.0,
     },
-    batcher.TextureRegion{ // grass 2
+    TextureRegion{ // grass 2
         .u = 0.05,
         .v = 0.8,
         .u_2 = 0.128,
         .v_2 = 1.0,
     },
-    batcher.TextureRegion{ // grass 3
+    TextureRegion{ // grass 3
         .u = 0.128,
         .v = 0.8,
         .u_2 = 0.2,
         .v_2 = 1.0,
     },
-    batcher.TextureRegion{ // grass 4
+    TextureRegion{ // grass 4
         .u = 0.2,
         .v = 0.8,
         .u_2 = 0.275,
@@ -74,26 +76,26 @@ const grass_sprites: []const batcher.TextureRegion = &[_]batcher.TextureRegion{
     },
 };
 
-const tree_sprites: []const batcher.TextureRegion = &[_]batcher.TextureRegion{
-    batcher.TextureRegion{ // fir tall
+const tree_sprites: []const TextureRegion = &[_]TextureRegion{
+    TextureRegion{ // fir tall
         .u = 0.275,
         .v = 0.015,
         .u_2 = 0.49,
         .v_2 = 1.0,
     },
-    batcher.TextureRegion{ // fir tall bare
+    TextureRegion{ // fir tall bare
         .u = 0.49,
         .v = 0.1,
         .u_2 = 0.6,
         .v_2 = 1.0,
     },
-    batcher.TextureRegion{ // fir small
+    TextureRegion{ // fir small
         .u = 0.6,
         .v = 0.6,
         .u_2 = 0.7,
         .v_2 = 1.0,
     },
-    batcher.TextureRegion{ // aspen
+    TextureRegion{ // aspen
         .u = 0.85,
         .v = 0.0,
         .u_2 = 1.0,
@@ -101,14 +103,14 @@ const tree_sprites: []const batcher.TextureRegion = &[_]batcher.TextureRegion{
     },
 };
 
-const cloud_sprites: []const batcher.TextureRegion = &[_]batcher.TextureRegion{
-    batcher.TextureRegion{ // cloud 1
+const cloud_sprites: []const TextureRegion = &[_]TextureRegion{
+    TextureRegion{ // cloud 1
         .u = 0.0,
         .v = 0.0,
         .u_2 = 0.20,
         .v_2 = 0.31,
     },
-    batcher.TextureRegion{ // cloud 2
+    TextureRegion{ // cloud 2
         .u = 0.0,
         .v = 0.31,
         .u_2 = 0.20,
@@ -270,7 +272,7 @@ fn addGround(ground_size: math.Vec2) void {
 
     // Add the ground plane rectangle
     sprite_batch.setTransformMatrix(ground_transform);
-    sprite_batch.addRectangle(ground_size.scale(-0.5), ground_size, batcher.TextureRegion.default(), ground_color);
+    sprite_batch.addRectangle(ground_size.scale(-0.5), ground_size, TextureRegion.default(), ground_color);
 }
 
 /// Adds clouds to the cloud batch

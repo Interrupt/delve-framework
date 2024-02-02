@@ -8,6 +8,7 @@ const assets = @import("assets.zig");
 const images = @import("../images.zig");
 const graphics = @import("../platform/graphics.zig");
 const batcher = @import("../graphics/batcher.zig");
+const sprites = @import("../graphics/sprites.zig");
 const scripting = @import("../scripting/manager.zig");
 
 var enable_debug_logging = false;
@@ -63,7 +64,7 @@ pub fn blit(texture_handle: u32, source_x: f32, source_y: f32, source_width: f32
     const y_aspect = 1.0 / @as(f32, @floatFromInt(loaded_img.?.height));
 
     // Snip out just what we were asked to draw
-    var region = batcher.TextureRegion{
+    var region = sprites.TextureRegion{
         .u = @min(source_x * x_aspect, 1.0),
         .v = @min(source_y * y_aspect, 1.0),
         .v_2 = @min((source_y + source_height) * y_aspect, 1.0),

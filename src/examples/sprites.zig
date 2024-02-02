@@ -11,6 +11,7 @@ const input = delve.platform.input;
 const papp = delve.platform.app;
 const math = delve.math;
 const modules = delve.modules;
+const sprites = delve.graphics.sprites;
 
 const Color = colors.Color;
 
@@ -133,13 +134,13 @@ fn pre_draw() void {
             transform = transform.mul(math.Mat4.rotate(f_i * 3.0, .{ .x = 1.0, .y = 1.0, .z = 0.0 }));
             test_batch.setTransformMatrix(transform);
 
-            test_batch.addRectangle(math.Vec2{ .x = 0, .y = 0 }, math.Vec2{ .x = 0.5, .y = 0.5 }, batcher.TextureRegion.default(), colors.white);
+            test_batch.addRectangle(math.Vec2{ .x = 0, .y = 0 }, math.Vec2{ .x = 0.5, .y = 0.5 }, sprites.TextureRegion.default(), colors.white);
         } else {
             transform = math.Mat4.translate(.{ .x = -x_pos, .y = y_pos, .z = f_i * -0.1 });
             transform = transform.mul(math.Mat4.rotate(f_i * 3.0, .{ .x = 0.0, .y = -1.0, .z = 0.0 }));
             test_batch.setTransformMatrix(transform);
 
-            test_batch.addTriangle(math.Vec2{ .x = 0, .y = 0 }, math.Vec2{ .x = 0.5, .y = 0.5 }, batcher.TextureRegion.default(), colors.white);
+            test_batch.addTriangle(math.Vec2{ .x = 0, .y = 0 }, math.Vec2{ .x = 0.5, .y = 0.5 }, sprites.TextureRegion.default(), colors.white);
         }
     }
 
@@ -151,21 +152,21 @@ fn pre_draw() void {
 
     test_batch.setTransformMatrix(math.Mat4.identity());
     test_batch.useTexture(graphics.tex_black);
-    test_batch.addLine(math.vec2(0, line_y_start), math.vec2(2, line_y_end), 0.05, batcher.TextureRegion.default(), colors.white);
+    test_batch.addLine(math.vec2(0, line_y_start), math.vec2(2, line_y_end), 0.05, sprites.TextureRegion.default(), colors.white);
 
     // test a line rectangle!
     test_batch.useTexture(graphics.tex_white);
-    test_batch.addLineRectangle(math.vec2(-2.5, 0), math.vec2(2, 0.5), 0.05, batcher.TextureRegion.default(), colors.black);
+    test_batch.addLineRectangle(math.vec2(-2.5, 0), math.vec2(2, 0.5), 0.05, sprites.TextureRegion.default(), colors.black);
 
     // test using materials as well!
     // test a filled rectangle
     test_batch.useMaterial(&test_material_1);
     test_batch.setTransformMatrix(math.Mat4.translate(math.vec3(0, 0, -0.001)));
-    test_batch.addRectangle(math.vec2(-2.5, 0), math.vec2(2, 0.5), batcher.TextureRegion.default(), colors.cyan.mul(Color{ .a = 0.75 }));
+    test_batch.addRectangle(math.vec2(-2.5, 0), math.vec2(2, 0.5), sprites.TextureRegion.default(), colors.cyan.mul(Color{ .a = 0.75 }));
 
     test_batch.useMaterial(&test_material_2);
     test_batch.setTransformMatrix(math.Mat4.translate(math.vec3(1, -1, -0.001)));
-    test_batch.addRectangle(math.vec2(-1.0, 0), math.vec2(1, 1), batcher.TextureRegion.default(), colors.cyan);
+    test_batch.addRectangle(math.vec2(-1.0, 0), math.vec2(1, 1), sprites.TextureRegion.default(), colors.cyan);
 
     test_batch.apply();
 }
