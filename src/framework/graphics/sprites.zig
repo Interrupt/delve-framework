@@ -1,6 +1,12 @@
+const std = @import("std");
 const math = @import("../math.zig");
+const debug = @import("../debug.zig");
 
 const Vec2 = math.Vec2;
+const AnimationHashMap = std.StringHashMap(SpriteAnimation);
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+const allocator = gpa.allocator();
 
 /// Keeps track of a sub region of a texture
 /// Origin is in the upper left, x axis points right, and y axis points down
@@ -33,5 +39,112 @@ pub const TextureRegion = struct {
     /// Returns a region that has been offset by a given amount
     pub fn scroll(self: TextureRegion, amount: Vec2) TextureRegion {
         return .{ .u = self.u + amount.x, .v = self.v + amount.y, .u_2 = self.u_2 + amount.x, .v_2 = self.v_2 + amount.y };
+    }
+};
+
+/// A single animation frame in an animated sprite sheeet
+pub const AnimationFrame = struct {
+    region: TextureRegion,
+    size: Vec2 = Vec2.new(1,1),
+    sourceSize: Vec2 = Vec2.new(1,1),
+    duration: f32 = 1.0,
+};
+
+/// An animation packed inside an animated sprite sheet
+pub const SpriteAnimation = struct {
+    frames: []const AnimationFrame,
+};
+
+/// AnimatedSpriteSheets contain multiple named animations, each with a number of animation frames
+pub const AnimatedSpriteSheet = struct {
+    entries: AnimationHashMap = undefined,
+
+    pub fn init() AnimatedSpriteSheet {
+        return AnimatedSpriteSheet{
+            .entries = AnimationHashMap.init(allocator),
+        };
+    }
+
+    // pub fn fromAsepriteJsonFile(path: [:0]const u8) !SpriteSheet {
+    //     const file = try std.io.readFileAlloc(allocator, path);
+    //     defer allocator.free(file);
+    //
+    //     const sheet_data = std.json.parseFromSlice(SpriteAnimation, allocator, file, .{.allocate = .alloc_always});
+    //
+    //     var ret: SpriteSheet = SpriteSheet { .entries = AnimationHashMap.init(allocator) };
+    //     ret.entries.put("first", sheet_data);
+    //     return ret;
+    // }
+};
+
+/// PlayingAnimation handles the state of playing a sprite animation
+pub const PlayingAnimation = struct {
+    animation: SpriteAnimation,
+    frame_time: f64 = 0.0,
+    frame: usize = 0,
+    is_playing: bool = true,
+    should_loop: bool = true,
+    speed: f32 = 1.0,
+
+    pub fn init(animation: SpriteAnimation) PlayingAnimation {
+        return PlayingAnimation{
+            .animation = animation,
+        };
+    }
+
+    pub fn tick(self: *PlayingAnimation, delta_time: f32) void {
+        if(!self.is_playing)
+            return;
+
+        if(self.frame >= self.animation.frames.len)
+            return;
+
+        self.frame_time += delta_time * self.speed;
+
+        // check to see if we should be on the next frame
+        if(self.frame_time > self.animation.frames[self.frame].duration) {
+            // check to see if we should be on the next frame
+            if(self.frame + 1 < self.animation.frames.len) {
+                self.frame += 1;
+                self.frame_time = 0.0;
+            }
+            else if(self.should_loop) {
+                self.frame = 0;
+                self.frame_time = 0.0;
+            }
+        }
+    }
+
+    pub fn play(self: *PlayingAnimation, speed: f32) void {
+        self.is_playing = true;
+        self.speed = speed;
+    }
+
+    pub fn pause(self: *PlayingAnimation) void {
+        self.is_playing = false;
+    }
+
+    pub fn reset(self: *PlayingAnimation) void {
+        self.frame = 0;
+        self.frame_time = 0.0;
+    }
+
+    pub fn loop(self: *PlayingAnimation, should_loop: bool) void {
+        self.should_loop = should_loop;
+    }
+
+    pub fn getTextureRegion(self: *PlayingAnimation) TextureRegion {
+        if(self.frame >= self.animation.frames.len)
+            return TextureRegion.default();
+
+        return self.animation.frames[self.frame].region;
+    }
+
+    pub fn isDonePlaying(self: *PlayingAnimation) bool {
+        if(self.frame + 1 != self.animation.frames.len) {
+            return false; // not on last frame
+        }
+
+        return self.frame_time >= self.animation.frames[self.frame].duration;
     }
 };
