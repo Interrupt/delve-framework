@@ -65,6 +65,14 @@ pub const AnimatedSpriteSheet = struct {
         };
     }
 
+    pub fn playAnimation(self: *AnimatedSpriteSheet, animation: [:0]const u8) ?PlayingAnimation {
+        const entry = self.entries.get(animation);
+        if(entry == null)
+            return null;
+
+        return PlayingAnimation.init(entry.?);
+    }
+
     // pub fn fromAsepriteJsonFile(path: [:0]const u8) !SpriteSheet {
     //     const file = try std.io.readFileAlloc(allocator, path);
     //     defer allocator.free(file);
@@ -115,8 +123,11 @@ pub const PlayingAnimation = struct {
         }
     }
 
-    pub fn play(self: *PlayingAnimation, speed: f32) void {
+    pub fn play(self: *PlayingAnimation) void {
         self.is_playing = true;
+    }
+
+    pub fn setSpeed(self: *PlayingAnimation, speed: f32) void {
         self.speed = speed;
     }
 
