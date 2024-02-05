@@ -54,6 +54,11 @@ pub const AnimationFrame = struct {
 /// An animation packed inside an animated sprite sheet
 pub const SpriteAnimation = struct {
     frames: []AnimationFrame,
+
+    /// Start playing this animation
+    pub fn play(self: *const SpriteAnimation) PlayingAnimation {
+        return PlayingAnimation.init(self.*);
+    }
 };
 
 /// AnimatedSpriteSheets contain multiple named animations, each with a number of animation frames
@@ -66,12 +71,30 @@ pub const AnimatedSpriteSheet = struct {
         };
     }
 
-    pub fn playAnimation(self: *AnimatedSpriteSheet, animation: [:0]const u8) ?PlayingAnimation {
-        const entry = self.entries.get(animation);
+    /// Play the animation under the given animation name
+    pub fn playAnimation(self: *AnimatedSpriteSheet, animation_name: [:0]const u8) ?PlayingAnimation {
+        const entry = self.getAnimation(animation_name);
         if(entry == null)
             return null;
 
-        return PlayingAnimation.init(entry.?);
+        return entry.?.play();
+    }
+
+    // Get the animation under the given animation name
+    pub fn getAnimation(self: *AnimatedSpriteSheet, animation_name: [:0]const u8) ?SpriteAnimation {
+        return self.entries.get(animation_name);
+    }
+
+    /// Get the first sprite under the given name
+    pub fn getSprite(self: *AnimatedSpriteSheet, name: [:0]const u8) ?AnimationFrame {
+        const entry = self.entries.get(name);
+        if(entry == null)
+            return null;
+
+        if(entry.frames == 0)
+            return null;
+
+        return entry.frames[0];
     }
 
     pub fn playAnimationByIndex(self: *AnimatedSpriteSheet, idx: usize) ?PlayingAnimation {
