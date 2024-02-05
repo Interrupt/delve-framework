@@ -1,4 +1,3 @@
-
 const std = @import("std");
 const debug = @import("../../../debug.zig");
 const graphics = @import("../../graphics.zig");
@@ -27,12 +26,12 @@ pub const BindingsImpl = struct {
     index_type_size: u8 = @sizeOf(u32),
 
     pub fn init(cfg: graphics.BindingConfig) Bindings {
-        var bindingsImpl = BindingsImpl {
+        var bindingsImpl = BindingsImpl{
             .sokol_bindings = .{},
-            .index_type_size = if(cfg.vertex_layout.index_size == .UINT16) @sizeOf(u16) else @sizeOf(u32),
+            .index_type_size = if (cfg.vertex_layout.index_size == .UINT16) @sizeOf(u16) else @sizeOf(u32),
         };
 
-        var bindings: Bindings = Bindings {
+        var bindings: Bindings = Bindings{
             .length = 0,
             .impl = bindingsImpl,
             .config = cfg,
@@ -40,15 +39,15 @@ pub const BindingsImpl = struct {
         };
 
         // Updatable buffers will need to be created ahead-of-time
-        if(cfg.updatable) {
-            for(cfg.vertex_layout.attributes, 0..) |attr, idx| {
+        if (cfg.updatable) {
+            for (cfg.vertex_layout.attributes, 0..) |attr, idx| {
                 bindings.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
                     .usage = .STREAM,
                     .size = cfg.vert_len * attr.item_size,
                 });
             }
 
-            if(cfg.vertex_layout.has_index_buffer) {
+            if (cfg.vertex_layout.has_index_buffer) {
                 bindings.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
                     .usage = .STREAM,
                     .type = .INDEXBUFFER,
@@ -66,15 +65,15 @@ pub const BindingsImpl = struct {
     }
 
     pub fn set(self: *Bindings, vertices: anytype, indices: anytype, opt_normals: anytype, opt_tangents: anytype, length: usize) void {
-        if(self.impl.sokol_bindings == null) {
+        if (self.impl.sokol_bindings == null) {
             return;
         }
 
         self.length = length;
 
-        for(self.config.vertex_layout.attributes, 0..) |attr, idx| {
+        for (self.config.vertex_layout.attributes, 0..) |attr, idx| {
             self.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
-                .data = switch(attr.binding) {
+                .data = switch (attr.binding) {
                     .VERT_PACKED => sg.asRange(vertices),
                     .VERT_NORMALS => sg.asRange(opt_normals),
                     .VERT_TANGENTS => sg.asRange(opt_tangents),
@@ -82,7 +81,7 @@ pub const BindingsImpl = struct {
             });
         }
 
-        if(self.config.vertex_layout.has_index_buffer) {
+        if (self.config.vertex_layout.has_index_buffer) {
             self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
                 .type = .INDEXBUFFER,
                 .data = sg.asRange(indices),
@@ -91,13 +90,13 @@ pub const BindingsImpl = struct {
     }
 
     pub fn update(self: *Bindings, vertices: anytype, indices: anytype, vert_len: usize, index_len: usize) void {
-        if(self.impl.sokol_bindings == null) {
+        if (self.impl.sokol_bindings == null) {
             return;
         }
 
         self.length = index_len;
 
-        if(index_len == 0)
+        if (index_len == 0)
             return;
 
         sg.updateBuffer(self.impl.sokol_bindings.?.vertex_buffers[0], sg.asRange(vertices[0..vert_len]));
@@ -108,7 +107,7 @@ pub const BindingsImpl = struct {
 
     /// Sets the texture that will be used to draw this binding
     pub fn setTexture(self: *Bindings, texture: Texture) void {
-        if(texture.sokol_image == null)
+        if (texture.sokol_image == null)
             return;
 
         // set the texture to the default fragment shader image slot
@@ -116,14 +115,14 @@ pub const BindingsImpl = struct {
     }
 
     pub fn updateFromMaterial(self: *Bindings, material: *Material) void {
-        for(0..material.textures.len) |i| {
-            if(material.textures[i] != null)
+        for (0..material.textures.len) |i| {
+            if (material.textures[i] != null)
                 self.impl.sokol_bindings.?.fs.images[i] = material.textures[i].?.sokol_image.?;
         }
 
         // bind samplers
-        for(material.sokol_samplers, 0..) |sampler, i| {
-            if(sampler) |s|
+        for (material.sokol_samplers, 0..) |sampler, i| {
+            if (sampler) |s|
                 self.impl.sokol_bindings.?.fs.samplers[i] = s;
         }
 
@@ -132,11 +131,11 @@ pub const BindingsImpl = struct {
 
     /// Destroy our binding
     pub fn destroy(self: *Bindings) void {
-        for(self.config.vertex_layout.attributes, 0..) |_, idx| {
+        for (self.config.vertex_layout.attributes, 0..) |_, idx| {
             sg.destroyBuffer(self.impl.sokol_bindings.?.vertex_buffers[idx]);
         }
 
-        if(self.config.vertex_layout.has_index_buffer)
+        if (self.config.vertex_layout.has_index_buffer)
             sg.destroyBuffer(self.impl.sokol_bindings.?.index_buffer);
 
         sg.destroySampler(self.impl.default_sokol_sampler);
@@ -144,7 +143,7 @@ pub const BindingsImpl = struct {
 
     /// Resize buffers used by our binding. Will destroy buffers and recreate them!
     pub fn resize(self: *Bindings, vertex_len: usize, index_len: usize) void {
-        if(!self.config.updatable)
+        if (!self.config.updatable)
             return;
 
         // debug.log("Resizing buffer! {}x{}", .{vertex_len, index_len});
@@ -152,16 +151,16 @@ pub const BindingsImpl = struct {
         const vert_layout = self.config.vertex_layout;
 
         // destory the old index buffer
-        if(vert_layout.has_index_buffer)
+        if (vert_layout.has_index_buffer)
             sg.destroyBuffer(self.impl.sokol_bindings.?.index_buffer);
 
         // destroy all the old vertex buffers
-        for(vert_layout.attributes, 0..) |_, idx| {
+        for (vert_layout.attributes, 0..) |_, idx| {
             sg.destroyBuffer(self.impl.sokol_bindings.?.vertex_buffers[idx]);
         }
 
         // create new index buffer
-        if(vert_layout.has_index_buffer) {
+        if (vert_layout.has_index_buffer) {
             self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
                 .usage = .STREAM,
                 .type = .INDEXBUFFER,
@@ -170,7 +169,7 @@ pub const BindingsImpl = struct {
         }
 
         // create new vertex buffers
-        for(vert_layout.attributes, 0..) |attr, idx| {
+        for (vert_layout.attributes, 0..) |attr, idx| {
             self.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
                 .usage = .STREAM,
                 .size = vertex_len * attr.item_size,
@@ -179,11 +178,11 @@ pub const BindingsImpl = struct {
     }
 
     pub fn drawSubset(bindings: *Bindings, start: u32, end: u32, shader: *Shader) void {
-        if(bindings.impl.sokol_bindings == null)
+        if (bindings.impl.sokol_bindings == null)
             return;
 
         const applied_shader = shader.apply(bindings.vertex_layout);
-        if(!applied_shader) {
+        if (!applied_shader) {
             debug.warning("Could not draw!", .{});
             return;
         }
@@ -216,29 +215,29 @@ pub const ShaderImpl = struct {
     /// Creates a shader from a shader built in as a zig file
     pub fn initFromBuiltin(cfg: graphics.ShaderConfig, comptime builtin: anytype) ?Shader {
         const shader_desc_fn = getBuiltinSokolCreateFunction(builtin);
-        if(shader_desc_fn == null)
+        if (shader_desc_fn == null)
             return null;
 
         return initSokolShader(cfg, shader_desc_fn.?(sg.queryBackend()));
     }
 
     pub fn cloneFromShader(cfg: graphics.ShaderConfig, shader: ?Shader) Shader {
-        if(shader == null)
+        if (shader == null)
             return initDefault(cfg);
 
         return initSokolShader(cfg, shader.?.impl.sokol_shader_desc);
     }
 
     /// Find the function in the builtin that can actually make the ShaderDesc
-    fn getBuiltinSokolCreateFunction(comptime builtin: anytype) ?fn(sg.Backend) sg.ShaderDesc {
+    fn getBuiltinSokolCreateFunction(comptime builtin: anytype) ?fn (sg.Backend) sg.ShaderDesc {
         comptime {
             const decls = @typeInfo(builtin).Struct.decls;
             for (decls) |d| {
                 const field = @field(builtin, d.name);
                 const field_type = @typeInfo(@TypeOf(field));
-                if(field_type == .Fn) {
+                if (field_type == .Fn) {
                     const fn_info = field_type.Fn;
-                    if(fn_info.return_type == sg.ShaderDesc) {
+                    if (fn_info.return_type == sg.ShaderDesc) {
                         return field;
                     }
                 }
@@ -249,7 +248,7 @@ pub const ShaderImpl = struct {
 
     fn makePipeline(self: *ShaderImpl, layout: graphics.VertexLayout) sg.Pipeline {
         var pipe_desc: sg.PipelineDesc = .{
-            .index_type = if(layout.index_size == .UINT16) .UINT16 else .UINT32,
+            .index_type = if (layout.index_size == .UINT16) .UINT16 else .UINT32,
             .shader = self.sokol_shader,
             .depth = .{
                 .compare = convertCompareFunc(self.cfg.depth_compare),
@@ -259,12 +258,12 @@ pub const ShaderImpl = struct {
         };
 
         // Set the vertex attributes
-        for(self.cfg.vertex_attributes, 0..) |attr, idx| {
+        for (self.cfg.vertex_attributes, 0..) |attr, idx| {
             pipe_desc.layout.attrs[idx].format = convertVertexFormat(attr.attr_type);
 
             // Find which binding slot we should use by looking at our layout
-            for(layout.attributes) |la| {
-                if(attr.binding == la.binding) {
+            for (layout.attributes) |la| {
+                if (attr.binding == la.binding) {
                     pipe_desc.layout.attrs[idx].buffer_index = la.buffer_slot;
                     break;
                 }
@@ -278,7 +277,7 @@ pub const ShaderImpl = struct {
         var pipeline: sg.Pipeline = sg.makePipeline(pipe_desc);
 
         // Add this to our list of cached pipelines for this shader
-        self.sokol_pipelines.append(.{.layout = layout, .sokol_pipeline = pipeline}) catch {
+        self.sokol_pipelines.append(.{ .layout = layout, .sokol_pipeline = pipeline }) catch {
             debug.log("Error caching pipeline!", .{});
         };
 
@@ -291,8 +290,8 @@ pub const ShaderImpl = struct {
         const shader = sg.makeShader(shader_desc);
 
         var num_fs_images: u8 = 0;
-        for(0..5) |i| {
-            if(shader_desc.fs.images[i].used) {
+        for (0..5) |i| {
+            if (shader_desc.fs.images[i].used) {
                 num_fs_images += 1;
             } else {
                 break;
@@ -302,7 +301,7 @@ pub const ShaderImpl = struct {
         debug.info("Creating shader", .{});
 
         defer graphics.next_shader_handle += 1;
-        var built_shader = Shader {
+        var built_shader = Shader{
             .impl = .{
                 .sokol_pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator),
                 .sokol_shader = shader,
@@ -316,7 +315,7 @@ pub const ShaderImpl = struct {
         };
 
         // Cache some common pipelines
-        for(common_vertex_layouts) |l| {
+        for (common_vertex_layouts) |l| {
             _ = built_shader.impl.makePipeline(l);
         }
 
@@ -326,19 +325,19 @@ pub const ShaderImpl = struct {
     pub fn apply(self: *Shader, layout: graphics.VertexLayout) bool {
         // Find the pipeline that matches our vertex layout
         var pipeline: ?sg.Pipeline = null;
-        for(self.impl.sokol_pipelines.items) |p| {
-            if(vertexLayoutsAreEql(p.layout, layout)) {
+        for (self.impl.sokol_pipelines.items) |p| {
+            if (vertexLayoutsAreEql(p.layout, layout)) {
                 pipeline = p.sokol_pipeline;
                 break;
             }
         }
 
-        if(pipeline == null) {
+        if (pipeline == null) {
             debug.info("Shader pipeline not found, creating one now", .{});
             pipeline = self.impl.makePipeline(layout);
         }
 
-        if(pipeline != null) {
+        if (pipeline != null) {
             sg.applyPipeline(pipeline.?);
         } else {
             debug.warning("Could not get pipeline to apply!", .{});
@@ -346,13 +345,13 @@ pub const ShaderImpl = struct {
         }
 
         // apply uniform blocks
-        for(self.vs_uniform_blocks, 0..) |block, i| {
-            if(block) |b|
+        for (self.vs_uniform_blocks, 0..) |block, i| {
+            if (block) |b|
                 sg.applyUniforms(.VS, @intCast(i), sg.Range{ .ptr = b.ptr, .size = b.size });
         }
 
-        for(self.fs_uniform_blocks, 0..) |block, i| {
-            if(block) |b|
+        for (self.fs_uniform_blocks, 0..) |block, i| {
+            if (block) |b|
                 sg.applyUniforms(.FS, @intCast(i), sg.Range{ .ptr = b.ptr, .size = b.size });
         }
 
@@ -362,12 +361,16 @@ pub const ShaderImpl = struct {
     pub fn setParams(self: *Shader, params: graphics.ShaderParams) void {
         self.params = params;
     }
+
+    pub fn destroy(self: *Shader) void {
+        sg.destroyShader(self.impl.sokol_shader);
+    }
 };
 
 /// Converts our FilterMode to a sokol sampler description
 fn convertFilterModeToSamplerDesc(filter: graphics.FilterMode) sg.SamplerDesc {
     const filter_mode = if (filter == .LINEAR) sg.Filter.LINEAR else sg.Filter.NEAREST;
-    return sg.SamplerDesc {
+    return sg.SamplerDesc{
         .min_filter = filter_mode,
         .mag_filter = filter_mode,
         .mipmap_filter = filter_mode,
@@ -382,7 +385,7 @@ fn convertCompareFunc(func: graphics.CompareFunc) sg.CompareFunc {
 
 /// Converts our CullMode enum to a Sokol CullMode enum
 fn convertCullMode(mode: graphics.CullMode) sg.CullMode {
-    switch(mode) {
+    switch (mode) {
         .NONE => {
             return sg.CullMode.NONE;
         },
@@ -391,15 +394,15 @@ fn convertCullMode(mode: graphics.CullMode) sg.CullMode {
         },
         .FRONT => {
             return sg.CullMode.BACK;
-        }
+        },
     }
 }
 
 /// Converts our BlendMode enum to a Sokol BlendState struct
 fn convertBlendMode(mode: graphics.BlendMode) sg.BlendState {
-    switch(mode) {
+    switch (mode) {
         .NONE => {
-            return sg.BlendState{ };
+            return sg.BlendState{};
         },
         .BLEND => {
             return sg.BlendState{
@@ -449,33 +452,41 @@ fn convertBlendMode(mode: graphics.BlendMode) sg.BlendState {
 }
 
 fn convertVertexFormat(format: graphics.VertexFormat) sg.VertexFormat {
-    switch(format) {
-        .FLOAT2 => { return .FLOAT2; },
-        .FLOAT3 => { return .FLOAT3; },
-        .FLOAT4 => { return .FLOAT4; },
-        .UBYTE4N => { return .UBYTE4N; },
+    switch (format) {
+        .FLOAT2 => {
+            return .FLOAT2;
+        },
+        .FLOAT3 => {
+            return .FLOAT3;
+        },
+        .FLOAT4 => {
+            return .FLOAT4;
+        },
+        .UBYTE4N => {
+            return .UBYTE4N;
+        },
     }
 }
 
 /// Checking if two vertex layout structs are equal
 fn vertexLayoutsAreEql(a: graphics.VertexLayout, b: graphics.VertexLayout) bool {
-    if(a.has_index_buffer != b.has_index_buffer) {
+    if (a.has_index_buffer != b.has_index_buffer) {
         return false;
     }
-    if(a.index_size != b.index_size) {
+    if (a.index_size != b.index_size) {
         return false;
     }
-    if(a.attributes.len != b.attributes.len) {
+    if (a.attributes.len != b.attributes.len) {
         return false;
     }
-    for(0..a.attributes.len) |i| {
+    for (0..a.attributes.len) |i| {
         const attr_a = a.attributes[i];
         const attr_b = b.attributes[i];
-        if(attr_a.binding != attr_b.binding)
+        if (attr_a.binding != attr_b.binding)
             return false;
-        if(attr_a.buffer_slot != attr_b.buffer_slot)
+        if (attr_a.buffer_slot != attr_b.buffer_slot)
             return false;
-        if(attr_a.item_size != attr_b.item_size)
+        if (attr_a.item_size != attr_b.item_size)
             return false;
     }
 

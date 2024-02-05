@@ -113,4 +113,5 @@ fn on_draw() void {
 fn on_cleanup() void {
     debug.log("Frame pacing example module cleaning up", .{});
     test_image.destroy();
+    texture.destroy();
 }

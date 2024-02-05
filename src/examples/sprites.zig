@@ -64,11 +64,13 @@ fn on_init() void {
         debug.log("Could not load test texture", .{});
         return;
     };
+    defer test_image_1.destroy();
 
     var test_image_2 = images.loadBytes(test_asset_2) catch {
         debug.log("Could not load test texture", .{});
         return;
     };
+    defer test_image_2.destroy();
 
     // make some textures from our images
     texture_1 = graphics.Texture.init(&test_image_1);
@@ -187,4 +189,9 @@ fn on_draw() void {
 
 fn on_cleanup() void {
     debug.log("Batch example module cleaning up", .{});
+    test_batch.deinit();
+    texture_1.destroy();
+    texture_2.destroy();
+    shader_opaque.destroy();
+    shader_blend.destroy();
 }

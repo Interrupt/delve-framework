@@ -287,6 +287,10 @@ pub const Shader = struct {
             },
         }
     }
+
+    pub fn destroy(self: *Shader) void {
+        return ShaderImpl.destroy(self);
+    }
 };
 
 var next_texture_handle: u32 = 0;
@@ -336,6 +340,13 @@ pub const Texture = struct {
             .sokol_image = sg.makeImage(img_desc),
             .handle = next_texture_handle,
         };
+    }
+
+    pub fn destroy(self: *Texture) void {
+        if(self.sokol_image == null)
+            return;
+        sg.destroyImage(self.sokol_image.?);
+        self.sokol_image = null;
     }
 };
 

@@ -56,6 +56,7 @@ fn on_init() void {
         debug.log("Could not load image", .{});
         return;
     };
+    defer spritesheet_image.destroy();
 
     // make the texture to draw and a default shader
     sprite_texture = graphics.Texture.init(&spritesheet_image);
@@ -114,4 +115,7 @@ fn on_draw() void {
 
 fn on_cleanup() void {
     debug.log("Sprite animation example module cleaning up", .{});
+    sprite_texture.destroy();
+    sprite_batch.deinit();
+    shader_default.destroy();
 }
