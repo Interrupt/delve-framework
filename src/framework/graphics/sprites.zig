@@ -111,9 +111,7 @@ pub const AnimatedSpriteSheet = struct {
 
             const anim_name = try std.fmt.allocPrintZ(allocator, "{s}{d}", .{anim_name_prefix, row_idx});
 
-            sheet.entries.put(anim_name[0..anim_name.len :0], animation) catch {
-                debug.log("Could not add spritesheet entry!", .{});
-            };
+            try sheet.entries.put(anim_name[0..anim_name.len :0], animation);
         }
 
         return sheet;
