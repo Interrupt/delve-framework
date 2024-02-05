@@ -43,6 +43,7 @@ pub fn build(b: *std.Build) void {
 
     buildExample(b, "audio", target, optimize, delve_module, lib);
     buildExample(b, "sprites", target, optimize, delve_module, lib);
+    buildExample(b, "sprite-animation", target, optimize, delve_module, lib);
     buildExample(b, "clear", target, optimize, delve_module, lib);
     buildExample(b, "debugdraw", target, optimize, delve_module, lib);
     buildExample(b, "forest", target, optimize, delve_module, lib);

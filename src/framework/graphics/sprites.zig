@@ -73,6 +73,52 @@ pub const AnimatedSpriteSheet = struct {
         return PlayingAnimation.init(entry.?);
     }
 
+    pub fn playAnimationByIndex(self: *AnimatedSpriteSheet, idx: usize) ?PlayingAnimation {
+        const entry = self.entries.items[idx];
+        return PlayingAnimation.init(entry);
+    }
+
+    /// Creates a series of animations: one per row in a grid where the columns are frames
+    pub fn initFromGrid(rows: u32, cols: u32, anim_name_prefix: [:0]const u8) !AnimatedSpriteSheet {
+        var sheet = AnimatedSpriteSheet.init();
+        const rows_f: f32 = @floatFromInt(rows);
+        const cols_f: f32 = @floatFromInt(cols);
+
+        for(0..rows) |row_idx| {
+            const row_idx_f: f32 = @floatFromInt(row_idx);
+            var reg_v = row_idx_f / rows_f;
+            var reg_v_2 = (row_idx_f + 1) / rows_f;
+
+            var frames = try std.ArrayList(AnimationFrame).initCapacity(allocator, cols);
+
+            for(0..cols) |col_idx| {
+                const col_idx_f: f32 = @floatFromInt(col_idx);
+                var reg_u = col_idx_f / cols_f;
+                var reg_u_2 = (col_idx_f + 1) / cols_f;
+
+                try frames.append(
+                    AnimationFrame{.region = TextureRegion{
+                        .u = reg_u,
+                        .v = reg_v,
+                        .u_2 = reg_u_2,
+                        .v_2 = reg_v_2,
+                    }}
+                );
+            }
+
+            // when converting an ArrayList to an owned slice, we don't need to deinit it
+            var animation = SpriteAnimation{ .frames = try frames.toOwnedSlice() };
+
+            // const anim_name = std.fmt.comptimePrint("{s}{d}", .{anim_name_prefix, row_idx});
+            _ = anim_name_prefix;
+            sheet.entries.put("anim_0", animation) catch {
+                debug.log("Could not add spritesheet entry!", .{});
+            };
+        }
+
+        return sheet;
+    }
+
     // pub fn fromAsepriteJsonFile(path: [:0]const u8) !SpriteSheet {
     //     const file = try std.io.readFileAlloc(allocator, path);
     //     defer allocator.free(file);
