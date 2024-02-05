@@ -165,18 +165,29 @@ fn addLogEntry(comptime fmt: []const u8, args: anytype, level: LogLevel) void {
         return;
     }
 
-    const written = std.fmt.allocPrintZ(allocator, fmt, args) catch {
-        std.debug.print(fmt ++ "\n", args);
-        std.debug.print("Error logging to console. Out of memory?\n", .{});
+    // Use an array list to write our string
+    var string_writer = std.ArrayList(u8).init(allocator);
+    errdefer string_writer.deinit();
+
+    string_writer.writer().print(fmt, args) catch {
+        std.debug.print("Could not write to debug log! - Out of memory?\n", .{});
         return;
     };
-    defer allocator.free(written);
+    string_writer.append(0) catch {
+        std.debug.print("Could not write to debug log! - Out of memory?\n", .{});
+        return;
+    };
+
+    const written = string_writer.toOwnedSlice() catch {
+        std.debug.print("Error: string_writer.toOwnedSlice() - Out of memory?\n", .{});
+        return;
+    };
 
     // Log to std out
     std.debug.print("{s}\n", .{written});
 
     // Keep the line in the console log
-    log_history_list.push(written[0..written.len :0]);
+    log_history_list.push(written[0..written.len-1 :0]);
 }
 
 pub fn getLogHistory() *LogList {
