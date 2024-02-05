@@ -91,15 +91,24 @@ fn on_tick(deltatime: f32) void {
 fn on_draw() void {
     const cur_frame = sprite_animation.getCurrentFrame();
 
+    // clear the batch for this frame
     sprite_batch.reset();
+
+    // make sure we are using the right shader and texture
     sprite_batch.useShader(shader_default);
     sprite_batch.useTexture(sprite_texture);
+
+    // add our sprite rectangle
     sprite_batch.addRectangle(cur_frame.offset.sub(math.Vec2.new(0.5, 0.5)), cur_frame.size, cur_frame.region, colors.white);
+
+    // apply the batch to make it ready to draw!
     sprite_batch.apply();
 
+    // setup our view to draw with
     const projection = graphics.getProjectionPerspective(60, 0.01, 20.0);
     var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.0 }, math.Vec3.zero(), math.Vec3.up());
 
+    // draw the sprite batch
     sprite_batch.draw(projection.mul(view), math.Mat4.identity());
 }
 
