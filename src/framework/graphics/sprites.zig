@@ -90,6 +90,7 @@ pub const AnimatedSpriteSheet = struct {
             var reg_v_2 = (row_idx_f + 1) / rows_f;
 
             var frames = try std.ArrayList(AnimationFrame).initCapacity(allocator, cols);
+            errdefer frames.deinit();
 
             for(0..cols) |col_idx| {
                 const col_idx_f: f32 = @floatFromInt(col_idx);
@@ -109,9 +110,13 @@ pub const AnimatedSpriteSheet = struct {
             // when converting an ArrayList to an owned slice, we don't need to deinit it
             var animation = SpriteAnimation{ .frames = try frames.toOwnedSlice() };
 
-            const anim_name = try std.fmt.allocPrintZ(allocator, "{s}{d}", .{anim_name_prefix, row_idx});
+            var string_writer = std.ArrayList(u8).init(allocator);
+            errdefer string_writer.deinit();
 
-            try sheet.entries.put(anim_name[0..anim_name.len :0], animation);
+            try string_writer.writer().print("{s}{d}", .{anim_name_prefix, row_idx});
+            const anim_name = try string_writer.toOwnedSlice();
+
+            try sheet.entries.put(anim_name, animation);
         }
 
         return sheet;
