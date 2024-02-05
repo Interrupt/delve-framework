@@ -74,8 +74,15 @@ pub const AnimatedSpriteSheet = struct {
     }
 
     pub fn playAnimationByIndex(self: *AnimatedSpriteSheet, idx: usize) ?PlayingAnimation {
-        const entry = self.entries.items[idx];
-        return PlayingAnimation.init(entry);
+        var value_iterator = self.entries.valueIterator();
+        var cur_idx: usize = 0;
+        while(value_iterator.next()) |val| {
+            if(idx == cur_idx)
+                return PlayingAnimation.init(val.*);
+
+            cur_idx += 1;
+        }
+        return null;
     }
 
     /// Creates a series of animations: one per row in a grid where the columns are frames
