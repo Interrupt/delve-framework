@@ -47,6 +47,7 @@ pub const AnimationFrame = struct {
     region: TextureRegion,
     size: Vec2 = Vec2.new(1,1),
     sourceSize: Vec2 = Vec2.new(1,1),
+    offset: Vec2 = Vec2.zero(),
     duration: f32 = 1.0,
 };
 
@@ -200,11 +201,8 @@ pub const PlayingAnimation = struct {
         self.should_loop = should_loop;
     }
 
-    pub fn getTextureRegion(self: *PlayingAnimation) TextureRegion {
-        if(self.frame >= self.animation.frames.len)
-            return TextureRegion.default();
-
-        return self.animation.frames[self.frame].region;
+    pub fn getCurrentFrame(self: *PlayingAnimation) AnimationFrame {
+        return self.animation.frames[self.frame];
     }
 
     pub fn isDonePlaying(self: *PlayingAnimation) bool {

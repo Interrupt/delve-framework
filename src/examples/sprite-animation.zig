@@ -89,10 +89,12 @@ fn on_tick(deltatime: f32) void {
 }
 
 fn on_draw() void {
+    const cur_frame = sprite_animation.getCurrentFrame();
+
     sprite_batch.reset();
     sprite_batch.useShader(shader_default);
     sprite_batch.useTexture(sprite_texture);
-    sprite_batch.addRectangle(math.Vec2.new(-0.5, -0.5), math.Vec2.new(1, 1), sprite_animation.getTextureRegion(), colors.white);
+    sprite_batch.addRectangle(cur_frame.offset.sub(math.Vec2.new(0.5, 0.5)), cur_frame.size, cur_frame.region, colors.white);
     sprite_batch.apply();
 
     const projection = graphics.getProjectionPerspective(60, 0.01, 20.0);
