@@ -52,7 +52,7 @@ pub const AnimationFrame = struct {
 
 /// An animation packed inside an animated sprite sheet
 pub const SpriteAnimation = struct {
-    frames: []const AnimationFrame,
+    frames: []AnimationFrame,
 };
 
 /// AnimatedSpriteSheets contain multiple named animations, each with a number of animation frames

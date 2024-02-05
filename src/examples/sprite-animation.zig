@@ -62,10 +62,14 @@ fn on_init() void {
     shader_default = graphics.Shader.initDefault(.{});
 
     // create a set of animations from our sprite sheet
-    sprite_sheet = delve.graphics.sprites.AnimatedSpriteSheet.initFromGrid(1, 22, "cat_") catch {
+    sprite_sheet = delve.graphics.sprites.AnimatedSpriteSheet.initFromGrid(1, 32, "cat_") catch {
         debug.log("Could not create sprite sheet!", .{});
         return;
     };
+
+    // add an extra long delay to a sleeping frame
+    var anim = sprite_sheet.entries.getPtr("cat_0").?;
+    anim.frames[29].duration = 24.0;
 
     // get and start the first animation
     sprite_animation = sprite_sheet.playAnimation("cat_0").?;
