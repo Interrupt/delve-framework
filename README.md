@@ -85,6 +85,7 @@ zig build run-forest
 zig build run-lua
 zig build run-meshes
 zig build run-sprites
+zig build run-sprite-animation
 zig build run-stresstest
 ```
 
