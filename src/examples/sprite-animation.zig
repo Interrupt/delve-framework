@@ -15,15 +15,15 @@ const sprites = delve.graphics.sprites;
 
 const Color = colors.Color;
 
-var texture_explosion: graphics.Texture = undefined;
 var shader_default: graphics.Shader = undefined;
 
+var sprite_texture: graphics.Texture = undefined;
 var sprite_sheet: delve.graphics.sprites.AnimatedSpriteSheet = undefined;
 var sprite_animation: delve.graphics.sprites.PlayingAnimation = undefined;
 
 var sprite_batch: batcher.SpriteBatcher = undefined;
 
-var explosion_delay_time: f32 = 0.0;
+var loop_delay_time: f32 = 0.0;
 
 // This example shows how to draw animated sprites out of a sprite sheet
 
@@ -52,41 +52,32 @@ fn on_init() void {
         return;
     };
 
-    var image_explosion_spritesheet = images.loadFile("sprites/explosion.png") catch {
+    var spritesheet_image = images.loadFile("sprites/cat-anim-sheet.png") catch {
         debug.log("Could not load image", .{});
         return;
     };
 
     // make the texture to draw and a default shader
-    texture_explosion = graphics.Texture.init(&image_explosion_spritesheet);
+    sprite_texture = graphics.Texture.init(&spritesheet_image);
     shader_default = graphics.Shader.initDefault(.{});
 
     // create a set of animations from our sprite sheet
-    sprite_sheet = delve.graphics.sprites.AnimatedSpriteSheet.initFromGrid(1, 8, "anim_") catch {
+    sprite_sheet = delve.graphics.sprites.AnimatedSpriteSheet.initFromGrid(1, 22, "cat_") catch {
         debug.log("Could not create sprite sheet!", .{});
         return;
     };
 
     // get and start the first animation
-    sprite_animation = sprite_sheet.playAnimation("anim_0").?;
+    sprite_animation = sprite_sheet.playAnimation("cat_0").?;
     sprite_animation.play();
-    sprite_animation.setSpeed(25.0);
-    sprite_animation.loop(false);
+    sprite_animation.setSpeed(16.0);
 
     graphics.setClearColor(colors.examples_bg_light);
 }
 
 fn on_tick(deltatime: f32) void {
+    // advance the animation
     sprite_animation.tick(deltatime);
-
-    if (sprite_animation.isDonePlaying()) {
-        explosion_delay_time += deltatime;
-    }
-
-    if (explosion_delay_time > 0.5) {
-        explosion_delay_time = 0.0;
-        sprite_animation.reset(); // sets back to the beginning, and plays again!
-    }
 
     if (input.isKeyJustPressed(.ESCAPE)) {
         std.os.exit(0);
@@ -96,7 +87,7 @@ fn on_tick(deltatime: f32) void {
 fn on_draw() void {
     sprite_batch.reset();
     sprite_batch.useShader(shader_default);
-    sprite_batch.useTexture(texture_explosion);
+    sprite_batch.useTexture(sprite_texture);
     sprite_batch.addRectangle(math.Vec2.new(-0.5, -0.5), math.Vec2.new(1, 1), sprite_animation.getTextureRegion(), colors.white);
     sprite_batch.apply();
 
