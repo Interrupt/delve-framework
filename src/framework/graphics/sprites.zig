@@ -109,9 +109,9 @@ pub const AnimatedSpriteSheet = struct {
             // when converting an ArrayList to an owned slice, we don't need to deinit it
             var animation = SpriteAnimation{ .frames = try frames.toOwnedSlice() };
 
-            // const anim_name = std.fmt.comptimePrint("{s}{d}", .{anim_name_prefix, row_idx});
-            _ = anim_name_prefix;
-            sheet.entries.put("anim_0", animation) catch {
+            const anim_name = try std.fmt.allocPrintZ(allocator, "{s}{d}", .{anim_name_prefix, row_idx});
+
+            sheet.entries.put(anim_name[0..anim_name.len :0], animation) catch {
                 debug.log("Could not add spritesheet entry!", .{});
             };
         }
