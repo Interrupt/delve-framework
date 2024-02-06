@@ -33,6 +33,11 @@ pub const Rect = struct {
         return Vec2.new(self.x, self.y);
     }
 
+    pub fn setPosition(self: *Rect, pos: Vec2) void {
+        self.x = pos.x;
+        self.y = pos.y;
+    }
+
     pub fn getSize(self: *const Rect) Vec2 {
         return Vec2.new(self.width, self.height);
     }

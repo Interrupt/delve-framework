@@ -45,6 +45,7 @@ pub fn build(b: *std.Build) void {
     buildExample(b, "sprites", target, optimize, delve_module, lib);
     buildExample(b, "sprite-animation", target, optimize, delve_module, lib);
     buildExample(b, "clear", target, optimize, delve_module, lib);
+    buildExample(b, "collision", target, optimize, delve_module, lib);
     buildExample(b, "debugdraw", target, optimize, delve_module, lib);
     buildExample(b, "forest", target, optimize, delve_module, lib);
     buildExample(b, "framepacing", target, optimize, delve_module, lib);
