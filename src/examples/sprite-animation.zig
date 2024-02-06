@@ -101,8 +101,8 @@ fn on_draw() void {
     sprite_batch.useTexture(sprite_texture);
 
     // add our sprite rectangle
-    const rect = Rect.new(cur_frame.offset.sub(math.Vec2.new(0.5, 0.5)), cur_frame.size);
-    sprite_batch.addRectangle(rect, cur_frame.region, colors.white);
+    const rect = Rect.new(cur_frame.offset, cur_frame.size);
+    sprite_batch.addRectangle(rect.centered(), cur_frame.region, colors.white);
 
     // apply the batch to make it ready to draw!
     sprite_batch.apply();

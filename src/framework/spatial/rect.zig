@@ -9,6 +9,7 @@ pub const Rect = struct {
     width: f32,
     height: f32,
 
+    /// Creates a new rectangle, where pos is the bottom-left
     pub fn new(pos: Vec2, size: Vec2) Rect {
         return Rect{
             .x = pos.x,
@@ -46,6 +47,7 @@ pub const Rect = struct {
         return Vec2.new(self.x + self.width, self.y + self.height);
     }
 
+    /// Check if this rectangle contains a point
     pub fn containsPoint(self: *const Rect, point: Vec2) bool {
         return (point.x >= self.x and
             point.y >= self.y and
@@ -53,10 +55,16 @@ pub const Rect = struct {
             point.y < self.y + self.height);
     }
 
+    /// Check if this rectangle overlaps another
     pub fn overlapsRect(self: *const Rect, other: Rect) bool {
         return (self.x + self.width > other.x and
             self.y + self.height > other.y and
             self.x < other.x + other.width and
             self.y < other.y + other.height);
+    }
+
+    /// Returns a centered version of this rectangle
+    pub fn centered(self: *const Rect) Rect {
+        return Rect.new(self.getPosition().sub(self.getSize().scale(0.5)), self.getSize());
     }
 };
