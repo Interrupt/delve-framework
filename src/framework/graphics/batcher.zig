@@ -5,6 +5,7 @@ const graphics = @import("../platform/graphics.zig");
 const images = @import("../images.zig");
 const math = @import("../math.zig");
 const sprites = @import("sprites.zig");
+const spatial_rect = @import("../spatial/rect.zig");
 
 // needed to hash materials into keys
 const autoHash = std.hash.autoHash;
@@ -16,6 +17,7 @@ const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 const Color = colors.Color;
 const TextureRegion = sprites.TextureRegion;
+const Rect = spatial_rect.Rect;
 
 var batch_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var batch_allocator = batch_gpa.allocator();
@@ -90,23 +92,23 @@ pub const SpriteBatcher = struct {
     }
 
     /// Add a rectangle to the current batch
-    pub fn addRectangle(self: *SpriteBatcher, pos: Vec2, size: Vec2, region: TextureRegion, color: Color) void {
+    pub fn addRectangle(self: *SpriteBatcher, rect: Rect, region: TextureRegion, color: Color) void {
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if (batcher == null)
             return;
 
         batcher.?.transform = self.transform;
-        batcher.?.addRectangle(pos, size, region, color);
+        batcher.?.addRectangle(rect, region, color);
     }
 
     /// Add a rectangle of lines to the current batch
-    pub fn addLineRectangle(self: *SpriteBatcher, pos: Vec2, size: Vec2, line_width: f32, region: TextureRegion, color: Color) void {
+    pub fn addLineRectangle(self: *SpriteBatcher, rect: Rect, line_width: f32, region: TextureRegion, color: Color) void {
         var batcher: ?*Batcher = self.getCurrentBatcher();
         if (batcher == null)
             return;
 
         batcher.?.transform = self.transform;
-        batcher.?.addLineRectangle(pos, size, line_width, region, color);
+        batcher.?.addLineRectangle(rect, line_width, region, color);
     }
 
     /// Add an equilateral triangle to the current batch
@@ -311,11 +313,11 @@ pub const Batcher = struct {
     }
 
     /// Add a rectangle to the batch
-    pub fn addRectangle(self: *Batcher, pos: Vec2, size: Vec2, region: TextureRegion, color: Color) void {
-        const v0 = pos;
-        const v1 = pos.add(Vec2{ .x = size.x, .y = 0 });
-        const v2 = pos.add(Vec2{ .x = size.x, .y = size.y });
-        const v3 = pos.add(Vec2{ .x = 0, .y = size.y });
+    pub fn addRectangle(self: *Batcher, rect: Rect, region: TextureRegion, color: Color) void {
+        const v0 = rect.getBottomLeft();
+        const v1 = rect.getBottomRight();
+        const v2 = rect.getTopRight();
+        const v3 = rect.getTopLeft();
 
         self.addQuad(v0, v1, v2, v3, region, color);
     }
@@ -335,8 +337,11 @@ pub const Batcher = struct {
     }
 
     /// Add a rectangle made of lines to the batch
-    pub fn addLineRectangle(self: *Batcher, pos: Vec2, size: Vec2, line_width: f32, region: TextureRegion, color: Color) void {
+    pub fn addLineRectangle(self: *Batcher, rect: Rect, line_width: f32, region: TextureRegion, color: Color) void {
         const w: f32 = line_width * 0.5;
+
+        const pos = rect.getPosition();
+        const size = rect.getSize();
 
         // top and bottom
         self.addLine(Vec2.new(pos.x - w, pos.y), Vec2.new(pos.x + size.x + w, pos.y), line_width, region, color);

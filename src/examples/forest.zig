@@ -17,6 +17,7 @@ const modules = delve.modules;
 const fps_module = delve.module.fps_counter;
 
 const TextureRegion = delve.graphics.sprites.TextureRegion;
+const Rect = delve.spatial.Rect;
 
 var tex_treesheet: graphics.Texture = undefined;
 var shader_blend: graphics.Shader = undefined;
@@ -254,7 +255,8 @@ fn pre_draw() void {
 
         // add some random scaling, then draw!
         const size = reg_size.scale(1.0 + random.float(f32) * (foliage_scale * size_variance));
-        sprite_batch.addRectangle(math.Vec2{ .x = size.x * -0.5, .y = 0 }, size, tex_region, foliage_tint);
+        const rect = Rect.new(math.Vec2.new(size.x * -0.5, 0.0), size);
+        sprite_batch.addRectangle(rect, tex_region, foliage_tint);
     }
 
     // save the state of the batch so it can be drawn
@@ -272,7 +274,9 @@ fn addGround(ground_size: math.Vec2) void {
 
     // Add the ground plane rectangle
     sprite_batch.setTransformMatrix(ground_transform);
-    sprite_batch.addRectangle(ground_size.scale(-0.5), ground_size, TextureRegion.default(), ground_color);
+
+    const rect = Rect.new(ground_size.scale(-0.5), ground_size);
+    sprite_batch.addRectangle(rect, TextureRegion.default(), ground_color);
 }
 
 /// Adds clouds to the cloud batch
@@ -306,7 +310,8 @@ fn addClouds(density: f32) void {
         // size the rectangle based on the size of the sprite in the atlas
         var size = tex_region.getSize().mul(math.Vec2.new(2.1, 1)).scale(cloud_size);
 
-        cloud_batch.addRectangle(math.Vec2{ .x = size.x * -0.5, .y = size.y * -0.5 }, size, tex_region, cloud_tint);
+        const rect = Rect.new(math.Vec2.new(size.x * -0.5, size.y * -0.5), size);
+        cloud_batch.addRectangle(rect, tex_region, cloud_tint);
     }
     cloud_batch.apply();
 }
@@ -364,7 +369,8 @@ fn addGrass(pos: math.Vec3, grass_area: u32, grass_size: f32, density: f32) void
                 size = size.scale(1.0 + random.float(f32) * 1);
 
                 // add some random scaling, then draw!
-                grass_batch.addRectangle(math.Vec2{ .x = size.x * -0.5, .y = 0 }, size, tex_region, foliage_tint);
+                const rect = Rect.new(math.Vec2.new(size.x * -0.5, 0.0), size);
+                grass_batch.addRectangle(rect, tex_region, foliage_tint);
             }
         }
     }

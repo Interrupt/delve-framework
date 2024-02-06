@@ -11,6 +11,7 @@ const batcher = @import("../graphics/batcher.zig");
 const sprites = @import("../graphics/sprites.zig");
 
 const Vec2 = @import("../math.zig").Vec2;
+const Rect = @import("../spatial/rect.zig").Rect;
 
 var shape_batch: batcher.Batcher = undefined;
 
@@ -86,7 +87,7 @@ pub fn rectangle(start_x: f32, start_y: f32, width: f32, height: f32, line_width
     const size = Vec2.new(width, height);
     const color = colorFromPalette(pal_color);
 
-    shape_batch.addLineRectangle(pos, size, line_width, sprites.TextureRegion.default(), color);
+    shape_batch.addLineRectangle(Rect.new(pos, size), line_width, sprites.TextureRegion.default(), color);
 }
 
 pub fn filled_rectangle(start_x: f32, start_y: f32, width: f32, height: f32, pal_color: u32) void {
@@ -94,7 +95,7 @@ pub fn filled_rectangle(start_x: f32, start_y: f32, width: f32, height: f32, pal
     const size = Vec2.new(width, height);
     const color = colorFromPalette(pal_color);
 
-    shape_batch.addRectangle(pos, size, sprites.TextureRegion.default(), color);
+    shape_batch.addRectangle(Rect.new(pos, size), sprites.TextureRegion.default(), color);
 }
 
 pub fn text(text_string: [*:0]const u8, x_pos: i32, y_pos: i32, color_idx: u32) void {

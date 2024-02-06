@@ -51,6 +51,10 @@ pub const api = struct {
     pub const text = @import("api/text.zig");
 };
 
+pub const spatial = struct {
+    pub const Rect = @import("spatial/rect.zig").Rect;
+};
+
 // builtin shaders
 
 pub const shaders = struct {

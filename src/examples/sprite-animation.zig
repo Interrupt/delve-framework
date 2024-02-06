@@ -14,6 +14,7 @@ const modules = delve.modules;
 const sprites = delve.graphics.sprites;
 
 const Color = colors.Color;
+const Rect = delve.spatial.Rect;
 
 var shader_default: graphics.Shader = undefined;
 
@@ -100,7 +101,8 @@ fn on_draw() void {
     sprite_batch.useTexture(sprite_texture);
 
     // add our sprite rectangle
-    sprite_batch.addRectangle(cur_frame.offset.sub(math.Vec2.new(0.5, 0.5)), cur_frame.size, cur_frame.region, colors.white);
+    const rect = Rect.new(cur_frame.offset.sub(math.Vec2.new(0.5, 0.5)), cur_frame.size);
+    sprite_batch.addRectangle(rect, cur_frame.region, colors.white);
 
     // apply the batch to make it ready to draw!
     sprite_batch.apply();
