@@ -44,8 +44,8 @@ pub const Rect = struct {
         };
     }
 
-    /// Adds an origin to a rectangle. Default is bottom left.
-    pub fn withOrigin(self: *const Rect, origin: Vec2) Rect {
+    /// Applys an origin to a rectangle by offsetting it, and the origin will end up being 0,0.
+    pub fn applyOrigin(self: *const Rect, origin: Vec2) Rect {
         var rect = self.*;
         rect.origin = origin;
 
@@ -70,6 +70,13 @@ pub const Rect = struct {
             return self.origin.?;
 
         return Vec2.new(self.x, self.y);
+    }
+
+    /// Returns a Rect with an updated position and origin
+    pub fn setPosition(self: *const Rect, new_pos: Vec2) Rect {
+        const pos = self.getPosition();
+        const diff = new_pos.sub(pos);
+        return self.*.translate(diff);
     }
 
     pub fn getSize(self: *const Rect) Vec2 {
@@ -115,7 +122,7 @@ pub const Rect = struct {
     /// Returns a centered version of this rectangle, where the original position will be now the center
     pub fn centered(self: *const Rect) Rect {
         var center = self.getCenter();
-        return self.withOrigin(center);
+        return self.applyOrigin(center);
     }
 
     /// Returns a box where only the X axis is centered
@@ -124,7 +131,7 @@ pub const Rect = struct {
         var pos = self.getPosition();
         center.y = pos.y;
 
-        return self.withOrigin(center);
+        return self.applyOrigin(center);
     }
 
     /// Returns a box where only the Y axis is centered
@@ -133,7 +140,7 @@ pub const Rect = struct {
         var pos = self.getPosition();
         center.x = pos.x;
 
-        return self.withOrigin(center);
+        return self.applyOrigin(center);
     }
 
     pub fn scale(self: *const Rect, scale_by: f32) Rect {

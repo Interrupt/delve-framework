@@ -22,7 +22,7 @@ var shader_default: graphics.Shader = undefined;
 var sprite_batch: batcher.SpriteBatcher = undefined;
 
 var rect1 = Rect.fromSize(Vec2.new(1, 1)).centered();
-var rect2 = Rect.fromSize(Vec2.new(0.75, 0.4));
+var rect2 = Rect.fromSize(Vec2.new(0.75, 0.4)).centered();
 
 // This example shows how to check collision against two rectangles
 
@@ -65,7 +65,7 @@ fn on_tick(deltatime: f32) void {
 
     const x_pos = ((mouse_pos.x / app_width) - 0.5) * 6.0;
     const y_pos = ((mouse_pos.y / app_height) - 0.5) * -4.0;
-    rect2.setPosition(Vec2.new(x_pos, y_pos));
+    rect2 = rect2.setPosition(Vec2.new(x_pos, y_pos));
 
     if (input.isKeyJustPressed(.ESCAPE)) {
         std.os.exit(0);
