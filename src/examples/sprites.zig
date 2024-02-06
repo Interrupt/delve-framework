@@ -137,7 +137,7 @@ fn pre_draw() void {
             transform = transform.mul(math.Mat4.rotate(f_i * 3.0, .{ .x = 1.0, .y = 1.0, .z = 0.0 }));
             test_batch.setTransformMatrix(transform);
 
-            const rect = Rect.new(math.Vec2.new(0.0, 0.0), math.Vec2.new(0.5, 0.5));
+            const rect = Rect.fromSize(math.Vec2.new(0.5, 0.5));
             test_batch.addRectangle(rect, sprites.TextureRegion.default(), colors.white);
         } else {
             transform = math.Mat4.translate(.{ .x = -x_pos, .y = y_pos, .z = f_i * -0.1 });

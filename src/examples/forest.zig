@@ -255,8 +255,9 @@ fn pre_draw() void {
 
         // add some random scaling, then draw!
         const size = reg_size.scale(1.0 + random.float(f32) * (foliage_scale * size_variance));
-        const rect = Rect.new(math.Vec2.new(size.x * -0.5, 0.0), size);
-        sprite_batch.addRectangle(rect, tex_region, foliage_tint);
+
+        const rect = Rect.fromSize(size);
+        sprite_batch.addRectangle(rect.centeredX(), tex_region, foliage_tint);
     }
 
     // save the state of the batch so it can be drawn
@@ -275,8 +276,8 @@ fn addGround(ground_size: math.Vec2) void {
     // Add the ground plane rectangle
     sprite_batch.setTransformMatrix(ground_transform);
 
-    const rect = Rect.new(ground_size.scale(-0.5), ground_size);
-    sprite_batch.addRectangle(rect, TextureRegion.default(), ground_color);
+    const rect = Rect.fromSize(ground_size);
+    sprite_batch.addRectangle(rect.centered(), TextureRegion.default(), ground_color);
 }
 
 /// Adds clouds to the cloud batch
@@ -310,8 +311,8 @@ fn addClouds(density: f32) void {
         // size the rectangle based on the size of the sprite in the atlas
         var size = tex_region.getSize().mul(math.Vec2.new(2.1, 1)).scale(cloud_size);
 
-        const rect = Rect.new(math.Vec2.new(size.x * -0.5, size.y * -0.5), size);
-        cloud_batch.addRectangle(rect, tex_region, cloud_tint);
+        const rect = Rect.fromSize(size);
+        cloud_batch.addRectangle(rect.centered(), tex_region, cloud_tint);
     }
     cloud_batch.apply();
 }
@@ -369,8 +370,8 @@ fn addGrass(pos: math.Vec3, grass_area: u32, grass_size: f32, density: f32) void
                 size = size.scale(1.0 + random.float(f32) * 1);
 
                 // add some random scaling, then draw!
-                const rect = Rect.new(math.Vec2.new(size.x * -0.5, 0.0), size);
-                grass_batch.addRectangle(rect, tex_region, foliage_tint);
+                const rect = Rect.fromSize(size);
+                grass_batch.addRectangle(rect.centeredX(), tex_region, foliage_tint);
             }
         }
     }

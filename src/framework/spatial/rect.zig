@@ -19,6 +19,16 @@ pub const Rect = struct {
         };
     }
 
+    /// Creates a new rectangle, where the position is zero
+    pub fn fromSize(size: Vec2) Rect {
+        return Rect{
+            .x = 0.0,
+            .y = 0.0,
+            .width = size.x,
+            .height = size.y,
+        };
+    }
+
     pub fn getPosition(self: *const Rect) Vec2 {
         return Vec2.new(self.x, self.y);
     }
@@ -66,5 +76,19 @@ pub const Rect = struct {
     /// Returns a centered version of this rectangle
     pub fn centered(self: *const Rect) Rect {
         return Rect.new(self.getPosition().sub(self.getSize().scale(0.5)), self.getSize());
+    }
+
+    /// Returns a box where only the X axis is centered
+    pub fn centeredX(self: *const Rect) Rect {
+        var pos = self.getPosition();
+        pos.x -= self.width * 0.5;
+        return Rect.new(pos, self.getSize());
+    }
+
+    /// Returns a box where only the Y axis is centered
+    pub fn centeredY(self: *const Rect) Rect {
+        var pos = self.getPosition();
+        pos.y -= self.width * 0.5;
+        return Rect.new(pos, self.getSize());
     }
 };
