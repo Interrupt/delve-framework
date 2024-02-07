@@ -55,6 +55,10 @@ pub const spatial = struct {
     pub const Rect = @import("spatial/rect.zig").Rect;
 };
 
+pub const utils = struct {
+    pub const interpolation = @import("utils/interpolation.zig");
+};
+
 // builtin shaders
 
 pub const shaders = struct {

@@ -47,6 +47,7 @@ pub fn build(b: *std.Build) void {
     buildExample(b, "clear", target, optimize, delve_module, lib);
     buildExample(b, "collision", target, optimize, delve_module, lib);
     buildExample(b, "debugdraw", target, optimize, delve_module, lib);
+    buildExample(b, "easing", target, optimize, delve_module, lib);
     buildExample(b, "forest", target, optimize, delve_module, lib);
     buildExample(b, "framepacing", target, optimize, delve_module, lib);
     buildExample(b, "lua", target, optimize, delve_module, lib);

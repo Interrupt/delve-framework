@@ -1,0 +1,134 @@
+const std = @import("std");
+const delve = @import("delve");
+const app = delve.app;
+
+const debug = delve.debug;
+const papp = delve.platform.app;
+const graphics = delve.platform.graphics;
+const colors = delve.colors;
+const images = delve.images;
+const input = delve.platform.input;
+const math = delve.math;
+const modules = delve.modules;
+const fps_module = delve.module.fps_counter;
+const interpolation = delve.utils.interpolation;
+
+pub const test_asset = @embedFile("static/test.gif");
+
+var texture: graphics.Texture = undefined;
+var test_image: images.Image = undefined;
+
+const state = struct {
+    var time: f64 = 0.0;
+    var speed: f32 = 300.0;
+};
+
+// This example shows the simple debug drawing functions.
+// These functions are slow, but a quick way to get stuff on screen!
+
+pub fn main() !void {
+    try registerModule();
+    try fps_module.registerModule();
+    try app.start(app.AppConfig{ .title = "Delve Framework - Easing Example" });
+}
+
+pub fn registerModule() !void {
+    const example = modules.Module{
+        .name = "easing_example",
+        .init_fn = on_init,
+        .tick_fn = on_tick,
+        .draw_fn = on_draw,
+        .cleanup_fn = on_cleanup,
+    };
+
+    try modules.registerModule(example);
+}
+
+fn on_init() void {
+    graphics.setClearColor(colors.examples_bg_dark);
+
+    test_image = images.loadBytes(test_asset) catch {
+        debug.log("Could not load test texture", .{});
+        return;
+    };
+    texture = graphics.Texture.init(&test_image);
+}
+
+fn on_tick(delta: f32) void {
+    state.time += delta;
+
+    if (state.time >= 2.5)
+        state.time = 0.0;
+
+    if (input.isKeyJustPressed(.SPACE))
+        state.time = 0.0;
+
+    if (input.isKeyJustPressed(.ESCAPE))
+        std.os.exit(0);
+}
+
+fn on_draw() void {
+    // Draw our debug cat image, but use the color override to tint it!
+    var y_pos: f32 = 10.0;
+    const size: f32 = 50.0;
+    const y_spacing: f32 = size + 8;
+
+    const start_x: f32 = 200.0;
+    const end_x: f32 = 800.0;
+
+    const time: f32 = @floatCast(state.time);
+
+    graphics.setDebugTextScale(1);
+    graphics.setDebugTextColor(colors.Color.new(0.9, 0.9, 0.9, 1.0));
+
+    var v = interpolation.Lerp.apply(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "lerp:");
+    graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
+    y_pos += y_spacing;
+
+    v = interpolation.EaseOut.apply(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "ease out:");
+    graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
+    y_pos += y_spacing;
+
+    v = interpolation.EaseIn.apply(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "ease in:");
+    graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
+    y_pos += y_spacing;
+
+    v = interpolation.EaseInOut.apply(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "ease in/out:");
+    graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
+    y_pos += y_spacing;
+
+    v = interpolation.CircleIn.apply(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "circle in:");
+    graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
+    y_pos += y_spacing;
+
+    v = interpolation.CircleOut.apply(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "circle out:");
+    graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
+    y_pos += y_spacing;
+
+    v = interpolation.CircleInOut.apply(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "circle in/out:");
+    graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
+    y_pos += y_spacing;
+
+    v = interpolation.Sin.apply(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "sin:");
+    graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
+    y_pos += y_spacing;
+
+    v = interpolation.PerlinSmoothstep.apply(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "smoothstep:");
+    graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
+    y_pos += y_spacing;
+}
+
+fn on_cleanup() void {
+    debug.log("Frame pacing example module cleaning up", .{});
+    test_image.destroy();
+    texture.destroy();
+}
