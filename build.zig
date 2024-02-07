@@ -50,6 +50,7 @@ pub fn build(b: *std.Build) void {
     buildExample(b, "forest", target, optimize, delve_module, lib);
     buildExample(b, "framepacing", target, optimize, delve_module, lib);
     buildExample(b, "lua", target, optimize, delve_module, lib);
+    buildExample(b, "meshbuilder", target, optimize, delve_module, lib);
     buildExample(b, "meshes", target, optimize, delve_module, lib);
     buildExample(b, "stresstest", target, optimize, delve_module, lib);
 
