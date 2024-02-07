@@ -44,20 +44,22 @@ pub fn on_init() void {
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
 
-    // create a camera
+    // create our camera
     camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 200.0, 5.0, math.Vec3.up());
 
-    // make some cubes
+    // make a cube
     cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0,0,0), math.Vec3.new(2,3,1), delve.colors.white, material) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
 
+    // and another
     cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3,0,-1), math.Vec3.new(1,1,2), delve.colors.green, material) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
 
+    // and then a floor
     cube3 = delve.graphics.mesh.createCube(math.Vec3.new(0,-2,0), math.Vec3.new(12,0.25,12), delve.colors.red, material) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
@@ -83,30 +85,7 @@ pub fn on_draw() void {
     const proj_view_matrix = camera.getProjView();
     var model = math.Mat4.identity();
 
-    // we'll move some stuff randomly
-    var rnd = RndGen.init(0);
-    var random = rnd.random();
-
-    // stress test things a bit
-    for(0..500) |idx| {
-        _ = idx;
-
-        // make a random position
-        const spread: f32 = 250.0;
-        const rand_x = (random.float(f32) * spread) - spread * 0.5;
-        const rand_y = (random.float(f32) * spread) - spread * 0.5;
-        const rand_z = (random.float(f32) * spread) - spread * 0.5;
-
-        // make a few random rotations
-        const rot: f32 = @floatCast(time * ((random.float(f64) * 250.0) - 125.0));
-        const rot2: f32 = @floatCast(time * ((random.float(f64) * 250.0) - 125.0));
-        const rot3: f32 = @floatCast(time * ((random.float(f64) * 250.0) - 125.0));
-
-        model = math.Mat4.translate(math.Vec3.new(rand_x, rand_y, rand_z)).mul(math.Mat4.rotate(rot, math.Vec3.new(0,1,0)));
-
-        // now draw our scene
-        cube1.draw(proj_view_matrix, model.mul(math.Mat4.rotate(rot2, math.Vec3.new(0,1,0))));
-        cube2.draw(proj_view_matrix, model.mul(math.Mat4.rotate(rot3, math.Vec3.new(0,1,0))));
-        cube3.draw(proj_view_matrix, model);
-    }
+    cube1.draw(proj_view_matrix, model.mul(math.Mat4.rotate(@floatCast(time * 40.0), math.Vec3.new(0,1,0))));
+    cube2.draw(proj_view_matrix, model);
+    cube3.draw(proj_view_matrix, model);
 }
