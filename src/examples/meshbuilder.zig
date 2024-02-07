@@ -74,7 +74,7 @@ pub fn on_tick(delta: f32) void {
 
     time += delta;
 
-    camera.runSimpleCamera(4 * delta, 120 * delta, true);
+    camera.runSimpleCamera(8 * delta, 120 * delta, true);
 }
 
 pub fn on_draw() void {
