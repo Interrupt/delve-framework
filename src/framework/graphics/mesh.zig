@@ -127,26 +127,7 @@ pub fn createCube(pos: Vec3, size: Vec3, color: Color, material: graphics.Materi
     var builder = MeshBuilder.init();
     defer builder.deinit();
 
-    const rect_west = Rect.newCentered(math.Vec2.zero(), math.Vec2.new(size.z, size.y));
-    const rect_east = Rect.newCentered(math.Vec2.zero(), math.Vec2.new(size.z, size.y));
-    const rect_north = Rect.newCentered(math.Vec2.zero(), math.Vec2.new(size.x, size.y));
-    const rect_south = Rect.newCentered(math.Vec2.zero(), math.Vec2.new(size.x, size.y));
-    const rect_top = Rect.newCentered(math.Vec2.zero(), math.Vec2.new(size.x, size.z));
-    const rect_bottom = Rect.newCentered(math.Vec2.zero(), math.Vec2.new(size.x, size.z));
-
-    const rot_west = math.Mat4.rotate(-90, Vec3.new(0,1,0));
-    const rot_east = math.Mat4.rotate(90, Vec3.new(0,1,0));
-    const rot_north = math.Mat4.rotate(180, Vec3.new(0,1,0));
-    const rot_south = math.Mat4.rotate(0, Vec3.new(0,1,0));
-    const rot_top = math.Mat4.rotate(-90, Vec3.new(1,0,0));
-    const rot_bottom = math.Mat4.rotate(90, Vec3.new(1,0,0));
-
-    try builder.addRect(rect_west, math.Mat4.translate(Vec3.new(pos.x - size.x * 0.5, pos.y, pos.z)).mul(rot_west), color);
-    try builder.addRect(rect_east, math.Mat4.translate(Vec3.new(pos.x + size.x * 0.5, pos.y, pos.z)).mul(rot_east), color);
-    try builder.addRect(rect_north, math.Mat4.translate(Vec3.new(pos.x, pos.y, pos.z - size.z * 0.5)).mul(rot_north), color);
-    try builder.addRect(rect_south, math.Mat4.translate(Vec3.new(pos.x, pos.y, pos.z + size.z * 0.5)).mul(rot_south), color);
-    try builder.addRect(rect_top, math.Mat4.translate(Vec3.new(pos.x, pos.y + size.y * 0.5, pos.z)).mul(rot_top), color);
-    try builder.addRect(rect_bottom, math.Mat4.translate(Vec3.new(pos.x, pos.y - size.y * 0.5, pos.z)).mul(rot_bottom), color);
+    try builder.addCube(pos, size, math.Mat4.identity(), color);
 
     return builder.buildMesh(material);
 }
@@ -252,6 +233,29 @@ pub const MeshBuilder = struct {
         for (indices) |idx| {
             try self.indices.append(idx + v_pos);
         }
+    }
+
+    pub fn addCube(self: *MeshBuilder, pos: Vec3, size: Vec3, transform: math.Mat4, color: Color) !void {
+        const rect_west = Rect.newCentered(math.Vec2.zero(), math.Vec2.new(size.z, size.y));
+        const rect_east = Rect.newCentered(math.Vec2.zero(), math.Vec2.new(size.z, size.y));
+        const rect_north = Rect.newCentered(math.Vec2.zero(), math.Vec2.new(size.x, size.y));
+        const rect_south = Rect.newCentered(math.Vec2.zero(), math.Vec2.new(size.x, size.y));
+        const rect_top = Rect.newCentered(math.Vec2.zero(), math.Vec2.new(size.x, size.z));
+        const rect_bottom = Rect.newCentered(math.Vec2.zero(), math.Vec2.new(size.x, size.z));
+
+        const rot_west = math.Mat4.rotate(-90, Vec3.new(0,1,0));
+        const rot_east = math.Mat4.rotate(90, Vec3.new(0,1,0));
+        const rot_north = math.Mat4.rotate(180, Vec3.new(0,1,0));
+        const rot_south = math.Mat4.rotate(0, Vec3.new(0,1,0));
+        const rot_top = math.Mat4.rotate(-90, Vec3.new(1,0,0));
+        const rot_bottom = math.Mat4.rotate(90, Vec3.new(1,0,0));
+
+        try self.addRect(rect_west, transform.mul(math.Mat4.translate(Vec3.new(pos.x - size.x * 0.5, pos.y, pos.z)).mul(rot_west)), color);
+        try self.addRect(rect_east, transform.mul(math.Mat4.translate(Vec3.new(pos.x + size.x * 0.5, pos.y, pos.z)).mul(rot_east)), color);
+        try self.addRect(rect_north, transform.mul(math.Mat4.translate(Vec3.new(pos.x, pos.y, pos.z - size.z * 0.5)).mul(rot_north)), color);
+        try self.addRect(rect_south, transform.mul(math.Mat4.translate(Vec3.new(pos.x, pos.y, pos.z + size.z * 0.5)).mul(rot_south)), color);
+        try self.addRect(rect_top, transform.mul(math.Mat4.translate(Vec3.new(pos.x, pos.y + size.y * 0.5, pos.z)).mul(rot_top)), color);
+        try self.addRect(rect_bottom, transform.mul(math.Mat4.translate(Vec3.new(pos.x, pos.y - size.y * 0.5, pos.z)).mul(rot_bottom)), color);
     }
 
     /// Bakes a mesh out of the mesh builder from the current state
