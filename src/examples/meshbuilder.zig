@@ -66,6 +66,9 @@ pub fn on_init() void {
 
     // set a bg color
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_dark);
+
+    // capture mouse
+    delve.platform.app.captureMouse(true);
 }
 
 pub fn on_tick(delta: f32) void {
