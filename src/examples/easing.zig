@@ -81,47 +81,47 @@ fn on_draw() void {
     graphics.setDebugTextScale(1);
     graphics.setDebugTextColor(colors.Color.new(0.9, 0.9, 0.9, 1.0));
 
-    var v = interpolation.Lerp.apply(start_x, end_x, time);
+    var v = interpolation.Lerp.applyIn(start_x, end_x, time);
     graphics.drawDebugText(10, y_pos, "lerp:");
     graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
     y_pos += y_spacing;
 
-    v = interpolation.EaseOut.apply(start_x, end_x, time);
-    graphics.drawDebugText(10, y_pos, "ease out:");
+    v = interpolation.EaseQuad.applyOut(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "quad out:");
     graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
     y_pos += y_spacing;
 
-    v = interpolation.EaseIn.apply(start_x, end_x, time);
-    graphics.drawDebugText(10, y_pos, "ease in:");
+    v = interpolation.EaseExpo.applyIn(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "expo in:");
     graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
     y_pos += y_spacing;
 
-    v = interpolation.EaseInOut.apply(start_x, end_x, time);
-    graphics.drawDebugText(10, y_pos, "ease in/out:");
+    v = interpolation.EaseBounce.applyOut(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "bounce out:");
     graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
     y_pos += y_spacing;
 
-    v = interpolation.CircleIn.apply(start_x, end_x, time);
+    v = interpolation.Circle.applyIn(start_x, end_x, time);
     graphics.drawDebugText(10, y_pos, "circle in:");
     graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
     y_pos += y_spacing;
 
-    v = interpolation.CircleOut.apply(start_x, end_x, time);
-    graphics.drawDebugText(10, y_pos, "circle out:");
+    v = interpolation.EaseQuint.applyInOut(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "quint in/out:");
     graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
     y_pos += y_spacing;
 
-    v = interpolation.CircleInOut.apply(start_x, end_x, time);
-    graphics.drawDebugText(10, y_pos, "circle in/out:");
+    v = interpolation.EaseElastic.applyOut(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "elastic out:");
     graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
     y_pos += y_spacing;
 
-    v = interpolation.Sin.apply(start_x, end_x, time);
+    v = interpolation.Sin.applyIn(start_x, end_x, time);
     graphics.drawDebugText(10, y_pos, "sin:");
     graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
     y_pos += y_spacing;
 
-    v = interpolation.PerlinSmoothstep.apply(start_x, end_x, time);
+    v = interpolation.PerlinSmoothstep.applyIn(start_x, end_x, time);
     graphics.drawDebugText(10, y_pos, "smoothstep:");
     graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
     y_pos += y_spacing;
