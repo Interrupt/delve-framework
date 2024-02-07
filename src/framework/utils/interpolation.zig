@@ -37,6 +37,14 @@ pub const EaseOut = Interpolation{
     .func = easeOut,
 };
 
+pub const Pow4In = Interpolation{
+    .func = pow4In,
+};
+
+pub const Pow4Out = Interpolation{
+    .func = pow4Out,
+};
+
 pub const EaseInOut = Interpolation{
     .func = easeInOut,
 };
@@ -61,7 +69,7 @@ pub const PerlinSmoothstep = Interpolation{
     .func = perlinSmoothstep,
 };
 
-/// Helper function to flip an interpolatino halfway through
+/// Helper function to flip an interpolation halfway through
 fn applyInOut(alpha: f32, in: *const fn (f32) f32, out: *const fn (f32) f32) f32 {
     if (alpha <= 0.5)
         return in(alpha * 2.0) * 0.5;
@@ -75,12 +83,21 @@ pub fn linear(alpha: f32) f32 {
 }
 
 pub fn easeIn(alpha: f32) f32 {
-    return alpha * alpha;
+    return std.math.pow(f32, alpha, 2);
 }
 
 pub fn easeOut(alpha: f32) f32 {
     const v = flip(alpha);
-    return flip(v * v);
+    return flip(std.math.pow(f32, v, 2));
+}
+
+pub fn pow4In(alpha: f32) f32 {
+    return std.math.pow(f32, alpha, 4);
+}
+
+pub fn pow4Out(alpha: f32) f32 {
+    const v = flip(alpha);
+    return flip(std.math.pow(f32, v, 4));
 }
 
 pub fn easeInOut(alpha: f32) f32 {
