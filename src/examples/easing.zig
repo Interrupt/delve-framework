@@ -101,8 +101,8 @@ fn on_draw() void {
     graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
     y_pos += y_spacing;
 
-    v = interpolation.Circle.applyIn(start_x, end_x, time);
-    graphics.drawDebugText(10, y_pos, "circle in:");
+    v = interpolation.Circle.applyInMirrored(start_x, end_x, time);
+    graphics.drawDebugText(10, y_pos, "circle in (mirrored):");
     graphics.drawDebugRectangle(texture, v, y_pos, size, size, colors.white);
     y_pos += y_spacing;
 
