@@ -4,7 +4,6 @@ const app = delve.app;
 
 const graphics = delve.platform.graphics;
 const math = delve.math;
-const RndGen = std.rand.DefaultPrng;
 
 const test_asset = @embedFile("static/test.gif");
 var camera: delve.graphics.camera.Camera = undefined;
