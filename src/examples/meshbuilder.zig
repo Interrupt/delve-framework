@@ -31,12 +31,11 @@ pub fn main() !void {
 }
 
 pub fn on_init() void {
-    const emissive_texture_file = "meshes/SciFiHelmet_Emissive_512.png";
-    var emissive_img = delve.images.loadBytes(test_asset) catch {
-        delve.debug.log("Assets: Error loading image asset: {s}", .{emissive_texture_file});
+    var img = delve.images.loadBytes(test_asset) catch {
+        delve.debug.log("Error loading image", .{});
         return;
     };
-    const tex = graphics.Texture.init(&emissive_img);
+    const tex = graphics.Texture.init(&img);
 
     // Create a material out of the texture
     material = graphics.Material.init(.{
