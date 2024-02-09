@@ -20,7 +20,7 @@ pub fn build(b: *std.Build) void {
     const zmesh_pkg = zmesh.package(b, target, optimize, .{});
 
     const delve_module = b.addModule("delve", .{
-        .source_file = .{ .path = "src/framework/delve.zig" },
+        .root_source_file = .{ .path = "src/framework/delve.zig" },
         .dependencies = &.{
             .{ .name = "ziglua", .module = ziglua.module("ziglua") },
             .{ .name = "sokol", .module = sokol_module },
