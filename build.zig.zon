@@ -1,11 +1,13 @@
-.{
-    .name = "delve",
-    .version = "0.0.2",
-
-    .dependencies = .{
-        .ziglua = .{
-            .url = "https://github.com/natecraddock/ziglua/archive/refs/tags/0.2.0.tar.gz",
-            .hash = "1220d14df5c57d4c3fafe26191fcc3b32c23ffd319e7f5d839d2ace030372f1f85b4",
-        },
-    }
-}
+.{ .name = "delve", .version = "0.0.2", .paths = .{
+    "3rdparty",
+    "assets",
+    "libs",
+    "src",
+    "README.md",
+    "ROADMAP.md",
+}, .dependencies = .{
+    .ziglua = .{
+        .url = "git+https://github.com/natecraddock/ziglua.git#0f0f489cf1f3995b0266f0d4452382e89bf77739",
+        .hash = "1220dbbecca0fe5811ea4da61cbc29868ddc34469c0817ea6f73a7e57d637288c2fe",
+    },
+} }

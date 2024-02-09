@@ -13,7 +13,7 @@ pub fn build(b: *std.Build) void {
     });
 
     const sokol_module = b.createModule(.{
-        .source_file = .{ .path = "3rdparty/sokol-zig/src/sokol/sokol.zig" },
+        .root_source_file = .{ .path = "3rdparty/sokol-zig/src/sokol/sokol.zig" },
     });
 
     const zaudio_pkg = zaudio.package(b, target, optimize, .{});
