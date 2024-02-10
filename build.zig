@@ -54,6 +54,7 @@ pub fn build(b: *std.Build) void {
         "lua",
         "meshbuilder",
         "meshes",
+        "passes",
         "stresstest",
     };
 
