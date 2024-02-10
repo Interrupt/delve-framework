@@ -13,4 +13,5 @@
     .sokol = .{ .path = "3rdparty/sokol-zig" },
     .zmesh = .{ .path = "3rdparty/zmesh" },
     .zaudio = .{ .path = "3rdparty/zaudio" },
+    .system_sdk = .{ .path = "3rdparty/system-sdk" },
 } }
