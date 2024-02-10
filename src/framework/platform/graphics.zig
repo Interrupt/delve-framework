@@ -299,8 +299,10 @@ var next_texture_handle: u32 = 0;
 pub const Texture = struct {
     width: u32,
     height: u32,
-    sokol_image: ?sg.Image,
     handle: u32,
+    is_render_target: bool = false,
+
+    sokol_image: ?sg.Image,
 
     /// Creates a new texture from an Image
     pub fn init(image: *images.Image) Texture {
@@ -342,11 +344,97 @@ pub const Texture = struct {
         };
     }
 
+    /// Creates a texture to be used as a render pass texture
+    pub fn initRenderTexture(width: u32, height: u32, is_depth: bool) Texture {
+        defer next_texture_handle += 1;
+
+        var img_desc: sg.ImageDesc = .{
+            .width = @intCast(width),
+            .height = @intCast(height),
+            .render_target = true,
+            .sample_count = 1,
+        };
+
+        if(is_depth)
+            img_desc.pixel_format = .DEPTH;
+
+        return Texture{
+            .width = width,
+            .height = height,
+            .sokol_image = sg.makeImage(img_desc),
+            .handle = next_texture_handle,
+            .is_render_target = true,
+        };
+    }
+
     pub fn destroy(self: *Texture) void {
         if(self.sokol_image == null)
             return;
         sg.destroyImage(self.sokol_image.?);
         self.sokol_image = null;
+    }
+};
+
+/// A render pass describes an offscreen render target
+pub const RenderPass = struct {
+    render_texture_color: ?Texture,
+    render_texture_depth: ?Texture,
+
+    sokol_pass: ?sg.Pass,
+
+    pub fn init(width: u32, height: u32, include_depth: bool) RenderPass {
+        const pass_desc = sg.PassDesc{};
+
+        const color_attachment = Texture.initRenderTexture(width, height, false);
+        var depth_attachment: ?Texture = null;
+
+        pass_desc.color_attachments[0].image = color_attachment.sokol_image;
+
+        if(include_depth) {
+            depth_attachment = Texture.initRenderTexture(width, height, true);
+            pass_desc.depth_stencil_attachments[0].image = depth_attachment.sokol_image;
+        }
+
+        return RenderPass{
+            .render_texture_color = color_attachment,
+            .render_texture_depth = depth_attachment,
+            .sokol_pass = sg.makePass(pass_desc),
+        };
+    }
+
+    /// Destroys a render pass and its associated textures
+    pub fn destroy(self: *RenderPass) void {
+        if(self.render_texture_color != null) {
+            self.render_texture_color.destroy();
+            self.render_texture_color = null;
+        }
+
+        if(self.render_texture_depth != null) {
+            self.render_texture_depth.destroy();
+            self.render_texture_depth = null;
+        }
+
+        if(self.sokol_pass != null) {
+            sg.destroyPass(self.sokol_pass);
+            self.sokol_pass = null;
+        }
+    }
+
+    pub fn begin(self: *RenderPass, clear_color: ?Color) void {
+        var pass_action = sg.PassAction{
+            .load_action = .DONTCARE,
+        };
+
+        if(clear_color != null) {
+            pass_action.load_action = .CLEAR;
+            pass_action.clear_value = .{ .r = clear_color.?.r, .g = clear_color.?.g, .b = clear_color.?.b, .a = clear_color.?.a };
+        }
+
+        sg.beginPass(self.sokol_pass.?, pass_action);
+    }
+
+    pub fn end(self: *RenderPass) void {
+        sg.endPass(self.sokol_pass.?);
     }
 };
 
