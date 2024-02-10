@@ -376,30 +376,42 @@ pub const Texture = struct {
     }
 };
 
+pub const RenderPassConfig = struct {
+    width: u32,
+    height: u32,
+    include_color: bool = true,
+    include_depth: bool = true,
+    include_stencil: bool = true,
+    keep_color: bool = true,
+    keep_depth_stencil: bool = true,
+};
+
 /// A render pass describes an offscreen render target
 pub const RenderPass = struct {
     render_texture_color: ?Texture,
     render_texture_depth: ?Texture,
+    config: RenderPassConfig,
 
     sokol_pass: ?sg.Pass,
 
-    pub fn init(width: u32, height: u32, include_color: bool, include_depth: bool) RenderPass {
+    pub fn init(config: RenderPassConfig) RenderPass {
         var pass_desc = sg.PassDesc{};
 
         var color_attachment: ?Texture = null;
         var depth_attachment: ?Texture = null;
 
-        if(include_color) {
-            color_attachment = Texture.initRenderTexture(width, height, false);
+        if(config.include_color) {
+            color_attachment = Texture.initRenderTexture(config.width, config.height, false);
             pass_desc.color_attachments[0].image = color_attachment.?.sokol_image.?;
         }
 
-        if(include_depth) {
-            depth_attachment = Texture.initRenderTexture(width, height, true);
+        if(config.include_depth) {
+            depth_attachment = Texture.initRenderTexture(config.width, config.height, true);
             pass_desc.depth_stencil_attachment.image = depth_attachment.?.sokol_image.?;
         }
 
         return RenderPass{
+            .config = config,
             .render_texture_color = color_attachment,
             .render_texture_depth = depth_attachment,
             .sokol_pass = sg.makePass(pass_desc),
