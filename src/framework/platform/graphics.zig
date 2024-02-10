@@ -398,7 +398,8 @@ pub const RenderPass = struct {
             depth_attachment = Texture.initRenderTexture(width, height, true);
             pass_desc.depth_stencil_attachment.image = depth_attachment.?.sokol_image.?;
         }
-return RenderPass{
+
+        return RenderPass{
             .render_texture_color = color_attachment,
             .render_texture_depth = depth_attachment,
             .sokol_pass = sg.makePass(pass_desc),
