@@ -224,6 +224,7 @@ pub const ShaderConfig = struct {
         .{ .name = "color0", .attr_type = .UBYTE4N, .binding = .VERT_PACKED },
         .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_PACKED },
     },
+    is_depth_pixel_format: bool = false,
 };
 
 /// The actual backend implementation for shaders
@@ -299,8 +300,10 @@ var next_texture_handle: u32 = 0;
 pub const Texture = struct {
     width: u32,
     height: u32,
-    sokol_image: ?sg.Image,
     handle: u32,
+    is_render_target: bool = false,
+
+    sokol_image: ?sg.Image,
 
     /// Creates a new texture from an Image
     pub fn init(image: *images.Image) Texture {
@@ -342,6 +345,29 @@ pub const Texture = struct {
         };
     }
 
+    /// Creates a texture to be used as a render pass texture
+    pub fn initRenderTexture(width: u32, height: u32, is_depth: bool) Texture {
+        defer next_texture_handle += 1;
+
+        var img_desc: sg.ImageDesc = .{
+            .width = @intCast(width),
+            .height = @intCast(height),
+            .render_target = true,
+            .sample_count = 1,
+        };
+
+        if(is_depth)
+            img_desc.pixel_format = .DEPTH_STENCIL;
+
+        return Texture{
+            .width = width,
+            .height = height,
+            .sokol_image = sg.makeImage(img_desc),
+            .handle = next_texture_handle,
+            .is_render_target = true,
+        };
+    }
+
     pub fn destroy(self: *Texture) void {
         if(self.sokol_image == null)
             return;
@@ -349,6 +375,91 @@ pub const Texture = struct {
         self.sokol_image = null;
     }
 };
+
+/// A render pass describes an offscreen render target
+pub const RenderPass = struct {
+    render_texture_color: ?Texture,
+    render_texture_depth: ?Texture,
+
+    sokol_pass: ?sg.Pass,
+
+    pub fn init(width: u32, height: u32, include_depth: bool) RenderPass {
+        var pass_desc = sg.PassDesc{};
+
+        const color_attachment = Texture.initRenderTexture(width, height, false);
+        var depth_attachment: ?Texture = null;
+
+        pass_desc.color_attachments[0].image = color_attachment.sokol_image.?;
+
+        if(include_depth) {
+            depth_attachment = Texture.initRenderTexture(width, height, true);
+            pass_desc.depth_stencil_attachment.image = depth_attachment.?.sokol_image.?;
+        }
+
+        return RenderPass{
+            .render_texture_color = color_attachment,
+            .render_texture_depth = depth_attachment,
+            .sokol_pass = sg.makePass(pass_desc),
+        };
+    }
+
+    /// Destroys a render pass and its associated textures
+    pub fn destroy(self: *RenderPass) void {
+        if(self.render_texture_color != null) {
+            self.render_texture_color.destroy();
+            self.render_texture_color = null;
+        }
+
+        if(self.render_texture_depth != null) {
+            self.render_texture_depth.destroy();
+            self.render_texture_depth = null;
+        }
+
+        if(self.sokol_pass != null) {
+            sg.destroyPass(self.sokol_pass);
+            self.sokol_pass = null;
+        }
+    }
+};
+
+/// Begins an offscreen pass, and ends the current pass
+pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
+    // end the current pass first!
+    sg.endPass();
+
+    var pass_action = sg.PassAction{};
+    pass_action.colors[0] = .{ .load_action = .LOAD, };
+    pass_action.depth = .{ .load_action = .LOAD, };
+    pass_action.stencil = .{ .load_action = .LOAD, };
+
+    if(clear_color != null) {
+        pass_action.colors[0].load_action = .CLEAR;
+        pass_action.colors[0].clear_value = .{ .r = clear_color.?.r, .g = clear_color.?.g, .b = clear_color.?.b, .a = clear_color.?.a };
+    }
+
+    sg.beginPass(render_pass.sokol_pass.?, pass_action);
+}
+
+/// Begins the default (render to screen) pass
+pub fn beginDefaultPass(clear: bool) void {
+    var pass_action = sg.PassAction{};
+    pass_action.colors[0] = .{ .load_action = .LOAD, };
+    pass_action.depth = .{ .load_action = .LOAD, };
+    pass_action.stencil = .{ .load_action = .LOAD, };
+
+    if(clear) {
+        pass_action.colors[0].load_action = .CLEAR;
+        pass_action.colors[0].clear_value = default_pass_action.colors[0].clear_value;
+    }
+
+    sg.beginDefaultPass(pass_action, sapp.width(), sapp.height());
+}
+
+/// Ends the current render pass, and resumes the default
+pub fn endPass() void {
+    sg.endPass();
+    beginDefaultPass(false);
+}
 
 /// The options for creating a new Material
 pub const MaterialConfig = struct {

@@ -41,19 +41,26 @@ pub fn build(b: *std.Build) void {
     makeDelveLibrary(b, lib, target, optimize);
     b.installArtifact(lib);
 
-    buildExample(b, "audio", target, optimize, delve_module, lib);
-    buildExample(b, "sprites", target, optimize, delve_module, lib);
-    buildExample(b, "sprite-animation", target, optimize, delve_module, lib);
-    buildExample(b, "clear", target, optimize, delve_module, lib);
-    buildExample(b, "collision", target, optimize, delve_module, lib);
-    buildExample(b, "debugdraw", target, optimize, delve_module, lib);
-    buildExample(b, "easing", target, optimize, delve_module, lib);
-    buildExample(b, "forest", target, optimize, delve_module, lib);
-    buildExample(b, "framepacing", target, optimize, delve_module, lib);
-    buildExample(b, "lua", target, optimize, delve_module, lib);
-    buildExample(b, "meshbuilder", target, optimize, delve_module, lib);
-    buildExample(b, "meshes", target, optimize, delve_module, lib);
-    buildExample(b, "stresstest", target, optimize, delve_module, lib);
+    const examples = [_][]const u8 {
+        "audio",
+        "sprites",
+        "sprite-animation",
+        "clear",
+        "collision",
+        "debugdraw",
+        "easing",
+        "forest",
+        "framepacing",
+        "lua",
+        "meshbuilder",
+        "meshes",
+        "passes",
+        "stresstest",
+    };
+
+    inline for(examples) |example| {
+        buildExample(b, example, target, optimize, delve_module, lib);
+    }
 
     const exe_tests = b.addTest(.{
         .root_source_file = .{ .path = "src/framework/delve.zig" },

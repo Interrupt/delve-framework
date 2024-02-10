@@ -45,7 +45,7 @@ pub fn registerModule() !void {
     try modules.registerModule(animationExample);
 }
 
-fn on_init() void {
+pub fn on_init() void {
     debug.log("Sprite animation example module initializing", .{});
 
     sprite_batch = batcher.SpriteBatcher.init(.{}) catch {
@@ -81,7 +81,7 @@ fn on_init() void {
     graphics.setClearColor(colors.examples_bg_light);
 }
 
-fn on_tick(deltatime: f32) void {
+pub fn on_tick(deltatime: f32) void {
     // advance the animation
     sprite_animation.tick(deltatime);
 
@@ -90,7 +90,7 @@ fn on_tick(deltatime: f32) void {
     }
 }
 
-fn on_draw() void {
+pub fn on_draw() void {
     const cur_frame = sprite_animation.getCurrentFrame();
 
     // clear the batch for this frame
@@ -115,7 +115,7 @@ fn on_draw() void {
     sprite_batch.draw(projection.mul(view), math.Mat4.identity());
 }
 
-fn on_cleanup() void {
+pub fn on_cleanup() void {
     debug.log("Sprite animation example module cleaning up", .{});
     sprite_texture.destroy();
     sprite_batch.deinit();

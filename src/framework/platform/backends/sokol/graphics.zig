@@ -257,6 +257,11 @@ pub const ShaderImpl = struct {
             .cull_mode = convertCullMode(self.cfg.cull_mode),
         };
 
+        if(self.cfg.is_depth_pixel_format) {
+            debug.log("Creating depth pixel format", .{});
+            pipe_desc.depth.pixel_format = .DEPTH;
+        }
+
         // Set the vertex attributes
         for (self.cfg.vertex_attributes, 0..) |attr, idx| {
             pipe_desc.layout.attrs[idx].format = convertVertexFormat(attr.attr_type);
