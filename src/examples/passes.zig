@@ -47,7 +47,7 @@ pub fn on_init() void {
     const tex = graphics.Texture.init(&img);
 
     // Create our offscreen pass
-    offscreen_pass = graphics.RenderPass.init(1024, 768, true);
+    offscreen_pass = graphics.RenderPass.init(1024, 768, true, true);
 
     // Create a material out of the texture
     material1 = graphics.Material.init(.{
