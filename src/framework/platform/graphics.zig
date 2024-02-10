@@ -382,8 +382,9 @@ pub const RenderPassConfig = struct {
     include_color: bool = true,
     include_depth: bool = true,
     include_stencil: bool = true,
-    keep_color: bool = true,
-    keep_depth_stencil: bool = true,
+    write_color: bool = true,
+    write_depth: bool = false,
+    write_stencil: bool = false,
 };
 
 /// A render pass describes an offscreen render target
@@ -446,6 +447,22 @@ pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
     pass_action.colors[0] = .{ .load_action = .LOAD, };
     pass_action.depth = .{ .load_action = .LOAD, };
     pass_action.stencil = .{ .load_action = .LOAD, };
+
+    // Don't need to store the end result in some cases
+    if(!render_pass.config.write_color)
+        pass_action.colors[0].store_action = .DONTCARE;
+
+    if(!render_pass.config.write_depth) {
+        pass_action.depth.load_action = .CLEAR;
+        pass_action.depth.clear_value = 1.0;
+        pass_action.depth.store_action = .DONTCARE;
+    }
+
+    if(!render_pass.config.write_stencil) {
+        pass_action.stencil.load_action = .CLEAR;
+        pass_action.stencil.clear_value = 0.0;
+        pass_action.stencil.store_action = .DONTCARE;
+    }
 
     if(clear_color != null) {
         pass_action.colors[0].load_action = .CLEAR;
