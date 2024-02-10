@@ -1,10 +1,10 @@
 # Roadmap
 
-Next up:
+Todo:
+[ ] GUI (Dear imgui?)
+[ ] Basic collisions
 [ ] Lua - bind types
 [ ] Animated Meshes
-[ ] GUI (Dear imgui?)
-[ ] Build improvements
 
 Done:
 [x] Basic Graphics
@@ -17,3 +17,5 @@ Done:
 [x] Game loop with optional FPS target
 [x] Simple Camera
 [x] Sprite batch example (Forest!)
+[x] Interpolation functions
+[x] Offscreen render targets
