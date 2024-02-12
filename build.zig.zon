@@ -1,11 +1,14 @@
-.{
-    .name = "delve",
-    .version = "0.0.2",
-
-    .dependencies = .{
-        .ziglua = .{
-            .url = "https://github.com/natecraddock/ziglua/archive/refs/tags/0.2.0.tar.gz",
-            .hash = "1220d14df5c57d4c3fafe26191fcc3b32c23ffd319e7f5d839d2ace030372f1f85b4",
-        },
-    }
-}
+.{ .name = "delve", .version = "0.0.2", .dependencies = .{
+    .ziglua = .{
+        .path = "3rdparty/ziglua",
+    },
+    .sokol = .{
+        .path = "3rdparty/sokol-zig",
+    },
+    .zstbi = .{
+        .path = "3rdparty/zig-gamedev/libs/zstbi",
+    },
+    .zmesh = .{
+        .path = "3rdparty/zig-gamedev/libs/zmesh",
+    },
+} }
