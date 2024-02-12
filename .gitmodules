@@ -1,0 +1,3 @@
+[submodule "3rdparty/zig-gamedev"]
+	path = 3rdparty/zig-gamedev
+	url = https://github.com/zig-gamedev/zig-gamedev.git
