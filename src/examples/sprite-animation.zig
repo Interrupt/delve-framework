@@ -28,24 +28,24 @@ var loop_delay_time: f32 = 0.0;
 
 // This example shows how to draw animated sprites out of a sprite sheet
 
+pub const module = modules.Module{
+    .name = "animated_sprite_example",
+    .init_fn = on_init,
+    .tick_fn = on_tick,
+    .draw_fn = on_draw,
+    .cleanup_fn = on_cleanup,
+};
+
 pub fn main() !void {
     try registerModule();
     try app.start(app.AppConfig{ .title = "Delve Framework - Animated Sprite" });
 }
 
 pub fn registerModule() !void {
-    const animationExample = modules.Module{
-        .name = "animated_sprite_example",
-        .init_fn = on_init,
-        .tick_fn = on_tick,
-        .draw_fn = on_draw,
-        .cleanup_fn = on_cleanup,
-    };
-
-    try modules.registerModule(animationExample);
+    try modules.registerModule(module);
 }
 
-pub fn on_init() void {
+fn on_init() void {
     debug.log("Sprite animation example module initializing", .{});
 
     sprite_batch = batcher.SpriteBatcher.init(.{}) catch {
@@ -81,7 +81,7 @@ pub fn on_init() void {
     graphics.setClearColor(colors.examples_bg_light);
 }
 
-pub fn on_tick(deltatime: f32) void {
+fn on_tick(deltatime: f32) void {
     // advance the animation
     sprite_animation.tick(deltatime);
 
@@ -90,7 +90,7 @@ pub fn on_tick(deltatime: f32) void {
     }
 }
 
-pub fn on_draw() void {
+fn on_draw() void {
     const cur_frame = sprite_animation.getCurrentFrame();
 
     // clear the batch for this frame
@@ -109,13 +109,13 @@ pub fn on_draw() void {
 
     // setup our view to draw with
     const projection = graphics.getProjectionPerspective(60, 0.01, 20.0);
-    var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.0 }, math.Vec3.zero(), math.Vec3.up());
+    var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 3.0 }, math.Vec3.zero(), math.Vec3.up());
 
     // draw the sprite batch
     sprite_batch.draw(projection.mul(view), math.Mat4.identity());
 }
 
-pub fn on_cleanup() void {
+fn on_cleanup() void {
     debug.log("Sprite animation example module cleaning up", .{});
     sprite_texture.destroy();
     sprite_batch.deinit();

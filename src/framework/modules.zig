@@ -7,6 +7,9 @@ var allocator = gpa.allocator();
 var modules: std.StringArrayHashMap(Module) = undefined;
 var needs_init: bool = true;
 
+// Maybe we should store ArrayLists of functions to call instead of iterating through a map?
+// - that would avoid a lot of checking for null when lots of moduels are registered
+
 /// A Module is a named set of functions that tie into the app lifecycle
 pub const Module = struct {
     name: [:0]const u8,
@@ -19,6 +22,16 @@ pub const Module = struct {
     draw_fn: ?*const fn () void = null,
     post_draw_fn: ?*const fn () void = null,
     cleanup_fn: ?*const fn () void = null,
+
+    // state properties
+    did_init: bool = false,
+
+    /// Runs the pre draw, draw, and post draw functions for this module. Useful when nesting modules.
+    pub fn runFullRenderLifecycle(self: *const Module) void {
+        if (self.pre_draw_fn != null) self.pre_draw_fn.?();
+        if (self.draw_fn != null) self.draw_fn.?();
+        if (self.post_draw_fn != null) self.post_draw_fn.?();
+    }
 };
 
 /// Registers a module to tie it into the app lifecycle
@@ -44,6 +57,8 @@ pub fn initModules() void {
     while (it.next()) |module| {
         if (module.value_ptr.init_fn != null)
             module.value_ptr.init_fn.?();
+
+        module.value_ptr.did_init = true;
     }
 }
 
@@ -116,5 +131,8 @@ pub fn cleanupModules() void {
     while (it.next()) |module| {
         if (module.value_ptr.cleanup_fn != null)
             module.value_ptr.cleanup_fn.?();
+
+        // reset back to initial state
+        module.value_ptr.did_init = false;
     }
 }

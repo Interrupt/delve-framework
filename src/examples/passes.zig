@@ -2,8 +2,9 @@ const std = @import("std");
 const delve = @import("delve");
 const app = delve.app;
 
-// we'll draw another example inside of our render pass
-const sprite_animation_example = @import("sprite-animation.zig");
+// we'll draw some other examples inside of ours
+const nested_example_1 = @import("forest.zig").module;
+const nested_example_2 = @import("sprite-animation.zig").module;
 
 const graphics = delve.platform.graphics;
 const math = delve.math;
@@ -15,6 +16,7 @@ var camera_offscreen: delve.graphics.camera.Camera = undefined;
 
 var material1: graphics.Material = undefined;
 var material2: graphics.Material = undefined;
+var material3: graphics.Material = undefined;
 
 var cube1: delve.graphics.mesh.Mesh = undefined;
 var cube2: delve.graphics.mesh.Mesh = undefined;
@@ -23,7 +25,7 @@ var cube3: delve.graphics.mesh.Mesh = undefined;
 var time: f64 = 0.0;
 
 var offscreen_pass: graphics.RenderPass = undefined;
-var meshbuilder_pass: graphics.RenderPass = undefined;
+var offscreen_pass_2: graphics.RenderPass = undefined;
 
 pub fn main() !void {
     const example = delve.modules.Module{
@@ -46,8 +48,9 @@ pub fn on_init() void {
     };
     const tex = graphics.Texture.init(&img);
 
-    // Create our offscreen pass
+    // Create our offscreen passes
     offscreen_pass = graphics.RenderPass.init(.{ .width = 1024, .height = 768 });
+    offscreen_pass_2 = graphics.RenderPass.init(.{ .width = 640, .height = 480 });
 
     // Create a material out of the texture
     material1 = graphics.Material.init(.{
@@ -56,10 +59,17 @@ pub fn on_init() void {
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
 
-    // Create a material that uses our offscreen render texture
+    // Create a material that uses our main offscreen render texture
     material2 = graphics.Material.init(.{
         .shader = graphics.Shader.initDefault(.{}),
         .texture_0 = offscreen_pass.render_texture_color,
+        .samplers = &[_]graphics.FilterMode{.NEAREST},
+    });
+
+    // Create a material that uses our secondary offscreen render texture
+    material3 = graphics.Material.init(.{
+        .shader = graphics.Shader.initDefault(.{}),
+        .texture_0 = offscreen_pass_2.render_texture_color,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
 
@@ -74,7 +84,7 @@ pub fn on_init() void {
     };
 
     // and another
-    cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3, 0, -1), math.Vec3.new(1, 1, 2), delve.colors.green, material1) catch {
+    cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3, 0, -1), math.Vec3.new(1, 1, 2), delve.colors.white, material3) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
@@ -91,8 +101,9 @@ pub fn on_init() void {
     // capture mouse
     delve.platform.app.captureMouse(true);
 
-    // initialize the sprite animation example too
-    sprite_animation_example.on_init();
+    // initialize the nested examples too
+    if (nested_example_1.init_fn) |init_fn| init_fn();
+    if (nested_example_2.init_fn) |init_fn| init_fn();
 }
 
 pub fn on_tick(delta: f32) void {
@@ -107,13 +118,20 @@ pub fn on_tick(delta: f32) void {
     // rotate offscreen camera
     camera_offscreen.yaw(delta * 60.0);
 
-    // also tick the sprite animation example
-    sprite_animation_example.on_tick(delta);
+    // our secondary nested module needs to tick
+    if (nested_example_2.tick_fn) |tick_fn| tick_fn(delta);
 }
 
 pub fn on_draw() void {
+
+    // do our secondary pass first
+    graphics.beginPass(offscreen_pass_2, delve.colors.tan);
+    // render pass for the secondary nested module
+    nested_example_2.runFullRenderLifecycle();
+    graphics.endPass();
+
     // begin the offscreen pass
-    graphics.beginPass(offscreen_pass, delve.colors.tan);
+    graphics.beginPass(offscreen_pass, delve.colors.black);
 
     // draw using the offscreen camera
     var proj_view_matrix = camera_offscreen.getProjView();
@@ -122,8 +140,8 @@ pub fn on_draw() void {
     cube1.draw(proj_view_matrix, math.Mat4.translate(math.Vec3.new(-3, 0, 0)).mul(math.Mat4.rotate(@floatCast(time * 160.0), math.Vec3.new(0, 1, 0))));
     cube2.draw(proj_view_matrix, math.Mat4.identity());
 
-    // also draw the sprite animation example inside our render pass
-    sprite_animation_example.on_draw();
+    // render pass for the primary nested module
+    nested_example_1.runFullRenderLifecycle();
 
     // stop drawing to our offscreen pass
     graphics.endPass();

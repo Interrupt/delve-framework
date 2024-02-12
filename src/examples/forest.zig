@@ -28,6 +28,15 @@ var cloud_batch: batcher.SpriteBatcher = undefined;
 
 var camera: cam.Camera = undefined;
 
+pub const module = modules.Module{
+    .name = "forest_example",
+    .init_fn = on_init,
+    .pre_draw_fn = pre_draw,
+    .tick_fn = on_tick,
+    .draw_fn = on_draw,
+    .cleanup_fn = on_cleanup,
+};
+
 // This is an example of using the sprite batcher to draw a forest!
 // shows off: sprite batches, texture regions, billboarding, cameras
 
@@ -38,16 +47,7 @@ pub fn main() !void {
 }
 
 pub fn registerModule() !void {
-    const forestExample = modules.Module{
-        .name = "forest_example",
-        .init_fn = on_init,
-        .pre_draw_fn = pre_draw,
-        .tick_fn = on_tick,
-        .draw_fn = on_draw,
-        .cleanup_fn = on_cleanup,
-    };
-
-    try modules.registerModule(forestExample);
+    try modules.registerModule(module);
 }
 
 const grass_sprites: []const TextureRegion = &[_]TextureRegion{
