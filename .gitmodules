@@ -4,3 +4,6 @@
 [submodule "3rdparty/sokol-zig"]
 	path = 3rdparty/sokol-zig
 	url = https://github.com/floooh/sokol-zig.git
+[submodule "3rdparty/ziglua"]
+	path = 3rdparty/ziglua
+	url = https://github.com/natecraddock/ziglua.git
