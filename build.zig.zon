@@ -1,14 +1,28 @@
-.{ .name = "delve", .version = "0.0.2", .dependencies = .{
-    .ziglua = .{
-        .path = "3rdparty/ziglua",
+.{
+    .name = "delve",
+    .version = "0.0.2",
+    .paths = .{
+        "src",
+        "build.zig",
+        "build.zig.zon",
+        "README.md",
+        "ROADMAP.md",
     },
-    .sokol = .{
-        .path = "3rdparty/sokol-zig",
+    .dependencies = .{
+        .ziglua = .{
+            .path = "3rdparty/ziglua",
+        },
+        .sokol = .{
+            .path = "3rdparty/sokol-zig",
+        },
+        .zstbi = .{
+            .path = "3rdparty/zig-gamedev/libs/zstbi",
+        },
+        .zmesh = .{
+            .path = "3rdparty/zig-gamedev/libs/zmesh",
+        },
+        .zaudio = .{
+            .path = "3rdparty/zig-gamedev/libs/zaudio",
+        },
     },
-    .zstbi = .{
-        .path = "3rdparty/zig-gamedev/libs/zstbi",
-    },
-    .zmesh = .{
-        .path = "3rdparty/zig-gamedev/libs/zmesh",
-    },
-} }
+}
