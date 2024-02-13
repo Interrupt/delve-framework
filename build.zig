@@ -1,67 +1,114 @@
 const std = @import("std");
-const sokol = @import("3rdparty/sokol-zig/build.zig");
-const zaudio = @import("3rdparty/zaudio/build.zig");
-const zmesh = @import("3rdparty/zmesh/build.zig");
+const Build = std.Build;
+const sokol = @import("sokol");
+const zaudio = @import("zaudio");
+const zmesh = @import("zmesh");
+const ziglua = @import("ziglua");
+const zstbi = @import("zstbi");
 
-pub fn build(b: *std.Build) void {
-    const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
+var target: Build.ResolvedTarget = undefined;
+var optimize: std.builtin.OptimizeMode = undefined;
 
-    const ziglua = b.dependency("ziglua", .{
+const String = []const u8;
+const ModuleImport = struct {
+    module: *Build.Module,
+    name: String,
+};
+const BuildCollection = struct {
+    add_imports: []const ModuleImport,
+    link_libraries: []const *Build.Step.Compile,
+};
+const ExampleItem = []const String;
+
+// zig build -freference-trace run-example_name
+
+pub fn build(b: *std.Build) !void {
+    target = b.standardTargetOptions(.{});
+    optimize = b.standardOptimizeOption(.{});
+
+    const dep_sokol = b.dependency("sokol", .{
         .target = target,
         .optimize = optimize,
     });
 
-    const sokol_module = b.createModule(.{
-        .source_file = .{ .path = "3rdparty/sokol-zig/src/sokol/sokol.zig" },
-    });
+    const ziglua_mod = b.dependency("ziglua", .{
+        .target = target,
+        .optimize = optimize,
+    }).module("ziglua");
 
-    const zaudio_pkg = zaudio.package(b, target, optimize, .{});
     const zmesh_pkg = zmesh.package(b, target, optimize, .{});
+    const zstbi_pkg = zstbi.package(b, target, optimize, .{});
 
-    const delve_module = b.addModule("delve", .{
-        .source_file = .{ .path = "src/framework/delve.zig" },
-        .dependencies = &.{
-            .{ .name = "ziglua", .module = ziglua.module("ziglua") },
-            .{ .name = "sokol", .module = sokol_module },
-            .{ .name = "zaudio", .module = zaudio_pkg.zaudio },
-            .{ .name = "zmesh", .module = zmesh_pkg.zmesh },
-        },
-    });
+    const sokol_item = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
+    const ziglua_item = .{ .module = ziglua_mod, .name = "ziglua" };
+    const zmesh_item = .{ .module = zmesh_pkg.zmesh, .name = "zmesh" };
+    const zmesh_options_item = .{ .module = zmesh_pkg.zmesh_options, .name = "zmesh_options" };
+    const zstbi_item = .{ .module = zstbi_pkg.zstbi, .name = "zstbi" };
+    const delve_module_imports = [_]ModuleImport{
+        sokol_item,
+        ziglua_item,
+        zmesh_item,
+        zmesh_options_item,
+        zstbi_item,
+    };
+    const link_libraries = [_]*Build.Step.Compile{
+        zmesh_pkg.zmesh_c_cpp,
+        zstbi_pkg.zstbi_c_cpp,
+    };
 
-    // Delve library artifact
-    const lib_opts = .{
-        .name = "delve",
+    var build_collection: BuildCollection = .{
+        .add_imports = &delve_module_imports,
+        .link_libraries = &link_libraries,
+    };
+
+    // Delve module
+    const delve_mod = b.addModule("delve", .{
+        .root_source_file = .{ .path = "src/framework/delve.zig" },
         .target = target,
         .optimize = optimize,
-    };
+    });
 
-    // make the Delve library as a static lib
-    const lib = b.addStaticLibrary(lib_opts);
-    makeDelveLibrary(b, lib, target, optimize);
-    b.installArtifact(lib);
-
-    const examples = [_][]const u8 {
-        "audio",
-        "sprites",
-        "sprite-animation",
-        "clear",
-        "collision",
-        "debugdraw",
-        "easing",
-        "forest",
-        "framepacing",
-        "lua",
-        "meshbuilder",
-        "meshes",
-        "passes",
-        "stresstest",
-    };
-
-    inline for(examples) |example| {
-        buildExample(b, example, target, optimize, delve_module, lib);
+    for (build_collection.add_imports) |build_import| {
+        delve_mod.addImport(build_import.name, build_import.module);
+    }
+    for (build_collection.link_libraries) |lib| {
+        delve_mod.linkLibrary(lib);
     }
 
+    // create new list with delve included
+    const app_module_imports = [_]ModuleImport{
+        sokol_item,
+        ziglua_item,
+        zmesh_item,
+        zmesh_options_item,
+        zstbi_item,
+        .{ .module = delve_mod, .name = "delve" },
+    };
+    build_collection.add_imports = &app_module_imports;
+
+    // collection of all examples
+    const example_list = [_]ExampleItem{
+        &[_]String{ "audio", "src/examples/audio.zig" },
+        &[_]String{ "sprites", "src/examples/sprites.zig" },
+        &[_]String{ "sprite-animation", "src/examples/sprite-animation.zig" },
+        &[_]String{ "clear", "src/examples/clear.zig" },
+        &[_]String{ "collision", "src/examples/collision.zig" },
+        &[_]String{ "debugdraw", "src/examples/debugdraw.zig" },
+        &[_]String{ "easing", "src/examples/easing.zig" },
+        &[_]String{ "forest", "src/examples/forest.zig" },
+        &[_]String{ "framepacing", "src/examples/framepacing.zig" },
+        &[_]String{ "lua", "src/examples/lua.zig" },
+        &[_]String{ "meshbuilder", "src/examples/meshbuilder.zig" },
+        &[_]String{ "meshes", "src/examples/meshes.zig" },
+        &[_]String{ "passes", "src/examples/passes.zig" },
+        &[_]String{ "stresstest", "src/examples/stresstest.zig" },
+    };
+
+    for (example_list) |example_item| {
+        try buildExample(b, example_item, build_collection);
+    }
+
+    // TESTS
     const exe_tests = b.addTest(.{
         .root_source_file = .{ .path = "src/framework/delve.zig" },
         .target = target,
@@ -72,45 +119,60 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&exe_tests.step);
 }
 
-pub fn makeDelveLibrary(b: *std.Build, step: *std.Build.CompileStep, target: anytype, optimize: anytype) void {
-    step.addCSourceFile(.{ .file = .{ .path = "libs/stb_image-2.28/stb_image_impl.c" }, .flags = &[_][]const u8{"-std=c99"} });
-    step.addIncludePath(.{ .path = "libs/stb_image-2.28" });
+fn buildExample(b: *std.Build, example: ExampleItem, build_collection: BuildCollection) !void {
+    const name: []const u8 = example[0];
+    const root_source_file: []const u8 = example[1];
 
-    const sokol_build = sokol.buildSokol(b, target, optimize, .{}, "3rdparty/sokol-zig/");
-    step.linkLibrary(sokol_build);
+    var app: *Build.Step.Compile = undefined;
+    // special case handling for native vs web build
+    if (target.result.isWasm()) {
+        app = b.addStaticLibrary(.{
+            .target = target,
+            .optimize = optimize,
+            .name = name,
+            .root_source_file = .{ .path = root_source_file },
+        });
+    } else {
+        app = b.addExecutable(.{
+            .target = target,
+            .optimize = optimize,
+            .name = name,
+            .root_source_file = .{ .path = root_source_file },
+        });
+    }
 
-    const zaudio_pkg = zaudio.package(b, target, optimize, .{});
-    zaudio_pkg.link(step);
+    for (build_collection.add_imports) |build_import| {
+        app.root_module.addImport(build_import.name, build_import.module);
+    }
+    for (build_collection.link_libraries) |lib| {
+        app.linkLibrary(lib);
+    }
 
-    const zmesh_pkg = zmesh.package(b, target, optimize, .{});
-    zmesh_pkg.link(step);
+    if (target.result.isWasm()) {
+        // create a build step which invokes the Emscripten linker
+        // const emsdk = dep_sokol.builder.dependency("emsdk", .{});
+        // const link_step = try sokol.emLinkStep(b, .{
+        //     .lib_main = app,
+        //     .target = target,
+        //     .optimize = optimize,
+        //     .emsdk = emsdk,
+        //     .use_webgl2 = true,
+        //     .use_emmalloc = true,
+        //     .use_filesystem = false,
+        //     .shell_file_path = dep_sokol.path("3rdparty/sokol-zig/web/shell.html").getPath(b),
+        // });
+        // // ...and a special run step to start the web build output via 'emrun'
+        // const run = sokol.emRunStep(b, .{ .name = example[0], .emsdk = emsdk });
+        // run.step.dependOn(&link_step.step);
+        // b.step("run-" ++ example[0], "Run " ++ example[0]).dependOn(&run.step);
+    } else {
+        b.installArtifact(app);
+        const run = b.addRunArtifact(app);
+        var option_buffer = [_]u8{undefined} ** 100;
+        const run_name = try std.fmt.bufPrint(&option_buffer, "run-{s}", .{name});
+        var description_buffer = [_]u8{undefined} ** 200;
+        const descr_name = try std.fmt.bufPrint(&description_buffer, "run {s}", .{name});
 
-    const ziglua = b.dependency("ziglua", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    step.linkLibrary(ziglua.artifact("lua"));
-
-    // let users of our library get access to some headers
-    step.installHeader("libs/stb_image-2.28/stb_image.h", "stb_image.h");
-    step.installLibraryHeaders(ziglua.artifact("lua"));
-}
-
-pub fn buildExample(b: *std.Build, comptime name: []const u8, target: anytype, optimize: anytype, delve_module: *std.Build.Module, lib: *std.Build.CompileStep) void {
-    const src_main = "src/examples/" ++ name ++ ".zig";
-
-    const example = b.addExecutable(.{
-        .name = name,
-        .root_source_file = .{ .path = src_main },
-        .target = target,
-        .optimize = optimize,
-    });
-
-    example.addModule("delve", delve_module);
-    example.linkLibrary(lib);
-
-    b.installArtifact(example);
-    const run = b.addRunArtifact(example);
-
-    b.step("run-" ++ name, "Run " ++ name).dependOn(&run.step);
+        b.step(run_name, descr_name).dependOn(&run.step);
+    }
 }
