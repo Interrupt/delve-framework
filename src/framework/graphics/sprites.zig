@@ -45,9 +45,9 @@ pub const TextureRegion = struct {
 /// A single animation frame in an animated sprite sheeet
 pub const AnimationFrame = struct {
     region: TextureRegion,
-    size: Vec2 = Vec2.new(1,1),
-    sourceSize: Vec2 = Vec2.new(1,1),
-    offset: Vec2 = Vec2.zero(),
+    size: Vec2 = Vec2.new(1, 1),
+    sourceSize: Vec2 = Vec2.new(1, 1),
+    offset: Vec2 = Vec2.zero,
     duration: f32 = 1.0,
 };
 
@@ -74,7 +74,7 @@ pub const AnimatedSpriteSheet = struct {
     /// Play the animation under the given animation name
     pub fn playAnimation(self: *AnimatedSpriteSheet, animation_name: [:0]const u8) ?PlayingAnimation {
         const entry = self.getAnimation(animation_name);
-        if(entry == null)
+        if (entry == null)
             return null;
 
         return entry.?.play();
@@ -88,10 +88,10 @@ pub const AnimatedSpriteSheet = struct {
     /// Get the first sprite under the given name
     pub fn getSprite(self: *AnimatedSpriteSheet, name: [:0]const u8) ?AnimationFrame {
         const entry = self.entries.get(name);
-        if(entry == null)
+        if (entry == null)
             return null;
 
-        if(entry.frames == 0)
+        if (entry.frames == 0)
             return null;
 
         return entry.frames[0];
@@ -100,8 +100,8 @@ pub const AnimatedSpriteSheet = struct {
     pub fn playAnimationByIndex(self: *AnimatedSpriteSheet, idx: usize) ?PlayingAnimation {
         var value_iterator = self.entries.valueIterator();
         var cur_idx: usize = 0;
-        while(value_iterator.next()) |val| {
-            if(idx == cur_idx)
+        while (value_iterator.next()) |val| {
+            if (idx == cur_idx)
                 return PlayingAnimation.init(val.*);
 
             cur_idx += 1;
@@ -115,7 +115,7 @@ pub const AnimatedSpriteSheet = struct {
         const rows_f: f32 = @floatFromInt(rows);
         const cols_f: f32 = @floatFromInt(cols);
 
-        for(0..rows) |row_idx| {
+        for (0..rows) |row_idx| {
             const row_idx_f: f32 = @floatFromInt(row_idx);
             var reg_v = row_idx_f / rows_f;
             var reg_v_2 = (row_idx_f + 1) / rows_f;
@@ -123,19 +123,17 @@ pub const AnimatedSpriteSheet = struct {
             var frames = try std.ArrayList(AnimationFrame).initCapacity(allocator, cols);
             errdefer frames.deinit();
 
-            for(0..cols) |col_idx| {
+            for (0..cols) |col_idx| {
                 const col_idx_f: f32 = @floatFromInt(col_idx);
                 var reg_u = col_idx_f / cols_f;
                 var reg_u_2 = (col_idx_f + 1) / cols_f;
 
-                try frames.append(
-                    AnimationFrame{.region = TextureRegion{
-                        .u = reg_u,
-                        .v = reg_v,
-                        .u_2 = reg_u_2,
-                        .v_2 = reg_v_2,
-                    }}
-                );
+                try frames.append(AnimationFrame{ .region = TextureRegion{
+                    .u = reg_u,
+                    .v = reg_v,
+                    .u_2 = reg_u_2,
+                    .v_2 = reg_v_2,
+                } });
             }
 
             // when converting an ArrayList to an owned slice, we don't need to deinit it
@@ -144,7 +142,7 @@ pub const AnimatedSpriteSheet = struct {
             var string_writer = std.ArrayList(u8).init(allocator);
             errdefer string_writer.deinit();
 
-            try string_writer.writer().print("{s}{d}", .{anim_name_prefix, row_idx});
+            try string_writer.writer().print("{s}{d}", .{ anim_name_prefix, row_idx });
             const anim_name = try string_writer.toOwnedSlice();
 
             try sheet.entries.put(anim_name, animation);
@@ -181,22 +179,21 @@ pub const PlayingAnimation = struct {
     }
 
     pub fn tick(self: *PlayingAnimation, delta_time: f32) void {
-        if(!self.is_playing)
+        if (!self.is_playing)
             return;
 
-        if(self.frame >= self.animation.frames.len)
+        if (self.frame >= self.animation.frames.len)
             return;
 
         self.frame_time += delta_time * self.speed;
 
         // check to see if we should be on the next frame
-        if(self.frame_time > self.animation.frames[self.frame].duration) {
+        if (self.frame_time > self.animation.frames[self.frame].duration) {
             // check to see if we should be on the next frame
-            if(self.frame + 1 < self.animation.frames.len) {
+            if (self.frame + 1 < self.animation.frames.len) {
                 self.frame += 1;
                 self.frame_time = 0.0;
-            }
-            else if(self.should_loop) {
+            } else if (self.should_loop) {
                 self.frame = 0;
                 self.frame_time = 0.0;
             }
@@ -229,7 +226,7 @@ pub const PlayingAnimation = struct {
     }
 
     pub fn isDonePlaying(self: *PlayingAnimation) bool {
-        if(self.frame + 1 != self.animation.frames.len) {
+        if (self.frame + 1 != self.animation.frames.len) {
             return false; // not on last frame
         }
 

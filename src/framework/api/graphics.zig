@@ -35,7 +35,7 @@ pub fn libPreDraw() void {
 
 /// Called when ready to draw
 pub fn libDraw() void {
-    var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5 }, math.Vec3.zero(), math.Vec3.up());
+    var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5 }, math.Vec3.zero, math.Vec3.up);
     var proj = graphics.getProjectionOrtho(0.001, 10.0, true);
     var model = math.Mat4.translate(.{ .x = 0.0, .y = 0.0, .z = -2.5 });
 
@@ -73,7 +73,7 @@ pub fn blit(texture_handle: u32, source_x: f32, source_y: f32, source_width: f32
         .u_2 = @min((source_x + source_width) * x_aspect, 1.0),
     };
 
-    const draw_rect = Rect{.x = 0, .y = 0, .width = dest_width, .height = dest_height};
+    const draw_rect = Rect{ .x = 0, .y = 0, .width = dest_width, .height = dest_height };
 
     sprite_batch.useTexture(loaded_tex.?);
     sprite_batch.addRectangle(draw_rect, region, colors.white);

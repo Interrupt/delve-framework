@@ -186,7 +186,7 @@ fn on_draw() void {
     const mouse_pos = input.getMousePosition();
     const view_translate = math.Vec3{ .x = -3.5 + mouse_pos.x * 0.007, .y = 1 + -mouse_pos.y * 0.0075, .z = 0 };
 
-    var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, math.Vec3.zero(), math.Vec3.up());
+    var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, math.Vec3.zero, math.Vec3.up);
     view = view.mul(math.Mat4.translate(view_translate));
     view = view.mul(math.Mat4.rotate(25.0, .{ .x = 0.0, .y = 1.0, .z = 0.0 }));
 

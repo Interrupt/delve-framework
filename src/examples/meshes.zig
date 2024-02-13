@@ -47,7 +47,7 @@ fn on_init() void {
     graphics.setClearColor(colors.examples_bg_light);
 
     // Make a perspective camera, with a 90 degree FOV
-    camera = cam.Camera.initThirdPerson(90.0, 0.01, 50.0, 5.0, Vec3.up());
+    camera = cam.Camera.initThirdPerson(90.0, 0.01, 50.0, 5.0, Vec3.up);
     camera.position = Vec3.new(0.0, 0.0, 0.0);
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 

@@ -124,8 +124,8 @@ pub fn on_tick(delta: f32) void {
 }
 
 pub fn pre_draw() void {
-    // Note: The regular draw lifecycle function draws to the main screen,
-    // so offscreen passes have to happen in either pre or post draw
+    // Note: offscreen passes have to happen outside of the main draw lifecycle function, pre_draw would be the best.
+    // This is because only one pass can be active at any time, including the default screen pass.
 
     // Render the secondary module to an offscreen pass first
     graphics.beginPass(offscreen_pass_2, delve.colors.tan);
@@ -139,7 +139,9 @@ pub fn pre_draw() void {
     const proj_view_matrix = camera_offscreen.getProjView();
 
     // draw a few cubes inside the offscreen pass
-    cube1.draw(proj_view_matrix, math.Mat4.translate(math.Vec3.new(-3, 0, 0)).mul(math.Mat4.rotate(@floatCast(time * 160.0), math.Vec3.new(0, 1, 0))));
+    const translate = math.Mat4.translate(math.Vec3.new(-3, 0, 0));
+    const rotate = math.Mat4.rotate(@floatCast(time * 160.0), math.Vec3.new(0,1,0));
+    cube1.draw(proj_view_matrix, translate.mul(rotate));
     cube2.draw(proj_view_matrix, math.Mat4.identity());
 
     // render pass for the primary nested module

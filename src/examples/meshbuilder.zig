@@ -44,7 +44,7 @@ pub fn on_init() void {
     });
 
     // create our camera
-    camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 200.0, 5.0, math.Vec3.up());
+    camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 200.0, 5.0, math.Vec3.up);
 
     // make a cube
     cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0,0,0), math.Vec3.new(2,3,1), delve.colors.white, material) catch {

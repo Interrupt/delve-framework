@@ -22,10 +22,6 @@ pub const Vec2 = extern struct {
     x: f32,
     y: f32,
 
-    pub fn zero() Vec2 {
-        return Vec2{ .x = 0.0, .y = 0.0 };
-    }
-
     pub fn fromArray(val: [2]f32) Vec2 {
         return Vec2{ .x = val[0], .y = val[1] };
     }
@@ -59,7 +55,7 @@ pub const Vec2 = extern struct {
         if (l != 0.0) {
             return Vec2{ .x = v.x / l, .y = v.y / l };
         } else {
-            return Vec2.zero();
+            return Vec2.zero;
         }
     }
 
@@ -74,6 +70,11 @@ pub const Vec2 = extern struct {
     pub fn angleDegrees(self: *const Vec2) f32 {
         return std.math.atan2(f32, self.y, self.x) * (360.0 / (std.math.tau));
     }
+
+    pub const zero = Vec2.new(0.0, 0.0);
+    pub const one = Vec2.new(1.0, 1.0);
+    pub const x_axis = Vec2.new(1.0, 0.0);
+    pub const y_axis = Vec2.new(0.0, 1.0);
 };
 
 pub fn vec3(x: f32, y: f32, z: f32) Vec3 {
@@ -85,20 +86,12 @@ pub const Vec3 = extern struct {
     y: f32,
     z: f32,
 
-    pub fn zero() Vec3 {
-        return Vec3{ .x = 0.0, .y = 0.0, .z = 0.0 };
-    }
-
     pub fn fromArray(val: [3]f32) Vec3 {
         return Vec3{ .x = val[0], .y = val[1], .z = val[2] };
     }
 
     pub fn new(x: f32, y: f32, z: f32) Vec3 {
         return Vec3{ .x = x, .y = y, .z = z };
-    }
-
-    pub fn up() Vec3 {
-        return Vec3{ .x = 0.0, .y = 1.0, .z = 0.0 };
     }
 
     pub fn len(v: *const Vec3) f32 {
@@ -126,7 +119,7 @@ pub const Vec3 = extern struct {
         if (l != 0.0) {
             return Vec3{ .x = v.x / l, .y = v.y / l, .z = v.z / l };
         } else {
-            return Vec3.zero();
+            return Vec3.zero;
         }
     }
 
@@ -139,7 +132,7 @@ pub const Vec3 = extern struct {
     }
 
     pub fn mulMat4(left: *const Vec3, right: Mat4) Vec3 {
-        var res = Vec3.zero();
+        var res = Vec3.zero;
         res.x += left.x * right.m[0][0];
         res.y += left.x * right.m[0][1];
         res.z += left.x * right.m[0][2];
@@ -172,6 +165,14 @@ pub const Vec3 = extern struct {
 
         return left.add(swv).add(swwv);
     }
+
+    pub const zero = Vec3.new(0.0, 0.0, 0.0);
+    pub const one = Vec3.new(1.0, 1.0, 1.0);
+    pub const x_axis = Vec3.new(1.0, 0.0, 0.0);
+    pub const y_axis = Vec3.new(0.0, 1.0, 0.0);
+    pub const z_axis = Vec3.new(0.0, 0.0, 1.0);
+    pub const up = Vec3.new(0.0, 1.0, 0.0);
+    pub const down = Vec3.new(0.0, -1.0, 0.0);
 };
 
 pub const Mat4 = extern struct {
@@ -339,7 +340,7 @@ pub const Mat4 = extern struct {
 };
 
 test "Vec3.zero" {
-    const v = Vec3.zero();
+    const v = Vec3.zero;
     assert(v.x == 0.0 and v.y == 0.0 and v.z == 0.0);
 }
 
@@ -354,7 +355,7 @@ test "Vec3.fromArray" {
 }
 
 test "Vec2.zero" {
-    const v = Vec2.zero();
+    const v = Vec2.zero;
     assert(v.x == 0.0 and v.y == 0.0);
 }
 
@@ -439,7 +440,7 @@ test "Mat4.persp" {
 }
 
 test "Mat4.lookat" {
-    const m = Mat4.lookat(.{ .x = 0.0, .y = 1.5, .z = 6.0 }, Vec3.zero(), Vec3.up());
+    const m = Mat4.lookat(.{ .x = 0.0, .y = 1.5, .z = 6.0 }, Vec3.zero, Vec3.up);
 
     assert(eq(m.m[0][0], 1.0));
     assert(eq(m.m[0][1], 0.0));

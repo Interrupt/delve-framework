@@ -406,9 +406,9 @@ pub const Batcher = struct {
 
         _ = region;
 
-        const uv0 = Vec2.zero();
-        const uv1 = Vec2.zero();
-        const uv2 = Vec2.zero();
+        const uv0 = Vec2.zero;
+        const uv1 = Vec2.zero;
+        const uv2 = Vec2.zero;
 
         for (0..@intCast(steps + 1)) |i| {
             const if32: f32 = @floatFromInt(i);

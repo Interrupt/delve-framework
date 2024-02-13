@@ -933,7 +933,7 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
 
     // create a view state
     var proj = getProjectionOrtho(0.001, 10.0, false);
-    var view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.0 }, Vec3.zero(), Vec3.up());
+    var view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.0 }, Vec3.zero, Vec3.up);
 
     const translate_vec: Vec3 = Vec3{ .x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = -2.5 };
     const scale_vec: Vec3 = Vec3{ .x = width, .y = height, .z = 1.0 };

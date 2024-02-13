@@ -23,9 +23,9 @@ const angle_to_radians: f32 = 57.29578;
 
 /// Basic camera system with support for first and third person modes
 pub const Camera = struct {
-    position: Vec3 = Vec3.new(0, 0, 0),
-    direction: Vec3 = Vec3.new(0, 0, 1),
-    up: Vec3 = Vec3.up(),
+    position: Vec3 = Vec3.zero,
+    direction: Vec3 = Vec3.z_axis,
+    up: Vec3 = Vec3.up,
 
     yaw_angle: f32 = 0.0,
     pitch_angle: f32 = 0.0,
@@ -161,12 +161,12 @@ pub const Camera = struct {
 
         // third person camera
         if (self.view_mode == .THIRD_PERSON) {
-            self.view = Mat4.lookat(self.position.add(self.direction.scale(self.boom_arm_length)), self.position, self.up);
+            self.view = Mat4.lookat(self.position.add(self.direction.scale(self.boom_arm_length)), self.position, Vec3.y_axis);
             return;
         }
 
         // first person camera
-        self.view = Mat4.lookat(Vec3.zero(), Vec3.zero().sub(self.direction), self.up);
+        self.view = Mat4.lookat(Vec3.zero, Vec3.zero.sub(self.direction), Vec3.y_axis);
         self.view = self.view.mul(Mat4.rotate(self.roll_angle, self.direction));
         self.view = self.view.mul(Mat4.translate(self.position.scale(-1)));
     }

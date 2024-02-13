@@ -183,7 +183,7 @@ fn on_init() void {
     graphics.setClearColor(sky_color);
 
     // Make a perspective camera, with a 90 degree FOV
-    camera = cam.Camera.init(90.0, 0.01, 100.0, math.Vec3.up());
+    camera = cam.Camera.init(90.0, 0.01, 100.0, math.Vec3.up);
     camera.move_mode = .WALK;
 
     camera.position = math.Vec3.new(0.0, 1.0, -foliage_spread / 2);
@@ -271,7 +271,7 @@ fn addGround(ground_size: math.Vec2) void {
 
     // ground plane needs to be big enough to cover where the trees will be
     var ground_transform = math.Mat4.translate(math.Vec3.new(0, draw_y_offset, (ground_size.y * -0.5)));
-    ground_transform = ground_transform.mul(math.Mat4.rotate(-90, math.Vec3.new(1, 0, 0)));
+    ground_transform = ground_transform.mul(math.Mat4.rotate(-90, math.Vec3.x_axis));
 
     // Add the ground plane rectangle
     sprite_batch.setTransformMatrix(ground_transform);
@@ -301,8 +301,8 @@ fn addClouds(density: f32) void {
         const tex_region = cloud_sprites[random.intRangeLessThan(u32, 0, cloud_sprites.len)];
 
         var draw_pos = math.Vec3.new(0, 0, -95);
-        draw_pos = draw_pos.rotate(random.float(f32) * 80.0, math.Vec3.new(1, 0, 0));
-        draw_pos = draw_pos.rotate(random.float(f32) * 360.0 + @as(f32, @floatCast(time * 0.5)), math.Vec3.up());
+        draw_pos = draw_pos.rotate(random.float(f32) * 80.0, math.Vec3.x_axis);
+        draw_pos = draw_pos.rotate(random.float(f32) * 360.0 + @as(f32, @floatCast(time * 0.5)), math.Vec3.up);
 
         var transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
 
