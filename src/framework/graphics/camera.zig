@@ -115,7 +115,7 @@ pub const Camera = struct {
     /// Rotate the camera up and down
     pub fn pitch(self: *Camera, angle: f32) void {
         self.pitch_angle += angle;
-        self.pitch_angle = std.math.clamp(self.pitch_angle, -89.99999, 89.99999);
+        self.pitch_angle = std.math.clamp(self.pitch_angle, -89.995, 89.995);
         self.updateDirection();
     }
 
