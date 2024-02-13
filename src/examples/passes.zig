@@ -32,6 +32,7 @@ pub fn main() !void {
         .name = "passes_example",
         .init_fn = on_init,
         .tick_fn = on_tick,
+        .pre_draw_fn = pre_draw,
         .draw_fn = on_draw,
     };
 
@@ -122,19 +123,20 @@ pub fn on_tick(delta: f32) void {
     if (nested_example_2.tick_fn) |tick_fn| tick_fn(delta);
 }
 
-pub fn on_draw() void {
+pub fn pre_draw() void {
+    // Note: The regular draw lifecycle function draws to the main screen,
+    // so offscreen passes have to happen in either pre or post draw
 
-    // do our secondary pass first
+    // Render the secondary module to an offscreen pass first
     graphics.beginPass(offscreen_pass_2, delve.colors.tan);
-    // render pass for the secondary nested module
     nested_example_2.runFullRenderLifecycle();
     graphics.endPass();
 
-    // begin the offscreen pass
+    // Now render out the main offscreen pass that also includes the secondary
     graphics.beginPass(offscreen_pass, delve.colors.black);
 
     // draw using the offscreen camera
-    var proj_view_matrix = camera_offscreen.getProjView();
+    const proj_view_matrix = camera_offscreen.getProjView();
 
     // draw a few cubes inside the offscreen pass
     cube1.draw(proj_view_matrix, math.Mat4.translate(math.Vec3.new(-3, 0, 0)).mul(math.Mat4.rotate(@floatCast(time * 160.0), math.Vec3.new(0, 1, 0))));
@@ -145,12 +147,11 @@ pub fn on_draw() void {
 
     // stop drawing to our offscreen pass
     graphics.endPass();
+}
 
-    // start drawing to the screen again
-    graphics.resumeDefaultPass();
-
+pub fn on_draw() void {
     // use the fps camera
-    proj_view_matrix = camera.getProjView();
+    const proj_view_matrix = camera.getProjView();
 
     // draw the screen cube
     cube3.draw(proj_view_matrix, math.Mat4.translate(math.Vec3.new(0, 0, -20)).mul(math.Mat4.rotate(@floatCast(time * 10.0), math.Vec3.new(0, 1, 0))));
