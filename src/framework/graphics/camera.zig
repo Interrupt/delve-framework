@@ -46,8 +46,8 @@ pub const Camera = struct {
     mouselook_scale: f32 = 0.35,
 
     limit_pitch: bool = true,
-    pitch_max: f32 = 90,
-    pitch_min: f32 = -90,
+    pitch_max: f32 = 89.999,
+    pitch_min: f32 = -89.999,
 
     _viewport_width: f32 = undefined,
     _viewport_height: f32 = undefined,
