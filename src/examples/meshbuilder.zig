@@ -82,7 +82,7 @@ pub fn on_tick(delta: f32) void {
 
 pub fn on_draw() void {
     const proj_view_matrix = camera.getProjView();
-    var model = math.Mat4.identity();
+    var model = math.Mat4.identity;
 
     cube1.draw(proj_view_matrix, model.mul(math.Mat4.rotate(@floatCast(time * 40.0), math.Vec3.new(0,1,0))));
     cube2.draw(proj_view_matrix, model);

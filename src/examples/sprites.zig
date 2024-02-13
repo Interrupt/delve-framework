@@ -154,7 +154,7 @@ fn pre_draw() void {
     const line_y_start = std.math.sin(time * 0.01);
     const line_y_end = std.math.cos(time * 0.012);
 
-    test_batch.setTransformMatrix(math.Mat4.identity());
+    test_batch.setTransformMatrix(math.Mat4.identity);
     test_batch.useTexture(graphics.tex_black);
     test_batch.addLine(math.vec2(0, line_y_start), math.vec2(2, line_y_end), 0.05, sprites.TextureRegion.default(), colors.white);
 
@@ -190,7 +190,7 @@ fn on_draw() void {
     view = view.mul(math.Mat4.translate(view_translate));
     view = view.mul(math.Mat4.rotate(25.0, .{ .x = 0.0, .y = 1.0, .z = 0.0 }));
 
-    test_batch.draw(projection.mul(view), math.Mat4.identity());
+    test_batch.draw(projection.mul(view), math.Mat4.identity);
 }
 
 fn on_cleanup() void {

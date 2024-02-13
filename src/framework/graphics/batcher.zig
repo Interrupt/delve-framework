@@ -41,7 +41,7 @@ const BatcherConfig = struct {
 /// Handles drawing batches of primitive shapes, bucketed by texture / shader
 pub const SpriteBatcher = struct {
     batches: std.AutoArrayHashMap(u64, Batcher) = undefined,
-    transform: Mat4 = Mat4.identity(),
+    transform: Mat4 = Mat4.identity,
     draw_color: colors.Color = colors.white,
     config: BatcherConfig = BatcherConfig{},
     current_batch_key: u64 = 0,
@@ -228,7 +228,7 @@ pub const Batcher = struct {
     bindings: graphics.Bindings,
     shader: graphics.Shader,
     material: ?*graphics.Material = null,
-    transform: Mat4 = Mat4.identity(),
+    transform: Mat4 = Mat4.identity,
     flip_tex_y: bool = false,
 
     /// Setup and return a new Batcher

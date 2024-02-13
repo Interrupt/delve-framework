@@ -93,7 +93,7 @@ fn on_draw() void {
     var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.0 }, math.Vec3.zero, math.Vec3.up);
 
     // draw the sprite batch
-    sprite_batch.draw(projection.mul(view), math.Mat4.identity());
+    sprite_batch.draw(projection.mul(view), math.Mat4.identity);
 }
 
 fn on_cleanup() void {

@@ -142,7 +142,7 @@ pub fn pre_draw() void {
     const translate = math.Mat4.translate(math.Vec3.new(-3, 0, 0));
     const rotate = math.Mat4.rotate(@floatCast(time * 160.0), math.Vec3.y_axis);
     cube1.draw(proj_view_matrix, translate.mul(rotate));
-    cube2.draw(proj_view_matrix, math.Mat4.identity());
+    cube2.draw(proj_view_matrix, math.Mat4.identity);
 
     // render pass for the primary nested module
     nested_example_1.runFullRenderLifecycle();

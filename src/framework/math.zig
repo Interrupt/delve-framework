@@ -178,20 +178,8 @@ pub const Vec3 = extern struct {
 pub const Mat4 = extern struct {
     m: [4][4]f32,
 
-    pub fn identity() Mat4 {
-        return Mat4{
-            .m = [_][4]f32{ .{ 1.0, 0.0, 0.0, 0.0 }, .{ 0.0, 1.0, 0.0, 0.0 }, .{ 0.0, 0.0, 1.0, 0.0 }, .{ 0.0, 0.0, 0.0, 1.0 } },
-        };
-    }
-
-    pub fn zero() Mat4 {
-        return Mat4{
-            .m = [_][4]f32{ .{ 0.0, 0.0, 0.0, 0.0 }, .{ 0.0, 0.0, 0.0, 0.0 }, .{ 0.0, 0.0, 0.0, 0.0 }, .{ 0.0, 0.0, 0.0, 0.0 } },
-        };
-    }
-
     pub fn mul(left: *const Mat4, right: Mat4) Mat4 {
-        var res = Mat4.zero();
+        var res = Mat4.zero;
         var col: usize = 0;
         while (col < 4) : (col += 1) {
             var row: usize = 0;
@@ -206,7 +194,7 @@ pub const Mat4 = extern struct {
     }
 
     pub fn transpose(self: *const Mat4) Mat4 {
-        var res = Mat4.zero();
+        var res = Mat4.zero;
         res.m[0][0] = self.m[0][0];
         res.m[0][1] = self.m[1][0];
         res.m[0][2] = self.m[2][0];
@@ -227,7 +215,7 @@ pub const Mat4 = extern struct {
     }
 
     pub fn scale(scaleVec3: Vec3) Mat4 {
-        var res = Mat4.identity();
+        var res = Mat4.identity;
         res.m[0][0] = scaleVec3.x;
         res.m[1][1] = scaleVec3.y;
         res.m[2][2] = scaleVec3.z;
@@ -235,7 +223,7 @@ pub const Mat4 = extern struct {
     }
 
     pub fn persp(fov: f32, aspect: f32, near: f32, far: f32) Mat4 {
-        var res = Mat4.identity();
+        var res = Mat4.identity;
         const t = math.tan(fov * (math.pi / 360.0));
         res.m[0][0] = 1.0 / t;
         res.m[1][1] = aspect / t;
@@ -247,7 +235,7 @@ pub const Mat4 = extern struct {
     }
 
     pub fn ortho(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) Mat4 {
-        var res = Mat4.zero();
+        var res = Mat4.zero;
         res.m[0][0] = 2.0 / (right - left);
         res.m[1][1] = 2.0 / (top - bottom);
         res.m[2][2] = 2.0 / (near - far);
@@ -261,7 +249,7 @@ pub const Mat4 = extern struct {
     }
 
     pub fn lookat(eye: Vec3, center: Vec3, up: Vec3) Mat4 {
-        var res = Mat4.zero();
+        var res = Mat4.zero;
 
         const f = center.sub(eye).norm();
         const s = f.cross(up).norm();
@@ -288,7 +276,7 @@ pub const Mat4 = extern struct {
     }
 
     pub fn rotate(angle: f32, axis_unorm: Vec3) Mat4 {
-        var res = Mat4.identity();
+        var res = Mat4.identity;
 
         const axis = axis_unorm.norm();
         const sin_theta = math.sin(radians(angle));
@@ -309,7 +297,7 @@ pub const Mat4 = extern struct {
     }
 
     pub fn direction(dir_norm: Vec3, axis_norm: Vec3) Mat4 {
-        var res = Mat4.identity();
+        var res = Mat4.identity;
 
         var xaxis: Vec3 = axis_norm.cross(dir_norm);
         xaxis = xaxis.norm();
@@ -331,12 +319,20 @@ pub const Mat4 = extern struct {
     }
 
     pub fn translate(translation: Vec3) Mat4 {
-        var res = Mat4.identity();
+        var res = Mat4.identity;
         res.m[3][0] = translation.x;
         res.m[3][1] = translation.y;
         res.m[3][2] = translation.z;
         return res;
     }
+
+    pub const identity = Mat4{
+        .m = [_][4]f32{ .{ 1.0, 0.0, 0.0, 0.0 }, .{ 0.0, 1.0, 0.0, 0.0 }, .{ 0.0, 0.0, 1.0, 0.0 }, .{ 0.0, 0.0, 0.0, 1.0 } },
+    };
+
+    pub const zero = Mat4{
+        .m = [_][4]f32{ .{ 0.0, 0.0, 0.0, 0.0 }, .{ 0.0, 0.0, 0.0, 0.0 }, .{ 0.0, 0.0, 0.0, 0.0 }, .{ 0.0, 0.0, 0.0, 0.0 } },
+    };
 };
 
 test "Vec3.zero" {
@@ -383,7 +379,7 @@ test "Vec2.norm" {
 }
 
 test "Mat4.ident" {
-    const m = Mat4.identity();
+    const m = Mat4.identity;
     for (m.m, 0..) |row, y| {
         for (row, 0..) |val, x| {
             if (x == y) {
@@ -396,8 +392,8 @@ test "Mat4.ident" {
 }
 
 test "Mat4.mul" {
-    const l = Mat4.identity();
-    const r = Mat4.identity();
+    const l = Mat4.identity;
+    const r = Mat4.identity;
     const m = l.mul(r);
     for (m.m, 0..) |row, y| {
         for (row, 0..) |val, x| {
@@ -489,7 +485,7 @@ test "Mat4.rotate" {
 
 test "Vec3.mulMat4" {
     var l = Vec3{ .x = 1.0, .y = 2.0, .z = 3.0 };
-    var r = Mat4.identity();
+    var r = Mat4.identity;
     var v = l.mulMat4(r);
     assert(v.x == 1.0);
     assert(v.y == 2.0);

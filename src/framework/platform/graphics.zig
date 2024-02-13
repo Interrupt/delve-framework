@@ -938,7 +938,7 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
     const translate_vec: Vec3 = Vec3{ .x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = -2.5 };
     const scale_vec: Vec3 = Vec3{ .x = width, .y = height, .z = 1.0 };
 
-    var model = Mat4.identity();
+    var model = Mat4.identity;
     model = model.mul(Mat4.translate(translate_vec));
     model = model.mul(Mat4.scale(scale_vec));
 

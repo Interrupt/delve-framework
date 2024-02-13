@@ -385,8 +385,8 @@ fn on_draw() void {
     const proj_view_mat = camera.getProjView();
 
     // draw grass and trees
-    grass_batch.draw(proj_view_mat, math.Mat4.identity());
-    sprite_batch.draw(proj_view_mat, math.Mat4.identity());
+    grass_batch.draw(proj_view_mat, math.Mat4.identity);
+    sprite_batch.draw(proj_view_mat, math.Mat4.identity);
 
     // make clouds follow the camera
     cloud_batch.draw(proj_view_mat, math.Mat4.translate(camera.position));

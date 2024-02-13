@@ -127,7 +127,7 @@ pub fn createCube(pos: Vec3, size: Vec3, color: Color, material: graphics.Materi
     var builder = MeshBuilder.init();
     defer builder.deinit();
 
-    try builder.addCube(pos, size, math.Mat4.identity(), color);
+    try builder.addCube(pos, size, math.Mat4.identity, color);
 
     return builder.buildMesh(material);
 }

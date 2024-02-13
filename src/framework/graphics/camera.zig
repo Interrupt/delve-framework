@@ -35,8 +35,8 @@ pub const Camera = struct {
     near: f32 = 0.001,
     far: f32 = 100.0,
 
-    projection: Mat4 = Mat4.identity(),
-    view: Mat4 = Mat4.identity(),
+    projection: Mat4 = Mat4.identity,
+    view: Mat4 = Mat4.identity,
     aspect: f32 = undefined,
 
     view_mode: ViewMode = .FIRST_PERSON,
