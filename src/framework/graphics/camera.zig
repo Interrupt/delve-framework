@@ -45,6 +45,10 @@ pub const Camera = struct {
 
     mouselook_scale: f32 = 0.35,
 
+    limit_pitch: bool = true,
+    pitch_max: f32 = 90,
+    pitch_min: f32 = -90,
+
     _viewport_width: f32 = undefined,
     _viewport_height: f32 = undefined,
 
@@ -100,10 +104,15 @@ pub const Camera = struct {
     }
 
     pub fn updateDirection(self: *Camera) void {
-        var dir = math.Vec3.new(0, 0, 1);
-        dir = dir.rotate(self.pitch_angle, math.Vec3.new(1, 0, 0));
-        dir = dir.rotate(self.yaw_angle, math.Vec3.new(0, 1, 0));
+        var dir = math.Vec3.z_axis;
+        dir = dir.rotate(self.pitch_angle, math.Vec3.x_axis);
+        dir = dir.rotate(self.yaw_angle, math.Vec3.y_axis);
         self.direction = dir;
+
+        var up = math.Vec3.up;
+        up = up.rotate(self.pitch_angle, math.Vec3.x_axis);
+        up = up.rotate(self.yaw_angle, math.Vec3.y_axis);
+        self.up = up;
     }
 
     /// Rotate the camera left and right
@@ -115,7 +124,10 @@ pub const Camera = struct {
     /// Rotate the camera up and down
     pub fn pitch(self: *Camera, angle: f32) void {
         self.pitch_angle += angle;
-        self.pitch_angle = std.math.clamp(self.pitch_angle, -89.995, 89.995);
+
+        if(self.limit_pitch)
+            self.pitch_angle = std.math.clamp(self.pitch_angle, self.pitch_min, self.pitch_max);
+
         self.updateDirection();
     }
 
@@ -161,12 +173,12 @@ pub const Camera = struct {
 
         // third person camera
         if (self.view_mode == .THIRD_PERSON) {
-            self.view = Mat4.lookat(self.position.add(self.direction.scale(self.boom_arm_length)), self.position, Vec3.y_axis);
+            self.view = Mat4.lookat(self.position.add(self.direction.scale(self.boom_arm_length)), self.position, self.up);
             return;
         }
 
         // first person camera
-        self.view = Mat4.lookat(Vec3.zero, Vec3.zero.sub(self.direction), Vec3.y_axis);
+        self.view = Mat4.lookat(Vec3.zero, Vec3.zero.sub(self.direction), self.up);
         self.view = self.view.mul(Mat4.rotate(self.roll_angle, self.direction));
         self.view = self.view.mul(Mat4.translate(self.position.scale(-1)));
     }

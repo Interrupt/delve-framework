@@ -207,7 +207,7 @@ fn pre_draw() void {
 
     // set up a matrix that will billboard to face the camera, but ignore the up dir
     var billboard_dir = math.Vec3.new(camera.direction.x, 0, camera.direction.z).norm();
-    var rot_matrix = math.Mat4.direction(billboard_dir, camera.up);
+    var rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
 
     // make our grass, if needed
     addGrass(camera.position, 30, 1.25, 1.0);
@@ -287,7 +287,7 @@ fn addClouds(density: f32) void {
 
     // set up a matrix that will billboard to face the camera
     var billboard_dir = math.Vec3.new(camera.direction.x, camera.direction.y, camera.direction.z).norm();
-    var rot_matrix = math.Mat4.direction(billboard_dir, camera.up);
+    var rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
 
     cloud_batch.useShader(shader_blend);
     cloud_batch.useTexture(tex_treesheet);

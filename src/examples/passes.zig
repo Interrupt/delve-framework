@@ -133,7 +133,8 @@ pub fn pre_draw() void {
     graphics.endPass();
 
     // Now render out the main offscreen pass that also includes the secondary
-    graphics.beginPass(offscreen_pass, delve.colors.black);
+    const sky_color = delve.colors.Color.newBytes(160, 203, 218, 255);
+    graphics.beginPass(offscreen_pass, sky_color);
 
     // draw using the offscreen camera
     const proj_view_matrix = camera_offscreen.getProjView();

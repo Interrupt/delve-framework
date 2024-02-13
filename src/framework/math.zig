@@ -296,8 +296,11 @@ pub const Mat4 = extern struct {
         return res;
     }
 
-    pub fn direction(dir_norm: Vec3, axis_norm: Vec3) Mat4 {
+    /// Points in the direction of a vector
+    pub fn direction(dir: Vec3, axis: Vec3) Mat4 {
         var res = Mat4.identity;
+        const dir_norm = dir.norm().scale(-1);
+        const axis_norm = axis.norm();
 
         var xaxis: Vec3 = axis_norm.cross(dir_norm);
         xaxis = xaxis.norm();
@@ -316,6 +319,18 @@ pub const Mat4 = extern struct {
         res.m[2][2] = dir_norm.z;
 
         return res.transpose();
+    }
+
+    /// Points back in the inverse of a direction. Useful for billboard sprites!
+    pub fn billboard(dir: Vec3, up: Vec3) Mat4 {
+        var billboard_dir = dir.scale(-1);
+        var rot_matrix = Mat4.direction(billboard_dir, Vec3.up);
+
+        // need to flip things if we're upside down
+        if (up.y < 0)
+            rot_matrix = rot_matrix.mul(Mat4.scale(Vec3.new(-1, if (dir.y != 0) -1 else 1, -1)));
+
+        return rot_matrix;
     }
 
     pub fn translate(translation: Vec3) Mat4 {
