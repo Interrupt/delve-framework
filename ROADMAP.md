@@ -3,6 +3,7 @@
 Todo:
 [ ] GUI (Dear imgui?)
 [ ] Basic collisions
+[ ] Font loading
 [ ] Lua - bind types
 [ ] Animated Meshes
 
