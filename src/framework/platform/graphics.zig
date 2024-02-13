@@ -441,9 +441,9 @@ pub const RenderPass = struct {
 /// Begins an offscreen pass, and ends the current pass
 pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
     if(state.in_default_pass)
-        debug.fatal("Can't call beginPass when already in the default pass!", .{});
+        debug.fatal("Can't call beginPass when already in the default pass! This should probably be in pre-draw.", .{});
     if(state.in_offscreen_pass)
-        debug.fatal("Can't call beginPass when already in an offscreen pass!", .{});
+        debug.fatal("Can't call beginPass when already in an offscreen pass! End your previous pass first.", .{});
 
     state.in_offscreen_pass = true;
 
