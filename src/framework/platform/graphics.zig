@@ -832,6 +832,11 @@ pub fn deinit() void {
 
 /// Called at the start of a frame
 pub fn startFrame() void {
+    if(state.in_offscreen_pass) {
+        debug.err("Started the default pass when an offscreen was still ongoing!", .{});
+        endPass();
+    }
+
     // reset debug text
     debugtext.canvas(sapp.widthf() * 0.5, sapp.heightf() * 0.5);
     debugtext.layer(0);
