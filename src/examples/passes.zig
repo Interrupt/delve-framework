@@ -75,8 +75,8 @@ pub fn on_init() void {
     });
 
     // create our cameras
-    camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 200.0, 5.0, math.Vec3.up());
-    camera_offscreen = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 200.0, 5.0, math.Vec3.up());
+    camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 200.0, 5.0, math.Vec3.up);
+    camera_offscreen = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 200.0, 5.0, math.Vec3.up);
 
     // make a cube
     cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2, 3, 1), delve.colors.white, material1) catch {
@@ -140,7 +140,7 @@ pub fn pre_draw() void {
 
     // draw a few cubes inside the offscreen pass
     const translate = math.Mat4.translate(math.Vec3.new(-3, 0, 0));
-    const rotate = math.Mat4.rotate(@floatCast(time * 160.0), math.Vec3.new(0,1,0));
+    const rotate = math.Mat4.rotate(@floatCast(time * 160.0), math.Vec3.y_axis);
     cube1.draw(proj_view_matrix, translate.mul(rotate));
     cube2.draw(proj_view_matrix, math.Mat4.identity());
 
