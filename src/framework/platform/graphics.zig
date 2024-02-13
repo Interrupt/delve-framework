@@ -472,7 +472,11 @@ pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
 
 /// Ends the current render pass, and resumes the default
 pub fn endPass() void {
-    sg.endPass();
+    if(state.in_offscreen_pass) {
+        sg.endPass();
+    } else {
+        debug.err("endPass was called when there was no pass to end!", .{});
+    }
 
     state.in_offscreen_pass = false;
 }
