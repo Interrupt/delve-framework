@@ -146,6 +146,9 @@ pub fn on_draw() void {
     // stop drawing to our offscreen pass
     graphics.endPass();
 
+    // start drawing to the screen again
+    graphics.resumeDefaultPass();
+
     // use the fps camera
     proj_view_matrix = camera.getProjView();
 

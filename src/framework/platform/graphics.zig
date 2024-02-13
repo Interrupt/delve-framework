@@ -441,7 +441,10 @@ pub const RenderPass = struct {
 /// Begins an offscreen pass, and ends the current pass
 pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
     // end the current pass first!
-    sg.endPass();
+    if(state.in_default_pass) {
+        state.in_default_pass = false;
+        sg.endPass();
+    }
 
     var pass_action = sg.PassAction{};
     pass_action.colors[0] = .{ .load_action = .LOAD, .store_action = .STORE };
@@ -467,23 +470,30 @@ pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
 }
 
 /// Begins the default (render to screen) pass
-pub fn beginDefaultPass(clear: bool) void {
+fn beginDefaultPass(clear: bool) void {
     var pass_action = sg.PassAction{};
-    pass_action.colors[0] = .{ .load_action = .LOAD, };
-    pass_action.depth = .{ .load_action = .LOAD, };
-    pass_action.stencil = .{ .load_action = .LOAD, };
+    pass_action.colors[0] = .{ .load_action = .LOAD, .store_action = .STORE };
+    pass_action.depth = .{ .load_action = .LOAD, .store_action = .STORE };
+    pass_action.stencil = .{ .load_action = .LOAD, .store_action = .STORE };
 
     if(clear) {
         pass_action.colors[0].load_action = .CLEAR;
         pass_action.colors[0].clear_value = default_pass_action.colors[0].clear_value;
+
+        pass_action.depth.load_action = .CLEAR;
+        pass_action.depth.clear_value = 1.0;
     }
 
+    state.in_default_pass = true;
     sg.beginDefaultPass(pass_action, sapp.width(), sapp.height());
 }
 
 /// Ends the current render pass, and resumes the default
 pub fn endPass() void {
     sg.endPass();
+}
+
+pub fn resumeDefaultPass() void {
     beginDefaultPass(false);
 }
 
@@ -783,6 +793,7 @@ pub const state = struct {
     var debug_material: Material = undefined;
     var debug_draw_color_override: Color = colors.transparent;
     var debug_text_scale: f32 = 1.0;
+    var in_default_pass: bool = true;
 };
 
 var default_pass_action: sg.PassAction = .{};
