@@ -149,11 +149,12 @@ pub fn warning(comptime fmt: []const u8, args: anytype) void {
 }
 
 pub fn err(comptime fmt: []const u8, args: anytype) void {
-    addLogEntry(fmt, args, .ERROR);
+    addLogEntry("ERROR: " ++ fmt, args, .ERROR);
 }
 
 pub fn fatal(comptime fmt: []const u8, args: anytype) void {
-    addLogEntry(fmt, args, .FATAL);
+    addLogEntry("FATAL: " ++ fmt, args, .FATAL);
+    papp.exitWithError();
 }
 
 fn addLogEntry(comptime fmt: []const u8, args: anytype, level: LogLevel) void {
@@ -187,7 +188,7 @@ fn addLogEntry(comptime fmt: []const u8, args: anytype, level: LogLevel) void {
     std.debug.print("{s}\n", .{written});
 
     // Keep the line in the console log
-    log_history_list.push(written[0..written.len-1 :0]);
+    log_history_list.push(written[0 .. written.len - 1 :0]);
 }
 
 pub fn getLogHistory() *LogList {

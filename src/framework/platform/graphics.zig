@@ -440,6 +440,13 @@ pub const RenderPass = struct {
 
 /// Begins an offscreen pass, and ends the current pass
 pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
+    if(state.in_default_pass)
+        debug.fatal("Can't call beginPass when already in the default pass!", .{});
+    if(state.in_offscreen_pass)
+        debug.fatal("Can't call beginPass when already in an offscreen pass!", .{});
+
+    state.in_offscreen_pass = true;
+
     var pass_action = sg.PassAction{};
     pass_action.colors[0] = .{ .load_action = .LOAD, .store_action = .STORE };
     pass_action.depth = .{ .load_action = .CLEAR, .clear_value = 1.0, .store_action = .STORE };
@@ -466,6 +473,8 @@ pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
 /// Ends the current render pass, and resumes the default
 pub fn endPass() void {
     sg.endPass();
+
+    state.in_offscreen_pass = false;
 }
 
 /// The options for creating a new Material
@@ -764,6 +773,8 @@ pub const state = struct {
     var debug_material: Material = undefined;
     var debug_draw_color_override: Color = colors.transparent;
     var debug_text_scale: f32 = 1.0;
+    var in_default_pass: bool = false;
+    var in_offscreen_pass: bool = false;
 };
 
 var default_pass_action: sg.PassAction = .{};
@@ -825,6 +836,7 @@ pub fn startFrame() void {
     debugtext.canvas(sapp.widthf() * 0.5, sapp.heightf() * 0.5);
     debugtext.layer(0);
 
+    state.in_default_pass = true;
     sg.beginDefaultPass(default_pass_action, sapp.width(), sapp.height());
 }
 
@@ -844,6 +856,8 @@ pub fn endFrame() void {
     // flush to the screen!
     sg.endPass();
     sg.commit();
+
+    state.in_default_pass = false;
 }
 
 /// Sets the clear color on the default pass

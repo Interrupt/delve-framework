@@ -1,3 +1,4 @@
+const std = @import("std");
 const app = @import("../app.zig");
 const debug = @import("../debug.zig");
 const gfx = @import("graphics.zig");
@@ -276,4 +277,14 @@ pub fn getFixedTimestepLerp(include_delta: bool) f32 {
         return state.fixed_timestep_delta_f * state.fixed_timestep_lerp;
 
     return state.fixed_timestep_lerp;
+}
+
+/// Exit cleanly
+pub fn exit() void {
+    sokol_app_backend.exit();
+}
+
+/// Exit with an error
+pub fn exitWithError() void {
+    std.os.exit(1);
 }

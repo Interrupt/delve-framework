@@ -112,3 +112,7 @@ pub const App = struct {
         sapp.lockMouse(captured);
     }
 };
+
+pub fn exit() void {
+    sapp.quit();
+}
