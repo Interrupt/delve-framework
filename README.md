@@ -66,7 +66,7 @@ try modules.registerModule(exampleModule);
 
 Some example modules are included automatically to exercise some code paths, these live under `src/examples` and are good examples of how to start using the framework.
 
-* [Sprite Batch Example](src/examples/sprites.zig)
+* [Sprite Animation Example](src/examples/sprite-animation.zig)
 * [Mesh Drawing Example](src/examples/meshes.zig)
 * [Debug Drawing Example](src/examples/debugdraw.zig)
 

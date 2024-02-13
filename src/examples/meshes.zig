@@ -2,6 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const app = delve.app;
 
+// easy access to some imports
 const cam = delve.graphics.camera;
 const colors = delve.colors;
 const debug = delve.debug;
@@ -12,11 +13,12 @@ const math = delve.math;
 const modules = delve.modules;
 const mesh = delve.graphics.mesh;
 
-const emissive_shader_builtin = delve.shaders.default_emissive;
-
+// easy access to some types
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 const Color = colors.Color;
+
+const emissive_shader_builtin = delve.shaders.default_emissive;
 
 var time: f32 = 0.0;
 var mesh_test: ?mesh.Mesh = null;
