@@ -12,10 +12,11 @@ pub const BoundingBox = struct {
 
     /// Creates a new bounding box based on a position and size
     pub fn init(position: Vec3, size: Vec3) BoundingBox {
+        const half_size = size.scale(0.5);
         return BoundingBox{
             .center = position,
-            .min = position.sub(size),
-            .max = position.add(size),
+            .min = position.sub(half_size),
+            .max = position.add(half_size),
         };
     }
 
@@ -46,6 +47,29 @@ pub const BoundingBox = struct {
         return ret;
     }
 
+    /// Transforms this bounding box by a matrix
+    pub fn transform(self: *const BoundingBox, transform_mat: math.Mat4) BoundingBox {
+        const corners = self.getCorners();
+
+        // Set min and max to the center to start with
+        var center = self.center.mulMat4(transform_mat);
+        var min = center;
+        var max = center;
+
+        // find the new min and max
+        for(corners) |corner| {
+            const transformed = corner.mulMat4(transform_mat);
+            min = Vec3.min(min, transformed);
+            max = Vec3.max(max, transformed);
+        }
+
+        return BoundingBox{
+            .center = center,
+            .min = min,
+            .max = max,
+        };
+    }
+
     /// Returns locations of all the corners
     pub fn getCorners(self: *const BoundingBox) [8]Vec3 {
         return [8]Vec3{
@@ -74,14 +98,14 @@ pub const BoundingBox = struct {
 };
 
 test "BoundingBox.contains" {
-    const box = BoundingBox.init(Vec3.zero, Vec3.new(2,4,2));
+    const box = BoundingBox.init(Vec3.zero, Vec3.new(4,6,4));
     assert(box.contains(Vec3.zero) == true);
     assert(box.contains(Vec3.new(-2, 0, -2)) == true);
     assert(box.contains(Vec3.new(-2.5, 2, 2)) == false);
     assert(box.contains(Vec3.new(1.5, 3, 1)) == true);
     assert(box.contains(Vec3.new(3, 0, 0)) == false);
 
-    const box2 = BoundingBox.init(Vec3.new(10, 5, 5), Vec3.new(2,4,2));
+    const box2 = BoundingBox.init(Vec3.new(10, 5, 5), Vec3.new(4,8,4));
     assert(box2.contains(Vec3.zero) == false);
     assert(box2.contains(Vec3.new(10, 4, 4)) == true);
     assert(box2.contains(Vec3.new(12, 9, 7)) == true);
@@ -102,4 +126,26 @@ test "BoundingBox.intersects" {
     assert(box1.intersects(box4) == true);
     assert(box4.intersects(box2) == true);
     assert(box4.intersects(box3) == true);
+}
+
+test "BoundingBox.transform" {
+    const box = BoundingBox.init(Vec3.new(1,-2,3), Vec3.new(2,4,2));
+    const tmat = math.Mat4.translate(Vec3.new(10, 1, -2));
+
+    const transformed = box.transform(tmat);
+    assert(transformed.center.x == 11);
+    assert(transformed.center.y == -1);
+    assert(transformed.center.z == 1);
+
+    assert(box.min.x == 0);
+    assert(transformed.min.x == 10);
+    assert(transformed.min.y == -3);
+    assert(transformed.min.z == 0);
+
+    assert(box.max.x == 2);
+    assert(box.max.y == 0);
+    assert(box.max.z == 4);
+    assert(transformed.max.x == 12);
+    assert(transformed.max.y == 1);
+    assert(transformed.max.z == 2);
 }

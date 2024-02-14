@@ -166,6 +166,14 @@ pub const Vec3 = extern struct {
         return left.add(swv).add(swwv);
     }
 
+    pub fn min(left: Vec3, right: Vec3) Vec3 {
+        return Vec3.new(@min(left.x, right.x), @min(left.y, right.y), @min(left.z, right.z));
+    }
+
+    pub fn max(left: Vec3, right: Vec3) Vec3 {
+        return Vec3.new(@max(left.x, right.x), @max(left.y, right.y), @max(left.z, right.z));
+    }
+
     pub const zero = Vec3.new(0.0, 0.0, 0.0);
     pub const one = Vec3.new(1.0, 1.0, 1.0);
     pub const x_axis = Vec3.new(1.0, 0.0, 0.0);
