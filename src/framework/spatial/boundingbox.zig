@@ -20,6 +20,26 @@ pub const BoundingBox = struct {
         };
     }
 
+    /// Creates a new bounding box that fits some positions
+    pub fn initFromPositions(positions: []const Vec3) BoundingBox {
+        if(positions.len == 0)
+            return BoundingBox{.center = Vec3.zero, .min = Vec3.zero, .max = Vec3.zero};
+
+        var min = positions[0];
+        var max = positions[0];
+
+        for(positions) |pos| {
+            min = Vec3.min(min, pos);
+            max = Vec3.max(max, pos);
+        }
+
+        return BoundingBox{
+            .center = Vec3.new(min.x + (max.x - min.x) * 0.5, min.y + (max.y - min.y) * 0.5, min.z + (max.z - min.z) * 0.5),
+            .min = min,
+            .max = max,
+        };
+    }
+
     /// Scale this bounding box
     pub fn scale(self: *const BoundingBox, scale_by: f32) BoundingBox {
         var ret = self.*;
@@ -148,4 +168,23 @@ test "BoundingBox.transform" {
     assert(transformed.max.x == 12);
     assert(transformed.max.y == 1);
     assert(transformed.max.z == 2);
+}
+
+test "BoundingBox.initFromPositions" {
+    const positions = &[_]Vec3{
+        Vec3.new(10, 5, 2),
+        Vec3.new(20, 18, 6),
+        Vec3.new(13, 8, 8)
+    };
+
+    const box = BoundingBox.initFromPositions(positions);
+    assert(box.min.x == 10);
+    assert(box.min.y == 5);
+    assert(box.min.z == 2);
+    assert(box.max.x == 20);
+    assert(box.max.y == 18);
+    assert(box.max.z == 8);
+    assert(box.center.x == 15);
+    assert(box.center.y == 11.5);
+    assert(box.center.z == 5);
 }
