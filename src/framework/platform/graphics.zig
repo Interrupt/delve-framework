@@ -319,7 +319,7 @@ pub const Texture = struct {
             .pixel_format = .RGBA8,
         };
 
-        img_desc.data.subimage[0][0] = sg.asRange(image.raw);
+        img_desc.data.subimage[0][0] = sg.asRange(image.data);
 
         return Texture{
             .width = image.width,
@@ -360,7 +360,7 @@ pub const Texture = struct {
             .sample_count = 1,
         };
 
-        if(is_depth)
+        if (is_depth)
             img_desc.pixel_format = .DEPTH_STENCIL;
 
         return Texture{
@@ -373,7 +373,7 @@ pub const Texture = struct {
     }
 
     pub fn destroy(self: *Texture) void {
-        if(self.sokol_image == null)
+        if (self.sokol_image == null)
             return;
         sg.destroyImage(self.sokol_image.?);
         self.sokol_image = null;
@@ -405,12 +405,12 @@ pub const RenderPass = struct {
         var color_attachment: ?Texture = null;
         var depth_attachment: ?Texture = null;
 
-        if(config.include_color) {
+        if (config.include_color) {
             color_attachment = Texture.initRenderTexture(config.width, config.height, false);
             pass_desc.color_attachments[0].image = color_attachment.?.sokol_image.?;
         }
 
-        if(config.include_depth) {
+        if (config.include_depth) {
             depth_attachment = Texture.initRenderTexture(config.width, config.height, true);
             pass_desc.depth_stencil_attachment.image = depth_attachment.?.sokol_image.?;
         }
@@ -425,17 +425,17 @@ pub const RenderPass = struct {
 
     /// Destroys a render pass and its associated textures
     pub fn destroy(self: *RenderPass) void {
-        if(self.render_texture_color != null) {
+        if (self.render_texture_color != null) {
             self.render_texture_color.destroy();
             self.render_texture_color = null;
         }
 
-        if(self.render_texture_depth != null) {
+        if (self.render_texture_depth != null) {
             self.render_texture_depth.destroy();
             self.render_texture_depth = null;
         }
 
-        if(self.sokol_pass != null) {
+        if (self.sokol_pass != null) {
             sg.destroyPass(self.sokol_pass);
             self.sokol_pass = null;
         }
@@ -444,9 +444,9 @@ pub const RenderPass = struct {
 
 /// Begins an offscreen pass, and ends the current pass
 pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
-    if(state.in_default_pass)
+    if (state.in_default_pass)
         debug.fatal("Can't call beginPass when already in the default pass! This should probably be in pre-draw.", .{});
-    if(state.in_offscreen_pass)
+    if (state.in_offscreen_pass)
         debug.fatal("Can't call beginPass when already in an offscreen pass! End your previous pass first.", .{});
 
     state.in_offscreen_pass = true;
@@ -457,16 +457,16 @@ pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
     pass_action.stencil = .{ .load_action = .CLEAR, .clear_value = 0.0, .store_action = .STORE };
 
     // Don't need to store the end result in some cases
-    if(!render_pass.config.write_color)
+    if (!render_pass.config.write_color)
         pass_action.colors[0].store_action = .DONTCARE;
 
-    if(!render_pass.config.write_depth)
+    if (!render_pass.config.write_depth)
         pass_action.depth.store_action = .DONTCARE;
 
-    if(!render_pass.config.write_stencil)
+    if (!render_pass.config.write_stencil)
         pass_action.stencil.store_action = .DONTCARE;
 
-    if(clear_color != null) {
+    if (clear_color != null) {
         pass_action.colors[0].load_action = .CLEAR;
         pass_action.colors[0].clear_value = .{ .r = clear_color.?.r, .g = clear_color.?.g, .b = clear_color.?.b, .a = clear_color.?.a };
     }
@@ -476,7 +476,7 @@ pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
 
 /// Ends the current render pass, and resumes the default
 pub fn endPass() void {
-    if(state.in_offscreen_pass) {
+    if (state.in_offscreen_pass) {
         sg.endPass();
     } else {
         debug.err("endPass was called when there was no pass to end!", .{});
@@ -813,7 +813,7 @@ pub fn init() !void {
     const debug_indices = &[_]u32{ 0, 1, 2, 0, 2, 3 };
 
     state.debug_draw_bindings = Bindings.init(.{});
-    state.debug_draw_bindings.set(debug_vertices, debug_indices, &.{}, &.{}, 6);
+    state.debug_draw_bindings.set(debug_vertices, debug_indices, &[_]u32{}, &[_]u32{}, 6);
 
     // Use the default shader for debug drawing
     state.debug_shader = Shader.initDefault(.{ .cull_mode = .NONE });
@@ -840,7 +840,7 @@ pub fn deinit() void {
 
 /// Called at the start of a frame
 pub fn startFrame() void {
-    if(state.in_offscreen_pass) {
+    if (state.in_offscreen_pass) {
         debug.err("Started the default pass when an offscreen was still ongoing!", .{});
         endPass();
     }
@@ -937,7 +937,7 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
 
     // create a view state
     var proj = getProjectionOrtho(0.001, 10.0, false);
-    var view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.0 }, Vec3.zero, Vec3.up);
+    const view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.0 }, Vec3.zero, Vec3.up);
 
     const translate_vec: Vec3 = Vec3{ .x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = -2.5 };
     const scale_vec: Vec3 = Vec3{ .x = width, .y = height, .z = 1.0 };

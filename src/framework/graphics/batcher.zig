@@ -79,7 +79,7 @@ pub const SpriteBatcher = struct {
 
     /// Switch the current batch to one for a solid color
     pub fn useSolidColor(self: *SpriteBatcher) void {
-        var solid_tex: graphics.Texture = graphics.tex_white;
+        const solid_tex: graphics.Texture = graphics.tex_white;
         self.current_batch_key = solid_tex.handle;
         self.current_tex = solid_tex;
         self.current_material = null;
@@ -144,7 +144,7 @@ pub const SpriteBatcher = struct {
     /// Gets the batcher used for the current texture
     pub fn getCurrentBatcher(self: *SpriteBatcher) ?*Batcher {
         // Return an existing batch if available
-        var batcher: ?*Batcher = self.batches.getPtr(self.current_batch_key);
+        const batcher: ?*Batcher = self.batches.getPtr(self.current_batch_key);
         if (batcher != null)
             return batcher;
 
@@ -157,7 +157,7 @@ pub const SpriteBatcher = struct {
             new_cfg.material = self.current_material;
         }
 
-        var new_batcher: Batcher = Batcher.init(new_cfg) catch {
+        const new_batcher: Batcher = Batcher.init(new_cfg) catch {
             debug.log("Could not create a new batch for SpriteBatch!", .{});
             return null;
         };

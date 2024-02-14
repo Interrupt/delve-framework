@@ -35,9 +35,9 @@ pub fn libPreDraw() void {
 
 /// Called when ready to draw
 pub fn libDraw() void {
-    var view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5 }, math.Vec3.zero, math.Vec3.up);
+    const view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5 }, math.Vec3.zero, math.Vec3.up);
     var proj = graphics.getProjectionOrtho(0.001, 10.0, true);
-    var model = math.Mat4.translate(.{ .x = 0.0, .y = 0.0, .z = -2.5 });
+    const model = math.Mat4.translate(.{ .x = 0.0, .y = 0.0, .z = -2.5 });
 
     sprite_batch.apply();
     sprite_batch.draw(proj.mul(view), model);
@@ -51,22 +51,22 @@ pub fn libCleanup() void {
 
 /// Draws a section of an image to the screen
 pub fn blit(texture_handle: u32, source_x: f32, source_y: f32, source_width: f32, source_height: f32, dest_x: f32, dest_y: f32, dest_width: f32, dest_height: f32) void {
-    var loaded_tex: ?graphics.Texture = assets._getTextureFromHandle(texture_handle);
+    const loaded_tex: ?graphics.Texture = assets._getTextureFromHandle(texture_handle);
     if (loaded_tex == null)
         return;
 
-    var loaded_img: ?images.Image = assets._getImageFromHandle(texture_handle);
+    const loaded_img: ?images.Image = assets._getImageFromHandle(texture_handle);
     if (loaded_img == null)
         return;
 
-    var transform = math.Mat4.translate(.{ .x = dest_x, .y = dest_y, .z = 0.0 });
+    const transform = math.Mat4.translate(.{ .x = dest_x, .y = dest_y, .z = 0.0 });
     sprite_batch.setTransformMatrix(transform);
 
     const x_aspect = 1.0 / @as(f32, @floatFromInt(loaded_img.?.width));
     const y_aspect = 1.0 / @as(f32, @floatFromInt(loaded_img.?.height));
 
     // Snip out just what we were asked to draw
-    var region = sprites.TextureRegion{
+    const region = sprites.TextureRegion{
         .u = @min(source_x * x_aspect, 1.0),
         .v = @min(source_y * y_aspect, 1.0),
         .v_2 = @min((source_y + source_height) * y_aspect, 1.0),

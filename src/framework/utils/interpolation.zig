@@ -9,22 +9,22 @@ pub const Interpolation = struct {
     interp_func: *const fn (f32) f32,
 
     pub fn applyIn(self: *const Interpolation, start: f32, end: f32, alpha: f32) f32 {
-        var t = std.math.clamp(alpha, 0.0, 1.0);
+        const t = std.math.clamp(alpha, 0.0, 1.0);
         return start + ((end - start) * self.interp_func(t));
     }
 
     pub fn applyOut(self: *const Interpolation, start: f32, end: f32, alpha: f32) f32 {
-        var t = std.math.clamp(alpha, 0.0, 1.0);
+        const t = std.math.clamp(alpha, 0.0, 1.0);
         return start + ((end - start) * flipInterpFunc(t, self.interp_func));
     }
 
     pub fn applyInOut(self: *const Interpolation, start: f32, end: f32, alpha: f32) f32 {
-        var t = std.math.clamp(alpha, 0.0, 1.0);
+        const t = std.math.clamp(alpha, 0.0, 1.0);
         return start + ((end - start) * doInOut(t, self.interp_func));
     }
 
     pub fn applyInMirrored(self: *const Interpolation, start: f32, end: f32, alpha: f32) f32 {
-        var t = std.math.clamp(alpha, 0.0, 1.0);
+        const t = std.math.clamp(alpha, 0.0, 1.0);
 
         if (t <= 0.5)
             return self.applyIn(start, end, alpha * 2.0);
@@ -33,7 +33,7 @@ pub const Interpolation = struct {
     }
 
     pub fn applyOutMirrored(self: *const Interpolation, start: f32, end: f32, alpha: f32) f32 {
-        var t = std.math.clamp(alpha, 0.0, 1.0);
+        const t = std.math.clamp(alpha, 0.0, 1.0);
 
         if (t <= 0.5)
             return self.applyOut(start, end, alpha * 2.0);

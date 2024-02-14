@@ -18,7 +18,7 @@ pub fn init() !void {
     debug.log("Lua: system starting up!", .{});
 
     // Initialize the Lua VM!
-    lua = try Lua.init(lua_allocator);
+    lua = try Lua.init(&lua_allocator);
 
     // Turn on to get lua debug output
     if (enable_debug_logging)
@@ -96,7 +96,7 @@ pub fn setDebugHook() void {
     // create a debug hook to print state
     const hook = struct {
         fn inner(l: *Lua, event: ziglua.Event, i: *ziglua.DebugInfo) void {
-            var type_name = switch (event) {
+            const type_name = switch (event) {
                 .call => "call",
                 .line => "line",
                 .ret => "ret",
@@ -117,7 +117,7 @@ pub fn setDebugHook() void {
 }
 
 fn printDebug() void {
-    var lua_debug = lua.getStack(1);
+    const lua_debug = lua.getStack(1);
     if (lua_debug) |stack| {
         debug.log("Lua: stack debug: {?s} {?s}.", .{ stack.source, stack.name });
     } else |err| {
