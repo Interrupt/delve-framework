@@ -24,5 +24,8 @@
         .zaudio = .{
             .path = "3rdparty/zig-gamedev/libs/zaudio",
         },
+        .system_sdk = .{
+            .path = "3rdparty/zig-gamedev/libs/system-sdk",
+        },
     },
 }

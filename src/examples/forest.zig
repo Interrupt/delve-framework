@@ -206,8 +206,8 @@ fn pre_draw() void {
     time += papp.getCurrentDeltaTime();
 
     // set up a matrix that will billboard to face the camera, but ignore the up dir
-    var billboard_dir = math.Vec3.new(camera.direction.x, 0, camera.direction.z).norm();
-    var rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
+    const billboard_dir = math.Vec3.new(camera.direction.x, 0, camera.direction.z).norm();
+    const rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
 
     // make our grass, if needed
     addGrass(camera.position, 30, 1.25, 1.0);
@@ -232,9 +232,9 @@ fn pre_draw() void {
         transform = transform.mul(rot_matrix);
 
         // make mostly grass
-        var make_grass: bool = random.float(f32) < 0.8;
-        var atlas = if (make_grass) grass_sprites else tree_sprites;
-        var foliage_scale: f32 = if (make_grass) grass_scale else tree_scale;
+        const make_grass: bool = random.float(f32) < 0.8;
+        const atlas = if (make_grass) grass_sprites else tree_sprites;
+        const foliage_scale: f32 = if (make_grass) grass_scale else tree_scale;
 
         // make foliage wave in the wind!
         const wave_offset: f32 = random.float(f32) * 1000.0;
@@ -286,15 +286,15 @@ fn addClouds(density: f32) void {
     var random = rnd.random();
 
     // set up a matrix that will billboard to face the camera
-    var billboard_dir = math.Vec3.new(camera.direction.x, camera.direction.y, camera.direction.z).norm();
-    var rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
+    const billboard_dir = math.Vec3.new(camera.direction.x, camera.direction.y, camera.direction.z).norm();
+    const rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
 
     cloud_batch.useShader(shader_blend);
     cloud_batch.useTexture(tex_treesheet);
     cloud_batch.reset();
 
-    var cloud_size: f32 = 90.0;
-    var num_clouds: u32 = @intFromFloat(300.0 * density);
+    const cloud_size: f32 = 90.0;
+    const num_clouds: u32 = @intFromFloat(300.0 * density);
 
     for (0..num_clouds) |i| {
         _ = i;
@@ -304,12 +304,12 @@ fn addClouds(density: f32) void {
         draw_pos = draw_pos.rotate(random.float(f32) * 80.0, math.Vec3.x_axis);
         draw_pos = draw_pos.rotate(random.float(f32) * 360.0 + @as(f32, @floatCast(time * 0.5)), math.Vec3.up);
 
-        var transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
+        const transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
 
         cloud_batch.setTransformMatrix(transform);
 
         // size the rectangle based on the size of the sprite in the atlas
-        var size = tex_region.getSize().mul(math.Vec2.new(2.1, 1)).scale(cloud_size);
+        const size = tex_region.getSize().mul(math.Vec2.new(2.1, 1)).scale(cloud_size);
 
         const rect = Rect.fromSize(size);
         cloud_batch.addRectangle(rect.centered(), tex_region, cloud_tint);
@@ -338,15 +338,15 @@ fn addGrass(pos: math.Vec3, grass_area: u32, grass_size: f32, density: f32) void
     // we'll make grass in cells
     for (0..grass_area) |x| {
         for (0..grass_area) |z| {
-            var fx: f32 = @floatFromInt(x);
-            var fz: f32 = @floatFromInt(z);
+            const fx: f32 = @floatFromInt(x);
+            const fz: f32 = @floatFromInt(z);
 
             // cell position
             const xpos: f32 = start_x_pos + fx - (grass_width);
             const zpos: f32 = start_z_pos + fz - (grass_width);
 
             // seed random from this cell position
-            var rnd = RndGen.init(std.math.absCast(@as(i32, @intFromFloat(xpos + (zpos * 10000)))));
+            var rnd = RndGen.init(@abs(@as(i32, @intFromFloat(xpos + (zpos * 10000)))));
             var random = rnd.random();
 
             const grass_count: u32 = @intFromFloat(density * 10.0);
@@ -359,9 +359,9 @@ fn addGrass(pos: math.Vec3, grass_area: u32, grass_size: f32, density: f32) void
                 const sprite_idx: usize = if (random.float(f32) < 0.85) 2 else 0;
                 const tex_region = grass_sprites[sprite_idx];
 
-                var draw_pos = math.Vec3.new(xpos + x_offset, 0, zpos + z_offset);
-                var rot_matrix = math.Mat4.rotate(random.float(f32) * 360, camera.up);
-                var transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
+                const draw_pos = math.Vec3.new(xpos + x_offset, 0, zpos + z_offset);
+                const rot_matrix = math.Mat4.rotate(random.float(f32) * 360, camera.up);
+                const transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
 
                 grass_batch.setTransformMatrix(transform);
 

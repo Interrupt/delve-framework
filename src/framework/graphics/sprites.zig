@@ -117,16 +117,16 @@ pub const AnimatedSpriteSheet = struct {
 
         for (0..rows) |row_idx| {
             const row_idx_f: f32 = @floatFromInt(row_idx);
-            var reg_v = row_idx_f / rows_f;
-            var reg_v_2 = (row_idx_f + 1) / rows_f;
+            const reg_v = row_idx_f / rows_f;
+            const reg_v_2 = (row_idx_f + 1) / rows_f;
 
             var frames = try std.ArrayList(AnimationFrame).initCapacity(allocator, cols);
             errdefer frames.deinit();
 
             for (0..cols) |col_idx| {
                 const col_idx_f: f32 = @floatFromInt(col_idx);
-                var reg_u = col_idx_f / cols_f;
-                var reg_u_2 = (col_idx_f + 1) / cols_f;
+                const reg_u = col_idx_f / cols_f;
+                const reg_u_2 = (col_idx_f + 1) / cols_f;
 
                 try frames.append(AnimationFrame{ .region = TextureRegion{
                     .u = reg_u,
@@ -137,7 +137,7 @@ pub const AnimatedSpriteSheet = struct {
             }
 
             // when converting an ArrayList to an owned slice, we don't need to deinit it
-            var animation = SpriteAnimation{ .frames = try frames.toOwnedSlice() };
+            const animation = SpriteAnimation{ .frames = try frames.toOwnedSlice() };
 
             var string_writer = std.ArrayList(u8).init(allocator);
             errdefer string_writer.deinit();

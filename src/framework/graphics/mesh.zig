@@ -86,7 +86,7 @@ pub const Mesh = struct {
 
         var material: graphics.Material = undefined;
         if (cfg.material == null) {
-            var tex = graphics.createDebugTexture();
+            const tex = graphics.createDebugTexture();
             material = graphics.Material.init(.{ .texture_0 = tex });
         } else {
             material = cfg.material.?;
@@ -300,7 +300,7 @@ pub const MeshBuilder = struct {
 
     /// Bakes a mesh out of the mesh builder from the current state
     pub fn buildMesh(self: *const MeshBuilder, material: graphics.Material) Mesh {
-        var layout = graphics.VertexLayout{
+        const layout = graphics.VertexLayout{
             .attributes = &[_]graphics.VertexLayoutAttribute{
                 .{ .binding = .VERT_PACKED, .buffer_slot = 0, .item_size = @sizeOf(Vertex) },
             },
