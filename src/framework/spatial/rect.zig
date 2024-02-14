@@ -49,7 +49,7 @@ pub const Rect = struct {
         var rect = self.*;
         rect.origin = origin;
 
-        var diff = if (self.origin != null) self.origin.?.sub(origin) else origin.scale(-1);
+        const diff = if (self.origin != null) self.origin.?.sub(origin) else origin.scale(-1);
         return rect.translate(diff);
     }
 
@@ -121,14 +121,14 @@ pub const Rect = struct {
 
     /// Returns a centered version of this rectangle, where the original position will be now the center
     pub fn centered(self: *const Rect) Rect {
-        var center = self.getCenter();
+        const center = self.getCenter();
         return self.applyOrigin(center);
     }
 
     /// Returns a box where only the X axis is centered
     pub fn centeredX(self: *const Rect) Rect {
         var center = self.getCenter();
-        var pos = self.getPosition();
+        const pos = self.getPosition();
         center.y = pos.y;
 
         return self.applyOrigin(center);
@@ -137,7 +137,7 @@ pub const Rect = struct {
     /// Returns a box where only the Y axis is centered
     pub fn centeredY(self: *const Rect) Rect {
         var center = self.getCenter();
-        var pos = self.getPosition();
+        const pos = self.getPosition();
         center.x = pos.x;
 
         return self.applyOrigin(center);

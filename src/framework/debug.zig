@@ -63,7 +63,7 @@ const LogList = struct {
         const log_mem = self.log_allocator.alloc(u8, log_string.len + 1) catch {
             return;
         };
-        std.mem.copy(u8, log_mem, log_string);
+        std.mem.copyForwards(u8, log_mem, log_string);
         log_mem[log_mem.len - 1] = 0x00; // Ensure the sentinel
 
         var node: *StringLinkedList.Node = self.log_allocator.create(StringLinkedList.Node) catch {
@@ -81,7 +81,7 @@ const LogList = struct {
 
     /// Remove the first item from the list, cleaning up data
     pub fn removeFirst(self: *LogList) void {
-        var node = self.items.popFirst();
+        const node = self.items.popFirst();
         self.log_allocator.free(node.?.data);
         self.log_allocator.destroy(node.?);
     }
@@ -92,7 +92,7 @@ const LogList = struct {
         while (cur) |node| {
             // First, free the node's data
             self.log_allocator.free(node.data);
-            var to_delete = node;
+            const to_delete = node;
             cur = node.next;
 
             // Finally, clean up the node itself
@@ -249,11 +249,11 @@ pub fn drawConsole(draw_bg: bool) void {
     const padding = 2;
 
     const white_pal_idx = 7;
-    var height_pixels: i32 = @intCast(((console_num_to_show + 1) * 9) + padding + 4);
+    const height_pixels: i32 = @intCast(((console_num_to_show + 1) * 9) + padding + 4);
     last_text_height = height_pixels;
 
-    var res_w: i32 = gfx.getDisplayWidth();
-    var res_h: i32 = gfx.getDisplayHeight();
+    const res_w: i32 = gfx.getDisplayWidth();
+    const res_h: i32 = gfx.getDisplayHeight();
     _ = res_h;
 
     if (draw_bg) {
@@ -298,7 +298,7 @@ pub fn drawConsoleBackground() void {
     const height_pixels = last_text_height;
     const draw_height: f32 = @floatFromInt(height_pixels * 2);
 
-    var res_w: f32 = @floatFromInt(gfx.getDisplayWidth());
+    const res_w: f32 = @floatFromInt(gfx.getDisplayWidth());
 
     // draw a solid background
     gfx.drawDebugRectangle(gfx.tex_white, 0.0, 0.0, res_w, draw_height, colors.black);
@@ -391,7 +391,7 @@ pub fn showErrorScreen(error_header: [:0]const u8) void {
 
     // Only use until the first newline
     var error_desc_splits = std.mem.split(u8, error_desc, "\n");
-    var first_split = error_desc_splits.first();
+    const first_split = error_desc_splits.first();
 
     const written = std.fmt.allocPrintZ(allocator, error_screen_lua, .{ error_header, first_split }) catch {
         std.debug.print("Error allocating to show error screen?\n", .{});
