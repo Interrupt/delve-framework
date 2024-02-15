@@ -69,6 +69,21 @@ pub const Plane = struct {
     pub fn facesDirection(self: *const Plane, direction: Vec3) bool {
         return self.normal.dot(direction) <= 0;
     }
+
+    /// Returns an intersection point if a line crosses a plane
+    pub fn intersectLine(self: *const Plane, start: Vec3, end: Vec3) ?Vec3 {
+        const dir = end.sub(start);
+        const denom = dir.dot(self.normal);
+
+        if(denom == 0)
+            return null;
+
+       	const t = -(start.dot(self.normal) + self.d) / denom;
+        if(t < 0 or t > 1)
+            return null;
+
+        return start.add(dir.scale(t));
+    }
 };
 
 test "Plane.distanceToPoint" {
@@ -93,4 +108,12 @@ test "Plane.facesDirection" {
 
     assert(plane.facesDirection(Vec3.new(0,0,1)) == false);
     assert(plane.facesDirection(Vec3.new(0,0,-1)) == true);
+}
+
+test "Plane.intersectLine" {
+    const plane = Plane.init(Vec3.new(0, 0, 1), Vec3.new(0,0,5));
+
+    assert(plane.intersectLine(Vec3.new(0,0,0), Vec3.new(10,0,0)) == null);
+    assert(plane.intersectLine(Vec3.new(0,0,-5), Vec3.new(10,0,10)) != null);
+    assert(std.meta.eql(plane.intersectLine(Vec3.new(0,0,-5), Vec3.new(0,0,15)).?, Vec3.new(0,0,5)));
 }
