@@ -72,12 +72,20 @@ Some example modules are included automatically to exercise some code paths, the
 
 ## Building the examples
 
-Clone the repo, then from a terminal:
-```sh
-# just build
-zig build
+- Download or build supported Zig version (Mentioned at the beginning).
+    - Make sure Zig is added to your OS environment PATH variable
+- Clone this repository
+    - `git clone --recursive https://github.com/Interrupt/delve-framework.git`
 
-# build and run an example
+
+
+### just build
+```java
+zig build
+```
+
+### build and run an example
+```
 zig build run-audio
 zig build run-clear
 zig build run-collision
@@ -92,6 +100,19 @@ zig build run-passes
 zig build run-sprite-animation
 zig build run-sprites
 zig build run-stresstest
+```
+
+### to create html5 builds, add argument to compile with Emscriptem
+
+```java
+zig build -Dtarget=wasm32-emscripten run-forest
+```
+
+### to set optimization
+
+```java
+zig build -Doptimize=ReleaseSafe run-forest
+zig build -Doptimize=ReleaseSmall -Dtarget=wasm32-emscripten run-forest
 ```
 
 ## Integrating into another Zig project
