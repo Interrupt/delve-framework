@@ -102,17 +102,11 @@ zig build run-sprites
 zig build run-stresstest
 ```
 
-### to create html5 builds, add argument to compile with Emscriptem
-
-```java
-zig build -Dtarget=wasm32-emscripten run-forest
-```
-
 ### to set optimization
 
 ```java
 zig build -Doptimize=ReleaseSafe run-forest
-zig build -Doptimize=ReleaseSmall -Dtarget=wasm32-emscripten run-forest
+zig build -Doptimize=ReleaseSmall run-forest
 ```
 
 ## Integrating into another Zig project
