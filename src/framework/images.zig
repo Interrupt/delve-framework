@@ -3,9 +3,17 @@ const debug = @import("debug.zig");
 const zstbi = @import("zstbi");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = gpa.allocator();
+const allocator = gpa.allocator();
 
 pub const Image = zstbi.Image;
+
+pub fn init() void {
+    zstbi.init(allocator);
+}
+
+pub fn deinit() void {
+    zstbi.deinit();
+}
 
 pub fn loadFile(file_path: [:0]const u8) !Image {
     const file = try std.fs.cwd().openFile(
@@ -23,6 +31,5 @@ pub fn loadFile(file_path: [:0]const u8) !Image {
 }
 
 pub fn loadBytes(image_bytes: []const u8) !Image {
-    zstbi.init(allocator);
     return Image.loadFromMemory(image_bytes, 0);
 }

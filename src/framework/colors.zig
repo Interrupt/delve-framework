@@ -108,6 +108,7 @@ pub const examples_bg_dark: Color = Color.newBytes(22, 22, 35, 255);
 pub const examples_bg_light: Color = Color.newBytes(200, 200, 200, 255);
 
 pub fn init() !void {
+    images.init();
     palette = try loadBuiltinPalette();
 }
 
