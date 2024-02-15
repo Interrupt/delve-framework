@@ -74,17 +74,43 @@ Some example modules are included automatically to exercise some code paths, the
 
 - Download or build supported Zig version (Mentioned at the beginning).
     - Make sure Zig is added to your OS environment PATH variable
-- Clone this repository
+- Clone this repository:
     - `git clone --recursive https://github.com/Interrupt/delve-framework.git`
+- Add to your project:
+    - execute commands from target folder
+    - `git submodule add https://github.com/Interrupt/delve-framework.git`
+    - `git submodule update --init --recursive`
+    - edit `build.zig.zon` dependency to point to that directory  
+
+`build.zig.zon`
+```
+.{
+    .name = "my_project",
+    .version = "0.0.1",
+    .dependencies = .{
+        .delve = .{
+            .path = "path/to/delve-framework",
+        },
+    },
+}
+```
+`build.zig`
+```
+    const delve = b.dependency("delve", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    exe.root_module.addImport("delve", delve.module("delve"));
+```
 
 
 
-### just build
+### Just build
 ```java
 zig build
 ```
 
-### build and run an example
+### Build and run an example
 ```
 zig build run-audio
 zig build run-clear
@@ -102,39 +128,9 @@ zig build run-sprites
 zig build run-stresstest
 ```
 
-### to set optimization
+### Set optimization
 
 ```java
 zig build -Doptimize=ReleaseSafe run-forest
 zig build -Doptimize=ReleaseSmall run-forest
-```
-
-## Integrating into another Zig project
-
-Add the framework to your build.zig.zon file as a dependency:
-
-```
-.{
-    .name = "my_project",
-    .version = "0.0.1",
-    .dependencies = .{
-        .delve = .{
-            .url = "git+https://github.com/interrupt/delve-framework.git#____COMMIT_HASH____",
-        },
-    },
-}
-```
-
-Then in your build.zig file, Delve can be included as a dependency:
-
-```
-const delve = b.dependency("delve", .{
-    .target = target,
-    .optimize = optimize,
-});
-
-...
-
-exe.addImport("delve", delve.module("delve"));
-exe.linkLibrary(delve.artifact("delve"));
 ```
