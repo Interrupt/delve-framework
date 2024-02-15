@@ -171,7 +171,12 @@ fn buildExample(b: *std.Build, example: ExampleItem, build_collection: BuildColl
         // // ...and a special run step to start the web build output via 'emrun'
         // const run = sokol.emRunStep(b, .{ .name = example[0], .emsdk = emsdk });
         // run.step.dependOn(&link_step.step);
-        // b.step("run-" ++ example[0], "Run " ++ example[0]).dependOn(&run.step);
+
+        // var option_buffer = [_]u8{undefined} ** 100;
+        // const run_name = try std.fmt.bufPrint(&option_buffer, "run-{s}", .{name});
+        // var description_buffer = [_]u8{undefined} ** 200;
+        // const descr_name = try std.fmt.bufPrint(&description_buffer, "run {s}", .{name});
+        // b.step(run_name, descr_name).dependOn(&run.step);
     } else {
         b.installArtifact(app);
         const run = b.addRunArtifact(app);
