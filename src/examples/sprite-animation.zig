@@ -43,7 +43,7 @@ fn on_init() void {
         delve.debug.log("Could not load image", .{});
         return;
     };
-    defer spritesheet_image.destroy();
+    defer spritesheet_image.deinit();
 
     // make the texture to draw and a default shader
     sprite_texture = graphics.Texture.init(&spritesheet_image);
