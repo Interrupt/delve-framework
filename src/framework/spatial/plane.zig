@@ -1,6 +1,7 @@
 const std = @import("std");
 const math = @import("../math.zig");
 const debug = @import("../debug.zig");
+const boundingbox = @import("boundingbox.zig");
 const assert = std.debug.assert;
 
 const Vec3 = math.Vec3;
@@ -52,7 +53,7 @@ pub const Plane = struct {
     }
 
     /// Returns which side of the plane this point is on
-    pub fn getFacing(self: *const Plane, point: Vec3) PlaneFacing {
+    pub fn testPoint(self: *const Plane, point: Vec3) PlaneFacing {
         const distance = self.distanceToPoint(point);
 
         if(distance == 0) {
@@ -62,6 +63,33 @@ pub const Plane = struct {
         } else {
             return .FRONT;
         }
+    }
+
+    /// Returns which side of the plane this bounding box is on, or ON_PLANE for intersections
+    pub fn testBoundingBox(self: *const Plane, bounds: boundingbox.BoundingBox) PlaneFacing {
+        var facing: ?PlaneFacing = null;
+
+        for(bounds.getCorners()) |point| {
+            const distance = self.distanceToPoint(point);
+
+            var this_facing: PlaneFacing = undefined;
+            if(distance == 0) {
+                this_facing = .ON_PLANE;
+            } else if(distance < 0) {
+                this_facing = .BACK;
+            } else {
+                this_facing = .FRONT;
+            }
+
+            if(facing == null) {
+                facing = this_facing;
+            } else if(facing != this_facing) {
+                // facing changed, we must be intersecting!
+                return .ON_PLANE;
+            }
+        }
+
+        return facing.?;
     }
 
     /// If direction is a camera direction, this returns true if the front of the plane would be
@@ -106,18 +134,34 @@ pub const Plane = struct {
 test "Plane.distanceToPoint" {
     const plane = Plane.init(Vec3.new(0, 1, 0), Vec3.new(0,10,0));
 
-    assert(plane.getFacing(Vec3.new(0,10,0)) == .ON_PLANE);
+    assert(plane.testPoint(Vec3.new(0,10,0)) == .ON_PLANE);
     assert(plane.distanceToPoint(Vec3.new(0,15,0)) == 5);
     assert(plane.distanceToPoint(Vec3.new(110,15,2000)) == 5);
     assert(plane.distanceToPoint(Vec3.new(110,5,2000)) == -5);
 }
 
-test "Plane.getFacing" {
+test "Plane.testPoint" {
     const plane = Plane.init(Vec3.new(0, 0, 1), Vec3.new(0,10,5));
 
-    assert(plane.getFacing(Vec3.new(0,10,5)) == .ON_PLANE);
-    assert(plane.getFacing(Vec3.new(0,10,7)) == .FRONT);
-    assert(plane.getFacing(Vec3.new(0,10,-5)) == .BACK);
+    assert(plane.testPoint(Vec3.new(0,10,5)) == .ON_PLANE);
+    assert(plane.testPoint(Vec3.new(0,10,7)) == .FRONT);
+    assert(plane.testPoint(Vec3.new(0,10,-5)) == .BACK);
+}
+
+test "Plane.testBoundingBox" {
+    const plane = Plane.init(Vec3.new(0, 0, 1), Vec3.new(0,0,0));
+
+    // intersects
+    const bounds1 = boundingbox.BoundingBox.init(Vec3.new(0,0,0), Vec3.new(2,2,2));
+    assert(plane.testBoundingBox(bounds1) == .ON_PLANE);
+
+    // in front
+    const bounds2 = boundingbox.BoundingBox.init(Vec3.new(0,0,8), Vec3.new(2,2,2));
+    assert(plane.testBoundingBox(bounds2) == .FRONT);
+
+    // behind
+    const bounds3 = boundingbox.BoundingBox.init(Vec3.new(0,0,-8), Vec3.new(2,2,2));
+    assert(plane.testBoundingBox(bounds3) == .BACK);
 }
 
 test "Plane.facesDirection" {
