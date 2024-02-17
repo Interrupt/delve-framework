@@ -4,6 +4,7 @@ const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
 const math = @import("../math.zig");
 const input = @import("../platform/input.zig");
+const frustum = @import("../spatial/frustum.zig");
 
 const Vec2 = math.Vec2;
 const Vec3 = math.Vec3;
@@ -187,5 +188,9 @@ pub const Camera = struct {
     pub fn getProjView(self: *Camera) Mat4 {
         self.update();
         return self.projection.mul(self.view);
+    }
+
+    pub fn getViewFrustum(self: *Camera) frustum.Frustum {
+        return frustum.Frustum.init(self.getProjView());
     }
 };

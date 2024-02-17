@@ -52,6 +52,41 @@ pub const Frustum = struct {
             .corners = frustum_corners,
         };
     }
+
+    /// Check to see if this frustum contains this point
+    pub fn containsPoint(self: *const Frustum, point: Vec3) bool {
+        // frustum contains a point if it is in front of all planes
+        // for(self.planes) |p| {
+        //     if(p.testPoint(point) == .BACK)
+        //         return false;
+        // }
+
+        // far test
+        if(self.planes[0].testPoint(point) == .FRONT)
+            return false;
+
+        // near test
+        if(self.planes[1].testPoint(point) == .FRONT)
+            return false;
+
+        // left test
+        if(self.planes[2].testPoint(point) == .BACK)
+            return false;
+
+        // right test
+        if(self.planes[3].testPoint(point) == .BACK)
+            return false;
+
+        // top test
+        if(self.planes[4].testPoint(point) == .FRONT)
+            return false;
+
+        // bottom test
+        if(self.planes[5].testPoint(point) == .FRONT)
+            return false;
+
+        return true;
+    }
 };
 
 test "Frustum.init" {
