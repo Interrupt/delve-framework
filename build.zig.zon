@@ -3,6 +3,7 @@
     .version = "0.0.2",
     .paths = .{
         "src",
+        "3rdparty",
         "build.zig",
         "build.zig.zon",
         "README.md",
