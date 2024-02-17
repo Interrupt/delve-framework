@@ -39,7 +39,7 @@ pub const Plane = struct {
     /// Calculated via a cross product between (point1-point2)x(point2-point3)
     pub fn initFromTriangle(v0: Vec3, v1: Vec3, v2: Vec3) Plane {
         var norm: Vec3 = v0.sub(v1).cross(v1.sub(v2)).norm();
-        var d: f32 = v0.dot(norm);
+        var d: f32 = -v0.dot(norm);
 
         return Plane {
             .normal = norm,

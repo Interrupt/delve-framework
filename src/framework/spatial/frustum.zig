@@ -1,6 +1,7 @@
 const std = @import("std");
 const math = @import("../math.zig");
 const plane = @import("plane.zig");
+const boundingbox = @import("boundingbox.zig");
 const assert = std.debug.assert;
 
 const Vec3 = math.Vec3;
@@ -44,8 +45,8 @@ pub const Frustum = struct {
             .planes = [6]Plane{
                 Plane.initFromTriangle(frustum_corners[2], frustum_corners[1], frustum_corners[0]), // far plane
                 Plane.initFromTriangle(frustum_corners[4], frustum_corners[5], frustum_corners[6]), // near plane
-                Plane.initFromTriangle(frustum_corners[4], frustum_corners[1], frustum_corners[0]), // left plane
-                Plane.initFromTriangle(frustum_corners[6], frustum_corners[2], frustum_corners[3]), // right plane
+                Plane.initFromTriangle(frustum_corners[0], frustum_corners[1], frustum_corners[4]), // left plane
+                Plane.initFromTriangle(frustum_corners[3], frustum_corners[2], frustum_corners[6]), // right plane
                 Plane.initFromTriangle(frustum_corners[1], frustum_corners[3], frustum_corners[5]), // top plane
                 Plane.initFromTriangle(frustum_corners[4], frustum_corners[2], frustum_corners[0]), // bottom plane
             },
@@ -56,36 +57,31 @@ pub const Frustum = struct {
     /// Check to see if this frustum contains this point
     pub fn containsPoint(self: *const Frustum, point: Vec3) bool {
         // frustum contains a point if it is in front of all planes
-        // for(self.planes) |p| {
-        //     if(p.testPoint(point) == .BACK)
-        //         return false;
-        // }
-
-        // far test
-        if(self.planes[0].testPoint(point) == .FRONT)
-            return false;
-
-        // near test
-        if(self.planes[1].testPoint(point) == .FRONT)
-            return false;
-
-        // left test
-        if(self.planes[2].testPoint(point) == .BACK)
-            return false;
-
-        // right test
-        if(self.planes[3].testPoint(point) == .BACK)
-            return false;
-
-        // top test
-        if(self.planes[4].testPoint(point) == .FRONT)
-            return false;
-
-        // bottom test
-        if(self.planes[5].testPoint(point) == .FRONT)
-            return false;
+        for(self.planes) |p| {
+            if(p.testPoint(point) == .BACK)
+                return false;
+        }
 
         return true;
+    }
+
+    /// Check to see if this frustum contains all or part of this bounding box
+    pub fn containsBoundingBox(self: *const Frustum, bounds: boundingbox.BoundingBox) bool {
+        // frustum contains a bounding box if any point is in front of all planes
+        for(bounds.getCorners()) |point| {
+            var in_frustum: bool = true;
+
+            for(self.planes) |p| {
+                if(p.testPoint(point) == .BACK)
+                    in_frustum = false;
+            }
+
+            // if this point was in front of all planes, then part of this box is visible
+            if(in_frustum)
+                return true;
+        }
+
+        return false;
     }
 };
 
