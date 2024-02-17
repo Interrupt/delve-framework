@@ -2,7 +2,6 @@
 
 Todo:
 [ ] GUI (Dear imgui?)
-[ ] Basic collisions
 [ ] Font loading
 [ ] Lua - bind types
 [ ] Animated Meshes
@@ -20,3 +19,5 @@ Done:
 [x] Sprite batch example (Forest!)
 [x] Interpolation functions
 [x] Offscreen render targets
+[x] Basic Collision - Axis Aligned Bounding Boxes
+[x] Camera View Frustum
