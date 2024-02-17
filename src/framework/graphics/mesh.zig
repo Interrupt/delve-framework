@@ -9,6 +9,7 @@ const boundingbox = @import("../spatial/boundingbox.zig");
 const Vertex = graphics.Vertex;
 const Color = colors.Color;
 const Rect = @import("../spatial/rect.zig").Rect;
+const Frustum = @import("../spatial/frustum.zig").Frustum;
 const Vec3 = math.Vec3;
 const Vec2 = math.Vec2;
 
@@ -240,7 +241,7 @@ pub const MeshBuilder = struct {
             try self.vertices.append(Vertex.mulMat4(vert, transform));
         }
 
-        const v_pos = @as(u32, self.indices.items.len);
+        const v_pos = @as(u32, @intCast(self.indices.items.len));
         for (indices) |idx| {
             try self.indices.append(idx + v_pos);
         }
@@ -267,6 +268,34 @@ pub const MeshBuilder = struct {
         try self.addRect(rect_south, transform.mul(math.Mat4.translate(Vec3.new(pos.x, pos.y, pos.z + size.z * 0.5)).mul(rot_south)), color);
         try self.addRect(rect_top, transform.mul(math.Mat4.translate(Vec3.new(pos.x, pos.y + size.y * 0.5, pos.z)).mul(rot_top)), color);
         try self.addRect(rect_bottom, transform.mul(math.Mat4.translate(Vec3.new(pos.x, pos.y - size.y * 0.5, pos.z)).mul(rot_bottom)), color);
+    }
+
+    pub fn addFrustum(self: *MeshBuilder, frustum: Frustum, transform: math.Mat4, color: Color) !void {
+        const corners = frustum.corners;
+
+        // front
+        try self.addTriangle(corners[0], corners[1], corners[2], transform, color);
+        try self.addTriangle(corners[2], corners[1], corners[3], transform, color);
+
+        // back
+        try self.addTriangle(corners[6], corners[5], corners[4], transform, color);
+        try self.addTriangle(corners[7], corners[5], corners[6], transform, color);
+
+        // left
+        try self.addTriangle(corners[4], corners[1], corners[0], transform, color);
+        try self.addTriangle(corners[4], corners[5], corners[1], transform, color);
+
+        // right
+        try self.addTriangle(corners[2], corners[3], corners[6], transform, color);
+        try self.addTriangle(corners[6], corners[3], corners[7], transform, color);
+
+        // top
+        try self.addTriangle(corners[5], corners[3], corners[1], transform, color);
+        try self.addTriangle(corners[7], corners[3], corners[5], transform, color);
+
+        // bottom
+        try self.addTriangle(corners[0], corners[2], corners[4], transform, color);
+        try self.addTriangle(corners[4], corners[2], corners[6], transform, color);
     }
 
     /// Bakes a mesh out of the mesh builder from the current state
