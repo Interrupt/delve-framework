@@ -183,6 +183,64 @@ pub const Vec3 = extern struct {
     pub const down = Vec3.new(0.0, -1.0, 0.0);
 };
 
+pub const Vec4 = extern struct {
+    x: f32,
+    y: f32,
+    z: f32,
+    w: f32,
+
+    pub fn fromArray(val: [4]f32) Vec4 {
+        return Vec4{ .x = val[0], .y = val[1], .z = val[2], .w = val[3] };
+    }
+
+    pub fn new(x: f32, y: f32, z: f32, w: f32) Vec4 {
+        return Vec4{ .x = x, .y = y, .z = z, .w = w };
+    }
+
+    pub fn add(left: *const Vec4, right: Vec4) Vec3 {
+        return Vec4{ .x = left.x + right.x, .y = left.y + right.y, .z = left.z + right.z, .w = left.w + right.w };
+    }
+
+    pub fn sub(left: *const Vec4, right: Vec4) Vec3 {
+        return Vec4{ .x = left.x - right.x, .y = left.y - right.y, .z = left.z - right.z, .w = left.w - right.w };
+    }
+
+    pub fn scale(v: *const Vec4, s: f32) Vec4 {
+        return Vec4{ .x = v.x * s, .y = v.y * s, .z = v.z * s, .w = v.w * s };
+    }
+
+    pub fn mul(left: *const Vec4, right: Vec4) Vec4 {
+        return Vec4{ .x = left.x * right.x, .y = left.y * right.y, .z = left.z * right.z, .w = left.w * right.w };
+    }
+
+    pub fn mulMat4(v: *const Vec4, self: Mat4) Vec4 {
+        const x = (self.m[0][0] * v.x) + (self.m[1][0] * v.y) + (self.m[2][0] * v.z) + (self.m[3][0] * v.w);
+        const y = (self.m[0][1] * v.x) + (self.m[1][1] * v.y) + (self.m[2][1] * v.z) + (self.m[3][1] * v.w);
+        const z = (self.m[0][2] * v.x) + (self.m[1][2] * v.y) + (self.m[2][2] * v.z) + (self.m[3][2] * v.w);
+        const w = (self.m[0][3] * v.x) + (self.m[1][3] * v.y) + (self.m[2][3] * v.z) + (self.m[3][3] * v.w);
+
+        return Vec4.new(x, y, z, w);
+    }
+
+    pub fn len(self: *const Vec4) f32 {
+        const v = Vec3.new(self.x, self.y, self.z);
+        return math.sqrt(v.dot(Vec3.new(v.x, v.y, v.z)));
+    }
+
+    pub fn norm(v: *const Vec4) Vec4 {
+        const l = Vec4.len(v);
+        if (l != 0.0) {
+            return Vec4{ .x = v.x / l, .y = v.y / l, .z = v.z / l, .w = v.w / l };
+        } else {
+            return Vec4.new(0,0,0,0);
+        }
+    }
+
+    pub fn toVec3(v: *const Vec4) Vec3 {
+        return Vec3.new(v.x, v.y, v.z);
+    }
+};
+
 pub const Mat4 = extern struct {
     m: [4][4]f32,
 
@@ -220,6 +278,55 @@ pub const Mat4 = extern struct {
         res.m[3][2] = self.m[2][3];
         res.m[3][3] = self.m[3][3];
         return res;
+    }
+
+    pub fn detsubs(self: *const Mat4) [12]f32 {
+        return .{
+            self.m[0][0] * self.m[1][1] - self.m[1][0] * self.m[0][1],
+            self.m[0][0] * self.m[1][2] - self.m[1][0] * self.m[0][2],
+            self.m[0][0] * self.m[1][3] - self.m[1][0] * self.m[0][3],
+            self.m[0][1] * self.m[1][2] - self.m[1][1] * self.m[0][2],
+            self.m[0][1] * self.m[1][3] - self.m[1][1] * self.m[0][3],
+            self.m[0][2] * self.m[1][3] - self.m[1][2] * self.m[0][3],
+
+            self.m[2][0] * self.m[3][1] - self.m[3][0] * self.m[2][1],
+            self.m[2][0] * self.m[3][2] - self.m[3][0] * self.m[2][2],
+            self.m[2][0] * self.m[3][3] - self.m[3][0] * self.m[2][3],
+            self.m[2][1] * self.m[3][2] - self.m[3][1] * self.m[2][2],
+            self.m[2][1] * self.m[3][3] - self.m[3][1] * self.m[2][3],
+            self.m[2][2] * self.m[3][3] - self.m[3][2] * self.m[2][3],
+        };
+    }
+
+    /// Inverts a matrix
+    pub fn invert(self: *const Mat4) Mat4 {
+        var inv_mat: Mat4 = undefined;
+
+        const s = detsubs(self);
+
+        const determ = 1 / (s[0] * s[11] - s[1] * s[10] + s[2] * s[9] + s[3] * s[8] - s[4] * s[7] + s[5] * s[6]);
+
+        inv_mat.m[0][0] = determ * (self.m[1][1] * s[11] - self.m[1][2] * s[10] + self.m[1][3] * s[9]);
+        inv_mat.m[0][1] = determ * -(self.m[0][1] * s[11] - self.m[0][2] * s[10] + self.m[0][3] * s[9]);
+        inv_mat.m[0][2] = determ * (self.m[3][1] * s[5] - self.m[3][2] * s[4] + self.m[3][3] * s[3]);
+        inv_mat.m[0][3] = determ * -(self.m[2][1] * s[5] - self.m[2][2] * s[4] + self.m[2][3] * s[3]);
+
+        inv_mat.m[1][0] = determ * -(self.m[1][0] * s[11] - self.m[1][2] * s[8] + self.m[1][3] * s[7]);
+        inv_mat.m[1][1] = determ * (self.m[0][0] * s[11] - self.m[0][2] * s[8] + self.m[0][3] * s[7]);
+        inv_mat.m[1][2] = determ * -(self.m[3][0] * s[5] - self.m[3][2] * s[2] + self.m[3][3] * s[1]);
+        inv_mat.m[1][3] = determ * (self.m[2][0] * s[5] - self.m[2][2] * s[2] + self.m[2][3] * s[1]);
+
+        inv_mat.m[2][0] = determ * (self.m[1][0] * s[10] - self.m[1][1] * s[8] + self.m[1][3] * s[6]);
+        inv_mat.m[2][1] = determ * -(self.m[0][0] * s[10] - self.m[0][1] * s[8] + self.m[0][3] * s[6]);
+        inv_mat.m[2][2] = determ * (self.m[3][0] * s[4] - self.m[3][1] * s[2] + self.m[3][3] * s[0]);
+        inv_mat.m[2][3] = determ * -(self.m[2][0] * s[4] - self.m[2][1] * s[2] + self.m[2][3] * s[0]);
+
+        inv_mat.m[3][0] = determ * -(self.m[1][0] * s[9] - self.m[1][1] * s[7] + self.m[1][2] * s[6]);
+        inv_mat.m[3][1] = determ * (self.m[0][0] * s[9] - self.m[0][1] * s[7] + self.m[0][2] * s[6]);
+        inv_mat.m[3][2] = determ * -(self.m[3][0] * s[3] - self.m[3][1] * s[1] + self.m[3][2] * s[0]);
+        inv_mat.m[3][3] = determ * (self.m[2][0] * s[3] - self.m[2][1] * s[1] + self.m[2][2] * s[0]);
+
+        return inv_mat;
     }
 
     pub fn scale(scaleVec3: Vec3) Mat4 {
@@ -519,4 +626,16 @@ test "Vec3.mulMat4" {
     assert(v.x == 3.0);
     assert(v.y == 2.0);
     assert(v.z == 0.0);
+}
+
+test "Mat4.invert" {
+    const m = Mat4.persp(60.0, 1.33333337, 0.01, 10.0);
+    const inverted = m.invert();
+
+    const before = Vec3.new(1,10,-1);
+    const transformed = before.mulMat4(m);
+    const after = transformed.mulMat4(inverted);
+
+    // std.debug.print("\n\nBefore: {}, After: {}\n", .{before, after});
+    assert(std.meta.eql(before, after));
 }

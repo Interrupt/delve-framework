@@ -129,6 +129,37 @@ pub const Plane = struct {
 
         return start.add(norm_dir.scale(t));
     }
+
+    /// Returns the intersection point of three non-parallel planes
+    /// From the Celeste64 source
+    pub fn planeIntersectPoint(a: Plane, b: Plane, c: Plane) Vec3 {
+        // Formula used
+		//                d1 ( N2 * N3 ) + d2 ( N3 * N1 ) + d3 ( N1 * N2 )
+		//P =   -------------------------------------------------------------------------
+		//                             N1 . ( N2 * N3 )
+		//
+		// Note: N refers to the normal, d refers to the displacement. '.' means dot product. '*' means cross product
+
+		const f = -a.normal.dot(b.normal.cross(c.normal));
+		const v1 = b.normal.cross(c.normal).scale(a.d);
+		const v2 = c.normal.cross(a.normal).scale(b.d);
+		const v3 = a.normal.cross(b.normal).scale(c.d);
+
+        // (v1 + v2 + v3) / f
+        const ret = v1.add(v2).add(v3);
+        return ret.scale(1.0 / f);
+    }
+
+    pub fn normalize(self: *const Plane) Plane {
+        var ret = self.*;
+        const scale = 1.0 / self.normal.len();
+
+        // normalize the normal, and adjust d the same amount
+        ret.normal = ret.normal.norm();
+        ret.d *= scale;
+
+        return ret;
+    }
 };
 
 test "Plane.distanceToPoint" {
@@ -186,4 +217,15 @@ test "Plane.intersectRay" {
     assert(std.meta.eql(plane.intersectRay(Vec3.new(0,0,0), Vec3.new(0,0,1)), Vec3.new(0,0,5)));
     assert(plane.intersectRay(Vec3.new(0,0,0), Vec3.new(0,0,-1)) == null);
     assert(std.meta.eql(plane.intersectRay(Vec3.new(0,0,10), Vec3.new(0,0,-1)), Vec3.new(0,0,5)));
+}
+
+test "Plane.planeIntersectPoint" {
+    const plane1 = Plane.init(Vec3.new(0, 0, 1), Vec3.new(1,0,5));
+    const plane2 = Plane.init(Vec3.new(1, 0, 0), Vec3.new(1,1,5));
+    const plane3 = Plane.init(Vec3.new(0, 1, 0), Vec3.new(0,4,5));
+
+    const intersect = Plane.planeIntersectPoint(plane1, plane2, plane3);
+    assert(intersect.x == 1);
+    assert(intersect.y == 4);
+    assert(intersect.z == 5);
 }
