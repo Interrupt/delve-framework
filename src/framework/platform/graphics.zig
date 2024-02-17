@@ -124,6 +124,10 @@ pub const Vertex = struct {
         ret.z = vec.z;
         return ret;
     }
+
+    pub fn getPosition(self: *const Vertex) Vec3 {
+        return Vec3.new(self.x, self.y, self.z);
+    }
 };
 
 /// The options used when creating a new Binding

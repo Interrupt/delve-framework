@@ -1,5 +1,6 @@
 const std = @import("std");
 const math = @import("../math.zig");
+const graphics = @import("../platform/graphics.zig");
 const assert = std.debug.assert;
 
 const Vec3 = math.Vec3;
@@ -31,6 +32,27 @@ pub const BoundingBox = struct {
         for(positions) |pos| {
             min = Vec3.min(min, pos);
             max = Vec3.max(max, pos);
+        }
+
+        return BoundingBox{
+            .center = Vec3.new(min.x + (max.x - min.x) * 0.5, min.y + (max.y - min.y) * 0.5, min.z + (max.z - min.z) * 0.5),
+            .min = min,
+            .max = max,
+        };
+    }
+
+    /// Creates a new bounding box that fits some verts
+    pub fn initFromVerts(verts: []const graphics.Vertex) BoundingBox {
+        if(verts.len == 0)
+            return BoundingBox{.center = Vec3.zero, .min = Vec3.zero, .max = Vec3.zero};
+
+        var min = verts[0].getPosition();
+        var max = verts[0].getPosition();
+
+        for(verts) |vert| {
+            const vert_pos = vert.getPosition();
+            min = Vec3.min(min, vert_pos);
+            max = Vec3.max(max, vert_pos);
         }
 
         return BoundingBox{

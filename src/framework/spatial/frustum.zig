@@ -65,6 +65,16 @@ pub const Frustum = struct {
         return true;
     }
 
+    /// Check to see if this frustum contains this sphere
+    pub fn containsSphere(self: *const Frustum, point: Vec3, radius: f32) bool {
+        for(self.planes) |p| {
+            if(p.distanceToPoint(point) < -radius)
+                return false;
+        }
+
+        return true;
+    }
+
     /// Check to see if this frustum contains all or part of this bounding box
     pub fn containsBoundingBox(self: *const Frustum, bounds: boundingbox.BoundingBox) bool {
         // frustum contains a bounding box if any point is in front of all planes

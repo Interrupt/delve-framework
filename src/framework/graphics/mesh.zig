@@ -4,6 +4,7 @@ const debug = @import("../debug.zig");
 const zmesh = @import("zmesh");
 const math = @import("../math.zig");
 const colors = @import("../colors.zig");
+const boundingbox = @import("../spatial/boundingbox.zig");
 
 const Vertex = graphics.Vertex;
 const Color = colors.Color;
@@ -24,9 +25,12 @@ pub const MeshConfig = struct {
     material: ?graphics.Material = null,
 };
 
+/// A mesh is a drawable set of vertex positions, normals, tangents, and uvs.
+/// These can be created on the fly, using a MeshBuilder, or loaded from GLTF files.
 pub const Mesh = struct {
     bindings: graphics.Bindings = undefined,
     material: graphics.Material = undefined,
+    bounds: boundingbox.BoundingBox = undefined,
 
     pub fn initFromFile(filename: [:0]const u8, cfg: MeshConfig) ?Mesh {
         zmesh.init(allocator);
@@ -94,8 +98,14 @@ pub const Mesh = struct {
         self.bindings.destroy();
     }
 
+    /// Draw this mesh
     pub fn draw(self: *Mesh, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
         graphics.drawWithMaterial(&self.bindings, &self.material, proj_view_matrix, model_matrix);
+    }
+
+    /// Draw this mesh, using the specified material instead of the set one
+    pub fn drawWithMaterial(self: *Mesh, material: *graphics.Material, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
+        graphics.drawWithMaterial(&self.bindings, material, proj_view_matrix, model_matrix);
     }
 };
 
@@ -118,6 +128,7 @@ pub fn createMeshWithLayout(vertices: []graphics.Vertex, indices: []u32, normals
     const m: Mesh = Mesh{
         .bindings = bindings,
         .material = material,
+        .bounds = boundingbox.BoundingBox.initFromVerts(vertices),
     };
     return m;
 }
