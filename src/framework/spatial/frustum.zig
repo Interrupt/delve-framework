@@ -31,14 +31,14 @@ pub const Frustum = struct {
 
         // corners in world space
         const frustum_corners = [_]math.Vec3{
-            frustum_corners_clip[0].mulMat4(inv_proj_view).toVec3(),
-            frustum_corners_clip[1].mulMat4(inv_proj_view).toVec3(),
-            frustum_corners_clip[2].mulMat4(inv_proj_view).toVec3(),
-            frustum_corners_clip[3].mulMat4(inv_proj_view).toVec3(),
-            frustum_corners_clip[4].mulMat4(inv_proj_view).toVec3(),
-            frustum_corners_clip[5].mulMat4(inv_proj_view).toVec3(),
-            frustum_corners_clip[6].mulMat4(inv_proj_view).toVec3(),
-            frustum_corners_clip[7].mulMat4(inv_proj_view).toVec3(),
+            frustum_corners_clip[0].projMat4(inv_proj_view).toVec3(),
+            frustum_corners_clip[1].projMat4(inv_proj_view).toVec3(),
+            frustum_corners_clip[2].projMat4(inv_proj_view).toVec3(),
+            frustum_corners_clip[3].projMat4(inv_proj_view).toVec3(),
+            frustum_corners_clip[4].projMat4(inv_proj_view).toVec3(),
+            frustum_corners_clip[5].projMat4(inv_proj_view).toVec3(),
+            frustum_corners_clip[6].projMat4(inv_proj_view).toVec3(),
+            frustum_corners_clip[7].projMat4(inv_proj_view).toVec3(),
         };
 
         return Frustum {

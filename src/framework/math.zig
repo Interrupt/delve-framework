@@ -213,13 +213,15 @@ pub const Vec4 = extern struct {
         return Vec4{ .x = left.x * right.x, .y = left.y * right.y, .z = left.z * right.z, .w = left.w * right.w };
     }
 
-    pub fn mulMat4(v: *const Vec4, self: Mat4) Vec4 {
+    pub fn projMat4(v: *const Vec4, self: Mat4) Vec4 {
+        const inv_w = 1.0 / (v.x * self.m[0][3] + v.y * self.m[1][3] + v.z * self.m[2][3] + self.m[3][3]);
+
         const x = (self.m[0][0] * v.x) + (self.m[1][0] * v.y) + (self.m[2][0] * v.z) + (self.m[3][0] * v.w);
         const y = (self.m[0][1] * v.x) + (self.m[1][1] * v.y) + (self.m[2][1] * v.z) + (self.m[3][1] * v.w);
         const z = (self.m[0][2] * v.x) + (self.m[1][2] * v.y) + (self.m[2][2] * v.z) + (self.m[3][2] * v.w);
         const w = (self.m[0][3] * v.x) + (self.m[1][3] * v.y) + (self.m[2][3] * v.z) + (self.m[3][3] * v.w);
 
-        return Vec4.new(x, y, z, w);
+        return Vec4.new(x * inv_w, y * inv_w, z * inv_w, w);
     }
 
     pub fn len(self: *const Vec4) f32 {
