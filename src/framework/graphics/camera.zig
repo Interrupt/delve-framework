@@ -126,7 +126,7 @@ pub const Camera = struct {
     pub fn pitch(self: *Camera, angle: f32) void {
         self.pitch_angle += angle;
 
-        if(self.limit_pitch)
+        if (self.limit_pitch)
             self.pitch_angle = std.math.clamp(self.pitch_angle, self.pitch_min, self.pitch_max);
 
         self.updateDirection();
@@ -135,6 +135,24 @@ pub const Camera = struct {
     /// Rotate the camera around its view direction
     pub fn roll(self: *Camera, angle: f32) void {
         self.roll_angle += angle;
+    }
+
+    /// Set this camera's yaw to a set angle
+    pub fn setYaw(self: *Camera, angle: f32) void {
+        self.yaw_angle = angle;
+        self.updateDirection();
+    }
+
+    /// Set this camera's pitch to a set angle
+    pub fn setPitch(self: *Camera, angle: f32) void {
+        self.pitch_angle = angle;
+        self.updateDirection();
+    }
+
+    /// Set this camera's roll to a set angle
+    pub fn setRoll(self: *Camera, angle: f32) void {
+        self.roll_angle = angle;
+        self.updateDirection();
     }
 
     /// A simple FPS flying camera, for examples and debugging

@@ -41,7 +41,7 @@ pub fn build(b: *std.Build) void {
     makeDelveLibrary(b, lib, target, optimize);
     b.installArtifact(lib);
 
-    const examples = [_][]const u8 {
+    const examples = [_][]const u8{
         "audio",
         "sprites",
         "sprite-animation",
@@ -51,6 +51,7 @@ pub fn build(b: *std.Build) void {
         "easing",
         "forest",
         "framepacing",
+        "frustums",
         "lua",
         "meshbuilder",
         "meshes",
@@ -58,7 +59,7 @@ pub fn build(b: *std.Build) void {
         "stresstest",
     };
 
-    inline for(examples) |example| {
+    inline for (examples) |example| {
         buildExample(b, example, target, optimize, delve_module, lib);
     }
 
