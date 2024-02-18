@@ -41,7 +41,7 @@ pub const Frustum = struct {
             frustum_corners_clip[7].projMat4(inv_proj_view).toVec3(),
         };
 
-        return Frustum {
+        return Frustum{
             .planes = [6]Plane{
                 Plane.initFromTriangle(frustum_corners[2], frustum_corners[1], frustum_corners[0]), // far plane
                 Plane.initFromTriangle(frustum_corners[4], frustum_corners[5], frustum_corners[6]), // near plane
@@ -57,8 +57,8 @@ pub const Frustum = struct {
     /// Check to see if this frustum contains this point
     pub fn containsPoint(self: *const Frustum, point: Vec3) bool {
         // frustum contains a point if it is in front of all planes
-        for(self.planes) |p| {
-            if(p.testPoint(point) == .BACK)
+        for (self.planes) |p| {
+            if (p.testPoint(point) == .BACK)
                 return false;
         }
 
@@ -67,8 +67,8 @@ pub const Frustum = struct {
 
     /// Check to see if this frustum contains this sphere
     pub fn containsSphere(self: *const Frustum, point: Vec3, radius: f32) bool {
-        for(self.planes) |p| {
-            if(p.distanceToPoint(point) < -radius)
+        for (self.planes) |p| {
+            if (p.distanceToPoint(point) < -radius)
                 return false;
         }
 
@@ -77,27 +77,26 @@ pub const Frustum = struct {
 
     /// Check to see if this frustum contains all or part of this bounding box
     pub fn containsBoundingBox(self: *const Frustum, bounds: boundingbox.BoundingBox) bool {
-        // frustum contains a bounding box if any point is in front of all planes
-        for(bounds.getCorners()) |point| {
-            var in_frustum: bool = true;
-
-            for(self.planes) |p| {
-                if(p.testPoint(point) == .BACK)
-                    in_frustum = false;
-            }
-
-            // if this point was in front of all planes, then part of this box is visible
-            if(in_frustum)
-                return true;
+        for (self.planes) |p| {
+            const corners = bounds.getCorners();
+            if (p.testPoint(corners[0]) != .BACK) continue;
+            if (p.testPoint(corners[1]) != .BACK) continue;
+            if (p.testPoint(corners[2]) != .BACK) continue;
+            if (p.testPoint(corners[3]) != .BACK) continue;
+            if (p.testPoint(corners[4]) != .BACK) continue;
+            if (p.testPoint(corners[5]) != .BACK) continue;
+            if (p.testPoint(corners[6]) != .BACK) continue;
+            if (p.testPoint(corners[7]) != .BACK) continue;
+            return false;
         }
 
-        return false;
+        return true;
     }
 };
 
 test "Frustum.init" {
     const proj_mat = Mat4.ortho(-2, 3, -4, 5, 0.1, 21);
-    const view_mat = Mat4.lookat(Vec3.new(0,0,0), Vec3.zero.add(Vec3.new(0,0,1)), Vec3.up);
+    const view_mat = Mat4.lookat(Vec3.new(0, 0, 0), Vec3.zero.add(Vec3.new(0, 0, 1)), Vec3.up);
     const frustum = Frustum.init(proj_mat.mul(view_mat));
 
     // std.debug.print("\n", .{});
@@ -105,10 +104,10 @@ test "Frustum.init" {
     //     std.debug.print("plane: {}\n", .{p});
     // }
 
-    assert(std.meta.eql(frustum.planes[0].normal, Vec3.new(0,0,-1))); // far
-    assert(std.meta.eql(frustum.planes[1].normal, Vec3.new(0,0,1))); // near
-    assert(std.meta.eql(frustum.planes[2].normal, Vec3.new(1,0,0))); // left
-    assert(std.meta.eql(frustum.planes[3].normal, Vec3.new(-1,0,0))); // right
-    assert(std.meta.eql(frustum.planes[4].normal, Vec3.new(0,-1,0))); // top
-    assert(std.meta.eql(frustum.planes[5].normal, Vec3.new(0,1,0))); // bottom
+    assert(std.meta.eql(frustum.planes[0].normal, Vec3.new(0, 0, -1))); // far
+    assert(std.meta.eql(frustum.planes[1].normal, Vec3.new(0, 0, 1))); // near
+    assert(std.meta.eql(frustum.planes[2].normal, Vec3.new(-1, 0, 0))); // left
+    assert(std.meta.eql(frustum.planes[3].normal, Vec3.new(1, 0, 0))); // right
+    assert(std.meta.eql(frustum.planes[4].normal, Vec3.new(0, -1, 0))); // top
+    assert(std.meta.eql(frustum.planes[5].normal, Vec3.new(0, 1, 0))); // bottom
 }
