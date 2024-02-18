@@ -29,7 +29,7 @@ pub const Sound = struct {
 
     /// Checks if this sound is still alive
     pub fn isAlive(self: *Sound) bool {
-        var found = loaded_sounds.get(self.handle);
+        const found = loaded_sounds.get(self.handle);
         if (found != null)
             return found.ready_for_cleanup;
 
@@ -38,14 +38,14 @@ pub const Sound = struct {
 
     /// Marks this sound as being ready for cleanup
     pub fn requestDestroy(self: *Sound) void {
-        var found = loaded_sounds.getPtr(self.handle);
+        const found = loaded_sounds.getPtr(self.handle);
         if (found) |loaded_sound|
             loaded_sound.ready_for_cleanup = true;
     }
 
     /// Whether this sound needs to be garbage collected
     pub fn needsCleanup(self: *Sound) bool {
-        var found = loaded_sounds.getPtr(self.handle);
+        const found = loaded_sounds.getPtr(self.handle);
         if (found) |loaded_sound|
             return loaded_sound.ready_for_cleanup;
 
@@ -327,7 +327,7 @@ pub fn on_cleanup() void {
 /// Don't hold onto the result of this! It could be garbage collected
 fn getZaudioSound(handle: u64) ?*zaudio.Sound {
     // Need to do a little dance to get the actual zaudio sound pointer
-    var found = loaded_sounds.getPtr(handle);
+    const found = loaded_sounds.getPtr(handle);
     if (found) |loaded_sound| {
         if (loaded_sound.zaudio_sound) |sound|
             return sound;

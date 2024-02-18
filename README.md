@@ -1,6 +1,6 @@
 # Delve Framework
 
-Delve is a simple framework for building games written in Zig using Lua for scripting. Currently targets Zig 0.11.0
+Delve is a simple framework for building games written in Zig using Lua for scripting. Currently updated to `Zig 0.12.0-dev.2063+804cee3b9`
 
 *This is in early development and the api is still coming together, so be warned!*
 
@@ -72,50 +72,65 @@ Some example modules are included automatically to exercise some code paths, the
 
 ## Building the examples
 
-Clone the repo, then from a terminal:
-```sh
-# just build
-zig build
+- Download or build supported Zig version (Mentioned at the beginning).
+    - Make sure Zig is added to your OS environment PATH variable
+- Clone this repository:
+    - `git clone --recursive https://github.com/Interrupt/delve-framework.git`
+- Add to your project:
+    - execute commands from target folder
+    - `git submodule add https://github.com/Interrupt/delve-framework.git`
+    - `git submodule update --init --recursive`
+    - edit `build.zig.zon` dependency to point to that directory  
 
-# build and run an example
-zig build run-audio
-zig build run-clear
-zig build run-debugdraw
-zig build run-forest
-zig build run-lua
-zig build run-meshes
-zig build run-sprites
-zig build run-sprite-animation
-zig build run-stresstest
-```
-
-## Integrating into another Zig project
-
-Add the framework to your build.zig.zon file as a dependency:
-
+`build.zig.zon`
 ```
 .{
     .name = "my_project",
     .version = "0.0.1",
     .dependencies = .{
         .delve = .{
-            .url = "https://github.com/interrupt/delve-framework/archive/refs/tags/0.0.2.tar.gz",
-            .hash = "1220b7bea202d8eb41a70b1f6fb5511d92d1fde891410de1cb8923b4ebf046f21e7c",
+            .path = "path/to/delve-framework",
         },
     },
 }
 ```
-
-Then in your build.zig file, Delve can be included as a dependency:
-
+`build.zig`
 ```
-const delve = b.dependency("delve", .{
-    .target = target,
-    .optimize = optimize,
-});
+    const delve = b.dependency("delve", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    exe.root_module.addImport("delve", delve.module("delve"));
+```
 
-...
 
-exe.addModule("delve", delve.module("delve"));
-exe.linkLibrary(delve.artifact("delve"));
+
+### Just build
+```java
+zig build
+```
+
+### Build and run an example
+```
+zig build run-audio
+zig build run-clear
+zig build run-collision
+zig build run-debugdraw
+zig build run-easing
+zig build run-forest
+zig build run-framepacing
+zig build run-lua
+zig build run-meshbuilder
+zig build run-meshes
+zig build run-passes
+zig build run-sprite-animation
+zig build run-sprites
+zig build run-stresstest
+```
+
+### Set optimization
+
+```java
+zig build -Doptimize=ReleaseSafe run-forest
+zig build -Doptimize=ReleaseSmall run-forest
 ```

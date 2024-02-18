@@ -108,6 +108,7 @@ pub const examples_bg_dark: Color = Color.newBytes(22, 22, 35, 255);
 pub const examples_bg_light: Color = Color.newBytes(200, 200, 200, 255);
 
 pub fn init() !void {
+    images.init();
     palette = try loadBuiltinPalette();
 }
 
@@ -116,7 +117,7 @@ pub fn deinit() void {}
 /// Sets the palette using the statically included default
 pub fn loadBuiltinPalette() ![64]Color {
     var palette_img = try images.loadBytes(builtin_palette);
-    defer palette_img.destroy();
+    defer palette_img.deinit();
 
     return fillPalette(palette_img);
 }
@@ -124,7 +125,7 @@ pub fn loadBuiltinPalette() ![64]Color {
 /// Sets the palette from a file
 pub fn loadPaletteFromFile(filename: [:0]const u8) ![64]Color {
     var palette_img = try images.loadFile(filename);
-    defer palette_img.destroy();
+    defer palette_img.deinit();
 
     return fillPalette(palette_img);
 }
@@ -135,17 +136,17 @@ pub fn fillPalette(palette_img: images.Image) [64]Color {
 
     // Load the colors into the palette
     for (0..palette_img.width * palette_img.height) |i| {
-        var color_idx = i * palette_img.channels;
+        const color_idx = i * palette_img.num_components;
 
         if (i >= new_palette.len)
             break;
 
-        if (color_idx >= palette_img.height * palette_img.pitch)
+        if (color_idx >= palette_img.height * palette_img.bytes_per_row)
             break;
 
-        const r = palette_img.raw[color_idx];
-        const g = palette_img.raw[color_idx + 1];
-        const b = palette_img.raw[color_idx + 2];
+        const r = palette_img.data[color_idx];
+        const g = palette_img.data[color_idx + 1];
+        const b = palette_img.data[color_idx + 2];
 
         const c = graphics.Color{
             .r = @as(f32, @floatFromInt(r)) / 256.0,

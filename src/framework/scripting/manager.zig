@@ -59,7 +59,7 @@ fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
         var found: []const ScriptFn = &[_]ScriptFn{};
         for (gen_fields) |d| {
             // convert the name string to be :0 terminated
-            var field_name: [:0]const u8 = d.name ++ "";
+            const field_name: [:0]const u8 = d.name ++ "";
 
             found = found ++ .{wrapFn(field_name, @field(module, d.name))};
         }
