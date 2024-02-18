@@ -103,6 +103,7 @@ pub fn build(b: *std.Build) !void {
         &[_]String{ "easing", "src/examples/easing.zig" },
         &[_]String{ "forest", "src/examples/forest.zig" },
         &[_]String{ "framepacing", "src/examples/framepacing.zig" },
+        &[_]String{ "frustums", "src/examples/frustums.zig" },
         &[_]String{ "lua", "src/examples/lua.zig" },
         &[_]String{ "meshbuilder", "src/examples/meshbuilder.zig" },
         &[_]String{ "meshes", "src/examples/meshes.zig" },
