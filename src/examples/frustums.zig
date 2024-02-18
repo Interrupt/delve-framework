@@ -45,7 +45,7 @@ pub fn on_init() void {
 
     material_highlight = delve.platform.graphics.Material.init(.{
         .shader = delve.platform.graphics.Shader.initDefault(.{}),
-        .texture_0 = delve.platform.graphics.createSolidTexture(0xFFFF0000),
+        .texture_0 = delve.platform.graphics.createSolidTexture(0xFF0000CC),
     });
 
     // create our two cameras - one for the real camera, and another just to get a smaller frustum from
@@ -53,7 +53,7 @@ pub fn on_init() void {
     secondary_camera = delve.graphics.camera.Camera.initThirdPerson(30.0, 8, 40.0, 5.0, delve.math.Vec3.up);
 
     // set initial camera position
-    primary_camera.position = delve.math.Vec3.new(0,30,32);
+    primary_camera.position = delve.math.Vec3.new(0, 30, 32);
     primary_camera.pitch_angle = -50.0;
 
     // create the two meshes we'll use - a frustum prism, and a cube
@@ -88,15 +88,15 @@ pub fn on_draw() void {
     const proj_view_matrix = primary_camera.getProjView();
     const frustum_model_matrix = delve.math.Mat4.rotate(secondary_camera.yaw_angle, delve.math.Vec3.up);
 
-    for(0..10) |x| {
-        for(0..10) |z| {
+    for (0..10) |x| {
+        for (0..10) |z| {
             const cube_pos = delve.math.Vec3.new(@floatFromInt(x), 0, @floatFromInt(z)).scale(5.0).sub(delve.math.Vec3.new(25, 0, 25));
             const cube_model_matrix = delve.math.Mat4.translate(cube_pos);
 
             const frustum = secondary_camera.getViewFrustum();
             const bounds = cube_mesh.bounds.translate(cube_pos);
 
-            if(frustum.containsBoundingBox(bounds)) {
+            if (frustum.containsBoundingBox(bounds)) {
                 cube_mesh.drawWithMaterial(&material_highlight, proj_view_matrix, cube_model_matrix);
             } else {
                 cube_mesh.draw(proj_view_matrix, cube_model_matrix);
