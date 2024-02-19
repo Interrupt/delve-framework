@@ -7,6 +7,8 @@ const assert = std.debug.assert;
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 
+// Using the implementation from https://www.jkh.me/files/tutorials/Separating%20Axis%20Theorem%20for%20Oriented%20Bounding%20Boxes.pdf
+
 /// A bounding box oriented using a transform matrix
 pub const OrientedBoundingBox = struct {
     min: Vec3,
@@ -61,21 +63,19 @@ pub const OrientedBoundingBox = struct {
 
     /// Checks if two oriented bounding boxes overlap
     pub fn overlaps(self: *const OrientedBoundingBox, other: OrientedBoundingBox) bool {
-        const a_origin: Vec3 = Vec3.zero.mulMat4(self.transform);
         const a_axes: [3]Vec3 = [_]Vec3{
-            Vec3.x_axis.mulMat4(self.transform).sub(a_origin).norm(),
-            Vec3.y_axis.mulMat4(self.transform).sub(a_origin).norm(),
-            Vec3.z_axis.mulMat4(self.transform).sub(a_origin).norm(),
+            Vec3.new(self.transform.m[0][0], self.transform.m[0][1], self.transform.m[0][2]).norm(),
+            Vec3.new(self.transform.m[1][0], self.transform.m[1][1], self.transform.m[1][2]).norm(),
+            Vec3.new(self.transform.m[2][0], self.transform.m[2][1], self.transform.m[2][2]).norm(),
         };
 
-        const b_origin: Vec3 = Vec3.zero.mulMat4(other.transform);
         const b_axes: [3]Vec3 = [_]Vec3{
-            Vec3.x_axis.mulMat4(other.transform).sub(b_origin).norm(),
-            Vec3.y_axis.mulMat4(other.transform).sub(b_origin).norm(),
-            Vec3.z_axis.mulMat4(other.transform).sub(b_origin).norm(),
+            Vec3.new(other.transform.m[0][0], other.transform.m[0][1], other.transform.m[0][2]).norm(),
+            Vec3.new(other.transform.m[1][0], other.transform.m[1][1], other.transform.m[1][2]).norm(),
+            Vec3.new(other.transform.m[2][0], other.transform.m[2][1], other.transform.m[2][2]).norm(),
         };
 
-        const all_axes: [24]Vec3 = [_]Vec3{
+        const all_axes: [15]Vec3 = [_]Vec3{
             a_axes[0],
             a_axes[1],
             a_axes[2],
@@ -91,15 +91,6 @@ pub const OrientedBoundingBox = struct {
             a_axes[2].cross(b_axes[0]),
             a_axes[2].cross(b_axes[1]),
             a_axes[2].cross(b_axes[2]),
-            a_axes[0].scale(-1).cross(b_axes[0]),
-            a_axes[0].scale(-1).cross(b_axes[1]),
-            a_axes[0].scale(-1).cross(b_axes[2]),
-            a_axes[1].scale(-1).cross(b_axes[0]),
-            a_axes[1].scale(-1).cross(b_axes[1]),
-            a_axes[1].scale(-1).cross(b_axes[2]),
-            a_axes[2].scale(-1).cross(b_axes[0]),
-            a_axes[2].scale(-1).cross(b_axes[1]),
-            a_axes[2].scale(-1).cross(b_axes[2]),
         };
 
         var a_corners = self.getCorners();
@@ -112,7 +103,7 @@ pub const OrientedBoundingBox = struct {
     fn intersects(check_axes: []const Vec3, a_vertices: []const Vec3, b_vertices: []const Vec3) bool {
         for (check_axes) |axis| {
             var min_a: f32 = std.math.floatMax(f32);
-            var max_a: f32 = std.math.floatMin(f32);
+            var max_a: f32 = -std.math.floatMax(f32);
 
             // project shape A on an axis
             for (a_vertices) |vert| {
@@ -122,7 +113,7 @@ pub const OrientedBoundingBox = struct {
             }
 
             var min_b: f32 = std.math.floatMax(f32);
-            var max_b: f32 = std.math.floatMin(f32);
+            var max_b: f32 = -std.math.floatMax(f32);
 
             // project shape A on an axis
             for (b_vertices) |vert| {
