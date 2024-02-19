@@ -16,15 +16,27 @@ pub const OrientedBoundingBox = struct {
     center: Vec3,
     transform: Mat4 = math.Mat4.identity,
 
+    // transformed axes and vertex positions will get cached on update
+    vertices: [8]Vec3 = undefined,
+    axes: [3]Vec3 = undefined,
+
     /// Creates a new bounding box based on a position and size
     pub fn init(position: Vec3, size: Vec3, transform_matrix: Mat4) OrientedBoundingBox {
         const half_size = size.scale(0.5);
-        return OrientedBoundingBox{
+        var ret = OrientedBoundingBox{
             .center = position,
             .min = position.sub(half_size),
             .max = position.add(half_size),
             .transform = transform_matrix,
         };
+
+        ret.update();
+        return ret;
+    }
+
+    pub fn update(self: *OrientedBoundingBox) void {
+        self.vertices = self.getCorners();
+        self.axes = self.getAxes();
     }
 
     /// Scale this bounding box
@@ -32,6 +44,7 @@ pub const OrientedBoundingBox = struct {
         var ret = self.*;
         ret.min = ret.min.scale(scale_by);
         ret.max = ret.max.scale(scale_by);
+        ret.update();
         return ret;
     }
 
@@ -41,6 +54,7 @@ pub const OrientedBoundingBox = struct {
         ret.center = ret.center.add(move_by);
         ret.min = ret.min.add(move_by);
         ret.max = ret.max.add(move_by);
+        ret.update();
         return ret;
     }
 
@@ -51,6 +65,7 @@ pub const OrientedBoundingBox = struct {
         var ret = self.*;
         ret.min = ret.min.sub(increase_by);
         ret.max = ret.max.add(increase_by);
+        ret.update();
         return ret;
     }
 
@@ -58,22 +73,14 @@ pub const OrientedBoundingBox = struct {
     pub fn transform(self: *const OrientedBoundingBox, transform_mat: math.Mat4) OrientedBoundingBox {
         var ret = self.*;
         ret.transform = self.transform.mul(transform_mat);
+        ret.update();
         return ret;
     }
 
     /// Checks if two oriented bounding boxes overlap
     pub fn overlaps(self: *const OrientedBoundingBox, other: OrientedBoundingBox) bool {
-        const a_axes: [3]Vec3 = [_]Vec3{
-            Vec3.new(self.transform.m[0][0], self.transform.m[0][1], self.transform.m[0][2]).norm(),
-            Vec3.new(self.transform.m[1][0], self.transform.m[1][1], self.transform.m[1][2]).norm(),
-            Vec3.new(self.transform.m[2][0], self.transform.m[2][1], self.transform.m[2][2]).norm(),
-        };
-
-        const b_axes: [3]Vec3 = [_]Vec3{
-            Vec3.new(other.transform.m[0][0], other.transform.m[0][1], other.transform.m[0][2]).norm(),
-            Vec3.new(other.transform.m[1][0], other.transform.m[1][1], other.transform.m[1][2]).norm(),
-            Vec3.new(other.transform.m[2][0], other.transform.m[2][1], other.transform.m[2][2]).norm(),
-        };
+        const a_axes: [3]Vec3 = self.axes;
+        const b_axes: [3]Vec3 = other.axes;
 
         const all_axes: [15]Vec3 = [_]Vec3{
             a_axes[0],
@@ -93,8 +100,8 @@ pub const OrientedBoundingBox = struct {
             a_axes[2].cross(b_axes[2]),
         };
 
-        var a_corners = self.getCorners();
-        var b_corners = other.getCorners();
+        var a_corners = self.vertices;
+        var b_corners = other.vertices;
 
         return intersects(&all_axes, &a_corners, &b_corners);
     }
@@ -143,6 +150,15 @@ pub const OrientedBoundingBox = struct {
             Vec3.new(self.max.x, self.min.y, self.max.z).mulMat4(self.transform),
             Vec3.new(self.max.x, self.min.y, self.min.z).mulMat4(self.transform),
             Vec3.new(self.min.x, self.min.y, self.max.z).mulMat4(self.transform),
+        };
+    }
+
+    /// Get the X, Y, and Z normals transformed by our transform matrix
+    pub fn getAxes(self: *const OrientedBoundingBox) [3]Vec3 {
+        return [_]Vec3{
+            Vec3.new(self.transform.m[0][0], self.transform.m[0][1], self.transform.m[0][2]).norm(),
+            Vec3.new(self.transform.m[1][0], self.transform.m[1][1], self.transform.m[1][2]).norm(),
+            Vec3.new(self.transform.m[2][0], self.transform.m[2][1], self.transform.m[2][2]).norm(),
         };
     }
 
