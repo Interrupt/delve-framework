@@ -6,6 +6,7 @@ const assert = std.debug.assert;
 
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
+const BoundingBox = @import("boundingbox.zig").BoundingBox;
 
 // Using the implementation from https://www.jkh.me/files/tutorials/Separating%20Axis%20Theorem%20for%20Oriented%20Bounding%20Boxes.pdf
 
@@ -78,7 +79,7 @@ pub const OrientedBoundingBox = struct {
     }
 
     /// Checks if two oriented bounding boxes overlap
-    pub fn overlaps(self: *const OrientedBoundingBox, other: OrientedBoundingBox) bool {
+    pub fn intersectsOBB(self: *const OrientedBoundingBox, other: OrientedBoundingBox) bool {
         const a_axes: [3]Vec3 = self.axes;
         const b_axes: [3]Vec3 = other.axes;
 
@@ -102,6 +103,34 @@ pub const OrientedBoundingBox = struct {
 
         var a_corners = self.vertices;
         var b_corners = other.vertices;
+
+        return intersects(&all_axes, &a_corners, &b_corners);
+    }
+
+    pub fn intersectsAABB(self: *const OrientedBoundingBox, other: BoundingBox) bool {
+        const a_axes: [3]Vec3 = self.axes;
+        const b_axes: [3]Vec3 = [3]Vec3{ Vec3.x_axis, Vec3.y_axis, Vec3.z_axis };
+
+        const all_axes: [15]Vec3 = [_]Vec3{
+            a_axes[0],
+            a_axes[1],
+            a_axes[2],
+            b_axes[0],
+            b_axes[1],
+            b_axes[2],
+            a_axes[0].cross(b_axes[0]),
+            a_axes[0].cross(b_axes[1]),
+            a_axes[0].cross(b_axes[2]),
+            a_axes[1].cross(b_axes[0]),
+            a_axes[1].cross(b_axes[1]),
+            a_axes[1].cross(b_axes[2]),
+            a_axes[2].cross(b_axes[0]),
+            a_axes[2].cross(b_axes[1]),
+            a_axes[2].cross(b_axes[2]),
+        };
+
+        var a_corners = self.vertices;
+        var b_corners = other.getCorners();
 
         return intersects(&all_axes, &a_corners, &b_corners);
     }
@@ -162,15 +191,37 @@ pub const OrientedBoundingBox = struct {
         };
     }
 
-    // /// Check to see if this bounding box contains a point
-    // pub fn contains(self: *const BoundingBox, point: Vec3) bool {
-    //     return point.x >= self.min.x and point.y >= self.min.y and point.z >= self.min.z and
-    //         point.x <= self.max.x and point.y <= self.max.y and point.z <= self.max.z;
-    // }
-    //
-    // /// Check to see if this bounding box contains part or all of another
-    // pub fn intersects(self: *const BoundingBox, other: BoundingBox) bool {
-    //     return other.max.x >= self.min.x and other.max.y >= self.min.y and other.max.z >= self.min.z and
-    //         other.min.x <= self.max.x and other.min.y <= self.max.y and other.min.z <= self.max.z;
-    // }
+    /// Check to see if this bounding box contains a point
+    pub fn contains(self: *const OrientedBoundingBox, point: Vec3) bool {
+        const p = point.mulMat4(self.transform.invert());
+        return p.x >= self.min.x and p.y >= self.min.y and p.z >= self.min.z and
+            p.x <= self.max.x and p.y <= self.max.y and p.z <= self.max.z;
+    }
+
+    /// Check to see if this bounding box completely encloses another
+    pub fn containsOBB(self: *const OrientedBoundingBox, other: OrientedBoundingBox) bool {
+        const inverse_transform = self.transform.invert();
+        for (other.vertices) |point| {
+            const p = point.mulMat4(inverse_transform);
+            const in = p.x >= self.min.x and p.y >= self.min.y and p.z >= self.min.z and
+                p.x <= self.max.x and p.y <= self.max.y and p.z <= self.max.z;
+
+            if (!in)
+                return false;
+        }
+        return true;
+    }
+
+    pub fn containsAABB(self: *const OrientedBoundingBox, other: BoundingBox) bool {
+        const inverse_transform = self.transform.invert();
+        for (other.getCorners()) |point| {
+            const p = point.mulMat4(inverse_transform);
+            const in = p.x >= self.min.x and p.y >= self.min.y and p.z >= self.min.z and
+                p.x <= self.max.x and p.y <= self.max.y and p.z <= self.max.z;
+
+            if (!in)
+                return false;
+        }
+        return true;
+    }
 };
