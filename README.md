@@ -72,15 +72,7 @@ Some example modules are included automatically to exercise some code paths, the
 
 ## Building the examples
 
-- Download or build supported Zig version (Mentioned at the beginning).
-    - Make sure Zig is added to your OS environment PATH variable
-- Clone this repository:
-    - `git clone --recursive https://github.com/Interrupt/delve-framework.git`
-- Add to your project:
-    - execute commands from target folder
-    - `git submodule add https://github.com/Interrupt/delve-framework.git`
-    - `git submodule update --init --recursive`
-    - edit `build.zig.zon` dependency to point to that directory  
+- Add dependency repository link
 
 `build.zig.zon`
 ```
@@ -89,11 +81,13 @@ Some example modules are included automatically to exercise some code paths, the
     .version = "0.0.1",
     .dependencies = .{
         .delve = .{
-            .path = "path/to/delve-framework",
+            .url = "git+https://github.com/Interrupt/delve-framework/tree/0.12.x.git#___COMMIT_HASH___",
+            // add compilers suggested line about .hash
         },
     },
 }
 ```
+- Link dependency module
 `build.zig`
 ```
     const delve = b.dependency("delve", .{
@@ -105,12 +99,12 @@ Some example modules are included automatically to exercise some code paths, the
 
 
 
-### Just build
+- Just build
 ```java
-zig build
+zig build run
 ```
 
-### Build and run an example
+### Build and run an examples
 ```
 zig build run-audio
 zig build run-clear
