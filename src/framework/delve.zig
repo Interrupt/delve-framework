@@ -54,6 +54,7 @@ pub const api = struct {
 pub const spatial = struct {
     pub const Rect = @import("spatial/rect.zig").Rect;
     pub const BoundingBox = @import("spatial/boundingbox.zig").BoundingBox;
+    pub const OrientedBoundingBox = @import("spatial/orientedboundingbox.zig").OrientedBoundingBox;
     pub const Plane = @import("spatial/plane.zig").Plane;
     pub const Frustum = @import("spatial/frustum.zig").Frustum;
 };
