@@ -87,7 +87,7 @@ Some example modules are included automatically to exercise some code paths, the
     },
 }
 ```
-- Link dependency module
+- Link dependency module  
 `build.zig`
 ```
     const delve = b.dependency("delve", .{
@@ -97,14 +97,12 @@ Some example modules are included automatically to exercise some code paths, the
     exe.root_module.addImport("delve", delve.module("delve"));
 ```
 
-
-
 - Just build
 ```java
 zig build run
 ```
 
-### Build and run an examples
+### Build and run examples
 ```
 zig build run-audio
 zig build run-clear
