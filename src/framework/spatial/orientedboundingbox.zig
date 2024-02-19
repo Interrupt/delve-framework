@@ -62,43 +62,26 @@ pub const OrientedBoundingBox = struct {
     /// Checks if two oriented bounding boxes overlap
     pub fn overlaps(self: *const OrientedBoundingBox, other: OrientedBoundingBox) bool {
         const a_origin: Vec3 = Vec3.zero.mulMat4(self.transform);
-        _ = a_origin;
         const a_axes: [3]Vec3 = [_]Vec3{
-            Vec3.new(self.transform.m[0][0], self.transform.m[1][0], self.transform.m[2][0]),
-            Vec3.new(self.transform.m[0][1], self.transform.m[1][1], self.transform.m[2][1]),
-            Vec3.new(self.transform.m[0][2], self.transform.m[1][2], self.transform.m[2][2]),
-            // a_origin.add(Vec3.x_axis.mulMat4(self.transform)).norm(),
-            // a_origin.add(Vec3.y_axis.mulMat4(self.transform)).norm(),
-            // a_origin.add(Vec3.z_axis.mulMat4(self.transform)).norm(),
+            Vec3.x_axis.mulMat4(self.transform).sub(a_origin).norm(),
+            Vec3.y_axis.mulMat4(self.transform).sub(a_origin).norm(),
+            Vec3.z_axis.mulMat4(self.transform).sub(a_origin).norm(),
         };
 
         const b_origin: Vec3 = Vec3.zero.mulMat4(other.transform);
-        _ = b_origin;
         const b_axes: [3]Vec3 = [_]Vec3{
-            Vec3.new(other.transform.m[0][0], other.transform.m[1][0], other.transform.m[2][0]),
-            Vec3.new(other.transform.m[0][1], other.transform.m[1][1], other.transform.m[2][1]),
-            Vec3.new(other.transform.m[0][2], other.transform.m[1][2], other.transform.m[2][2]),
-            // b_origin.add(Vec3.x_axis.mulMat4(other.transform)).norm(),
-            // b_origin.add(Vec3.y_axis.mulMat4(other.transform)).norm(),
-            // b_origin.add(Vec3.z_axis.mulMat4(other.transform)).norm(),
+            Vec3.x_axis.mulMat4(other.transform).sub(b_origin).norm(),
+            Vec3.y_axis.mulMat4(other.transform).sub(b_origin).norm(),
+            Vec3.z_axis.mulMat4(other.transform).sub(b_origin).norm(),
         };
 
         const all_axes: [24]Vec3 = [_]Vec3{
             a_axes[0],
             a_axes[1],
             a_axes[2],
-            a_axes[0].scale(-1),
-            a_axes[1].scale(-1),
-            a_axes[2].scale(-1),
-            Vec3.x_axis,
-            Vec3.y_axis,
-            Vec3.z_axis,
             b_axes[0],
             b_axes[1],
             b_axes[2],
-            b_axes[0].scale(-1),
-            b_axes[1].scale(-1),
-            b_axes[2].scale(-1),
             a_axes[0].cross(b_axes[0]),
             a_axes[0].cross(b_axes[1]),
             a_axes[0].cross(b_axes[2]),
@@ -108,6 +91,15 @@ pub const OrientedBoundingBox = struct {
             a_axes[2].cross(b_axes[0]),
             a_axes[2].cross(b_axes[1]),
             a_axes[2].cross(b_axes[2]),
+            a_axes[0].scale(-1).cross(b_axes[0]),
+            a_axes[0].scale(-1).cross(b_axes[1]),
+            a_axes[0].scale(-1).cross(b_axes[2]),
+            a_axes[1].scale(-1).cross(b_axes[0]),
+            a_axes[1].scale(-1).cross(b_axes[1]),
+            a_axes[1].scale(-1).cross(b_axes[2]),
+            a_axes[2].scale(-1).cross(b_axes[0]),
+            a_axes[2].scale(-1).cross(b_axes[1]),
+            a_axes[2].scale(-1).cross(b_axes[2]),
         };
 
         var a_corners = self.getCorners();
