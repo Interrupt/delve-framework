@@ -22,7 +22,8 @@ pub fn loadFile(file_path: [:0]const u8) !Image {
     );
     defer file.close();
 
-    const file_size = (try file.stat()).size;
+    const file_stat = try file.stat();
+    const file_size: usize = @as(usize, @intCast(file_stat.size));
 
     const contents = try file.reader().readAllAlloc(allocator, file_size);
     defer allocator.free(contents);
