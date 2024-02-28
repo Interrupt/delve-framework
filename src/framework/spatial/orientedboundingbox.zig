@@ -2,10 +2,12 @@ const std = @import("std");
 const math = @import("../math.zig");
 const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
+const plane = @import("plane.zig");
 const assert = std.debug.assert;
 
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
+const Plane = plane.Plane;
 const BoundingBox = @import("boundingbox.zig").BoundingBox;
 
 // Using the implementation from https://www.jkh.me/files/tutorials/Separating%20Axis%20Theorem%20for%20Oriented%20Bounding%20Boxes.pdf
@@ -183,6 +185,18 @@ pub const OrientedBoundingBox = struct {
         };
     }
 
+    pub fn getPlanes(self: *const OrientedBoundingBox) [6]Plane {
+        const axes = self.getAxes();
+        return [6]Plane{
+            Plane.init(axes[0], Vec3.new(self.max.x, self.center.y, self.center.z).mulMat4(self.transform)),
+            Plane.init(axes[0].scale(-1.0), Vec3.new(self.min.x, self.center.y, self.center.z).mulMat4(self.transform)),
+            Plane.init(axes[1], Vec3.new(self.center.x, self.max.y, self.center.z).mulMat4(self.transform)),
+            Plane.init(axes[1].scale(-1.0), Vec3.new(self.center.x, self.min.y, self.center.z).mulMat4(self.transform)),
+            Plane.init(axes[2], Vec3.new(self.center.x, self.center.y, self.max.z).mulMat4(self.transform)),
+            Plane.init(axes[2].scale(-1.0), Vec3.new(self.center.x, self.center.y, self.min.z).mulMat4(self.transform)),
+        };
+    }
+
     /// Get the X, Y, and Z normals transformed by our transform matrix
     pub fn getAxes(self: *const OrientedBoundingBox) [3]Vec3 {
         return [_]Vec3{
@@ -224,5 +238,30 @@ pub const OrientedBoundingBox = struct {
                 return false;
         }
         return true;
+    }
+
+    /// Returns an intersection point if a ray crosses a bounding box
+    pub fn intersectRay(self: *const OrientedBoundingBox, start: Vec3, dir: Vec3) ?Vec3 {
+        if (self.contains(start)) {
+            return start;
+        }
+
+        var hit_len = std.math.floatMax(f32);
+        var hit_point: ?Vec3 = null;
+
+        // Find the closest intersection point
+        const planes = self.getPlanes();
+        for (planes) |p| {
+            const hit = p.intersectRay(start, dir);
+            if (hit) |h| {
+                const hdist = h.sub(start).len();
+                if (hdist < hit_len and self.inflate(0.012).contains(h)) {
+                    hit_point = h;
+                    hit_len = hdist;
+                }
+            }
+        }
+
+        return hit_point;
     }
 };
