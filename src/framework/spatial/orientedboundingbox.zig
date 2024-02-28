@@ -35,6 +35,7 @@ pub const OrientedBoundingBox = struct {
         return ret;
     }
 
+    /// Caches the vertices and axes
     pub fn update(self: *OrientedBoundingBox) void {
         self.vertices = self.getCorners();
         self.axes = self.getAxes();
