@@ -126,6 +126,23 @@ pub const Plane = struct {
         return start.add(norm_dir.scale(t));
     }
 
+    pub fn intersectRayIgnoreBack(self: *const Plane, start: Vec3, dir: Vec3) ?Vec3 {
+        var norm_dir = dir.norm();
+        const denom = norm_dir.dot(self.normal);
+
+        // ignore back facing intersections
+        if (denom >= 0)
+            return null;
+
+        const t = -(start.dot(self.normal) + self.d) / denom;
+
+        // ignore intersections behind the ray
+        if (t < 0)
+            return null;
+
+        return start.add(norm_dir.scale(t));
+    }
+
     /// Returns the intersection point of three non-parallel planes
     /// From the Celeste64 source
     pub fn planeIntersectPoint(a: Plane, b: Plane, c: Plane) Vec3 {

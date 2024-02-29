@@ -131,10 +131,10 @@ pub const BoundingBox = struct {
 
     pub fn getPlanes(self: *const BoundingBox) [6]Plane {
         return [6]Plane{
-            Plane.init(Vec3.new(0, 1, 0), Vec3.new(self.center.x, self.max.y, self.center.z)),
-            Plane.init(Vec3.new(0, -1, 0), Vec3.new(self.center.x, self.min.y, self.center.z)),
             Plane.init(Vec3.new(1, 0, 0), Vec3.new(self.max.x, self.center.y, self.center.z)),
             Plane.init(Vec3.new(-1, 0, 0), Vec3.new(self.min.x, self.center.y, self.center.z)),
+            Plane.init(Vec3.new(0, 1, 0), Vec3.new(self.center.x, self.max.y, self.center.z)),
+            Plane.init(Vec3.new(0, -1, 0), Vec3.new(self.center.x, self.min.y, self.center.z)),
             Plane.init(Vec3.new(0, 0, 1), Vec3.new(self.center.x, self.center.y, self.max.z)),
             Plane.init(Vec3.new(0, 0, -1), Vec3.new(self.center.x, self.center.y, self.min.z)),
         };
@@ -158,23 +158,44 @@ pub const BoundingBox = struct {
             return start;
         }
 
-        var hit_len = std.math.floatMax(f32);
-        var hit_point: ?Vec3 = null;
-
-        // Find the closest intersection point
+        // Find the first intersection point.
+        // Since we're ignoring backfaces and clipping the plane, we don't have to check for the closest hit.
         const planes = self.getPlanes();
-        for (planes) |p| {
-            const hit = p.intersectRay(start, dir);
+
+        // +X and -X
+        for (0..2) |idx| {
+            const p = planes[idx];
+            const hit = p.intersectRayIgnoreBack(start, dir);
             if (hit) |h| {
-                const hdist = h.sub(start).len();
-                if (hdist < hit_len and self.contains(h)) {
-                    hit_point = h;
-                    hit_len = hdist;
+                if (h.y <= self.max.y and h.y >= self.min.y and h.z <= self.max.z and h.z >= self.min.z) {
+                    return h;
                 }
             }
         }
 
-        return hit_point;
+        // +Y and -Y
+        for (2..4) |idx| {
+            const p = planes[idx];
+            const hit = p.intersectRayIgnoreBack(start, dir);
+            if (hit) |h| {
+                if (h.x <= self.max.x and h.x >= self.min.x and h.z <= self.max.z and h.z >= self.min.z) {
+                    return h;
+                }
+            }
+        }
+
+        // +Z and -Z
+        for (4..6) |idx| {
+            const p = planes[idx];
+            const hit = p.intersectRayIgnoreBack(start, dir);
+            if (hit) |h| {
+                if (h.y <= self.max.y and h.y >= self.min.y and h.x <= self.max.x and h.x >= self.min.x) {
+                    return h;
+                }
+            }
+        }
+
+        return null;
     }
 };
 

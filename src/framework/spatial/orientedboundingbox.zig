@@ -185,6 +185,7 @@ pub const OrientedBoundingBox = struct {
         };
     }
 
+    /// Gets our planes, transformed by our orientation
     pub fn getPlanes(self: *const OrientedBoundingBox) [6]Plane {
         const axes = self.getAxes();
         return [6]Plane{
@@ -194,6 +195,18 @@ pub const OrientedBoundingBox = struct {
             Plane.init(axes[1].scale(-1.0), Vec3.new(self.center.x, self.min.y, self.center.z).mulMat4(self.transform)),
             Plane.init(axes[2], Vec3.new(self.center.x, self.center.y, self.max.z).mulMat4(self.transform)),
             Plane.init(axes[2].scale(-1.0), Vec3.new(self.center.x, self.center.y, self.min.z).mulMat4(self.transform)),
+        };
+    }
+
+    /// Gets the planes, but unoriented
+    fn getUntransformedPlanes(self: *const OrientedBoundingBox) [6]Plane {
+        return [6]Plane{
+            Plane.init(Vec3.new(1, 0, 0), Vec3.new(self.max.x, self.center.y, self.center.z)),
+            Plane.init(Vec3.new(-1, 0, 0), Vec3.new(self.min.x, self.center.y, self.center.z)),
+            Plane.init(Vec3.new(0, 1, 0), Vec3.new(self.center.x, self.max.y, self.center.z)),
+            Plane.init(Vec3.new(0, -1, 0), Vec3.new(self.center.x, self.min.y, self.center.z)),
+            Plane.init(Vec3.new(0, 0, 1), Vec3.new(self.center.x, self.center.y, self.max.z)),
+            Plane.init(Vec3.new(0, 0, -1), Vec3.new(self.center.x, self.center.y, self.min.z)),
         };
     }
 
@@ -240,28 +253,59 @@ pub const OrientedBoundingBox = struct {
         return true;
     }
 
-    /// Returns an intersection point if a ray crosses a bounding box
+    /// Returns an intersection point if a ray crosses an oriented bounding box
     pub fn intersectRay(self: *const OrientedBoundingBox, start: Vec3, dir: Vec3) ?Vec3 {
         if (self.contains(start)) {
             return start;
         }
 
-        var hit_len = std.math.floatMax(f32);
-        var hit_point: ?Vec3 = null;
+        // we should probably be caching this
+        const inv_transform = self.transform.invert();
 
-        // Find the closest intersection point
-        const planes = self.getPlanes();
-        for (planes) |p| {
-            const hit = p.intersectRay(start, dir);
+        // get a point pointing down our direction
+        const downrange = start.add(dir);
+
+        // get our inverted start and direction vectors
+        var inv_start = start.mulMat4(inv_transform);
+        var inv_dir = downrange.mulMat4(inv_transform).sub(inv_start).norm();
+
+        // Find the first intersection point.
+        // Since we're ignoring backfaces and clipping the plane, we don't have to check for the closest hit.
+        const planes = self.getUntransformedPlanes();
+
+        // +X and -X
+        for (0..2) |idx| {
+            const p = planes[idx];
+            const hit = p.intersectRayIgnoreBack(inv_start, inv_dir);
             if (hit) |h| {
-                const hdist = h.sub(start).len();
-                if (hdist < hit_len and self.inflate(0.012).contains(h)) {
-                    hit_point = h;
-                    hit_len = hdist;
+                if (h.y <= self.max.y and h.y >= self.min.y and h.z <= self.max.z and h.z >= self.min.z) {
+                    return h.mulMat4(self.transform);
                 }
             }
         }
 
-        return hit_point;
+        // +Y and -Y
+        for (2..4) |idx| {
+            const p = planes[idx];
+            const hit = p.intersectRayIgnoreBack(inv_start, inv_dir);
+            if (hit) |h| {
+                if (h.x <= self.max.x and h.x >= self.min.x and h.z <= self.max.z and h.z >= self.min.z) {
+                    return h.mulMat4(self.transform);
+                }
+            }
+        }
+
+        // +Z and -Z
+        for (4..6) |idx| {
+            const p = planes[idx];
+            const hit = p.intersectRayIgnoreBack(inv_start, inv_dir);
+            if (hit) |h| {
+                if (h.y <= self.max.y and h.y >= self.min.y and h.x <= self.max.x and h.x >= self.min.x) {
+                    return h.mulMat4(self.transform);
+                }
+            }
+        }
+
+        return null;
     }
 };
