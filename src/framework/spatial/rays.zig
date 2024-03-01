@@ -8,6 +8,11 @@ const Plane = @import("plane.zig").Plane;
 const BoundingBox = @import("boundingbox.zig").BoundingBox;
 const OrientedBoundingBox = @import("orientedboundingbox.zig").OrientedBoundingBox;
 
+pub const RayIntersection = struct {
+    hit_pos: Vec3,
+    normal: Vec3,
+};
+
 pub const Ray = struct {
     pos: Vec3,
     dir: Vec3,
@@ -21,11 +26,20 @@ pub const Ray = struct {
     }
 
     /// Returns an intersection point if a ray crosses a plane
-    pub fn intersectPlane(self: *const Ray, plane: Plane, ignore_backfacing: bool) ?Vec3 {
-        if (ignore_backfacing)
-            return plane.intersectRayIgnoreBack(self.pos, self.dir);
+    pub fn intersectPlane(self: *const Ray, plane: Plane, ignore_backfacing: bool) ?RayIntersection {
+        if (ignore_backfacing) {
+            const hit = plane.intersectRayIgnoreBack(self.pos, self.dir);
+            if (hit) |h| {
+                return .{ .hit_pos = h, .normal = plane.normal };
+            }
+            return null;
+        }
 
-        return plane.intersectRay(self.pos, self.dir);
+        const hit = plane.intersectRay(self.pos, self.dir);
+        if (hit) |h| {
+            return .{ .hit_pos = h, .normal = plane.normal };
+        }
+        return null;
     }
 
     /// Returns an intersection point if a ray crosses an axis aligned bounding box
@@ -42,10 +56,15 @@ pub const Ray = struct {
 test "Ray.intersectPlane" {
     const plane = Plane.init(Vec3.new(0, 0, 1), Vec3.new(0, 0, 5));
 
-    assert(Ray.init(Vec3.new(0, 0, 0), Vec3.new(0, 1, 0)).intersectPlane(plane, false) == null);
-    assert(std.meta.eql(Ray.init(Vec3.new(0, 0, 0), Vec3.new(0, 0, 1)).intersectPlane(plane, false), Vec3.new(0, 0, 5)));
-    assert(Ray.init(Vec3.new(0, 0, 0), Vec3.new(0, 0, -1)).intersectPlane(plane, false) == null);
-    assert(std.meta.eql(Ray.init(Vec3.new(0, 0, 10), Vec3.new(0, 0, -1)).intersectPlane(plane, false), Vec3.new(0, 0, 5)));
+    const hit0 = Ray.init(Vec3.new(0, 0, 0), Vec3.new(0, 1, 0)).intersectPlane(plane, false);
+    const hit1 = Ray.init(Vec3.new(0, 0, 0), Vec3.new(0, 0, 1)).intersectPlane(plane, false);
+    const hit2 = Ray.init(Vec3.new(0, 0, 0), Vec3.new(0, 0, -1)).intersectPlane(plane, false);
+    const hit3 = Ray.init(Vec3.new(0, 0, 10), Vec3.new(0, 0, -1)).intersectPlane(plane, false);
+
+    assert(hit0 == null);
+    assert(std.meta.eql(hit1.?.hit_pos, Vec3.new(0, 0, 5)));
+    assert(hit2 == null);
+    assert(std.meta.eql(hit3.?.hit_pos, Vec3.new(0, 0, 5)));
 }
 
 test "Ray.intersectBoundingBox" {
