@@ -27,19 +27,21 @@ pub const Ray = struct {
 
     /// Returns an intersection point if a ray crosses a plane
     pub fn intersectPlane(self: *const Ray, plane: Plane, ignore_backfacing: bool) ?RayIntersection {
-        if (ignore_backfacing) {
-            const hit = plane.intersectRayIgnoreBack(self.pos, self.dir);
-            if (hit) |h| {
-                return .{ .hit_pos = h, .normal = plane.normal };
-            }
-            return null;
-        }
+        const denom = self.dir.dot(plane.normal);
 
-        const hit = plane.intersectRay(self.pos, self.dir);
-        if (hit) |h| {
-            return .{ .hit_pos = h, .normal = plane.normal };
-        }
-        return null;
+        if (denom == 0)
+            return null;
+
+        if (ignore_backfacing and denom > 0)
+            return null;
+
+        const t = -(self.pos.dot(plane.normal) + plane.d) / denom;
+
+        // ignore intersections behind the ray
+        if (t < 0)
+            return null;
+
+        return .{ .hit_pos = self.pos.add(self.dir.scale(t)), .normal = plane.normal };
     }
 
     /// Returns an intersection point if a ray crosses an axis aligned bounding box
@@ -92,8 +94,63 @@ pub const Ray = struct {
     }
 
     /// Returns an intersection point if a ray crosses an axis aligned bounding box
-    pub fn intersectOrientedBoundingBox(self: *const Ray, bounds: OrientedBoundingBox) ?Vec3 {
-        return bounds.intersectRay(self.pos, self.dir);
+    pub fn intersectOrientedBoundingBox(self: *const Ray, bounds: OrientedBoundingBox) ?RayIntersection {
+        if (bounds.contains(self.pos)) {
+            return .{ .hit_pos = self.pos, .normal = self.dir.scale(-1) };
+        }
+
+        // we should probably be caching this
+        const inv_transform = bounds.transform.invert();
+
+        // get a point pointing down our direction
+        const downrange = self.pos.add(self.dir);
+
+        // get our inverted start and direction vectors
+        var inv_start = self.pos.mulMat4(inv_transform);
+        var inv_dir = downrange.mulMat4(inv_transform).sub(inv_start).norm();
+        _ = inv_dir;
+
+        // Find the first intersection point.
+        // Since we're ignoring backfaces and clipping the plane, we don't have to check for the closest hit.
+        const planes = bounds.getUntransformedPlanes();
+
+        // +X and -X
+        for (0..2) |idx| {
+            const p = planes[idx];
+            const intersection = self.intersectPlane(p, true);
+            if (intersection) |i| {
+                const h = i.hit_pos;
+                if (h.y <= bounds.max.y and h.y >= bounds.min.y and h.z <= bounds.max.z and h.z >= bounds.min.z) {
+                    return .{ .hit_pos = h.mulMat4(bounds.transform), .normal = p.normal };
+                }
+            }
+        }
+
+        // +Y and -Y
+        for (2..4) |idx| {
+            const p = planes[idx];
+            const intersection = self.intersectPlane(p, true);
+            if (intersection) |i| {
+                const h = i.hit_pos;
+                if (h.x <= bounds.max.x and h.x >= bounds.min.x and h.z <= bounds.max.z and h.z >= bounds.min.z) {
+                    return .{ .hit_pos = h.mulMat4(bounds.transform), .normal = p.normal };
+                }
+            }
+        }
+
+        // +Z and -Z
+        for (4..6) |idx| {
+            const p = planes[idx];
+            const intersection = self.intersectPlane(p, true);
+            if (intersection) |i| {
+                const h = i.hit_pos;
+                if (h.y <= bounds.max.y and h.y >= bounds.min.y and h.x <= bounds.max.x and h.x >= bounds.min.x) {
+                    return .{ .hit_pos = h.mulMat4(bounds.transform), .normal = p.normal };
+                }
+            }
+        }
+
+        return null;
     }
 };
 
@@ -127,7 +184,6 @@ test "Ray.intersectOrientedBoundingBox" {
 
     const hit = ray.intersectOrientedBoundingBox(box);
     assert(hit != null);
-    assert(hit.?.x == 9.0);
-    assert(hit.?.y == 2.0);
-    assert(hit.?.z == 0.0);
+    assert(std.meta.eql(hit.?.hit_pos, Vec3.new(9.0, 2.0, 0.0)));
+    assert(std.meta.eql(hit.?.normal, Vec3.new(-1.0, 0.0, 0.0)));
 }

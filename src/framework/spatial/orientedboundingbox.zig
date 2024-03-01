@@ -199,7 +199,7 @@ pub const OrientedBoundingBox = struct {
     }
 
     /// Gets the planes, but unoriented
-    fn getUntransformedPlanes(self: *const OrientedBoundingBox) [6]Plane {
+    pub fn getUntransformedPlanes(self: *const OrientedBoundingBox) [6]Plane {
         return [6]Plane{
             Plane.init(Vec3.new(1, 0, 0), Vec3.new(self.max.x, self.center.y, self.center.z)),
             Plane.init(Vec3.new(-1, 0, 0), Vec3.new(self.min.x, self.center.y, self.center.z)),
