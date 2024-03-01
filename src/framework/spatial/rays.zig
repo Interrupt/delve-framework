@@ -43,8 +43,52 @@ pub const Ray = struct {
     }
 
     /// Returns an intersection point if a ray crosses an axis aligned bounding box
-    pub fn intersectBoundingBox(self: *const Ray, bounds: BoundingBox) ?Vec3 {
-        return bounds.intersectRay(self.pos, self.dir);
+    pub fn intersectBoundingBox(self: *const Ray, bounds: BoundingBox) ?RayIntersection {
+        if (bounds.contains(self.pos)) {
+            return .{ .hit_pos = self.pos, .normal = self.dir.scale(-1) };
+        }
+
+        // Find the first intersection point.
+        // Since we're ignoring backfaces and clipping the plane, we don't have to check for the closest hit.
+        const planes = bounds.getPlanes();
+
+        // +X and -X
+        for (0..2) |idx| {
+            const p = planes[idx];
+            const intersection = self.intersectPlane(p, true);
+            if (intersection) |i| {
+                const h = i.hit_pos;
+                if (h.y <= bounds.max.y and h.y >= bounds.min.y and h.z <= bounds.max.z and h.z >= bounds.min.z) {
+                    return .{ .hit_pos = h, .normal = p.normal };
+                }
+            }
+        }
+
+        // +Y and -Y
+        for (2..4) |idx| {
+            const p = planes[idx];
+            const intersection = self.intersectPlane(p, true);
+            if (intersection) |i| {
+                const h = i.hit_pos;
+                if (h.x <= bounds.max.x and h.x >= bounds.min.x and h.z <= bounds.max.z and h.z >= bounds.min.z) {
+                    return .{ .hit_pos = h, .normal = p.normal };
+                }
+            }
+        }
+
+        // +Z and -Z
+        for (4..6) |idx| {
+            const p = planes[idx];
+            const intersection = self.intersectPlane(p, true);
+            if (intersection) |i| {
+                const h = i.hit_pos;
+                if (h.y <= bounds.max.y and h.y >= bounds.min.y and h.x <= bounds.max.x and h.x >= bounds.min.x) {
+                    return .{ .hit_pos = h, .normal = p.normal };
+                }
+            }
+        }
+
+        return null;
     }
 
     /// Returns an intersection point if a ray crosses an axis aligned bounding box
@@ -73,9 +117,8 @@ test "Ray.intersectBoundingBox" {
 
     const hit = ray.intersectBoundingBox(box);
     assert(hit != null);
-    assert(hit.?.x == 9.0);
-    assert(hit.?.y == 2.0);
-    assert(hit.?.z == 0.0);
+    assert(std.meta.eql(hit.?.hit_pos, Vec3.new(9.0, 2.0, 0.0)));
+    assert(std.meta.eql(hit.?.normal, Vec3.new(-1.0, 0.0, 0.0)));
 }
 
 test "Ray.intersectOrientedBoundingBox" {
