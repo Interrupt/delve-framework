@@ -99,7 +99,7 @@ pub const Ray = struct {
             return .{ .hit_pos = self.pos, .normal = self.dir.scale(-1) };
         }
 
-        // we should probably be caching this
+        // we should probably be caching this in the oriented bounding box
         const inv_transform = bounds.transform.invert();
 
         // get a point pointing down our direction
@@ -108,7 +108,9 @@ pub const Ray = struct {
         // get our inverted start and direction vectors
         var inv_start = self.pos.mulMat4(inv_transform);
         var inv_dir = downrange.mulMat4(inv_transform).sub(inv_start).norm();
-        _ = inv_dir;
+
+        // Make a ray that is the inverse of ourselves
+        const inv_ray = Ray.init(inv_start, inv_dir);
 
         // Find the first intersection point.
         // Since we're ignoring backfaces and clipping the plane, we don't have to check for the closest hit.
@@ -117,7 +119,7 @@ pub const Ray = struct {
         // +X and -X
         for (0..2) |idx| {
             const p = planes[idx];
-            const intersection = self.intersectPlane(p, true);
+            const intersection = inv_ray.intersectPlane(p, true);
             if (intersection) |i| {
                 const h = i.hit_pos;
                 if (h.y <= bounds.max.y and h.y >= bounds.min.y and h.z <= bounds.max.z and h.z >= bounds.min.z) {
@@ -129,7 +131,7 @@ pub const Ray = struct {
         // +Y and -Y
         for (2..4) |idx| {
             const p = planes[idx];
-            const intersection = self.intersectPlane(p, true);
+            const intersection = inv_ray.intersectPlane(p, true);
             if (intersection) |i| {
                 const h = i.hit_pos;
                 if (h.x <= bounds.max.x and h.x >= bounds.min.x and h.z <= bounds.max.z and h.z >= bounds.min.z) {
@@ -141,7 +143,7 @@ pub const Ray = struct {
         // +Z and -Z
         for (4..6) |idx| {
             const p = planes[idx];
-            const intersection = self.intersectPlane(p, true);
+            const intersection = inv_ray.intersectPlane(p, true);
             if (intersection) |i| {
                 const h = i.hit_pos;
                 if (h.y <= bounds.max.y and h.y >= bounds.min.y and h.x <= bounds.max.x and h.x >= bounds.min.x) {

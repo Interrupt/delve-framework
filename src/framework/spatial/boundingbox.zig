@@ -151,52 +151,6 @@ pub const BoundingBox = struct {
         return other.max.x >= self.min.x and other.max.y >= self.min.y and other.max.z >= self.min.z and
             other.min.x <= self.max.x and other.min.y <= self.max.y and other.min.z <= self.max.z;
     }
-
-    /// Returns an intersection point if a ray crosses a bounding box
-    pub fn intersectRay(self: *const BoundingBox, start: Vec3, dir: Vec3) ?Vec3 {
-        if (self.contains(start)) {
-            return start;
-        }
-
-        // Find the first intersection point.
-        // Since we're ignoring backfaces and clipping the plane, we don't have to check for the closest hit.
-        const planes = self.getPlanes();
-
-        // +X and -X
-        for (0..2) |idx| {
-            const p = planes[idx];
-            const hit = p.intersectRayIgnoreBack(start, dir);
-            if (hit) |h| {
-                if (h.y <= self.max.y and h.y >= self.min.y and h.z <= self.max.z and h.z >= self.min.z) {
-                    return h;
-                }
-            }
-        }
-
-        // +Y and -Y
-        for (2..4) |idx| {
-            const p = planes[idx];
-            const hit = p.intersectRayIgnoreBack(start, dir);
-            if (hit) |h| {
-                if (h.x <= self.max.x and h.x >= self.min.x and h.z <= self.max.z and h.z >= self.min.z) {
-                    return h;
-                }
-            }
-        }
-
-        // +Z and -Z
-        for (4..6) |idx| {
-            const p = planes[idx];
-            const hit = p.intersectRayIgnoreBack(start, dir);
-            if (hit) |h| {
-                if (h.y <= self.max.y and h.y >= self.min.y and h.x <= self.max.x and h.x >= self.min.x) {
-                    return h;
-                }
-            }
-        }
-
-        return null;
-    }
 };
 
 test "BoundingBox.contains" {
@@ -265,23 +219,4 @@ test "BoundingBox.initFromPositions" {
     assert(box.center.x == 15);
     assert(box.center.y == 11.5);
     assert(box.center.z == 5);
-}
-
-test "BoundingBox.intersectRay" {
-    const box = BoundingBox.init(Vec3.new(10, 0, 0), Vec3.new(2, 4, 2));
-
-    const hit = box.intersectRay(Vec3.new(0, 2, 0), Vec3.x_axis);
-    assert(hit != null);
-    assert(hit.?.x == 9.0);
-    assert(hit.?.y == 2.0);
-    assert(hit.?.z == 0.0);
-
-    const hit2 = box.intersectRay(Vec3.new(0, 20, 0), Vec3.x_axis);
-    assert(hit2 == null);
-
-    const hit3 = box.intersectRay(Vec3.new(25, 1, 1), Vec3.new(-1, 0, 0));
-    assert(hit3 != null);
-    assert(hit3.?.x == 11.0);
-    assert(hit3.?.y == 1.0);
-    assert(hit3.?.z == 1.0);
 }

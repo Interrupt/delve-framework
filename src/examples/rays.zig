@@ -100,6 +100,8 @@ pub fn on_draw() void {
     var ray_dir = delve.math.Vec3.new(1.0, 0.0, 0.0);
     ray_dir = ray_dir.rotate(time * 10.0, delve.math.Vec3.up);
 
+    const ray = delve.spatial.Ray.init(ray_start, ray_dir);
+
     for (0..10) |x| {
         for (0..10) |z| {
             const x_f: f32 = @floatFromInt(x);
@@ -109,14 +111,13 @@ pub fn on_draw() void {
             const cube_pos = delve.math.Vec3.new(x_f + x_offset, 0, z_f).scale(5.0).sub(delve.math.Vec3.new(25, 0, 25));
             const cube_model_matrix = delve.math.Mat4.translate(cube_pos).mul(delve.math.Mat4.rotate(time * 20.0, delve.math.Vec3.new(1.0,1.0,0.0))).mul(delve.math.Mat4.scale(delve.math.Vec3.new(2.0, 1.0, 1.0)));
 
-            // const bounds = cube_mesh.bounds.translate(cube_pos);
             const bounds = delve.spatial.OrientedBoundingBox.init(delve.math.Vec3.zero, delve.math.Vec3.new(1,1,1), cube_model_matrix);
-            const rayhit = bounds.intersectRay(ray_start, ray_dir);
+            const rayhit = ray.intersectOrientedBoundingBox(bounds);
 
             if (rayhit != null) {
                 cube_mesh.drawWithMaterial(&material_highlight, proj_view_matrix, cube_model_matrix);
 
-                const hit_model_matrix = delve.math.Mat4.translate(rayhit.?);
+                const hit_model_matrix = delve.math.Mat4.translate(rayhit.?.hit_pos);
                 hit_mesh.drawWithMaterial(&material_hitpoint, proj_view_matrix, hit_model_matrix);
             } else {
                 cube_mesh.draw(proj_view_matrix, cube_model_matrix);

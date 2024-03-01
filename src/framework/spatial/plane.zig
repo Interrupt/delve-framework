@@ -109,40 +109,6 @@ pub const Plane = struct {
         return start.add(dir.scale(t));
     }
 
-    /// Returns an intersection point if a ray crosses a plane
-    pub fn intersectRay(self: *const Plane, start: Vec3, dir: Vec3) ?Vec3 {
-        var norm_dir = dir.norm();
-        const denom = norm_dir.dot(self.normal);
-
-        if (denom == 0)
-            return null;
-
-        const t = -(start.dot(self.normal) + self.d) / denom;
-
-        // ignore intersections behind the ray
-        if (t < 0)
-            return null;
-
-        return start.add(norm_dir.scale(t));
-    }
-
-    pub fn intersectRayIgnoreBack(self: *const Plane, start: Vec3, dir: Vec3) ?Vec3 {
-        var norm_dir = dir.norm();
-        const denom = norm_dir.dot(self.normal);
-
-        // ignore back facing intersections
-        if (denom >= 0)
-            return null;
-
-        const t = -(start.dot(self.normal) + self.d) / denom;
-
-        // ignore intersections behind the ray
-        if (t < 0)
-            return null;
-
-        return start.add(norm_dir.scale(t));
-    }
-
     /// Returns the intersection point of three non-parallel planes
     /// From the Celeste64 source
     pub fn planeIntersectPoint(a: Plane, b: Plane, c: Plane) Vec3 {
@@ -221,21 +187,6 @@ test "Plane.intersectLine" {
     assert(plane.intersectLine(Vec3.new(0, 0, 0), Vec3.new(10, 0, 0)) == null);
     assert(plane.intersectLine(Vec3.new(0, 0, -5), Vec3.new(10, 0, 10)) != null);
     assert(std.meta.eql(plane.intersectLine(Vec3.new(0, 0, -5), Vec3.new(0, 0, 15)).?, Vec3.new(0, 0, 5)));
-}
-
-test "Plane.intersectRay" {
-    const plane = Plane.init(Vec3.new(0, 0, 1), Vec3.new(0, 0, 5));
-
-    assert(plane.intersectRay(Vec3.new(0, 0, 0), Vec3.new(0, 1, 0)) == null);
-    assert(std.meta.eql(plane.intersectRay(Vec3.new(0, 0, 0), Vec3.new(0, 0, 1)), Vec3.new(0, 0, 5)));
-    assert(plane.intersectRay(Vec3.new(0, 0, 0), Vec3.new(0, 0, -1)) == null);
-    assert(std.meta.eql(plane.intersectRay(Vec3.new(0, 0, 10), Vec3.new(0, 0, -1)), Vec3.new(0, 0, 5)));
-
-    const plane2 = Plane.init(Vec3.new(-1, 0, 0), Vec3.new(10, 0, 0));
-    assert(plane2.intersectRay(Vec3.new(0, 0, 0), Vec3.new(0, 1, 0)) == null);
-    assert(plane2.intersectRay(Vec3.new(15, 0, 0), Vec3.new(1, 0, 0)) == null);
-    assert(std.meta.eql(plane2.intersectRay(Vec3.new(15, 0, 0), Vec3.new(-1, 0, 0)), Vec3.new(10, 0, 0)));
-    assert(std.meta.eql(plane2.intersectRay(Vec3.new(0, 5, 0), Vec3.new(1, 0, 0)), Vec3.new(10, 5, 0)));
 }
 
 test "Plane.planeIntersectPoint" {
