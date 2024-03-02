@@ -56,6 +56,7 @@ pub fn build(b: *std.Build) void {
         "meshbuilder",
         "meshes",
         "passes",
+        "quakemap",
         "rays",
         "stresstest",
     };

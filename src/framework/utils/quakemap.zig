@@ -2,6 +2,9 @@ const std = @import("std");
 const debug = @import("../debug.zig");
 const math = @import("../math.zig");
 const plane = @import("../spatial/plane.zig");
+const mesh = @import("../graphics/mesh.zig");
+const colors = @import("../colors.zig");
+const graphics = @import("../platform/graphics.zig");
 const assert = std.debug.assert;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -10,15 +13,16 @@ const Allocator = std.mem.Allocator;
 const TokenIterator = std.mem.TokenIterator;
 const Vec3 = math.Vec3;
 const Plane = plane.Plane;
+const Mesh = mesh.Mesh;
 
 // From https://github.com/fabioarnold/3d-game/blob/master/src/QuakeMap.zig
 // This is so cool!
 
-const ErrorInfo = struct {
+pub const ErrorInfo = struct {
     line_number: usize,
 };
 
-const Property = struct {
+pub const Property = struct {
     key: []const u8,
     value: []const u8,
 };
@@ -296,6 +300,22 @@ pub const QuakeMap = struct {
 
     fn readSymbol(iter: *TokenIterator(u8, .scalar)) ![]const u8 {
         return iter.next() orelse return &.{};
+    }
+
+    pub fn buildMesh(self: *const QuakeMap, transform: math.Mat4, material: graphics.Material) !Mesh {
+        var builder = mesh.MeshBuilder.init();
+        defer builder.deinit();
+
+        // try builder.addCube(pos, size, math.Mat4.identity, color);
+        for(self.worldspawn.solids.items) |solid| {
+            for(solid.faces.items) |face| {
+                for(0 .. face.vertices.len - 2) |i| {
+                    try builder.addTriangle(face.vertices[0], face.vertices[i + 1], face.vertices[i + 2], transform, colors.white);
+                }
+            }
+        }
+
+        return builder.buildMesh(material);
     }
 };
 

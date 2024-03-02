@@ -62,6 +62,7 @@ pub const spatial = struct {
 
 pub const utils = struct {
     pub const interpolation = @import("utils/interpolation.zig");
+    pub const quakemap = @import("utils/quakemap.zig");
 };
 
 // builtin shaders
