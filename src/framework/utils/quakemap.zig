@@ -12,6 +12,7 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const Allocator = std.mem.Allocator;
 const TokenIterator = std.mem.TokenIterator;
 const Vec3 = math.Vec3;
+const Vec2 = math.Vec2;
 const Plane = plane.Plane;
 const Mesh = mesh.Mesh;
 
@@ -309,8 +310,38 @@ pub const QuakeMap = struct {
         // try builder.addCube(pos, size, math.Mat4.identity, color);
         for(self.worldspawn.solids.items) |solid| {
             for(solid.faces.items) |face| {
+                var u_axis: Vec3 = undefined;
+                var v_axis: Vec3 = undefined;
+                calculateRotatedUV(face, &u_axis, &v_axis);
+
+                // TODO: Get these from an actual texture somehow! Also scale based on the face texture scale
+                const tex_size_x = 32;
+                const tex_size_y = 32;
+
                 for(0 .. face.vertices.len - 2) |i| {
-                    try builder.addTriangle(face.vertices[0], face.vertices[i + 1], face.vertices[i + 2], transform, colors.white);
+                    const pos_0 = Vec3.new(face.vertices[0].x, face.vertices[0].y, face.vertices[0].z);
+                    const uv_0 = Vec2.new(
+                        (u_axis.dot(pos_0) + face.shift_x) / tex_size_x,
+                        (v_axis.dot(pos_0) + face.shift_y) / tex_size_y,
+                    );
+
+                    const pos_1 = Vec3.new(face.vertices[i + 1].x, face.vertices[i + 1].y, face.vertices[i + 1].z);
+                    const uv_1 = Vec2.new(
+                        (u_axis.dot(pos_1) + face.shift_x) / tex_size_x,
+                        (v_axis.dot(pos_1) + face.shift_y) / tex_size_y,
+                    );
+
+                    const pos_2 = Vec3.new(face.vertices[i + 2].x, face.vertices[i + 2].y, face.vertices[i + 2].z);
+                    const uv_2 = Vec2.new(
+                        (u_axis.dot(pos_2) + face.shift_x) / tex_size_x,
+                        (v_axis.dot(pos_2) + face.shift_y) / tex_size_y,
+                    );
+
+                    var v0: graphics.Vertex = .{ .x = pos_0.x, .y = pos_0.y, .z = pos_0.z, .u = uv_0.x, .v = uv_0.y };
+                    var v1: graphics.Vertex = .{ .x = pos_1.x, .y = pos_1.y, .z = pos_1.z, .u = uv_1.x, .v = uv_1.y };
+                    var v2: graphics.Vertex = .{ .x = pos_2.x, .y = pos_2.y, .z = pos_2.z, .u = uv_2.x, .v = uv_2.y };
+
+                    try builder.addTriangleFromVertices(v0, v1, v2, transform);
                 }
             }
         }
@@ -366,6 +397,16 @@ fn parseFloat(string: []const u8) !f32 {
         decimal /= denom;
     }
     return @floatCast(decimal);
+}
+
+fn calculateRotatedUV(face: Face, u_axis: *Vec3, v_axis: *Vec3) void {
+    const scaled_u_axis = face.u_axis.scale(1.0 / face.scale_x);
+    const scaled_v_axis = face.v_axis.scale(1.0 / face.scale_y);
+
+    const axis = closestAxis(face.plane.normal);
+    const rotation = math.Mat4.rotate(face.rotation, axis);
+    u_axis.* = scaled_u_axis.mulMat4(rotation);
+    v_axis.* = scaled_v_axis.mulMat4(rotation);
 }
 
 test "QuakeMap.read" {

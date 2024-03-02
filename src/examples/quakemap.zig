@@ -127,7 +127,7 @@ pub fn on_init() void {
     });
 
     // create our camera
-    camera = delve.graphics.camera.Camera.init(90.0, 0.01, 512, math.Vec3.up);
+    camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 512, 25.0, math.Vec3.up);
 
     const map_transform = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
@@ -141,7 +141,7 @@ pub fn on_init() void {
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_light);
 
     // capture mouse
-    delve.platform.app.captureMouse(true);
+    // delve.platform.app.captureMouse(true);
 }
 
 pub fn on_tick(delta: f32) void {
@@ -150,7 +150,7 @@ pub fn on_tick(delta: f32) void {
 
     time += delta;
 
-    camera.runSimpleCamera(8 * delta, 120 * delta, true);
+    camera.runSimpleCamera(8 * delta, 60 * delta, false);
 }
 
 pub fn on_draw() void {
