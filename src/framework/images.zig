@@ -34,7 +34,7 @@ pub const Image = struct {
         img.pitch = img.width * channel_count;
         img.raw = image_data[0 .. img.height * img.pitch];
 
-        debug.log("image loaded: {d}x{d}:{d}", .{img.width, img.height, img.channels});
+        // debug.log("image loaded: {d}x{d}:{d}", .{img.width, img.height, img.channels});
 
         return img;
     }

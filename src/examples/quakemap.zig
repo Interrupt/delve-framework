@@ -161,8 +161,6 @@ pub fn on_init() !void {
                     .texture_0 = newtex,
                 });
                 try materials.put(mat_name_null, mat);
-
-                delve.debug.log("Loaded texture {s}", .{tex_path_null});
             }
         }
     }
