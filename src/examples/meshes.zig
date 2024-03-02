@@ -43,7 +43,7 @@ pub fn registerModule() !void {
     try modules.registerModule(meshExample);
 }
 
-fn on_init() void {
+fn on_init() !void {
     debug.log("Mesh example module initializing", .{});
 
     graphics.setClearColor(colors.examples_bg_light);
@@ -116,7 +116,7 @@ fn on_draw() void {
     mesh_test.?.draw(proj_view_matrix, model);
 }
 
-fn on_cleanup() void {
+fn on_cleanup() !void {
     debug.log("Mesh example module cleaning up", .{});
 
     if (mesh_test == null)

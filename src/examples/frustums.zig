@@ -28,7 +28,7 @@ pub fn main() !void {
     try app.start(app.AppConfig{ .title = "Delve Framework - Frustums Example" });
 }
 
-pub fn on_init() void {
+pub fn on_init() !void {
     // Create a material out of the texture
     material_frustum = delve.platform.graphics.Material.init(.{
         .shader = delve.platform.graphics.Shader.initDefault(.{}),

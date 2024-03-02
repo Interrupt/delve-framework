@@ -47,7 +47,7 @@ pub fn registerModule() !void {
     try modules.registerModule(debugDrawExample);
 }
 
-fn on_init() void {
+fn on_init() !void {
     debug.log("Frame pacing example module initializing", .{});
 
     // papp.setTargetFPS(60);
@@ -110,7 +110,7 @@ fn on_draw() void {
     graphics.drawDebugRectangle(texture, state.start_x + state.x_pos_fixed + (fixed_timestep_lerp * state.speed), y_pos, 100.0, 100.0, colors.white);
 }
 
-fn on_cleanup() void {
+fn on_cleanup() !void {
     debug.log("Frame pacing example module cleaning up", .{});
     test_image.destroy();
     texture.destroy();

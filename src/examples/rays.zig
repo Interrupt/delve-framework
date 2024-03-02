@@ -30,7 +30,7 @@ pub fn main() !void {
     try app.start(app.AppConfig{ .title = "Delve Framework - Ray Collision Example" });
 }
 
-pub fn on_init() void {
+pub fn on_init() !void {
     // Create a material out of the texture
     material_frustum = delve.platform.graphics.Material.init(.{
         .shader = delve.platform.graphics.Shader.initDefault(.{}),
@@ -109,9 +109,9 @@ pub fn on_draw() void {
 
             const x_offset = std.math.sin((time + z_f) * 5.0) * 0.2;
             const cube_pos = delve.math.Vec3.new(x_f + x_offset, 0, z_f).scale(5.0).sub(delve.math.Vec3.new(25, 0, 25));
-            const cube_model_matrix = delve.math.Mat4.translate(cube_pos).mul(delve.math.Mat4.rotate(time * 20.0, delve.math.Vec3.new(1.0,1.0,0.0))).mul(delve.math.Mat4.scale(delve.math.Vec3.new(2.0, 1.0, 1.0)));
+            const cube_model_matrix = delve.math.Mat4.translate(cube_pos).mul(delve.math.Mat4.rotate(time * 20.0, delve.math.Vec3.new(1.0, 1.0, 0.0))).mul(delve.math.Mat4.scale(delve.math.Vec3.new(2.0, 1.0, 1.0)));
 
-            const bounds = delve.spatial.OrientedBoundingBox.init(delve.math.Vec3.zero, delve.math.Vec3.new(1,1,1), cube_model_matrix);
+            const bounds = delve.spatial.OrientedBoundingBox.init(delve.math.Vec3.zero, delve.math.Vec3.new(1, 1, 1), cube_model_matrix);
             const rayhit = ray.intersectOrientedBoundingBox(bounds);
 
             if (rayhit != null) {

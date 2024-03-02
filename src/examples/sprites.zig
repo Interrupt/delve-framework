@@ -52,7 +52,7 @@ pub fn registerModule() !void {
     try modules.registerModule(batcherExample);
 }
 
-fn on_init() void {
+fn on_init() !void {
     debug.log("Batch example module initializing", .{});
 
     test_batch = batcher.SpriteBatcher.init(.{}) catch {
@@ -193,7 +193,7 @@ fn on_draw() void {
     test_batch.draw(projection.mul(view), math.Mat4.identity);
 }
 
-fn on_cleanup() void {
+fn on_cleanup() !void {
     debug.log("Batch example module cleaning up", .{});
     test_batch.deinit();
     texture_1.destroy();

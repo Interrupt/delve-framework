@@ -31,7 +31,7 @@ pub fn registerModule() !void {
     try delve.modules.registerModule(module);
 }
 
-fn on_init() void {
+fn on_init() !void {
     delve.debug.log("Sprite animation example module initializing", .{});
 
     sprite_batch = delve.graphics.batcher.SpriteBatcher.init(.{}) catch {
@@ -101,7 +101,7 @@ fn on_draw() void {
     sprite_batch.draw(projection.mul(view), delve.math.Mat4.identity);
 }
 
-fn on_cleanup() void {
+fn on_cleanup() !void {
     delve.debug.log("Sprite animation example module cleaning up", .{});
     sprite_texture.destroy();
     sprite_batch.deinit();

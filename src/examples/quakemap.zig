@@ -28,7 +28,7 @@ pub fn main() !void {
     try app.start(app.AppConfig{ .title = "Delve Framework - Quake Map Example" });
 }
 
-pub fn on_init() void {
+pub fn on_init() !void {
     const tex = graphics.createDebugTexture();
 
     const test_map_file =

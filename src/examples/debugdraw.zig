@@ -36,7 +36,7 @@ pub fn registerModule() !void {
     try modules.registerModule(debugDrawExample);
 }
 
-fn on_init() void {
+fn on_init() !void {
     debug.log("Debug draw example module initializing", .{});
 
     test_image = images.loadBytes(test_asset) catch {
@@ -75,7 +75,7 @@ fn on_draw() void {
     graphics.drawDebugText(4.0, 480.0, "This is from the debug draw module!");
 }
 
-fn on_cleanup() void {
+fn on_cleanup() !void {
     debug.log("Debug draw example module cleaning up", .{});
     test_image.destroy();
 }

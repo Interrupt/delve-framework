@@ -13,7 +13,7 @@ var needs_init: bool = true;
 /// A Module is a named set of functions that tie into the app lifecycle
 pub const Module = struct {
     name: [:0]const u8,
-    init_fn: ?*const fn () void = null,
+    init_fn: ?*const fn () anyerror!void = null,
     start_fn: ?*const fn () void = null,
     stop_fn: ?*const fn () void = null,
     tick_fn: ?*const fn (f32) void = null,
@@ -21,7 +21,7 @@ pub const Module = struct {
     pre_draw_fn: ?*const fn () void = null,
     draw_fn: ?*const fn () void = null,
     post_draw_fn: ?*const fn () void = null,
-    cleanup_fn: ?*const fn () void = null,
+    cleanup_fn: ?*const fn () anyerror!void = null,
 
     // state properties
     did_init: bool = false,
@@ -56,7 +56,10 @@ pub fn initModules() void {
     var it = modules.iterator();
     while (it.next()) |module| {
         if (module.value_ptr.init_fn != null)
-            module.value_ptr.init_fn.?();
+            module.value_ptr.init_fn.?() catch {
+                debug.err("Error initializing module: {s}", .{module.value_ptr.name});
+                continue;
+            };
 
         module.value_ptr.did_init = true;
     }
@@ -130,7 +133,10 @@ pub fn cleanupModules() void {
     var it = modules.iterator();
     while (it.next()) |module| {
         if (module.value_ptr.cleanup_fn != null)
-            module.value_ptr.cleanup_fn.?();
+            module.value_ptr.cleanup_fn.?() catch {
+                debug.err("Error cleaning up module: {s}", .{module.value_ptr.name});
+                continue;
+            };
 
         // reset back to initial state
         module.value_ptr.did_init = false;

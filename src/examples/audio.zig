@@ -31,7 +31,7 @@ pub fn registerModule() !void {
     try modules.registerModule(audioExample);
 }
 
-fn on_init() void {
+fn on_init() !void {
     debug.log("Audio example module initializing", .{});
 
     audio.enableSpatialAudio(true);
@@ -66,7 +66,7 @@ fn on_draw() void {
     graphics.drawDebugText(4, 32, "Click to play sounds.");
 }
 
-fn on_cleanup() void {
+fn on_cleanup() !void {
     debug.log("Audio example module cleaning up", .{});
 
     // This would get cleaned up automatically, but we can request it too

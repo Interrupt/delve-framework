@@ -44,7 +44,7 @@ pub fn registerModule() !void {
     try modules.registerModule(example);
 }
 
-fn on_init() void {
+fn on_init() !void {
     graphics.setClearColor(colors.examples_bg_dark);
 
     test_image = images.loadBytes(test_asset) catch {
@@ -127,7 +127,7 @@ fn on_draw() void {
     y_pos += y_spacing;
 }
 
-fn on_cleanup() void {
+fn on_cleanup() !void {
     debug.log("Frame pacing example module cleaning up", .{});
     test_image.destroy();
     texture.destroy();

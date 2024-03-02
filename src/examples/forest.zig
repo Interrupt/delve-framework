@@ -143,7 +143,7 @@ var size_variance: f32 = 0.25;
 var foliage_count: u32 = 3200;
 var foliage_spread: f32 = 120.0;
 
-fn on_init() void {
+fn on_init() !void {
     debug.log("Forest example module initializing", .{});
 
     // capture and hide the mouse!
@@ -392,6 +392,6 @@ fn on_draw() void {
     cloud_batch.draw(proj_view_mat, math.Mat4.translate(camera.position));
 }
 
-fn on_cleanup() void {
+fn on_cleanup() !void {
     debug.log("Forest example module cleaning up", .{});
 }

@@ -29,7 +29,7 @@ pub fn main() !void {
     try app.start(app.AppConfig{ .title = "Delve Framework - Mesh Builder Example" });
 }
 
-pub fn on_init() void {
+pub fn on_init() !void {
     var img = delve.images.loadBytes(test_asset) catch {
         delve.debug.log("Error loading image", .{});
         return;
@@ -47,19 +47,19 @@ pub fn on_init() void {
     camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 20.0, 5.0, math.Vec3.up);
 
     // make a cube
-    cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0,0,0), math.Vec3.new(2,3,1), delve.colors.white, material) catch {
+    cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2, 3, 1), delve.colors.white, material) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
 
     // and another
-    cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3,0,-1), math.Vec3.new(1,1,2), delve.colors.green, material) catch {
+    cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3, 0, -1), math.Vec3.new(1, 1, 2), delve.colors.green, material) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
 
     // and then a floor
-    cube3 = delve.graphics.mesh.createCube(math.Vec3.new(0,-2,0), math.Vec3.new(12,0.25,12), delve.colors.red, material) catch {
+    cube3 = delve.graphics.mesh.createCube(math.Vec3.new(0, -2, 0), math.Vec3.new(12, 0.25, 12), delve.colors.red, material) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
@@ -85,11 +85,11 @@ pub fn on_draw() void {
     var model = math.Mat4.identity;
 
     const frustum = camera.getViewFrustum();
-    if(!frustum.containsPoint(math.Vec3.new(0,0,0))) {
+    if (!frustum.containsPoint(math.Vec3.new(0, 0, 0))) {
         return;
     }
 
-    cube1.draw(proj_view_matrix, model.mul(math.Mat4.rotate(@floatCast(time * 40.0), math.Vec3.new(0,1,0))));
+    cube1.draw(proj_view_matrix, model.mul(math.Mat4.rotate(@floatCast(time * 40.0), math.Vec3.new(0, 1, 0))));
     cube2.draw(proj_view_matrix, model);
     cube3.draw(proj_view_matrix, model);
 }

@@ -314,7 +314,7 @@ pub fn on_tick(delta: f32) void {
 }
 
 /// App lifecycle on_cleanup
-pub fn on_cleanup() void {
+pub fn on_cleanup() !void {
     var it = loaded_sounds.iterator();
     while (it.next()) |sound| {
         if (sound.value_ptr.zaudio_sound) |zaudio_sound| {
