@@ -10,7 +10,7 @@ const math = delve.math;
 var camera: delve.graphics.camera.Camera = undefined;
 var material: graphics.Material = undefined;
 
-var map_mesh: delve.graphics.mesh.Mesh = undefined;
+var map_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined;
 
 var time: f64 = 0.0;
 
@@ -132,8 +132,8 @@ pub fn on_init() void {
     const map_transform = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
     // make a cube
-    map_mesh = quake_map.buildMesh(map_transform, material) catch {
-        delve.debug.log("Could not create Quake map mesh!", .{});
+    map_meshes = quake_map.buildMeshes(allocator, map_transform, std.StringHashMap(delve.platform.graphics.Material).init(allocator), material) catch {
+        delve.debug.log("Could not create Quake map meshes!", .{});
         return;
     };
 
@@ -157,5 +157,7 @@ pub fn on_draw() void {
     const proj_view_matrix = camera.getProjView();
     var model = math.Mat4.identity;
 
-    map_mesh.draw(proj_view_matrix, model);
+    for (0..map_meshes.items.len) |idx| {
+        map_meshes.items[idx].draw(proj_view_matrix, model);
+    }
 }

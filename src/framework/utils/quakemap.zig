@@ -303,13 +303,27 @@ pub const QuakeMap = struct {
         return iter.next() orelse return &.{};
     }
 
-    pub fn buildMesh(self: *const QuakeMap, transform: math.Mat4, material: graphics.Material) !Mesh {
-        var builder = mesh.MeshBuilder.init();
-        defer builder.deinit();
+    /// Builds meshes for the map, bucketed by materials
+    pub fn buildMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: std.StringHashMap(graphics.Material), fallback_material: graphics.Material) !std.ArrayList(Mesh) {
 
-        // try builder.addCube(pos, size, math.Mat4.identity, color);
+        // Make our mesh buckets - we'll make a new mesh per material!
+        var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
+
         for(self.worldspawn.solids.items) |solid| {
             for(solid.faces.items) |face| {
+
+                var found_builder = mesh_builders.getPtr(face.texture_name);
+                var builder: *mesh.MeshBuilder = undefined;
+
+                if(found_builder) |b| {
+                    builder = b;
+                } else {
+                    // This is ugly - is there a better way?
+                    const new_builder = mesh.MeshBuilder.init();
+                    try mesh_builders.put(face.texture_name, new_builder);
+                    builder = mesh_builders.getPtr(face.texture_name).?;
+                }
+
                 var u_axis: Vec3 = undefined;
                 var v_axis: Vec3 = undefined;
                 calculateRotatedUV(face, &u_axis, &v_axis);
@@ -348,7 +362,24 @@ pub const QuakeMap = struct {
             }
         }
 
-        return builder.buildMesh(material);
+        // We're ready to build all of our mesh builders now!
+        var meshes = std.ArrayList(mesh.Mesh).init(allocator);
+
+        var it = mesh_builders.iterator();
+        while (it.next()) |builder| {
+            const b = builder.value_ptr;
+            if(b.indices.items.len == 0)
+                continue;
+
+            const found_material = materials.get(builder.key_ptr.*);
+            if(found_material) |m| {
+                try meshes.append(b.buildMesh(m));
+            } else {
+                try meshes.append(b.buildMesh(fallback_material));
+            }
+        }
+
+        return meshes;
     }
 };
 
