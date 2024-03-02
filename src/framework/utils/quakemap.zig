@@ -341,6 +341,8 @@ pub const QuakeMap = struct {
                     var v1: graphics.Vertex = .{ .x = pos_1.x, .y = pos_1.y, .z = pos_1.z, .u = uv_1.x, .v = uv_1.y };
                     var v2: graphics.Vertex = .{ .x = pos_2.x, .y = pos_2.y, .z = pos_2.z, .u = uv_2.x, .v = uv_2.y };
 
+                    // TODO: Add normals to vertices!
+
                     try builder.addTriangleFromVertices(v0, v1, v2, transform);
                 }
             }
