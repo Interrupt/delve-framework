@@ -43,10 +43,12 @@ pub const App = struct {
     export fn sokol_init() void {
         debug.log("Sokol app context initializing", .{});
 
+        // TODO: Put the buffer pool size and the shader pool size into a config
         sg.setup(.{
             .context = sgapp.context(),
             .logger = .{ .func = slog.func },
             .buffer_pool_size = 256, // default is 128
+            .shader_pool_size = 256, // default is 64
         });
 
         debug.log("Sokol setup backend: {}\n", .{sg.queryBackend()});
