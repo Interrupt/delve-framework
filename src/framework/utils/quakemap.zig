@@ -309,6 +309,7 @@ pub const QuakeMap = struct {
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
 
+        // First, go find all of the materials used, and cache them
         for(self.worldspawn.solids.items) |solid| {
             for(solid.faces.items) |face| {
 
@@ -319,8 +320,7 @@ pub const QuakeMap = struct {
                     builder = b;
                 } else {
                     // This is ugly - is there a better way?
-                    const new_builder = mesh.MeshBuilder.init();
-                    try mesh_builders.put(face.texture_name, new_builder);
+                    try mesh_builders.put(face.texture_name, mesh.MeshBuilder.init());
                     builder = mesh_builders.getPtr(face.texture_name).?;
                 }
 

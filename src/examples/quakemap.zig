@@ -148,17 +148,18 @@ pub fn on_init() !void {
             if (found == null) {
                 const texpath = try tex_path.toOwnedSlice();
                 const tex_path_null = texpath[0 .. texpath.len - 1 :0];
-                var treesheet_img: delve.images.Image = delve.images.loadFile(tex_path_null) catch {
+
+                var tex_img: delve.images.Image = delve.images.loadFile(tex_path_null) catch {
                     delve.debug.log("Could not load image: {s}", .{tex_path_null});
                     try materials.put(mat_name_null, fallback_material);
                     continue;
                 };
-                const newtex = graphics.Texture.init(&treesheet_img);
+                const tex = graphics.Texture.init(&tex_img);
 
                 const mat = graphics.Material.init(.{
                     .shader = shader,
                     .samplers = &[_]graphics.FilterMode{.NEAREST},
-                    .texture_0 = newtex,
+                    .texture_0 = tex,
                 });
                 try materials.put(mat_name_null, mat);
             }
