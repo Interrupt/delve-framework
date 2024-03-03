@@ -129,7 +129,7 @@ pub fn on_init() !void {
 
     const map_transform = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
-    var materials = std.StringHashMap(delve.platform.graphics.Material).init(allocator);
+    var materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
     const shader = graphics.Shader.initDefault(.{});
 
     for (quake_map.worldspawn.solids.items) |solid| {
@@ -151,7 +151,7 @@ pub fn on_init() !void {
 
                 var tex_img: delve.images.Image = delve.images.loadFile(tex_path_null) catch {
                     delve.debug.log("Could not load image: {s}", .{tex_path_null});
-                    try materials.put(mat_name_null, fallback_material);
+                    try materials.put(mat_name_null, .{ .material = fallback_material });
                     continue;
                 };
                 const tex = graphics.Texture.init(&tex_img);
@@ -161,16 +161,20 @@ pub fn on_init() !void {
                     .samplers = &[_]graphics.FilterMode{.NEAREST},
                     .texture_0 = tex,
                 });
-                try materials.put(mat_name_null, mat);
+                try materials.put(mat_name_null, .{ .material = mat, .tex_size_x = @intCast(tex.width), .tex_size_y = @intCast(tex.height)});
+
+                // delve.debug.log("Loaded image: {s}", .{tex_path_null});
             }
         }
     }
 
     // make a cube
-    map_meshes = try quake_map.buildMeshes(allocator, map_transform, materials, fallback_material);
+    map_meshes = try quake_map.buildMeshes(allocator, map_transform, materials, .{ .material = fallback_material });
 
     // set a bg color
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_light);
+
+    delve.platform.app.captureMouse(true);
 }
 
 pub fn on_tick(delta: f32) void {
@@ -179,8 +183,7 @@ pub fn on_tick(delta: f32) void {
 
     time += delta;
 
-    camera.yaw(delta * 20.0);
-    camera.runSimpleCamera(8 * delta, 60 * delta, false);
+    camera.runSimpleCamera(30 * delta, 60 * delta, true);
 }
 
 pub fn on_draw() void {

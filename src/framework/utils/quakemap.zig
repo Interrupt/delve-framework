@@ -184,6 +184,12 @@ pub const Solid = struct {
     }
 };
 
+pub const QuakeMaterial = struct {
+    material: graphics.Material,
+    tex_size_x: i32 = 32,
+    tex_size_y: i32 = 32,
+};
+
 pub const QuakeMap = struct {
     worldspawn: Entity,
     entities: std.ArrayList(Entity),
@@ -304,7 +310,7 @@ pub const QuakeMap = struct {
     }
 
     /// Builds meshes for the map, bucketed by materials
-    pub fn buildMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: std.StringHashMap(graphics.Material), fallback_material: graphics.Material) !std.ArrayList(Mesh) {
+    pub fn buildMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: std.StringHashMap(QuakeMaterial), fallback_material: QuakeMaterial) !std.ArrayList(Mesh) {
 
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
@@ -328,9 +334,14 @@ pub const QuakeMap = struct {
                 var v_axis: Vec3 = undefined;
                 calculateRotatedUV(face, &u_axis, &v_axis);
 
-                // TODO: Get these from an actual texture somehow! Also scale based on the face texture scale
-                const tex_size_x = 32;
-                const tex_size_y = 32;
+                var tex_size_x: f32 = 32;
+                var tex_size_y: f32 = 32;
+
+                const found_material = materials.get(face.texture_name);
+                if(found_material) |mat| {
+                    tex_size_x = @floatFromInt(mat.tex_size_x);
+                    tex_size_y = @floatFromInt(mat.tex_size_y);
+                }
 
                 for(0 .. face.vertices.len - 2) |i| {
                     const pos_0 = Vec3.new(face.vertices[0].x, face.vertices[0].y, face.vertices[0].z);
@@ -373,9 +384,9 @@ pub const QuakeMap = struct {
 
             const found_material = materials.get(builder.key_ptr.*);
             if(found_material) |m| {
-                try meshes.append(b.buildMesh(m));
+                try meshes.append(b.buildMesh(m.material));
             } else {
-                try meshes.append(b.buildMesh(fallback_material));
+                try meshes.append(b.buildMesh(fallback_material.material));
             }
         }
 
