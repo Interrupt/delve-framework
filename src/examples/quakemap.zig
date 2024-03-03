@@ -168,7 +168,7 @@ pub fn on_init() !void {
         }
     }
 
-    // make a cube
+    // make meshes out of the quake map, one per material
     map_meshes = try quake_map.buildMeshes(allocator, map_transform, materials, .{ .material = fallback_material });
 
     // set a bg color
