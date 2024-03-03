@@ -11,6 +11,8 @@ const sg = sokol.gfx;
 const sapp = sokol.app;
 const sgapp = sokol.app_gfx_glue;
 
+var app_config: main_app.AppConfig = undefined;
+
 pub const SokolAppConfig = struct {
     on_init_fn: *const fn () void,
     on_frame_fn: *const fn () void,
@@ -47,8 +49,8 @@ pub const App = struct {
         sg.setup(.{
             .context = sgapp.context(),
             .logger = .{ .func = slog.func },
-            .buffer_pool_size = 256, // default is 128
-            .shader_pool_size = 256, // default is 64
+            .buffer_pool_size = app_config.buffer_pool_size, // sokol default is 128
+            .shader_pool_size = app_config.shader_pool_size, // sokol default is 64
         });
 
         debug.log("Sokol setup backend: {}\n", .{sg.queryBackend()});
@@ -84,6 +86,8 @@ pub const App = struct {
     }
 
     pub fn startMainLoop(config: main_app.AppConfig) void {
+        app_config = config;
+
         sapp.run(.{
             .init_cb = sokol_init,
             .frame_cb = sokol_frame,
