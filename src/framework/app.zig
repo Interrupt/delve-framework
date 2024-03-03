@@ -25,6 +25,10 @@ pub const AppConfig = struct {
     // maximum sizes for graphics buffers
     buffer_pool_size: i32 = 512,
     shader_pool_size: i32 = 512,
+    pipeline_pool_size: i32 = 512,
+    image_pool_size: i32 = 256,
+    sampler_pool_size: i32 = 128,
+    pass_pool_size: i32 = 32,
 };
 
 pub fn setAssetsPath(path: [:0]const u8) !void {

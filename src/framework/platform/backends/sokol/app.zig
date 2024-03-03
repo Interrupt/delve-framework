@@ -51,6 +51,10 @@ pub const App = struct {
             .logger = .{ .func = slog.func },
             .buffer_pool_size = app_config.buffer_pool_size, // sokol default is 128
             .shader_pool_size = app_config.shader_pool_size, // sokol default is 64
+            .image_pool_size = app_config.image_pool_size, // sokol default is 128
+            .pipeline_pool_size = app_config.pipeline_pool_size, // sokol default is 64
+            .sampler_pool_size = app_config.sampler_pool_size, // sokol default is 64
+            .pass_pool_size = app_config.pass_pool_size, // sokol default is 16,
         });
 
         debug.log("Sokol setup backend: {}\n", .{sg.queryBackend()});
