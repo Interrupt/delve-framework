@@ -326,12 +326,13 @@ pub const QuakeMap = struct {
         return meshes;
     }
 
+    /// Builds meshes for all entity solids - in a real scenario, you'll want to do this yourself
     pub fn buildEntityMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: std.StringHashMap(QuakeMaterial), fallback_material: ?QuakeMaterial) !std.ArrayList(Mesh) {
 
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
 
-        // Add the solids for all of the entities. In a real game, you would want to keep these per-entity probably
+        // Add the solids for all of the entities
         for(self.entities.items) |entity| {
             for(entity.solids.items) |solid| {
                 try addSolidToMeshBuilders(&mesh_builders, solid, materials, transform);
