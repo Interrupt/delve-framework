@@ -310,87 +310,116 @@ pub const QuakeMap = struct {
     }
 
     /// Builds meshes for the map, bucketed by materials
-    pub fn buildMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: std.StringHashMap(QuakeMaterial), fallback_material: QuakeMaterial) !std.ArrayList(Mesh) {
+    pub fn buildWorldMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: std.StringHashMap(QuakeMaterial), fallback_material: ?QuakeMaterial) !std.ArrayList(Mesh) {
 
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
 
-        // First, go find all of the materials used, and cache them
+        // Add our solids
         for(self.worldspawn.solids.items) |solid| {
-            for(solid.faces.items) |face| {
+            try addSolidToMeshBuilders(&mesh_builders, solid, materials, transform);
+        }
 
-                var found_builder = mesh_builders.getPtr(face.texture_name);
-                var builder: *mesh.MeshBuilder = undefined;
+        // We're ready to build all of our mesh builders now!
+        var meshes = std.ArrayList(mesh.Mesh).init(allocator);
+        try buildMeshes(&mesh_builders, &materials, fallback_material, &meshes);
+        return meshes;
+    }
 
-                if(found_builder) |b| {
-                    builder = b;
-                } else {
-                    // This is ugly - is there a better way?
-                    try mesh_builders.put(face.texture_name, mesh.MeshBuilder.init());
-                    builder = mesh_builders.getPtr(face.texture_name).?;
-                }
+    pub fn buildEntityMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: std.StringHashMap(QuakeMaterial), fallback_material: ?QuakeMaterial) !std.ArrayList(Mesh) {
 
-                var u_axis: Vec3 = undefined;
-                var v_axis: Vec3 = undefined;
-                calculateRotatedUV(face, &u_axis, &v_axis);
+        // Make our mesh buckets - we'll make a new mesh per material!
+        var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
 
-                var tex_size_x: f32 = 32;
-                var tex_size_y: f32 = 32;
-
-                const found_material = materials.get(face.texture_name);
-                if(found_material) |mat| {
-                    tex_size_x = @floatFromInt(mat.tex_size_x);
-                    tex_size_y = @floatFromInt(mat.tex_size_y);
-                }
-
-                for(0 .. face.vertices.len - 2) |i| {
-                    const pos_0 = Vec3.new(face.vertices[0].x, face.vertices[0].y, face.vertices[0].z);
-                    const uv_0 = Vec2.new(
-                        (u_axis.dot(pos_0) + face.shift_x) / tex_size_x,
-                        (v_axis.dot(pos_0) + face.shift_y) / tex_size_y,
-                    );
-
-                    const pos_1 = Vec3.new(face.vertices[i + 1].x, face.vertices[i + 1].y, face.vertices[i + 1].z);
-                    const uv_1 = Vec2.new(
-                        (u_axis.dot(pos_1) + face.shift_x) / tex_size_x,
-                        (v_axis.dot(pos_1) + face.shift_y) / tex_size_y,
-                    );
-
-                    const pos_2 = Vec3.new(face.vertices[i + 2].x, face.vertices[i + 2].y, face.vertices[i + 2].z);
-                    const uv_2 = Vec2.new(
-                        (u_axis.dot(pos_2) + face.shift_x) / tex_size_x,
-                        (v_axis.dot(pos_2) + face.shift_y) / tex_size_y,
-                    );
-
-                    var v0: graphics.Vertex = .{ .x = pos_0.x, .y = pos_0.y, .z = pos_0.z, .u = uv_0.x, .v = uv_0.y };
-                    var v1: graphics.Vertex = .{ .x = pos_1.x, .y = pos_1.y, .z = pos_1.z, .u = uv_1.x, .v = uv_1.y };
-                    var v2: graphics.Vertex = .{ .x = pos_2.x, .y = pos_2.y, .z = pos_2.z, .u = uv_2.x, .v = uv_2.y };
-
-                    // TODO: Add normals to vertices!
-
-                    try builder.addTriangleFromVertices(v0, v1, v2, transform);
-                }
+        // Add the solids for all of the entities. In a real game, you would want to keep these per-entity probably
+        for(self.entities.items) |entity| {
+            for(entity.solids.items) |solid| {
+                try addSolidToMeshBuilders(&mesh_builders, solid, materials, transform);
             }
         }
 
         // We're ready to build all of our mesh builders now!
         var meshes = std.ArrayList(mesh.Mesh).init(allocator);
+        try buildMeshes(&mesh_builders, &materials, fallback_material, &meshes);
+        return meshes;
+    }
 
-        var it = mesh_builders.iterator();
+    /// builds meshes out of a map of MeshBuilders, and adds them to an ArrayList
+    pub fn buildMeshes(builders: *const std.StringHashMap(mesh.MeshBuilder), materials: *const std.StringHashMap(QuakeMaterial), fallback_material: ?QuakeMaterial, out_meshes: *std.ArrayList(mesh.Mesh)) !void {
+        var it = builders.iterator();
         while (it.next()) |builder| {
             const b = builder.value_ptr;
             if(b.indices.items.len == 0)
                 continue;
 
-            const found_material = materials.get(builder.key_ptr.*);
+            var found_material = materials.get(builder.key_ptr.*);
+            if(found_material == null)
+                found_material = fallback_material;
+
             if(found_material) |m| {
-                try meshes.append(b.buildMesh(m.material));
-            } else {
-                try meshes.append(b.buildMesh(fallback_material.material));
+                try out_meshes.append(b.buildMesh(m.material));
             }
         }
+    }
 
-        return meshes;
+    /// Adds all of the faces of a solid to a list of MeshBuilders, based on the face's texture name
+    pub fn addSolidToMeshBuilders(builders: *std.StringHashMap(mesh.MeshBuilder), solid: Solid, materials: std.StringHashMap(QuakeMaterial), transform: math.Mat4) !void {
+        for(solid.faces.items) |face| {
+            var found_builder = builders.getPtr(face.texture_name);
+            var builder: *mesh.MeshBuilder = undefined;
+
+            if(found_builder) |b| {
+                builder = b;
+            } else {
+                // This is ugly - is there a better way?
+                try builders.put(face.texture_name, mesh.MeshBuilder.init());
+                builder = builders.getPtr(face.texture_name).?;
+            }
+
+            const mat = materials.get(face.texture_name);
+            try addFaceToMeshBuilder(builder, face, mat, transform);
+        }
+    }
+
+    pub fn addFaceToMeshBuilder(builder: *mesh.MeshBuilder, face: Face, material: ?QuakeMaterial, transform: math.Mat4) !void {
+        var u_axis: Vec3 = undefined;
+        var v_axis: Vec3 = undefined;
+        calculateRotatedUV(face, &u_axis, &v_axis);
+
+        var tex_size_x: f32 = 32;
+        var tex_size_y: f32 = 32;
+        if(material) |mat| {
+            tex_size_x = @floatFromInt(mat.tex_size_x);
+            tex_size_y = @floatFromInt(mat.tex_size_y);
+        }
+
+        for(0 .. face.vertices.len - 2) |i| {
+            const pos_0 = Vec3.new(face.vertices[0].x, face.vertices[0].y, face.vertices[0].z);
+            const uv_0 = Vec2.new(
+                (u_axis.dot(pos_0) + face.shift_x) / tex_size_x,
+                (v_axis.dot(pos_0) + face.shift_y) / tex_size_y,
+            );
+
+            const pos_1 = Vec3.new(face.vertices[i + 1].x, face.vertices[i + 1].y, face.vertices[i + 1].z);
+            const uv_1 = Vec2.new(
+                (u_axis.dot(pos_1) + face.shift_x) / tex_size_x,
+                (v_axis.dot(pos_1) + face.shift_y) / tex_size_y,
+            );
+
+            const pos_2 = Vec3.new(face.vertices[i + 2].x, face.vertices[i + 2].y, face.vertices[i + 2].z);
+            const uv_2 = Vec2.new(
+                (u_axis.dot(pos_2) + face.shift_x) / tex_size_x,
+                (v_axis.dot(pos_2) + face.shift_y) / tex_size_y,
+            );
+
+            var v0: graphics.Vertex = .{ .x = pos_0.x, .y = pos_0.y, .z = pos_0.z, .u = uv_0.x, .v = uv_0.y };
+            var v1: graphics.Vertex = .{ .x = pos_1.x, .y = pos_1.y, .z = pos_1.z, .u = uv_1.x, .v = uv_1.y };
+            var v2: graphics.Vertex = .{ .x = pos_2.x, .y = pos_2.y, .z = pos_2.z, .u = uv_2.x, .v = uv_2.y };
+
+            // TODO: Add normals to vertices!
+
+            try builder.addTriangleFromVertices(v0, v1, v2, transform);
+        }
     }
 };
 

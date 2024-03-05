@@ -11,6 +11,7 @@ var camera: delve.graphics.camera.Camera = undefined;
 var fallback_material: graphics.Material = undefined;
 
 var map_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined;
+var entity_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined;
 
 var time: f64 = 0.0;
 
@@ -169,7 +170,8 @@ pub fn on_init() !void {
     }
 
     // make meshes out of the quake map, one per material
-    map_meshes = try quake_map.buildMeshes(allocator, map_transform, materials, .{ .material = fallback_material });
+    map_meshes = try quake_map.buildWorldMeshes(allocator, map_transform, materials, .{ .material = fallback_material });
+    entity_meshes = try quake_map.buildEntityMeshes(allocator, map_transform, materials, .{ . material = fallback_material });
 
     // set a bg color
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_light);
@@ -192,5 +194,8 @@ pub fn on_draw() void {
 
     for (0..map_meshes.items.len) |idx| {
         map_meshes.items[idx].draw(proj_view_matrix, model);
+    }
+    for (0..entity_meshes.items.len) |idx| {
+        entity_meshes.items[idx].draw(proj_view_matrix, model);
     }
 }
