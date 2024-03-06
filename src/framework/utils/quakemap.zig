@@ -2,6 +2,7 @@ const std = @import("std");
 const debug = @import("../debug.zig");
 const math = @import("../math.zig");
 const plane = @import("../spatial/plane.zig");
+const boundingbox = @import("../spatial/boundingbox.zig");
 const mesh = @import("../graphics/mesh.zig");
 const colors = @import("../colors.zig");
 const graphics = @import("../platform/graphics.zig");
@@ -15,6 +16,7 @@ const Vec3 = math.Vec3;
 const Vec2 = math.Vec2;
 const Plane = plane.Plane;
 const Mesh = mesh.Mesh;
+const BoundingBox = boundingbox.BoundingBox;
 
 // From https://github.com/fabioarnold/3d-game/blob/master/src/QuakeMap.zig
 // This is so cool!
@@ -181,6 +183,53 @@ pub const Solid = struct {
                 clipped.appendAssumeCapacity(intersect);
             }
         }
+    }
+
+    pub fn checkCollision(self: *const Solid, point: math.Vec3) bool {
+        for (self.faces.items) |*face| {
+            if(face.plane.testPoint(point) == .FRONT)
+                return false;
+        }
+        return true;
+    }
+
+    pub fn checkBoundingBoxCollision(self: *const Solid, bounds: BoundingBox) bool {
+        const x_size = (bounds.max.x - bounds.min.x) * 0.5;
+        const y_size = (bounds.max.y - bounds.min.y) * 0.5;
+        const z_size = (bounds.max.z - bounds.min.z) * 0.5;
+
+        const point = bounds.center;
+        for (self.faces.items) |*face| {
+            var expand_dist: f32 = 0;
+
+            // x_axis
+            const x_d = face.plane.normal.dot(Vec3.x_axis);
+            if(x_d > 0) expand_dist += -x_d * x_size;
+
+            const x_d_n = face.plane.normal.dot(Vec3.x_axis.scale(-1));
+            if(x_d_n > 0) expand_dist += -x_d_n * x_size;
+
+            // y_axis
+            const y_d = face.plane.normal.dot(Vec3.y_axis);
+            if(y_d > 0) expand_dist += y_d * y_size;
+
+            const y_d_n = face.plane.normal.dot(Vec3.y_axis.scale(-1));
+            if(y_d_n > 0) expand_dist += y_d_n * y_size;
+
+            // z_axis
+            const z_d = face.plane.normal.dot(Vec3.z_axis);
+            if(z_d > 0) expand_dist += -z_d * z_size;
+
+            const z_d_n = face.plane.normal.dot(Vec3.z_axis.scale(-1));
+            if(z_d_n > 0) expand_dist += -z_d_n * z_size;
+
+            var expandedface = face.plane;
+            expandedface.d += expand_dist;
+
+            if(expandedface.testPoint(point) == .FRONT)
+                return false;
+        }
+        return true;
     }
 };
 
