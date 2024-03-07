@@ -10,8 +10,17 @@ const math = delve.math;
 var camera: delve.graphics.camera.Camera = undefined;
 var fallback_material: graphics.Material = undefined;
 
+var quake_map: delve.utils.quakemap.QuakeMap = undefined;
 var map_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined;
 var entity_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined;
+var cube_mesh: delve.graphics.mesh.Mesh = undefined;
+
+var map_transform: math.Mat4 = undefined;
+
+var bounding_box_size: math.Vec3 = math.Vec3.new(2, 3, 2);
+var player_pos: math.Vec3 = math.Vec3.zero;
+var player_vel: math.Vec3 = math.Vec3.zero;
+var on_ground = true;
 
 var time: f64 = 0.0;
 
@@ -113,9 +122,11 @@ pub fn on_init() !void {
         \\}
     ;
 
+    map_transform = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
+
     var allocator = gpa.allocator();
     var err: delve.utils.quakemap.ErrorInfo = undefined;
-    const quake_map = try delve.utils.quakemap.QuakeMap.read(allocator, test_map_file, &err);
+    quake_map = try delve.utils.quakemap.QuakeMap.read(allocator, test_map_file, map_transform, &err);
 
     // Create a material out of the texture
     fallback_material = graphics.Material.init(.{
@@ -125,10 +136,11 @@ pub fn on_init() !void {
     });
 
     // create our camera
-    camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 512, 25.0, math.Vec3.up);
-    camera.position.y = 7.0;
+    camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 512, 16.0, math.Vec3.up);
+    camera.position.y = 10.0;
 
-    const map_transform = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
+    // set our player position too
+    player_pos = camera.position;
 
     var materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
     const shader = graphics.Shader.initDefault(.{});
@@ -162,7 +174,7 @@ pub fn on_init() !void {
                     .samplers = &[_]graphics.FilterMode{.NEAREST},
                     .texture_0 = tex,
                 });
-                try materials.put(mat_name_null, .{ .material = mat, .tex_size_x = @intCast(tex.width), .tex_size_y = @intCast(tex.height)});
+                try materials.put(mat_name_null, .{ .material = mat, .tex_size_x = @intCast(tex.width), .tex_size_y = @intCast(tex.height) });
 
                 // delve.debug.log("Loaded image: {s}", .{tex_path_null});
             }
@@ -170,8 +182,11 @@ pub fn on_init() !void {
     }
 
     // make meshes out of the quake map, one per material
-    map_meshes = try quake_map.buildWorldMeshes(allocator, map_transform, materials, .{ .material = fallback_material });
-    entity_meshes = try quake_map.buildEntityMeshes(allocator, map_transform, materials, .{ . material = fallback_material });
+    map_meshes = try quake_map.buildWorldMeshes(allocator, math.Mat4.identity, materials, .{ .material = fallback_material });
+    entity_meshes = try quake_map.buildEntityMeshes(allocator, math.Mat4.identity, materials, .{ .material = fallback_material });
+
+    // make a bounding box cube
+    cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), bounding_box_size, delve.colors.red, fallback_material);
 
     // set a bg color
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_light);
@@ -185,17 +200,103 @@ pub fn on_tick(delta: f32) void {
 
     time += delta;
 
-    camera.runSimpleCamera(30 * delta, 60 * delta, true);
+    camera.runSimpleCamera(0, 60 * delta, true);
 }
 
 pub fn on_draw() void {
     const proj_view_matrix = camera.getProjView();
     var model = math.Mat4.identity;
 
+    // gravity!
+    player_vel.y -= 0.01;
+
+    if (delve.platform.input.isKeyPressed(.W)) {
+        var dir = camera.direction;
+        dir.y = 0.0;
+        dir = dir.norm();
+
+        player_vel.x = -0.1 * dir.x;
+        player_vel.z = -0.1 * dir.z;
+    }
+    if (delve.platform.input.isKeyPressed(.S)) {
+        var dir = camera.direction;
+        dir.y = 0.0;
+        dir = dir.norm();
+
+        player_vel.x += 0.1 * dir.x;
+        player_vel.z += 0.1 * dir.z;
+    }
+
+    if (delve.platform.input.isKeyPressed(.D)) {
+        const right_dir = camera.getRightDirection();
+        player_vel.x += 0.1 * right_dir.x;
+        player_vel.z += 0.1 * right_dir.z;
+    }
+    if (delve.platform.input.isKeyPressed(.A)) {
+        const right_dir = camera.getRightDirection();
+        player_vel.x += -0.1 * right_dir.x;
+        player_vel.z += -0.1 * right_dir.z;
+    }
+    if (delve.platform.input.isKeyPressed(.SPACE) and on_ground) player_vel.y = 0.3;
+    if (delve.platform.input.isKeyPressed(.F)) player_vel.y = 0.1;
+
+    var check_bounds_x = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(player_vel.x, 0, 0)), bounding_box_size);
+
+    var did_collide_x = false;
+    for (quake_map.worldspawn.solids.items) |solid| {
+        did_collide_x = solid.checkBoundingBoxCollision(check_bounds_x);
+        if (did_collide_x)
+            break;
+    }
+    if (did_collide_x)
+        player_vel.x = 0.0;
+
+    var check_bounds_y = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(0, player_vel.y, 0)), bounding_box_size);
+
+    var did_collide_y = false;
+    for (quake_map.worldspawn.solids.items) |solid| {
+        did_collide_y = solid.checkBoundingBoxCollision(check_bounds_y);
+        if (did_collide_y)
+            break;
+    }
+    if (did_collide_y) {
+        on_ground = player_vel.y < 0.0;
+        player_vel.y = 0.0;
+    } else {
+        on_ground = false;
+    }
+
+    var check_bounds_z = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(0, 0, player_vel.z)), bounding_box_size);
+
+    var did_collide_z = false;
+    for (quake_map.worldspawn.solids.items) |solid| {
+        did_collide_z = solid.checkBoundingBoxCollision(check_bounds_z);
+        if (did_collide_z)
+            break;
+    }
+    if (did_collide_z)
+        player_vel.z = 0.0;
+
+    player_pos = player_pos.add(player_vel);
+
     for (0..map_meshes.items.len) |idx| {
+        // if(did_collide) {
+        //     map_meshes.items[idx].drawWithMaterial(&fallback_material, proj_view_matrix, model);
+        // }
+        // else {
+
         map_meshes.items[idx].draw(proj_view_matrix, model);
     }
     for (0..entity_meshes.items.len) |idx| {
         entity_meshes.items[idx].draw(proj_view_matrix, model);
     }
+
+    cube_mesh.draw(proj_view_matrix, math.Mat4.translate(camera.position));
+
+    // update camera position to new player pos
+    camera.position = player_pos;
+
+    // dumb friction!
+    player_vel.x = 0.0;
+    player_vel.z = 0.0;
 }
