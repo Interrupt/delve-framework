@@ -22,8 +22,6 @@ var player_pos: math.Vec3 = math.Vec3.zero;
 var player_vel: math.Vec3 = math.Vec3.zero;
 var on_ground = true;
 
-var time: f64 = 0.0;
-
 pub fn main() !void {
     const example = delve.modules.Module{
         .name = "quakemap_example",
@@ -198,8 +196,10 @@ pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyJustPressed(.ESCAPE))
         std.os.exit(0);
 
-    time += delta;
+    do_player_move(delta);
 
+    // update camera position to new player pos
+    camera.position = player_pos;
     camera.runSimpleCamera(0, 60 * delta, true);
 }
 
@@ -207,41 +207,54 @@ pub fn on_draw() void {
     const proj_view_matrix = camera.getProjView();
     var model = math.Mat4.identity;
 
-    // gravity!
-    player_vel.y -= 0.01;
+    for (0..map_meshes.items.len) |idx| {
+        map_meshes.items[idx].draw(proj_view_matrix, model);
+    }
+    for (0..entity_meshes.items.len) |idx| {
+        entity_meshes.items[idx].draw(proj_view_matrix, model);
+    }
 
+    cube_mesh.draw(proj_view_matrix, math.Mat4.translate(camera.position));
+}
+
+pub fn do_player_move(delta: f32) void {
+    // gravity!
+    player_vel.y -= 0.5 * delta;
+
+    // get our forward input direction
+    var move_dir: math.Vec3 = math.Vec3.zero;
     if (delve.platform.input.isKeyPressed(.W)) {
         var dir = camera.direction;
         dir.y = 0.0;
         dir = dir.norm();
-
-        player_vel.x = -0.1 * dir.x;
-        player_vel.z = -0.1 * dir.z;
+        move_dir = move_dir.sub(dir);
     }
     if (delve.platform.input.isKeyPressed(.S)) {
         var dir = camera.direction;
         dir.y = 0.0;
         dir = dir.norm();
-
-        player_vel.x += 0.1 * dir.x;
-        player_vel.z += 0.1 * dir.z;
+        move_dir = move_dir.add(dir);
     }
 
+    // get our sideways input direction
     if (delve.platform.input.isKeyPressed(.D)) {
         const right_dir = camera.getRightDirection();
-        player_vel.x += 0.1 * right_dir.x;
-        player_vel.z += 0.1 * right_dir.z;
+        move_dir = move_dir.add(right_dir);
     }
     if (delve.platform.input.isKeyPressed(.A)) {
         const right_dir = camera.getRightDirection();
-        player_vel.x += -0.1 * right_dir.x;
-        player_vel.z += -0.1 * right_dir.z;
+        move_dir = move_dir.sub(right_dir);
     }
+
+    // jumnp and fly
     if (delve.platform.input.isKeyPressed(.SPACE) and on_ground) player_vel.y = 0.3;
     if (delve.platform.input.isKeyPressed(.F)) player_vel.y = 0.1;
 
-    var check_bounds_x = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(player_vel.x, 0, 0)), bounding_box_size);
+    move_dir = move_dir.norm();
+    player_vel = player_vel.add(move_dir.scale(10.0).scale(delta));
 
+    // horizontal collisions
+    var check_bounds_x = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(player_vel.x, 0, 0)), bounding_box_size);
     var did_collide_x = false;
     for (quake_map.worldspawn.solids.items) |solid| {
         did_collide_x = solid.checkBoundingBoxCollision(check_bounds_x);
@@ -251,8 +264,18 @@ pub fn on_draw() void {
     if (did_collide_x)
         player_vel.x = 0.0;
 
-    var check_bounds_y = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(0, player_vel.y, 0)), bounding_box_size);
+    var check_bounds_z = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(player_vel.x, 0, player_vel.z)), bounding_box_size);
+    var did_collide_z = false;
+    for (quake_map.worldspawn.solids.items) |solid| {
+        did_collide_z = solid.checkBoundingBoxCollision(check_bounds_z);
+        if (did_collide_z)
+            break;
+    }
+    if (did_collide_z)
+        player_vel.z = 0.0;
 
+    // vertical collision
+    var check_bounds_y = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(player_vel.x, player_vel.y, player_vel.z)), bounding_box_size);
     var did_collide_y = false;
     for (quake_map.worldspawn.solids.items) |solid| {
         did_collide_y = solid.checkBoundingBoxCollision(check_bounds_y);
@@ -266,35 +289,8 @@ pub fn on_draw() void {
         on_ground = false;
     }
 
-    var check_bounds_z = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(0, 0, player_vel.z)), bounding_box_size);
-
-    var did_collide_z = false;
-    for (quake_map.worldspawn.solids.items) |solid| {
-        did_collide_z = solid.checkBoundingBoxCollision(check_bounds_z);
-        if (did_collide_z)
-            break;
-    }
-    if (did_collide_z)
-        player_vel.z = 0.0;
-
+    // velocity has been clipped to collisions, can move now
     player_pos = player_pos.add(player_vel);
-
-    for (0..map_meshes.items.len) |idx| {
-        // if(did_collide) {
-        //     map_meshes.items[idx].drawWithMaterial(&fallback_material, proj_view_matrix, model);
-        // }
-        // else {
-
-        map_meshes.items[idx].draw(proj_view_matrix, model);
-    }
-    for (0..entity_meshes.items.len) |idx| {
-        entity_meshes.items[idx].draw(proj_view_matrix, model);
-    }
-
-    cube_mesh.draw(proj_view_matrix, math.Mat4.translate(camera.position));
-
-    // update camera position to new player pos
-    camera.position = player_pos;
 
     // dumb friction!
     player_vel.x = 0.0;

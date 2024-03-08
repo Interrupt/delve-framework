@@ -25,6 +25,11 @@ pub const ErrorInfo = struct {
     line_number: usize,
 };
 
+pub const QuakeMapHit = struct {
+    loc: Vec3,
+    plane: Plane,
+};
+
 pub const Property = struct {
     key: []const u8,
     value: []const u8,
@@ -97,6 +102,7 @@ pub const Entity = struct {
 
 pub const Solid = struct {
     faces: std.ArrayList(Face),
+    bounds: BoundingBox = undefined,
 
     fn init(allocator: Allocator) Solid {
         return .{ .faces = std.ArrayList(Face).init(allocator) };
@@ -109,6 +115,9 @@ pub const Solid = struct {
 
         defer vertices.deinit(allocator);
         defer clipped.deinit(allocator);
+
+        // build a bounding box along the way too
+        var solid_bounds: BoundingBox = undefined;
 
         for (self.faces.items, 0..) |*face, i| {
             const quad = makeQuadWithRadius(face.plane, 1000000.0);
@@ -125,7 +134,20 @@ pub const Solid = struct {
             }
 
             face.vertices = try allocator.dupe(Vec3, vertices.items);
+
+            // create a bounding box out of these vertices
+            const face_bounds: BoundingBox = BoundingBox.initFromPositions(face.vertices);
+            if (i == 0) {
+                solid_bounds = face_bounds;
+                continue;
+            }
+
+            // expand our solid's bounding box by the new face bounds
+            solid_bounds.min = Vec3.min(solid_bounds.min, face_bounds.min);
+            solid_bounds.max = Vec3.max(solid_bounds.max, face_bounds.max);
         }
+
+        self.bounds = solid_bounds;
     }
 
     fn clip(allocator: Allocator, vertices: std.ArrayListUnmanaged(Vec3), clip_plane: Plane, clipped: *std.ArrayListUnmanaged(Vec3)) !void {
@@ -193,43 +215,127 @@ pub const Solid = struct {
         return true;
     }
 
-    pub fn checkBoundingBoxCollision(self: *const Solid, bounds: BoundingBox) bool {
-        const x_size = (bounds.max.x - bounds.min.x) * 0.5;
-        const y_size = (bounds.max.y - bounds.min.y) * 0.5;
-        const z_size = (bounds.max.z - bounds.min.z) * 0.5;
+    // Get our planes expanded by the Minkowski sum of the bounding box
+    pub fn getExpandedPlanes(self: *const Solid, size: math.Vec3) [24]?Plane {
+        var expanded_planes = [_]?Plane{null} ** 24;
+        var plane_count: usize = 0;
 
-        const point = bounds.center;
+        if (self.faces.items.len == 0)
+            return expanded_planes;
+
         for (self.faces.items) |*face| {
             var expand_dist: f32 = 0;
 
             // x_axis
-            const x_d = face.plane.normal.dot(Vec3.x_axis);
-            if (x_d > 0) expand_dist += -x_d * x_size;
+            const x_d = face.plane.normal.dot(math.Vec3.x_axis);
+            if (x_d > 0) expand_dist += -x_d * size.x;
 
-            const x_d_n = face.plane.normal.dot(Vec3.x_axis.scale(-1));
-            if (x_d_n > 0) expand_dist += -x_d_n * x_size;
+            const x_d_n = face.plane.normal.dot(math.Vec3.x_axis.scale(-1));
+            if (x_d_n > 0) expand_dist += -x_d_n * size.x;
 
             // y_axis
-            const y_d = face.plane.normal.dot(Vec3.y_axis);
-            if (y_d > 0) expand_dist += -y_d * y_size;
+            const y_d = face.plane.normal.dot(math.Vec3.y_axis);
+            if (y_d > 0) expand_dist += -y_d * size.y;
 
-            const y_d_n = face.plane.normal.dot(Vec3.y_axis.scale(-1));
-            if (y_d_n > 0) expand_dist += -y_d_n * y_size;
+            const y_d_n = face.plane.normal.dot(math.Vec3.y_axis.scale(-1));
+            if (y_d_n > 0) expand_dist += -y_d_n * size.y;
 
             // z_axis
-            const z_d = face.plane.normal.dot(Vec3.z_axis);
-            if (z_d > 0) expand_dist += -z_d * z_size;
+            const z_d = face.plane.normal.dot(math.Vec3.z_axis);
+            if (z_d > 0) expand_dist += -z_d * size.z;
 
-            const z_d_n = face.plane.normal.dot(Vec3.z_axis.scale(-1));
-            if (z_d_n > 0) expand_dist += -z_d_n * z_size;
+            const z_d_n = face.plane.normal.dot(math.Vec3.z_axis.scale(-1));
+            if (z_d_n > 0) expand_dist += -z_d_n * size.z;
 
             var expandedface = face.plane;
             expandedface.d += expand_dist;
 
-            if (expandedface.testPoint(point) == .FRONT)
-                return false;
+            expanded_planes[plane_count] = expandedface;
+            plane_count += 1;
         }
+
+        // Make the Minkowski sum of both bounding boxes
+        var solid_bounds = self.bounds;
+        solid_bounds.min.x -= size.x;
+        solid_bounds.min.y -= size.y;
+        solid_bounds.min.z -= size.z;
+
+        solid_bounds.max.x += size.x;
+        solid_bounds.max.y += size.y;
+        solid_bounds.max.z += size.z;
+
+        // Can use the sum as our bevel planes
+        const bevel_planes = solid_bounds.getPlanes();
+        for (bevel_planes) |p| {
+            expanded_planes[plane_count] = p;
+            plane_count += 1;
+        }
+
+        return expanded_planes;
+    }
+
+    pub fn checkBoundingBoxCollision(self: *const Solid, bounds: BoundingBox) bool {
+        const x_size = (bounds.max.x - bounds.min.x) * 0.5;
+        const y_size = (bounds.max.y - bounds.min.y) * 0.5;
+        const z_size = (bounds.max.z - bounds.min.z) * 0.5;
+        const point = bounds.center;
+
+        const expanded_planes = self.getExpandedPlanes(Vec3.new(x_size, y_size, z_size));
+        for (expanded_planes) |ep| {
+            if (ep) |p| {
+                if (p.testPoint(point) == .FRONT)
+                    return false;
+            }
+        }
+
         return true;
+    }
+
+    pub fn checkBoundingBoxCollisionWithVelocity(self: *const Solid, bounds: BoundingBox, velocity: Vec3) ?QuakeMapHit {
+        var worldhit: ?QuakeMapHit = null;
+
+        const size = bounds.max.sub(bounds.min).scale(0.5);
+        const planes = getExpandedPlanes(self, size);
+
+        const point = bounds.center;
+        const next = point.add(velocity);
+
+        if (planes.len == 0)
+            return null;
+
+        for (0..planes.len) |idx| {
+            const ep = planes[idx];
+            if (ep) |p| {
+                if (p.testPoint(next) == .FRONT)
+                    return null;
+
+                const hit = p.intersectLine(point, next);
+                if (hit) |h| {
+                    var didhit = true;
+                    for (0..planes.len) |h_idx| {
+                        if (idx == h_idx)
+                            continue;
+
+                        // check that this hit point is behind the other clip planes
+                        if (planes[h_idx]) |pp| {
+                            if (pp.testPoint(h) == .FRONT) {
+                                didhit = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (didhit) {
+                        worldhit = .{
+                            .loc = h,
+                            .plane = p,
+                        };
+                    }
+                }
+            }
+        }
+
+        return worldhit;
     }
 };
 
