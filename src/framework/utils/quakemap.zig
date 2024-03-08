@@ -3,6 +3,7 @@ const debug = @import("../debug.zig");
 const math = @import("../math.zig");
 const plane = @import("../spatial/plane.zig");
 const boundingbox = @import("../spatial/boundingbox.zig");
+const rays = @import("../spatial/rays.zig");
 const mesh = @import("../graphics/mesh.zig");
 const colors = @import("../colors.zig");
 const graphics = @import("../platform/graphics.zig");
@@ -17,6 +18,7 @@ const Vec2 = math.Vec2;
 const Plane = plane.Plane;
 const Mesh = mesh.Mesh;
 const BoundingBox = boundingbox.BoundingBox;
+const Ray = rays.Ray;
 
 // From https://github.com/fabioarnold/3d-game/blob/master/src/QuakeMap.zig
 // This is so cool!
@@ -295,7 +297,7 @@ pub const Solid = struct {
         var worldhit: ?QuakeMapHit = null;
 
         const size = bounds.max.sub(bounds.min).scale(0.5);
-        const planes = getExpandedPlanes(self, size);
+        const planes = self.getExpandedPlanes(size);
 
         const point = bounds.center;
         const next = point.add(velocity);
@@ -306,8 +308,11 @@ pub const Solid = struct {
         for (0..planes.len) |idx| {
             const ep = planes[idx];
             if (ep) |p| {
+                // must start in front but end in back
+                if (p.testPoint(point) == .BACK)
+                    continue;
                 if (p.testPoint(next) == .FRONT)
-                    return null;
+                    continue;
 
                 const hit = p.intersectLine(point, next);
                 if (hit) |h| {
@@ -330,7 +335,99 @@ pub const Solid = struct {
                             .loc = h,
                             .plane = p,
                         };
+
+                        // convex, so should only have one collision
+                        break;
                     }
+                }
+            }
+        }
+
+        return worldhit;
+    }
+
+    pub fn checkLineCollision(self: *const Solid, start: Vec3, end: Vec3) ?QuakeMapHit {
+        var worldhit: ?QuakeMapHit = null;
+
+        if (self.faces.items.len == 0)
+            return null;
+
+        for (0..self.faces.items.len) |idx| {
+            const p = self.faces.items[idx].plane;
+            // must start in front and end in back
+            if (p.testPoint(start) == .BACK)
+                continue;
+            if (p.testPoint(end) == .FRONT)
+                continue;
+
+            const hit = p.intersectLine(start, end);
+
+            if (hit) |h| {
+                var didhit = true;
+                for (0..self.faces.items.len) |h_idx| {
+                    if (idx == h_idx)
+                        continue;
+
+                    // check that this hit point is behind the other clip planes
+                    const pp = self.faces.items[h_idx].plane;
+                    if (pp.testPoint(h) == .FRONT) {
+                        didhit = false;
+                        break;
+                    }
+                }
+
+                if (didhit) {
+                    worldhit = .{
+                        .loc = h,
+                        .plane = p,
+                    };
+
+                    // convex, so should only have one collision
+                    break;
+                }
+            }
+        }
+
+        return worldhit;
+    }
+
+    pub fn checkRayCollision(self: *const Solid, ray: Ray) ?QuakeMapHit {
+        var worldhit: ?QuakeMapHit = null;
+
+        if (self.faces.items.len == 0)
+            return null;
+
+        for (0..self.faces.items.len) |idx| {
+            const p = self.faces.items[idx].plane;
+
+            // must start in front!
+            if (p.testPoint(ray.pos) == .BACK)
+                continue;
+
+            const hit = ray.intersectPlane(p, true);
+
+            if (hit) |h| {
+                var didhit = true;
+                for (0..self.faces.items.len) |h_idx| {
+                    if (idx == h_idx)
+                        continue;
+
+                    // check that this hit point is behind the other clip planes
+                    const pp = self.faces.items[h_idx].plane;
+                    if (pp.testPoint(h.hit_pos) == .FRONT) {
+                        didhit = false;
+                        break;
+                    }
+                }
+
+                if (didhit) {
+                    worldhit = .{
+                        .loc = h.hit_pos,
+                        .plane = p,
+                    };
+
+                    // convex, so should only have one collision
+                    break;
                 }
             }
         }
