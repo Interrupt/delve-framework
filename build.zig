@@ -1,8 +1,8 @@
 const std = @import("std");
 const Build = std.Build;
 const sokol = @import("sokol");
-const zaudio = @import("zaudio");
-const zmesh = @import("zmesh");
+// const zaudio = @import("zaudio");
+// const zmesh = @import("zmesh");
 const ziglua = @import("ziglua");
 const zstbi = @import("zstbi");
 const system_sdk = @import("system-sdk");
@@ -37,28 +37,33 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     }).module("ziglua");
 
-    const zmesh_pkg = zmesh.package(b, target, optimize, .{});
+    // const zmesh_pkg = zmesh.package(b, target, optimize, .{});
     const zstbi_pkg = zstbi.package(b, target, optimize, .{});
-    const zaudio_pkg = zaudio.package(b, target, optimize, .{});
+    // const zaudio_pkg = zaudio.package(b, target, optimize, .{});
+
+    const zmesh = b.dependency("zmesh", .{});
+    const zaudio = b.dependency("zaudio", .{});
 
     const sokol_item = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
     const ziglua_item = .{ .module = ziglua_mod, .name = "ziglua" };
-    const zmesh_item = .{ .module = zmesh_pkg.zmesh, .name = "zmesh" };
-    const zmesh_options_item = .{ .module = zmesh_pkg.zmesh_options, .name = "zmesh_options" };
+    const zmesh_item = .{ .module = zmesh.module("root"), .name = "zmesh" };
+    // const zmesh_options_item = .{ .module = zmesh_pkg.zmesh_options, .name = "zmesh_options" };
     const zstbi_item = .{ .module = zstbi_pkg.zstbi, .name = "zstbi" };
-    const zaudio_item = .{ .module = zaudio_pkg.zaudio, .name = "zaudio" };
+    const zaudio_item = .{ .module = zaudio.module("root"), .name = "zaudio" };
     const delve_module_imports = [_]ModuleImport{
         sokol_item,
         ziglua_item,
         zmesh_item,
-        zmesh_options_item,
+        // zmesh_options_item,
         zstbi_item,
         zaudio_item,
     };
     const link_libraries = [_]*Build.Step.Compile{
-        zmesh_pkg.zmesh_c_cpp,
+        // zmesh_pkg.zmesh_c_cpp,
+        zmesh.artifact("zmesh"),
         zstbi_pkg.zstbi_c_cpp,
-        zaudio_pkg.zaudio_c_cpp,
+        zaudio.artifact("miniaudio"),
+        // zaudio_pkg.zaudio_c_cpp,
     };
 
     var build_collection: BuildCollection = .{
@@ -85,7 +90,7 @@ pub fn build(b: *std.Build) !void {
         sokol_item,
         ziglua_item,
         zmesh_item,
-        zmesh_options_item,
+        // zmesh_options_item,
         zstbi_item,
         zaudio_item,
         .{ .module = delve_mod, .name = "delve" },
@@ -94,21 +99,21 @@ pub fn build(b: *std.Build) !void {
 
     // collection of all examples
     const example_list = [_]ExampleItem{
-        &[_]String{ "audio", "src/examples/audio.zig" },
-        &[_]String{ "sprites", "src/examples/sprites.zig" },
-        &[_]String{ "sprite-animation", "src/examples/sprite-animation.zig" },
+        // &[_]String{ "audio", "src/examples/audio.zig" },
+        // &[_]String{ "sprites", "src/examples/sprites.zig" },
+        // &[_]String{ "sprite-animation", "src/examples/sprite-animation.zig" },
         &[_]String{ "clear", "src/examples/clear.zig" },
-        &[_]String{ "collision", "src/examples/collision.zig" },
-        &[_]String{ "debugdraw", "src/examples/debugdraw.zig" },
-        &[_]String{ "easing", "src/examples/easing.zig" },
-        &[_]String{ "forest", "src/examples/forest.zig" },
-        &[_]String{ "framepacing", "src/examples/framepacing.zig" },
-        &[_]String{ "frustums", "src/examples/frustums.zig" },
-        &[_]String{ "lua", "src/examples/lua.zig" },
-        &[_]String{ "meshbuilder", "src/examples/meshbuilder.zig" },
-        &[_]String{ "meshes", "src/examples/meshes.zig" },
-        &[_]String{ "passes", "src/examples/passes.zig" },
-        &[_]String{ "stresstest", "src/examples/stresstest.zig" },
+        // &[_]String{ "collision", "src/examples/collision.zig" },
+        // &[_]String{ "debugdraw", "src/examples/debugdraw.zig" },
+        // &[_]String{ "easing", "src/examples/easing.zig" },
+        // &[_]String{ "forest", "src/examples/forest.zig" },
+        // &[_]String{ "framepacing", "src/examples/framepacing.zig" },
+        // &[_]String{ "frustums", "src/examples/frustums.zig" },
+        // &[_]String{ "lua", "src/examples/lua.zig" },
+        // &[_]String{ "meshbuilder", "src/examples/meshbuilder.zig" },
+        // &[_]String{ "meshes", "src/examples/meshes.zig" },
+        // &[_]String{ "passes", "src/examples/passes.zig" },
+        // &[_]String{ "stresstest", "src/examples/stresstest.zig" },
     };
 
     for (example_list) |example_item| {
