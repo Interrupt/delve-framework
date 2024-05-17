@@ -9,7 +9,7 @@ const sokol = @import("sokol");
 const slog = sokol.log;
 const sg = sokol.gfx;
 const sapp = sokol.app;
-const sgapp = sokol.app_gfx_glue;
+const sglue = sokol.glue;
 
 pub const SokolAppConfig = struct {
     on_init_fn: *const fn () void,
@@ -44,7 +44,7 @@ pub const App = struct {
         debug.log("Sokol app context initializing", .{});
 
         sg.setup(.{
-            .context = sgapp.context(),
+            .environment = sglue.environment(),
             .logger = .{ .func = slog.func },
             .buffer_pool_size = 256, // default is 128
         });

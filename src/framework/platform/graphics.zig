@@ -11,7 +11,7 @@ const sokol = @import("sokol");
 const slog = sokol.log;
 const sg = sokol.gfx;
 const sapp = sokol.app;
-const sgapp = sokol.app_gfx_glue;
+const sglue = sokol.glue;
 const debugtext = sokol.debugtext;
 
 // general allocator for graphics functions
@@ -850,7 +850,9 @@ pub fn startFrame() void {
     debugtext.layer(0);
 
     state.in_default_pass = true;
-    sg.beginDefaultPass(default_pass_action, sapp.width(), sapp.height());
+
+    // reset to drawing to the swapchain on every frame start
+    sg.beginPass(.{ .action = default_pass_action, .swapchain = sglue.swapchain() });
 }
 
 /// Called at the end of a frame
