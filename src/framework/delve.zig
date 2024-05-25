@@ -52,15 +52,17 @@ pub const api = struct {
 };
 
 pub const spatial = struct {
-    pub const Rect = @import("spatial/rect.zig").Rect;
     pub const BoundingBox = @import("spatial/boundingbox.zig").BoundingBox;
     pub const OrientedBoundingBox = @import("spatial/orientedboundingbox.zig").OrientedBoundingBox;
-    pub const Plane = @import("spatial/plane.zig").Plane;
     pub const Frustum = @import("spatial/frustum.zig").Frustum;
+    pub const Plane = @import("spatial/plane.zig").Plane;
+    pub const Ray = @import("spatial/rays.zig").Ray;
+    pub const Rect = @import("spatial/rect.zig").Rect;
 };
 
 pub const utils = struct {
     pub const interpolation = @import("utils/interpolation.zig");
+    pub const quakemap = @import("utils/quakemap.zig");
 };
 
 // builtin shaders

@@ -78,6 +78,16 @@ pub const Color = struct {
             .a = std.math.clamp(self.a, 0.0, 1.0),
         };
     }
+
+    /// Scale a color by a float value, ignoring alpha
+    pub fn scale(left: *const Color, scl: f32) Color {
+        return Color{
+            .r = left.r * scl,
+            .g = left.g * scl,
+            .b = left.b * scl,
+            .a = left.a,
+        };
+    }
 };
 
 // Preset colors!

@@ -247,6 +247,20 @@ pub const MeshBuilder = struct {
         }
     }
 
+    /// Adds a triangle to the mesh builder, from vertices
+    pub fn addTriangleFromVertices(self: *MeshBuilder, v0: Vertex, v1: Vertex, v2: Vertex, transform: math.Mat4) !void {
+        try self.vertices.append(Vertex.mulMat4(v0, transform));
+        try self.vertices.append(Vertex.mulMat4(v1, transform));
+        try self.vertices.append(Vertex.mulMat4(v2, transform));
+
+        const indices = &[_]u32{ 0, 1, 2 };
+
+        const v_pos = @as(u32, @intCast(self.indices.items.len));
+        for (indices) |idx| {
+            try self.indices.append(idx + v_pos);
+        }
+    }
+
     pub fn addCube(self: *MeshBuilder, pos: Vec3, size: Vec3, transform: math.Mat4, color: Color) !void {
         const rect_west = Rect.newCentered(math.Vec2.zero, math.Vec2.new(size.z, size.y));
         const rect_east = Rect.newCentered(math.Vec2.zero, math.Vec2.new(size.z, size.y));

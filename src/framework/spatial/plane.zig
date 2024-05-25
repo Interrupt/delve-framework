@@ -156,6 +156,20 @@ pub const Plane = struct {
 
         return ret;
     }
+
+    pub fn mulMat4(self: *const Plane, transform: math.Mat4) Plane {
+        const origin = self.normal.scale(self.d);
+        const along = origin.add(self.normal);
+
+        // get a transformed origin and point down the plane normal direction
+        const origin_trans = origin.mulMat4(transform);
+        const along_trans = along.mulMat4(transform);
+
+        // make the new normal based on the new direction
+        const normal = along_trans.sub(origin_trans).norm();
+
+        return Plane.init(normal, origin_trans.scale(-1));
+    }
 };
 
 test "Plane.distanceToPoint" {
@@ -224,4 +238,26 @@ test "Plane.planeIntersectPoint" {
     assert(intersect.x == 1);
     assert(intersect.y == 4);
     assert(intersect.z == 5);
+}
+
+test "Plane.mulMat4" {
+    const plane = Plane.init(Vec3.new(0, 0, 1), Vec3.new(1, 1, 1));
+
+    // multiplying by the identity should result in an identical plane
+    const t1 = plane.mulMat4(math.Mat4.identity);
+    assert(std.meta.eql(plane, t1));
+
+    // scaling should keep the normal, but increase the distance
+    const t2 = plane.mulMat4(math.Mat4.scale(Vec3.new(2, 2, 2)));
+    assert(std.meta.eql(plane.normal, t2.normal));
+    assert(t2.d == plane.d * 2);
+
+    // translating should also just change the distance
+    const t3 = plane.mulMat4(math.Mat4.translate(Vec3.new(1, 1, 1)));
+    assert(std.meta.eql(plane.normal, t3.normal));
+    assert(t3.d == 0);
+
+    // rotating should just change the normal
+    const t4 = plane.mulMat4(math.Mat4.rotate(45, Vec3.new(1, 1, 1)));
+    assert(t4.d == plane.d);
 }

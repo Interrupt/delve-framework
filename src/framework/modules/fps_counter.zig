@@ -27,7 +27,7 @@ pub fn registerModule() !void {
     try modules.registerModule(fpsCounter);
 }
 
-fn on_cleanup() void {
+fn on_cleanup() !void {
     if (last_fps_str != null) {
         allocator.free(last_fps_str.?);
         last_fps_str = null;

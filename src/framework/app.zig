@@ -14,11 +14,21 @@ pub var assets_path: [:0]const u8 = "assets";
 
 pub const AppConfig = struct {
     title: [:0]const u8 = "Delve Framework",
+
     width: i32 = 960,
     height: i32 = 540,
+
     target_fps: ?i32 = null,
     use_fixed_timestep: bool = false,
     fixed_timestep_delta: f32 = 1.0 / 60.0,
+
+    // maximum sizes for graphics buffers
+    buffer_pool_size: i32 = 512,
+    shader_pool_size: i32 = 512,
+    pipeline_pool_size: i32 = 512,
+    image_pool_size: i32 = 256,
+    sampler_pool_size: i32 = 128,
+    pass_pool_size: i32 = 32,
 };
 
 pub fn setAssetsPath(path: [:0]const u8) !void {

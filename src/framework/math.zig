@@ -94,6 +94,11 @@ pub const Vec3 = extern struct {
         return Vec3{ .x = x, .y = y, .z = z };
     }
 
+    pub fn lerp(start: Vec3, end: Vec3, alpha: f32) Vec3 {
+        const t = std.math.clamp(alpha, 0.0, 1.0);
+        return start.add((end.sub(start)).scale(t));
+    }
+
     pub fn len(v: *const Vec3) f32 {
         return math.sqrt(v.dot(Vec3.new(v.x, v.y, v.z)));
     }
@@ -234,7 +239,7 @@ pub const Vec4 = extern struct {
         if (l != 0.0) {
             return Vec4{ .x = v.x / l, .y = v.y / l, .z = v.z / l, .w = v.w / l };
         } else {
-            return Vec4.new(0,0,0,0);
+            return Vec4.new(0, 0, 0, 0);
         }
     }
 
@@ -634,7 +639,7 @@ test "Mat4.invert" {
     const m = Mat4.persp(60.0, 1.33333337, 0.01, 10.0);
     const inverted = m.invert();
 
-    const before = Vec3.new(1,10,-1);
+    const before = Vec3.new(1, 10, -1);
     const transformed = before.mulMat4(m);
     const after = transformed.mulMat4(inverted);
 

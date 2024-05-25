@@ -43,7 +43,7 @@ pub fn registerModule() !void {
     try modules.registerModule(example);
 }
 
-fn on_init() void {
+fn on_init() !void {
     debug.log("Collision example module initializing", .{});
 
     sprite_batch = batcher.SpriteBatcher.init(.{}) catch {
@@ -96,7 +96,7 @@ fn on_draw() void {
     sprite_batch.draw(projection.mul(view), math.Mat4.identity);
 }
 
-fn on_cleanup() void {
+fn on_cleanup() !void {
     debug.log("Collision animation example module cleaning up", .{});
     sprite_batch.deinit();
     shader_default.destroy();

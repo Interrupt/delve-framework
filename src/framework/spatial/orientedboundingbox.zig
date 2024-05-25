@@ -2,10 +2,12 @@ const std = @import("std");
 const math = @import("../math.zig");
 const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
+const plane = @import("plane.zig");
 const assert = std.debug.assert;
 
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
+const Plane = plane.Plane;
 const BoundingBox = @import("boundingbox.zig").BoundingBox;
 
 // Using the implementation from https://www.jkh.me/files/tutorials/Separating%20Axis%20Theorem%20for%20Oriented%20Bounding%20Boxes.pdf
@@ -35,6 +37,7 @@ pub const OrientedBoundingBox = struct {
         return ret;
     }
 
+    /// Caches the vertices and axes
     pub fn update(self: *OrientedBoundingBox) void {
         self.vertices = self.getCorners();
         self.axes = self.getAxes();
@@ -179,6 +182,31 @@ pub const OrientedBoundingBox = struct {
             Vec3.new(self.max.x, self.min.y, self.max.z).mulMat4(self.transform),
             Vec3.new(self.max.x, self.min.y, self.min.z).mulMat4(self.transform),
             Vec3.new(self.min.x, self.min.y, self.max.z).mulMat4(self.transform),
+        };
+    }
+
+    /// Gets our planes, transformed by our orientation
+    pub fn getPlanes(self: *const OrientedBoundingBox) [6]Plane {
+        const axes = self.getAxes();
+        return [6]Plane{
+            Plane.init(axes[0], Vec3.new(self.max.x, self.center.y, self.center.z).mulMat4(self.transform)),
+            Plane.init(axes[0].scale(-1.0), Vec3.new(self.min.x, self.center.y, self.center.z).mulMat4(self.transform)),
+            Plane.init(axes[1], Vec3.new(self.center.x, self.max.y, self.center.z).mulMat4(self.transform)),
+            Plane.init(axes[1].scale(-1.0), Vec3.new(self.center.x, self.min.y, self.center.z).mulMat4(self.transform)),
+            Plane.init(axes[2], Vec3.new(self.center.x, self.center.y, self.max.z).mulMat4(self.transform)),
+            Plane.init(axes[2].scale(-1.0), Vec3.new(self.center.x, self.center.y, self.min.z).mulMat4(self.transform)),
+        };
+    }
+
+    /// Gets the planes, but unoriented
+    pub fn getUntransformedPlanes(self: *const OrientedBoundingBox) [6]Plane {
+        return [6]Plane{
+            Plane.init(Vec3.new(1, 0, 0), Vec3.new(self.max.x, self.center.y, self.center.z)),
+            Plane.init(Vec3.new(-1, 0, 0), Vec3.new(self.min.x, self.center.y, self.center.z)),
+            Plane.init(Vec3.new(0, 1, 0), Vec3.new(self.center.x, self.max.y, self.center.z)),
+            Plane.init(Vec3.new(0, -1, 0), Vec3.new(self.center.x, self.min.y, self.center.z)),
+            Plane.init(Vec3.new(0, 0, 1), Vec3.new(self.center.x, self.center.y, self.max.z)),
+            Plane.init(Vec3.new(0, 0, -1), Vec3.new(self.center.x, self.center.y, self.min.z)),
         };
     }
 

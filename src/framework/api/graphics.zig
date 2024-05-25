@@ -19,7 +19,7 @@ var sprite_batch: batcher.SpriteBatcher = undefined;
 
 // ------- Lifecycle functions --------
 /// Called when the app is starting up
-pub fn libInit() void {
+pub fn libInit() !void {
     // since we will be drawing a view with 0,0 as the top left, and not bottom right,
     // flip the texture vertically!
     sprite_batch = batcher.SpriteBatcher.init(.{ .flip_tex_y = true }) catch {
@@ -44,7 +44,7 @@ pub fn libDraw() void {
 }
 
 /// Called when things are shutting down
-pub fn libCleanup() void {
+pub fn libCleanup() !void {
     debug.log("Graphics API: cleanup", .{});
     sprite_batch.deinit();
 }

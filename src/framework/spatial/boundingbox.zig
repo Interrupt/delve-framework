@@ -1,9 +1,12 @@
 const std = @import("std");
 const math = @import("../math.zig");
+const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
+const plane = @import("plane.zig");
 const assert = std.debug.assert;
 
 const Vec3 = math.Vec3;
+const Plane = plane.Plane;
 
 /// An axis aligned bounding box
 pub const BoundingBox = struct {
@@ -23,13 +26,13 @@ pub const BoundingBox = struct {
 
     /// Creates a new bounding box that fits some positions
     pub fn initFromPositions(positions: []const Vec3) BoundingBox {
-        if(positions.len == 0)
-            return BoundingBox{.center = Vec3.zero, .min = Vec3.zero, .max = Vec3.zero};
+        if (positions.len == 0)
+            return BoundingBox{ .center = Vec3.zero, .min = Vec3.zero, .max = Vec3.zero };
 
         var min = positions[0];
         var max = positions[0];
 
-        for(positions) |pos| {
+        for (positions) |pos| {
             min = Vec3.min(min, pos);
             max = Vec3.max(max, pos);
         }
@@ -43,13 +46,13 @@ pub const BoundingBox = struct {
 
     /// Creates a new bounding box that fits some verts
     pub fn initFromVerts(verts: []const graphics.Vertex) BoundingBox {
-        if(verts.len == 0)
-            return BoundingBox{.center = Vec3.zero, .min = Vec3.zero, .max = Vec3.zero};
+        if (verts.len == 0)
+            return BoundingBox{ .center = Vec3.zero, .min = Vec3.zero, .max = Vec3.zero };
 
         var min = verts[0].getPosition();
         var max = verts[0].getPosition();
 
-        for(verts) |vert| {
+        for (verts) |vert| {
             const vert_pos = vert.getPosition();
             min = Vec3.min(min, vert_pos);
             max = Vec3.max(max, vert_pos);
@@ -99,7 +102,7 @@ pub const BoundingBox = struct {
         var max = center;
 
         // find the new min and max
-        for(corners) |corner| {
+        for (corners) |corner| {
             const transformed = corner.mulMat4(transform_mat);
             min = Vec3.min(min, transformed);
             max = Vec3.max(max, transformed);
@@ -126,6 +129,17 @@ pub const BoundingBox = struct {
         };
     }
 
+    pub fn getPlanes(self: *const BoundingBox) [6]Plane {
+        return [6]Plane{
+            Plane.init(Vec3.new(1, 0, 0), Vec3.new(self.max.x, self.center.y, self.center.z)),
+            Plane.init(Vec3.new(-1, 0, 0), Vec3.new(self.min.x, self.center.y, self.center.z)),
+            Plane.init(Vec3.new(0, 1, 0), Vec3.new(self.center.x, self.max.y, self.center.z)),
+            Plane.init(Vec3.new(0, -1, 0), Vec3.new(self.center.x, self.min.y, self.center.z)),
+            Plane.init(Vec3.new(0, 0, 1), Vec3.new(self.center.x, self.center.y, self.max.z)),
+            Plane.init(Vec3.new(0, 0, -1), Vec3.new(self.center.x, self.center.y, self.min.z)),
+        };
+    }
+
     /// Check to see if this bounding box contains a point
     pub fn contains(self: *const BoundingBox, point: Vec3) bool {
         return point.x >= self.min.x and point.y >= self.min.y and point.z >= self.min.z and
@@ -140,14 +154,14 @@ pub const BoundingBox = struct {
 };
 
 test "BoundingBox.contains" {
-    const box = BoundingBox.init(Vec3.zero, Vec3.new(4,6,4));
+    const box = BoundingBox.init(Vec3.zero, Vec3.new(4, 6, 4));
     assert(box.contains(Vec3.zero) == true);
     assert(box.contains(Vec3.new(-2, 0, -2)) == true);
     assert(box.contains(Vec3.new(-2.5, 2, 2)) == false);
     assert(box.contains(Vec3.new(1.5, 3, 1)) == true);
     assert(box.contains(Vec3.new(3, 0, 0)) == false);
 
-    const box2 = BoundingBox.init(Vec3.new(10, 5, 5), Vec3.new(4,8,4));
+    const box2 = BoundingBox.init(Vec3.new(10, 5, 5), Vec3.new(4, 8, 4));
     assert(box2.contains(Vec3.zero) == false);
     assert(box2.contains(Vec3.new(10, 4, 4)) == true);
     assert(box2.contains(Vec3.new(12, 9, 7)) == true);
@@ -156,10 +170,10 @@ test "BoundingBox.contains" {
 }
 
 test "BoundingBox.intersects" {
-    const box1 = BoundingBox.init(Vec3.zero, Vec3.new(2,4,2));
-    const box2 = BoundingBox.init(Vec3.new(10, 5, 5), Vec3.new(2,4,2));
-    const box3 = BoundingBox.init(Vec3.new(11, 7, 6), Vec3.new(2,4,2));
-    const box4 = BoundingBox.init(Vec3.new(2, 2, 2), Vec3.new(20,20,20));
+    const box1 = BoundingBox.init(Vec3.zero, Vec3.new(2, 4, 2));
+    const box2 = BoundingBox.init(Vec3.new(10, 5, 5), Vec3.new(2, 4, 2));
+    const box3 = BoundingBox.init(Vec3.new(11, 7, 6), Vec3.new(2, 4, 2));
+    const box4 = BoundingBox.init(Vec3.new(2, 2, 2), Vec3.new(20, 20, 20));
 
     assert(box1.intersects(box2) == false);
     assert(box2.intersects(box3) == true);
@@ -171,7 +185,7 @@ test "BoundingBox.intersects" {
 }
 
 test "BoundingBox.transform" {
-    const box = BoundingBox.init(Vec3.new(1,-2,3), Vec3.new(2,4,2));
+    const box = BoundingBox.init(Vec3.new(1, -2, 3), Vec3.new(2, 4, 2));
     const tmat = math.Mat4.translate(Vec3.new(10, 1, -2));
 
     const transformed = box.transform(tmat);
@@ -193,11 +207,7 @@ test "BoundingBox.transform" {
 }
 
 test "BoundingBox.initFromPositions" {
-    const positions = &[_]Vec3{
-        Vec3.new(10, 5, 2),
-        Vec3.new(20, 18, 6),
-        Vec3.new(13, 8, 8)
-    };
+    const positions = &[_]Vec3{ Vec3.new(10, 5, 2), Vec3.new(20, 18, 6), Vec3.new(13, 8, 8) };
 
     const box = BoundingBox.initFromPositions(positions);
     assert(box.min.x == 10);

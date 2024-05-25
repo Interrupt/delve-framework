@@ -16,7 +16,7 @@ var allocator = gpa.allocator();
 // TODO: Move the guts of this to a subsystem!
 
 // called automatically when the library is binded
-pub fn libInit() void {
+pub fn libInit() !void {
     debug.log("Assets: initializing", .{});
     loaded_textures = std.AutoHashMap([*:0]const u8, u32).init(allocator);
     image_handles = std.AutoHashMap(u32, images.Image).init(allocator);

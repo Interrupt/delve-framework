@@ -8,7 +8,7 @@ const modules = @import("../modules.zig");
 
 /// Registers this module
 pub fn registerModule() !void {
-    const luaSimpleLifecycle = modules.Module {
+    const luaSimpleLifecycle = modules.Module{
         .name = "lua_simple_lifecycle",
         .start_fn = on_game_start,
         .stop_fn = on_game_stop,
@@ -44,9 +44,7 @@ pub fn on_game_stop() void {
     };
 }
 
-pub fn on_cleanup() void {
-
-}
+pub fn on_cleanup() !void {}
 
 pub fn on_tick(delta: f32) void {
     _ = delta;

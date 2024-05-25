@@ -29,7 +29,7 @@ pub fn main() !void {
     try app.start(app.AppConfig{ .title = "Delve Framework - Mesh Builder Example" });
 }
 
-pub fn on_init() void {
+pub fn on_init() !void {
     var img = delve.images.loadBytes(test_asset) catch {
         delve.debug.log("Error loading image", .{});
         return;

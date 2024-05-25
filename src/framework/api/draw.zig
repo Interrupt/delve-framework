@@ -19,7 +19,7 @@ var enable_debug_logging = false;
 
 // ------- Lifecycle functions --------
 /// Called when the app is starting up
-pub fn libInit() void {
+pub fn libInit() !void {
     shape_batch = batcher.Batcher.init(.{}) catch {
         debug.log("Error initializing shape batch!", .{});
         return;
@@ -42,7 +42,7 @@ pub fn libDraw() void {
 }
 
 /// Called when things are shutting down
-pub fn libCleanup() void {
+pub fn libCleanup() !void {
     debug.log("Draw: cleanup", .{});
     shape_batch.deinit();
 }

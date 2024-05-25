@@ -14,6 +14,6 @@ pub fn main() !void {
     try app.start(app.AppConfig{ .title = "Delve Framework - Clear Example" });
 }
 
-pub fn on_init() void {
+pub fn on_init() !void {
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_dark);
 }

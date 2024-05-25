@@ -42,7 +42,7 @@ pub fn main() !void {
     try app.start(app.AppConfig{ .title = "Delve Framework - Render Passes Example" });
 }
 
-pub fn on_init() void {
+pub fn on_init() !void {
     var img = delve.images.loadBytes(test_asset) catch {
         delve.debug.log("Error loading image", .{});
         return;
@@ -103,8 +103,8 @@ pub fn on_init() void {
     delve.platform.app.captureMouse(true);
 
     // initialize the nested examples too
-    if (nested_example_1.init_fn) |init_fn| init_fn();
-    if (nested_example_2.init_fn) |init_fn| init_fn();
+    if (nested_example_1.init_fn) |init_fn| try init_fn();
+    if (nested_example_2.init_fn) |init_fn| try init_fn();
 }
 
 pub fn on_tick(delta: f32) void {
