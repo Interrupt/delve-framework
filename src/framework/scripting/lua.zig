@@ -9,7 +9,7 @@ var lua_gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var lua_allocator = lua_gpa.allocator();
 
 // Global Lua state
-var lua: Lua = undefined;
+var lua: *Lua = undefined;
 
 // Enable for extra logging
 var enable_debug_logging = false;
