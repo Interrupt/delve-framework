@@ -115,6 +115,8 @@ zig build run-lua
 zig build run-meshbuilder
 zig build run-meshes
 zig build run-passes
+zig build run-quakemap
+zig build run-rays
 zig build run-sprite-animation
 zig build run-sprites
 zig build run-stresstest
