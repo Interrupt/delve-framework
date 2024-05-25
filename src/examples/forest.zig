@@ -194,7 +194,7 @@ fn on_tick(delta: f32) void {
     camera.runSimpleCamera(4.0 * delta, 120.0 * delta, true);
 
     if (input.isKeyJustPressed(.ESCAPE)) {
-        std.os.exit(0);
+        papp.exit();
     }
 }
 

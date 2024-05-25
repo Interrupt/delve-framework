@@ -99,21 +99,21 @@ pub fn build(b: *std.Build) !void {
 
     // collection of all examples
     const example_list = [_]ExampleItem{
-        // &[_]String{ "audio", "src/examples/audio.zig" },
-        // &[_]String{ "sprites", "src/examples/sprites.zig" },
-        // &[_]String{ "sprite-animation", "src/examples/sprite-animation.zig" },
+        &[_]String{ "audio", "src/examples/audio.zig" },
+        &[_]String{ "sprites", "src/examples/sprites.zig" },
+        &[_]String{ "sprite-animation", "src/examples/sprite-animation.zig" },
         &[_]String{ "clear", "src/examples/clear.zig" },
-        // &[_]String{ "collision", "src/examples/collision.zig" },
-        // &[_]String{ "debugdraw", "src/examples/debugdraw.zig" },
-        // &[_]String{ "easing", "src/examples/easing.zig" },
-        // &[_]String{ "forest", "src/examples/forest.zig" },
-        // &[_]String{ "framepacing", "src/examples/framepacing.zig" },
-        // &[_]String{ "frustums", "src/examples/frustums.zig" },
+        &[_]String{ "collision", "src/examples/collision.zig" },
+        &[_]String{ "debugdraw", "src/examples/debugdraw.zig" },
+        &[_]String{ "easing", "src/examples/easing.zig" },
+        &[_]String{ "forest", "src/examples/forest.zig" },
+        &[_]String{ "framepacing", "src/examples/framepacing.zig" },
+        &[_]String{ "frustums", "src/examples/frustums.zig" },
         &[_]String{ "lua", "src/examples/lua.zig" },
-        // &[_]String{ "meshbuilder", "src/examples/meshbuilder.zig" },
-        // &[_]String{ "meshes", "src/examples/meshes.zig" },
+        &[_]String{ "meshbuilder", "src/examples/meshbuilder.zig" },
+        &[_]String{ "meshes", "src/examples/meshes.zig" },
         // &[_]String{ "passes", "src/examples/passes.zig" },
-        // &[_]String{ "stresstest", "src/examples/stresstest.zig" },
+        &[_]String{ "stresstest", "src/examples/stresstest.zig" },
     };
 
     for (example_list) |example_item| {

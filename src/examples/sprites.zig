@@ -103,7 +103,7 @@ fn on_tick(deltatime: f32) void {
     _ = deltatime;
 
     if (input.isKeyJustPressed(.ESCAPE)) {
-        std.os.exit(0);
+        papp.exit();
     }
 }
 
