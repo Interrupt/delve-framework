@@ -97,7 +97,7 @@ pub const BoundingBox = struct {
         const corners = self.getCorners();
 
         // Set min and max to the center to start with
-        var center = self.center.mulMat4(transform_mat);
+        const center = self.center.mulMat4(transform_mat);
         var min = center;
         var max = center;
 

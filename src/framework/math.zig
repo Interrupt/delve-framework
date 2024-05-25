@@ -95,7 +95,7 @@ pub const Vec3 = extern struct {
     }
 
     pub fn lerp(start: Vec3, end: Vec3, alpha: f32) Vec3 {
-        var t = std.math.clamp(alpha, 0.0, 1.0);
+        const t = std.math.clamp(alpha, 0.0, 1.0);
         return start.add((end.sub(start)).scale(t));
     }
 

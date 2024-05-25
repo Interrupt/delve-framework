@@ -8,7 +8,6 @@ const shader_default = @import("../../../graphics/shaders/default.glsl.zig");
 const slog = sokol.log;
 const sg = sokol.gfx;
 const sapp = sokol.app;
-const sgapp = sokol.app_gfx_glue;
 const debugtext = sokol.debugtext;
 
 pub const Bindings = graphics.Bindings;
@@ -26,7 +25,7 @@ pub const BindingsImpl = struct {
     index_type_size: u8 = @sizeOf(u32),
 
     pub fn init(cfg: graphics.BindingConfig) Bindings {
-        var bindingsImpl = BindingsImpl{
+        const bindingsImpl = BindingsImpl{
             .sokol_bindings = .{},
             .index_type_size = if (cfg.vertex_layout.index_size == .UINT16) @sizeOf(u16) else @sizeOf(u32),
         };
@@ -257,7 +256,7 @@ pub const ShaderImpl = struct {
             .cull_mode = convertCullMode(self.cfg.cull_mode),
         };
 
-        if(self.cfg.is_depth_pixel_format) {
+        if (self.cfg.is_depth_pixel_format) {
             debug.log("Creating depth pixel format", .{});
             pipe_desc.depth.pixel_format = .DEPTH;
         }
@@ -279,7 +278,7 @@ pub const ShaderImpl = struct {
         pipe_desc.colors[0].blend = convertBlendMode(self.cfg.blend_mode);
 
         // Ready to build our pipeline!
-        var pipeline: sg.Pipeline = sg.makePipeline(pipe_desc);
+        const pipeline: sg.Pipeline = sg.makePipeline(pipe_desc);
 
         // Add this to our list of cached pipelines for this shader
         self.sokol_pipelines.append(.{ .layout = layout, .sokol_pipeline = pipeline }) catch {

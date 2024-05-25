@@ -122,7 +122,7 @@ pub fn on_init() !void {
 
     map_transform = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
-    var allocator = gpa.allocator();
+    const allocator = gpa.allocator();
     var err: delve.utils.quakemap.ErrorInfo = undefined;
     quake_map = try delve.utils.quakemap.QuakeMap.read(allocator, test_map_file, map_transform, &err);
 
@@ -194,7 +194,7 @@ pub fn on_init() !void {
 
 pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyJustPressed(.ESCAPE))
-        std.os.exit(0);
+        delve.platform.app.exit();
 
     do_player_move(delta);
 
@@ -205,7 +205,7 @@ pub fn on_tick(delta: f32) void {
 
 pub fn on_draw() void {
     const proj_view_matrix = camera.getProjView();
-    var model = math.Mat4.identity;
+    const model = math.Mat4.identity;
 
     for (0..map_meshes.items.len) |idx| {
         map_meshes.items[idx].draw(proj_view_matrix, model);
@@ -254,7 +254,7 @@ pub fn do_player_move(delta: f32) void {
     player_vel = player_vel.add(move_dir.scale(10.0).scale(delta));
 
     // horizontal collisions
-    var check_bounds_x = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(player_vel.x, 0, 0)), bounding_box_size);
+    const check_bounds_x = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(player_vel.x, 0, 0)), bounding_box_size);
     var did_collide_x = false;
     for (quake_map.worldspawn.solids.items) |solid| {
         did_collide_x = solid.checkBoundingBoxCollision(check_bounds_x);
@@ -264,7 +264,7 @@ pub fn do_player_move(delta: f32) void {
     if (did_collide_x)
         player_vel.x = 0.0;
 
-    var check_bounds_z = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(player_vel.x, 0, player_vel.z)), bounding_box_size);
+    const check_bounds_z = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(player_vel.x, 0, player_vel.z)), bounding_box_size);
     var did_collide_z = false;
     for (quake_map.worldspawn.solids.items) |solid| {
         did_collide_z = solid.checkBoundingBoxCollision(check_bounds_z);
@@ -275,7 +275,7 @@ pub fn do_player_move(delta: f32) void {
         player_vel.z = 0.0;
 
     // vertical collision
-    var check_bounds_y = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(player_vel.x, player_vel.y, player_vel.z)), bounding_box_size);
+    const check_bounds_y = delve.spatial.BoundingBox.init(player_pos.add(math.Vec3.new(player_vel.x, player_vel.y, player_vel.z)), bounding_box_size);
     var did_collide_y = false;
     for (quake_map.worldspawn.solids.items) |solid| {
         did_collide_y = solid.checkBoundingBoxCollision(check_bounds_y);

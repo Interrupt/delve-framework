@@ -56,7 +56,7 @@ fn on_tick(delta: f32) void {
     }
 
     if (input.isKeyJustPressed(.ESCAPE))
-        std.os.exit(0);
+        delve.platform.app.exit();
 }
 
 fn on_draw() void {

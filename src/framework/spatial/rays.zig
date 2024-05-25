@@ -106,8 +106,8 @@ pub const Ray = struct {
         const downrange = self.pos.add(self.dir);
 
         // get our inverted start and direction vectors
-        var inv_start = self.pos.mulMat4(inv_transform);
-        var inv_dir = downrange.mulMat4(inv_transform).sub(inv_start).norm();
+        const inv_start = self.pos.mulMat4(inv_transform);
+        const inv_dir = downrange.mulMat4(inv_transform).sub(inv_start).norm();
 
         // Make a ray that is the inverse of ourselves
         const inv_ray = Ray.init(inv_start, inv_dir);

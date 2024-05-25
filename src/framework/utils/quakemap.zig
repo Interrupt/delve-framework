@@ -629,7 +629,7 @@ pub const QuakeMap = struct {
     /// Adds all of the faces of a solid to a list of MeshBuilders, based on the face's texture name
     pub fn addSolidToMeshBuilders(builders: *std.StringHashMap(mesh.MeshBuilder), solid: Solid, materials: std.StringHashMap(QuakeMaterial), transform: math.Mat4) !void {
         for (solid.faces.items) |face| {
-            var found_builder = builders.getPtr(face.texture_name);
+            const found_builder = builders.getPtr(face.texture_name);
             var builder: *mesh.MeshBuilder = undefined;
 
             if (found_builder) |b| {
@@ -676,9 +676,9 @@ pub const QuakeMap = struct {
                 (v_axis.dot(pos_2) + face.shift_y) / tex_size_y,
             );
 
-            var v0: graphics.Vertex = .{ .x = pos_0.x, .y = pos_0.y, .z = pos_0.z, .u = uv_0.x, .v = uv_0.y };
-            var v1: graphics.Vertex = .{ .x = pos_1.x, .y = pos_1.y, .z = pos_1.z, .u = uv_1.x, .v = uv_1.y };
-            var v2: graphics.Vertex = .{ .x = pos_2.x, .y = pos_2.y, .z = pos_2.z, .u = uv_2.x, .v = uv_2.y };
+            const v0: graphics.Vertex = .{ .x = pos_0.x, .y = pos_0.y, .z = pos_0.z, .u = uv_0.x, .v = uv_0.y };
+            const v1: graphics.Vertex = .{ .x = pos_1.x, .y = pos_1.y, .z = pos_1.z, .u = uv_1.x, .v = uv_1.y };
+            const v2: graphics.Vertex = .{ .x = pos_2.x, .y = pos_2.y, .z = pos_2.z, .u = uv_2.x, .v = uv_2.y };
 
             // TODO: Add normals to vertices!
 
@@ -707,8 +707,8 @@ fn makeQuadWithRadius(self: Plane, radius: f32) [4]Vec3 {
 }
 
 fn closestAxis(v: Vec3) Vec3 {
-    if (@fabs(v.x) >= @fabs(v.y) and @fabs(v.x) >= @fabs(v.z)) return Vec3.x_axis; // 1 0 0
-    if (@fabs(v.y) >= @fabs(v.z)) return Vec3.up; // 0 1 0
+    if (@abs(v.x) >= @abs(v.y) and @abs(v.x) >= @abs(v.z)) return Vec3.x_axis; // 1 0 0
+    if (@abs(v.y) >= @abs(v.z)) return Vec3.up; // 0 1 0
     return Vec3.z_axis; // 0 0 1
 }
 
@@ -771,7 +771,7 @@ test "QuakeMap.read" {
         \\}
     ;
 
-    var allocator = gpa.allocator();
+    const allocator = gpa.allocator();
 
     var err: ErrorInfo = undefined;
     const map = try QuakeMap.read(allocator, test_map_file, &err);

@@ -75,7 +75,7 @@ fn on_tick(delta: f32) void {
         state.x_pos_delta = 0.0;
 
     if (input.isKeyJustPressed(.ESCAPE))
-        std.os.exit(0);
+        papp.exit();
 }
 
 fn on_fixed_tick(fixed_delta: f32) void {
@@ -112,6 +112,6 @@ fn on_draw() void {
 
 fn on_cleanup() !void {
     debug.log("Frame pacing example module cleaning up", .{});
-    test_image.destroy();
+    test_image.deinit();
     texture.destroy();
 }

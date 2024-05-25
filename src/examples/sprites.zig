@@ -65,13 +65,13 @@ fn on_init() !void {
         debug.log("Could not load test texture", .{});
         return;
     };
-    defer test_image_1.destroy();
+    defer test_image_1.deinit();
 
     var test_image_2 = images.loadBytes(test_asset_2) catch {
         debug.log("Could not load test texture", .{});
         return;
     };
-    defer test_image_2.destroy();
+    defer test_image_2.deinit();
 
     // make some textures from our images
     texture_1 = graphics.Texture.init(&test_image_1);
@@ -103,7 +103,7 @@ fn on_tick(deltatime: f32) void {
     _ = deltatime;
 
     if (input.isKeyJustPressed(.ESCAPE)) {
-        std.os.exit(0);
+        papp.exit();
     }
 }
 

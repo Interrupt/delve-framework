@@ -17,7 +17,7 @@ pub fn draw(text_string: [*:0]const u8, x: i32, y: i32, color: u32) void {
 
     // Draw until hitting the sentinel
     while (true) {
-        var char: u8 = text_string[idx];
+        const char: u8 = text_string[idx];
         idx += 1;
 
         if (char == 0)
@@ -44,7 +44,7 @@ pub fn draw_wrapped(text_string: [*:0]const u8, x: i32, y: i32, width: i32, colo
 
     // Draw until hitting the sentinel
     while (true) {
-        var char: u8 = text_string[idx];
+        const char: u8 = text_string[idx];
         idx += 1;
 
         if (char == 0)
@@ -77,7 +77,7 @@ pub fn getTextHeight(text_string: [*:0]const u8, width: i32) i32 {
 
     // Draw until hitting the sentinel
     while (true) {
-        var char: u8 = text_string[idx];
+        const char: u8 = text_string[idx];
         idx += 1;
 
         if (char == 0)

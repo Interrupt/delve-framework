@@ -286,5 +286,5 @@ pub fn exit() void {
 
 /// Exit with an error
 pub fn exitWithError() void {
-    std.os.exit(1);
+    std.posix.exit(1);
 }
