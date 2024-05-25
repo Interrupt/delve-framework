@@ -112,7 +112,7 @@ pub fn build(b: *std.Build) !void {
         &[_]String{ "lua", "src/examples/lua.zig" },
         &[_]String{ "meshbuilder", "src/examples/meshbuilder.zig" },
         &[_]String{ "meshes", "src/examples/meshes.zig" },
-        // &[_]String{ "passes", "src/examples/passes.zig" },
+        &[_]String{ "passes", "src/examples/passes.zig" },
         &[_]String{ "stresstest", "src/examples/stresstest.zig" },
     };
 
