@@ -1,8 +1,6 @@
 const std = @import("std");
 const Build = std.Build;
 const sokol = @import("sokol");
-// const zaudio = @import("zaudio");
-// const zmesh = @import("zmesh");
 const ziglua = @import("ziglua");
 const zstbi = @import("zstbi");
 const system_sdk = @import("system-sdk");
@@ -10,18 +8,14 @@ const system_sdk = @import("system-sdk");
 var target: Build.ResolvedTarget = undefined;
 var optimize: std.builtin.OptimizeMode = undefined;
 
-const String = []const u8;
 const ModuleImport = struct {
     module: *Build.Module,
-    name: String,
+    name: []const u8,
 };
 const BuildCollection = struct {
     add_imports: []const ModuleImport,
     link_libraries: []const *Build.Step.Compile,
 };
-const ExampleItem = []const String;
-
-// zig build -freference-trace run-forest
 
 pub fn build(b: *std.Build) !void {
     target = b.standardTargetOptions(.{});
@@ -98,25 +92,25 @@ pub fn build(b: *std.Build) !void {
     build_collection.add_imports = &app_module_imports;
 
     // collection of all examples
-    const example_list = [_]ExampleItem{
-        &[_]String{ "audio", "src/examples/audio.zig" },
-        &[_]String{ "sprites", "src/examples/sprites.zig" },
-        &[_]String{ "sprite-animation", "src/examples/sprite-animation.zig" },
-        &[_]String{ "clear", "src/examples/clear.zig" },
-        &[_]String{ "collision", "src/examples/collision.zig" },
-        &[_]String{ "debugdraw", "src/examples/debugdraw.zig" },
-        &[_]String{ "easing", "src/examples/easing.zig" },
-        &[_]String{ "forest", "src/examples/forest.zig" },
-        &[_]String{ "framepacing", "src/examples/framepacing.zig" },
-        &[_]String{ "frustums", "src/examples/frustums.zig" },
-        &[_]String{ "lua", "src/examples/lua.zig" },
-        &[_]String{ "meshbuilder", "src/examples/meshbuilder.zig" },
-        &[_]String{ "meshes", "src/examples/meshes.zig" },
-        &[_]String{ "passes", "src/examples/passes.zig" },
-        &[_]String{ "stresstest", "src/examples/stresstest.zig" },
+    const examples = [_][]const u8{
+        "audio",
+        "sprites",
+        "sprite-animation",
+        "clear",
+        "collision",
+        "debugdraw",
+        "easing",
+        "forest",
+        "framepacing",
+        "frustums",
+        "lua",
+        "meshbuilder",
+        "meshes",
+        "passes",
+        "stresstest",
     };
 
-    for (example_list) |example_item| {
+    inline for (examples) |example_item| {
         try buildExample(b, example_item, build_collection);
     }
 
@@ -131,9 +125,9 @@ pub fn build(b: *std.Build) !void {
     test_step.dependOn(&exe_tests.step);
 }
 
-fn buildExample(b: *std.Build, example: ExampleItem, build_collection: BuildCollection) !void {
-    const name: []const u8 = example[0];
-    const root_source_file: []const u8 = example[1];
+fn buildExample(b: *std.Build, comptime example: []const u8, build_collection: BuildCollection) !void {
+    const name: []const u8 = example;
+    const root_source_file: []const u8 = "src/examples/" ++ example ++ ".zig";
 
     var app: *Build.Step.Compile = undefined;
     // special case handling for native vs web build
