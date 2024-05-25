@@ -11,7 +11,7 @@ const sokol = @import("sokol");
 const slog = sokol.log;
 const sg = sokol.gfx;
 const sapp = sokol.app;
-const sgapp = sokol.app_gfx_glue;
+const sglue = sokol.glue;
 const debugtext = sokol.debugtext;
 
 // general allocator for graphics functions
@@ -397,29 +397,29 @@ pub const RenderPass = struct {
     render_texture_depth: ?Texture,
     config: RenderPassConfig,
 
-    sokol_pass: ?sg.Pass,
+    sokol_attachments: ?sg.Attachments,
 
     pub fn init(config: RenderPassConfig) RenderPass {
-        var pass_desc = sg.PassDesc{};
+        var atts_desc: sg.AttachmentsDesc = .{};
 
         var color_attachment: ?Texture = null;
         var depth_attachment: ?Texture = null;
 
         if (config.include_color) {
             color_attachment = Texture.initRenderTexture(config.width, config.height, false);
-            pass_desc.color_attachments[0].image = color_attachment.?.sokol_image.?;
+            atts_desc.colors[0].image = color_attachment.?.sokol_image.?;
         }
 
         if (config.include_depth) {
             depth_attachment = Texture.initRenderTexture(config.width, config.height, true);
-            pass_desc.depth_stencil_attachment.image = depth_attachment.?.sokol_image.?;
+            atts_desc.depth_stencil.image = depth_attachment.?.sokol_image.?;
         }
 
         return RenderPass{
             .config = config,
             .render_texture_color = color_attachment,
             .render_texture_depth = depth_attachment,
-            .sokol_pass = sg.makePass(pass_desc),
+            .sokol_attachments = sg.makeAttachments(atts_desc),
         };
     }
 
@@ -471,7 +471,7 @@ pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
         pass_action.colors[0].clear_value = .{ .r = clear_color.?.r, .g = clear_color.?.g, .b = clear_color.?.b, .a = clear_color.?.a };
     }
 
-    sg.beginPass(render_pass.sokol_pass.?, pass_action);
+    sg.beginPass(.{ .action = pass_action, .attachments = render_pass.sokol_attachments.? });
 }
 
 /// Ends the current render pass, and resumes the default
@@ -850,7 +850,9 @@ pub fn startFrame() void {
     debugtext.layer(0);
 
     state.in_default_pass = true;
-    sg.beginDefaultPass(default_pass_action, sapp.width(), sapp.height());
+
+    // reset to drawing to the swapchain on every frame start
+    sg.beginPass(.{ .action = default_pass_action, .swapchain = sglue.swapchain() });
 }
 
 /// Called at the end of a frame

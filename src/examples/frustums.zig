@@ -76,7 +76,7 @@ pub fn on_init() void {
 
 pub fn on_tick(delta: f32) void {
     if (delve.platform.input.isKeyJustPressed(.ESCAPE))
-        std.os.exit(0);
+        delve.platform.app.exit();
 
     time += delta;
 

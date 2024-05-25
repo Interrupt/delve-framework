@@ -11,12 +11,12 @@
     },
     .dependencies = .{
         .ziglua = .{
-            .url = "git+https://github.com/natecraddock/ziglua.git#0f0f489cf1f3995b0266f0d4452382e89bf77739",
-            .hash = "1220dbbecca0fe5811ea4da61cbc29868ddc34469c0817ea6f73a7e57d637288c2fe",
+            .url = "git+https://github.com/natecraddock/ziglua.git#486f51d3acc61d805783f5f07aee34c75ab59a25",
+            .hash = "12208603e0f51fa6ce7201d8e851c5979b6b78887434623ac87a0f2a5a3dd3e75130",
         },
         .sokol = .{
-            .url = "git+https://github.com/floooh/sokol-zig.git#e0df69dc8ca17053bfa48ecec46dde02acb4395b",
-            .hash = "122070b288a2a945ad54ffef1c3809f67c136e9813d294ffea209abf7f3171a4b8e6",
+            .url = "git+https://github.com/floooh/sokol-zig.git#18f4f3d6188f4faff2fab6bd7f8abc58e6e26b04",
+            .hash = "12204b76dc14c74da9d61d01b5bd7a4fbfd0614aa7cc0a7428de0742129203ca5008",
         },
         .zstbi = .{
             .path = "3rdparty/zstbi",

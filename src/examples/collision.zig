@@ -68,7 +68,7 @@ fn on_tick(deltatime: f32) void {
     rect2 = rect2.setPosition(Vec2.new(x_pos, y_pos));
 
     if (input.isKeyJustPressed(.ESCAPE)) {
-        std.os.exit(0);
+        papp.exit();
     }
 }
 
