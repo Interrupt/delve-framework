@@ -137,6 +137,14 @@ pub const Solid = struct {
 
             face.vertices = try allocator.dupe(Vec3, vertices.items);
 
+            // try to fix up cracks along seams
+            const round_amount = 10.0;
+            for (face.vertices, 0..) |vertex, j| {
+                face.vertices[j].x = std.math.round(vertex.x * round_amount) / round_amount;
+                face.vertices[j].y = std.math.round(vertex.y * round_amount) / round_amount;
+                face.vertices[j].z = std.math.round(vertex.z * round_amount) / round_amount;
+            }
+
             // create a bounding box out of these vertices
             const face_bounds: BoundingBox = BoundingBox.initFromPositions(face.vertices);
             if (i == 0) {
@@ -204,6 +212,7 @@ pub const Solid = struct {
                 if (clip_plane.normal.y == -1) intersect.y = clip_plane.d;
                 if (clip_plane.normal.z == 1) intersect.z = -clip_plane.d;
                 if (clip_plane.normal.z == -1) intersect.z = clip_plane.d;
+
                 clipped.appendAssumeCapacity(intersect);
             }
         }
