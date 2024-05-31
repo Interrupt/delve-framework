@@ -364,7 +364,7 @@ pub fn runPendingCommand() void {
     pending_cmd.append(0x00) catch {};
 
     const final_command = pending_cmd.items[0 .. pending_cmd.items.len - 1 :0];
-    lua.runLine(final_command) catch {};
+    // lua.runLine(final_command) catch {};
     trackCommand(final_command);
 }
 
@@ -401,7 +401,7 @@ pub fn showErrorScreen(error_header: [:0]const u8) void {
 
     // run the new lua statement
     std.debug.print("Showing error screen: {s}\n", .{error_header});
-    lua.runLine(written) catch {
-        std.debug.print("Error running lua to show error screen?\n", .{});
-    };
+    // lua.runLine(written) catch {
+    //     std.debug.print("Error running lua to show error screen?\n", .{});
+    // };
 }

@@ -87,7 +87,7 @@ Some example modules are included automatically to exercise some code paths, the
     },
 }
 ```
-- Link dependency module  
+- Link dependency module
 `build.zig`
 ```
     const delve = b.dependency("delve", .{
@@ -127,4 +127,10 @@ zig build run-stresstest
 ```java
 zig build -Doptimize=ReleaseSafe run-forest
 zig build -Doptimize=ReleaseSmall run-forest
+```
+
+### Building for emscripten
+When building for Emscripten, you may need to point it at some system headers by passing a sysroot arg:
+```java
+zig build run-clear -Dtarget=wasm32-emscripten --sysroot ~/Github/emsdk/upstream/emscripten/cache/sysroot
 ```
