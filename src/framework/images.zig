@@ -8,14 +8,18 @@ const allocator = gpa.allocator();
 pub const Image = zstbi.Image;
 
 pub fn init() void {
+    debug.log("Image zstbi init", .{});
     zstbi.init(allocator);
 }
 
 pub fn deinit() void {
+    debug.log("Image zstbi deinit", .{});
     zstbi.deinit();
 }
 
 pub fn loadFile(file_path: [:0]const u8) !Image {
+    debug.log("Loading image from file: {s}", .{file_path});
+
     const file = try std.fs.cwd().openFile(
         file_path,
         .{}, // mode is read only by default
@@ -28,9 +32,12 @@ pub fn loadFile(file_path: [:0]const u8) !Image {
     const contents = try file.reader().readAllAlloc(allocator, file_size);
     defer allocator.free(contents);
 
+    debug.log("Read {d} bytes", .{file_size});
+
     return loadBytes(contents);
 }
 
 pub fn loadBytes(image_bytes: []const u8) !Image {
+    debug.log("Loading image bytes", .{});
     return Image.loadFromMemory(image_bytes, 0);
 }

@@ -161,6 +161,13 @@ fn on_init() !void {
     papp.setTargetFPS(60);
     papp.setFixedTimestep(1.0 / 60.0);
 
+    // Load some trees in a spritesheet
+    const treesheet_path = "assets/sprites/treesheet.png";
+    var treesheet_img: images.Image = delve.images.loadFile(treesheet_path) catch {
+        debug.log("Assets: Error loading image asset: {s}", .{treesheet_path});
+        return;
+    };
+
     sprite_batch = batcher.SpriteBatcher.init(.{}) catch {
         debug.showErrorScreen("Fatal error during batch init!");
         return;
@@ -176,12 +183,6 @@ fn on_init() !void {
         return;
     };
 
-    // Load some trees in a spritesheet
-    const treesheet_path = "sprites/treesheet.png";
-    var treesheet_img: images.Image = images.loadFile(treesheet_path) catch {
-        debug.log("Assets: Error loading image asset: {s}", .{treesheet_path});
-        return;
-    };
     tex_treesheet = graphics.Texture.init(&treesheet_img);
 
     // make our default shader
@@ -218,7 +219,7 @@ fn pre_draw() void {
     const rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
 
     // make our grass, if needed
-    addGrass(camera.position, 30, 1.25, 1.0);
+    // addGrass(camera.position, 30, 1.25, 1.0);
     addClouds(0.12);
 
     // reset the sprite batch to clear everything that was added for the previous frame

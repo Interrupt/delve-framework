@@ -192,7 +192,7 @@ fn addLogEntry(comptime fmt: []const u8, args: anytype, level: LogLevel) void {
     };
 
     // Log to std out
-    std.debug.print("{s}", .{written});
+    std.debug.print("{s}\n", .{written});
 
     // Keep the line in the console log
     log_history_list.push(written[0 .. written.len - 1 :0]);

@@ -47,7 +47,7 @@ fn on_init() !void {
         return;
     };
 
-    var spritesheet_image = delve.images.loadFile("sprites/cat-anim-sheet.png") catch {
+    var spritesheet_image = delve.images.loadFile("assets/sprites/cat-anim-sheet.png") catch {
         delve.debug.log("Could not load image", .{});
         return;
     };
