@@ -92,6 +92,8 @@ pub const App = struct {
     pub fn startMainLoop(config: main_app.AppConfig) void {
         app_config = config;
 
+        debug.log("Sokol app running", .{});
+
         sapp.run(.{
             .init_cb = sokol_init,
             .frame_cb = sokol_frame,
@@ -106,8 +108,10 @@ pub const App = struct {
             .logger = .{
                 .func = slog.func,
             },
-            .win32_console_attach = true,
+            // .win32_console_attach = true,
         });
+
+        debug.log("Sokol app returned", .{});
     }
 
     pub fn getWidth() i32 {

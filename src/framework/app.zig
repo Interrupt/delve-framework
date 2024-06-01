@@ -2,7 +2,7 @@ const std = @import("std");
 const debug = @import("debug.zig");
 const images = @import("images.zig");
 const colors = @import("colors.zig");
-const modules = @import("modules.zig");
+// const modules = @import("modules.zig");
 // const scripting = @import("scripting/manager.zig");
 
 // Main systems
@@ -39,18 +39,19 @@ pub fn start(config: AppConfig) !void {
     debug.init();
     defer debug.deinit();
 
-    debug.log("Delve Framework Starting", .{});
+    debug.log("Delve Framework Starting!", .{});
 
     // App backend init
     try app_backend.init();
-    defer app_backend.deinit();
+    // defer app_backend.deinit();
 
     // Change the working dir to where the assets are
     debug.log("Assets Path: {s}", .{assets_path});
-    const chdir_res = std.c.chdir(assets_path);
-    if (chdir_res == -1) return error.Oops;
+    // const chdir_res = std.c.chdir(assets_path);
+    // if (chdir_res == -1) return error.Oops;
 
     // Kick off the game loop! This will also start and stop the subsystems.
+    debug.log("Main loop starting", .{});
     app_backend.startMainLoop(config);
 
     debug.log("Delve framework stopping", .{});

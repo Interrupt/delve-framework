@@ -174,6 +174,8 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
             .optimize = optimize,
         });
 
+        app.defineCMacro("__EMSCRIPTEN__", "1");
+
         const emsdk = dep_sokol.builder.dependency("emsdk", .{});
         const link_step = try sokol.emLinkStep(b, .{
             .lib_main = app,
@@ -184,7 +186,15 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
             .use_emmalloc = true,
             .use_filesystem = false,
             .shell_file_path = dep_sokol.path("src/sokol/web/shell.html").getPath(b),
-            .extra_args = &.{"-sUSE_OFFSET_CONVERTER=1"},
+            .extra_args = &.{
+                "-sUSE_OFFSET_CONVERTER=1",
+                "-sSAFE_HEAP=0",
+                "-sINITIAL_HEAP=1073741824",
+                // "-sABORT_ON_WASM_EXCEPTIONS=1",
+                // "-sALLOW_MEMORY_GROWTH=1",
+                // "-sASSERTIONS=1",
+                // "-fsanitize=address",
+            },
         });
 
         // // ...and a special run step to start the web build output via 'emrun'
