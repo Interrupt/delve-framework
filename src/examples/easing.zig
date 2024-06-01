@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const delve = @import("delve");
 const app = delve.app;
 
@@ -21,6 +22,13 @@ var test_image: images.Image = undefined;
 const state = struct {
     var time: f64 = 0.0;
     var speed: f32 = 300.0;
+};
+
+// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
+pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
+    pub const heap = struct {
+        pub const page_allocator = std.heap.c_allocator;
+    };
 };
 
 // This example shows the simple debug drawing functions.

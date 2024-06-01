@@ -24,6 +24,14 @@ var time: f32 = 0.0;
 var mesh_test: ?mesh.Mesh = null;
 var camera: cam.Camera = undefined;
 
+// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
+const builtin = @import("builtin");
+pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
+    pub const heap = struct {
+        pub const page_allocator = std.heap.c_allocator;
+    };
+};
+
 // This example shows loading and drawing meshes
 
 pub fn main() !void {

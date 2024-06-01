@@ -37,7 +37,7 @@ pub fn setAssetsPath(path: [:0]const u8) !void {
 
 pub fn start(config: AppConfig) !void {
     debug.init();
-    defer debug.deinit();
+    // defer debug.deinit();
 
     debug.log("Delve Framework Starting!", .{});
 

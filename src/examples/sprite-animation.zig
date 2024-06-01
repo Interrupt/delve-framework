@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const delve = @import("delve");
 
 const graphics = delve.platform.graphics;
@@ -13,6 +14,13 @@ var sprite_animation: delve.graphics.sprites.PlayingAnimation = undefined;
 var loop_delay_time: f32 = 0.0;
 
 // This example shows how to draw animated sprites out of a sprite sheet
+
+// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
+pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
+    pub const heap = struct {
+        pub const page_allocator = std.heap.c_allocator;
+    };
+};
 
 pub const module = delve.modules.Module{
     .name = "animated_sprite_example",

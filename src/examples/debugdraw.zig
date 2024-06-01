@@ -16,6 +16,14 @@ var time: f32 = 0.0;
 var texture: graphics.Texture = undefined;
 var test_image: images.Image = undefined;
 
+// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
+const builtin = @import("builtin");
+pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
+    pub const heap = struct {
+        pub const page_allocator = std.heap.c_allocator;
+    };
+};
+
 // This example shows the simple debug drawing functions.
 // These functions are slow, but a quick way to get stuff on screen!
 

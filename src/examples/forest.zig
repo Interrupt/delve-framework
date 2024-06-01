@@ -37,6 +37,14 @@ pub const module = modules.Module{
     .cleanup_fn = on_cleanup,
 };
 
+// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
+const builtin = @import("builtin");
+pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
+    pub const heap = struct {
+        pub const page_allocator = std.heap.c_allocator;
+    };
+};
+
 // This is an example of using the sprite batcher to draw a forest!
 // shows off: sprite batches, texture regions, billboarding, cameras
 

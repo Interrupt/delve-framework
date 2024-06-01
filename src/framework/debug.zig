@@ -63,6 +63,7 @@ const LogList = struct {
         const log_mem = self.log_allocator.alloc(u8, log_string.len + 1) catch {
             return;
         };
+
         std.mem.copyForwards(u8, log_mem, log_string);
         log_mem[log_mem.len - 1] = 0x00; // Ensure the sentinel
 
@@ -114,8 +115,11 @@ const LogList = struct {
 };
 
 pub fn init() void {
+    std.debug.print("debug module initializing\n", .{});
+
     if (!needs_init)
         return;
+
     needs_init = false;
     needs_deinit = true;
 
@@ -125,8 +129,11 @@ pub fn init() void {
 }
 
 pub fn deinit() void {
+    std.debug.print("debug module deinitializing\n", .{});
+
     if (!needs_deinit)
         return;
+
     needs_deinit = false;
     needs_init = true;
 
@@ -158,40 +165,37 @@ pub fn fatal(comptime fmt: []const u8, args: anytype) void {
 }
 
 fn addLogEntry(comptime fmt: []const u8, args: anytype, level: LogLevel) void {
-    _ = level;
-    _ = args;
-    // if (needs_init)
-    //     init();
-    //
+    if (needs_init)
+        init();
+
     // // Only log if our log level is high enough
-    // if (@intFromEnum(log_level) < @intFromEnum(level)) {
-    //     return;
-    // }
-    //
-    // // Use an array list to write our string
-    // var string_writer = std.ArrayList(u8).init(allocator);
-    // errdefer string_writer.deinit();
-    //
-    // string_writer.writer().print(fmt, args) catch {
-    //     std.debug.print("Could not write to debug log! - Out of memory?\n", .{});
-    //     return;
-    // };
-    // string_writer.append(0) catch {
-    //     std.debug.print("Could not write to debug log! - Out of memory?\n", .{});
-    //     return;
-    // };
-    //
-    // const written = string_writer.toOwnedSlice() catch {
-    //     std.debug.print("Error: string_writer.toOwnedSlice() - Out of memory?\n", .{});
-    //     return;
-    // };
+    if (@intFromEnum(log_level) < @intFromEnum(level)) {
+        return;
+    }
+
+    // Use an array list to write our string
+    var string_writer = std.ArrayList(u8).init(allocator);
+    errdefer string_writer.deinit();
+
+    string_writer.writer().print(fmt, args) catch {
+        std.debug.print("Could not write to debug log! - Out of memory?\n", .{});
+        return;
+    };
+    string_writer.append(0) catch {
+        std.debug.print("Could not write to debug log! - Out of memory?\n", .{});
+        return;
+    };
+
+    const written = string_writer.toOwnedSlice() catch {
+        std.debug.print("Error: string_writer.toOwnedSlice() - Out of memory?\n", .{});
+        return;
+    };
 
     // Log to std out
-    // std.debug.print("{s}\n", .{written});
-    std.debug.print("{s}\n", .{fmt});
+    std.debug.print("{s}", .{written});
 
     // Keep the line in the console log
-    // log_history_list.push(written[0 .. written.len - 1 :0]);
+    log_history_list.push(written[0 .. written.len - 1 :0]);
 }
 
 pub fn getLogHistory() *LogList {
