@@ -69,16 +69,24 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
-    const include_path = try std.fs.path.join(b.allocator, &.{ b.sysroot.?, "include" });
-    defer b.allocator.free(include_path);
-    delve_mod.addIncludePath(.{ .path = include_path });
-
     for (build_collection.add_imports) |build_import| {
         delve_mod.addImport(build_import.name, build_import.module);
     }
+
     for (build_collection.link_libraries) |lib| {
-        lib.addIncludePath(.{ .path = include_path });
         delve_mod.linkLibrary(lib);
+    }
+
+    // If we have a defined sysroot, eg for emscpriten, use that include path too
+    if (b.sysroot) |sysroot| {
+        const include_path = try std.fs.path.join(b.allocator, &.{ sysroot, "include" });
+        defer b.allocator.free(include_path);
+        delve_mod.addIncludePath(.{ .path = include_path });
+
+        for (build_collection.link_libraries) |lib| {
+            lib.addIncludePath(.{ .path = include_path });
+            delve_mod.linkLibrary(lib);
+        }
     }
 
     // Delve Static Library artifact
