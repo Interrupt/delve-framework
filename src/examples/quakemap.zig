@@ -22,6 +22,14 @@ var player_pos: math.Vec3 = math.Vec3.zero;
 var player_vel: math.Vec3 = math.Vec3.zero;
 var on_ground = true;
 
+// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
+const builtin = @import("builtin");
+pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
+    pub const heap = struct {
+        pub const page_allocator = std.heap.c_allocator;
+    };
+};
+
 pub fn main() !void {
     const example = delve.modules.Module{
         .name = "quakemap_example",
@@ -149,7 +157,7 @@ pub fn on_init() !void {
             var tex_path = std.ArrayList(u8).init(allocator);
             try mat_name.writer().print("{s}", .{face.texture_name});
             try mat_name.append(0);
-            try tex_path.writer().print("textures/{s}.png", .{face.texture_name});
+            try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
             try tex_path.append(0);
 
             const mat_name_owned = try mat_name.toOwnedSlice();
