@@ -85,7 +85,6 @@ pub fn build(b: *std.Build) !void {
 
         for (build_collection.link_libraries) |lib| {
             lib.addIncludePath(.{ .path = include_path });
-            delve_mod.linkLibrary(lib);
         }
     }
 
@@ -163,8 +162,8 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
     }
 
     // app.linkLibC();
-
     // app.linkLibCpp();
+
     // app.addSystemIncludePath(.{ .path = "/Library/Developer/CommandLineTools/usr/include/c++/v1" });
     // app.addIncludePath(.{ .path = "/Library/Developer/CommandLineTools/usr/include/c++/v1" });
     // app.addIncludePath("/usr/include");
@@ -196,16 +195,16 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
             .shell_file_path = dep_sokol.path("src/sokol/web/shell.html").getPath(b),
             .extra_args = &.{
                 "-sUSE_OFFSET_CONVERTER=1",
-                "-sSAFE_HEAP=0",
+                "-sTOTAL_STACK=16MB",
+                "--preload-file=assets/",
+                "-sALLOW_MEMORY_GROWTH=1",
+                // "-sSAFE_HEAP=0",
                 // "-sEMULATE_FUNCTION_POINTER_CASTS=1",
                 // "-sSAFE_HEAP_LOG=1",
-                "-sINITIAL_MEMORY=1024MB",
-                "-sTOTAL_STACK=32MB",
+                // "-sINITIAL_MEMORY=64MB",
                 // "-sLOAD_SOURCE_MAP=1",
                 // "-sINITIAL_HEAP=256MB",
-                "--preload-file=assets/",
                 // "-sABORT_ON_WASM_EXCEPTIONS=1",
-                // "-sALLOW_MEMORY_GROWTH=1",
                 // "-sASSERTIONS=1",
                 // "-fsanitize=address",
                 // "-gsource-map",
