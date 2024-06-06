@@ -28,6 +28,14 @@ const state = struct {
 // This example shows the simple debug drawing functions.
 // These functions are slow, but a quick way to get stuff on screen!
 
+// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
+const builtin = @import("builtin");
+pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
+    pub const heap = struct {
+        pub const page_allocator = std.heap.c_allocator;
+    };
+};
+
 pub fn main() !void {
     try registerModule();
     try fps_module.registerModule();

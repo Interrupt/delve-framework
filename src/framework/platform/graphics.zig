@@ -15,8 +15,9 @@ const sglue = sokol.glue;
 const debugtext = sokol.debugtext;
 
 // general allocator for graphics functions
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-pub var allocator = gpa.allocator();
+// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+// pub var allocator = gpa.allocator();
+pub var allocator = std.heap.c_allocator;
 
 // compile built-in shaders via:
 // ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl300es:glsl330:wgsl:metal_macos:metal_ios:metal_sim:hlsl4 -f sokol_zig

@@ -37,13 +37,11 @@ pub fn setAssetsPath(path: [:0]const u8) !void {
 
 pub fn start(config: AppConfig) !void {
     debug.init();
-    // defer debug.deinit();
 
     debug.log("Delve Framework Starting!", .{});
 
     // App backend init
     try app_backend.init();
-    // defer app_backend.deinit();
 
     // Change the working dir to where the assets are
     debug.log("Assets Path: {s}", .{assets_path});
@@ -53,8 +51,6 @@ pub fn start(config: AppConfig) !void {
     // Kick off the game loop! This will also start and stop the subsystems.
     debug.log("Main loop starting", .{});
     app_backend.startMainLoop(config);
-
-    debug.log("Delve framework stopping", .{});
 }
 
 pub fn startSubsystems() !void {
@@ -69,4 +65,7 @@ pub fn stopSubsystems() void {
     input.deinit();
     // scripting.deinit();
     audio.deinit();
+
+    // app_backend.deinit();
+    // debug.deinit();
 }

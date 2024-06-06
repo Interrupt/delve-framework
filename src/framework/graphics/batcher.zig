@@ -19,8 +19,10 @@ const Color = colors.Color;
 const TextureRegion = sprites.TextureRegion;
 const Rect = spatial_rect.Rect;
 
-var batch_gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var batch_allocator = batch_gpa.allocator();
+// var batch_gpa = std.heap.GeneralPurposeAllocator(.{}){};
+// var batch_allocator = batch_gpa.allocator();
+
+var batch_allocator = std.heap.c_allocator;
 
 const max_indices = 64000;
 const max_vertices = max_indices;

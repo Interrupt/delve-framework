@@ -8,8 +8,10 @@ const input = @import("../platform/input.zig");
 
 // This is a module that will draw the current FPS in the corner of the screen
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = gpa.allocator();
+// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+// var allocator = gpa.allocator();
+
+var allocator = std.heap.c_allocator;
 
 var show_fps: bool = false;
 var last_fps_str: ?[:0]u8 = null;

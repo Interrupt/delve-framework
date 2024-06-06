@@ -15,6 +15,14 @@ var cube3: delve.graphics.mesh.Mesh = undefined;
 
 var time: f64 = 0.0;
 
+// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
+const builtin = @import("builtin");
+pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
+    pub const heap = struct {
+        pub const page_allocator = std.heap.c_allocator;
+    };
+};
+
 pub fn main() !void {
     const example = delve.modules.Module{
         .name = "meshbuilder_example",

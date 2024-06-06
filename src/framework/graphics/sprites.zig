@@ -5,8 +5,9 @@ const debug = @import("../debug.zig");
 const Vec2 = math.Vec2;
 const AnimationHashMap = std.StringHashMap(SpriteAnimation);
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-const allocator = gpa.allocator();
+// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+// const allocator = gpa.allocator();
+const allocator = std.heap.c_allocator;
 
 /// Keeps track of a sub region of a texture
 /// Origin is in the upper left, x axis points right, and y axis points down

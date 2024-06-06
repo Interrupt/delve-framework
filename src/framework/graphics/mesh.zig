@@ -13,8 +13,9 @@ const Frustum = @import("../spatial/frustum.zig").Frustum;
 const Vec3 = math.Vec3;
 const Vec2 = math.Vec2;
 
-var mesh_gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = mesh_gpa.allocator();
+// var mesh_gpa = std.heap.GeneralPurposeAllocator(.{}){};
+// var allocator = mesh_gpa.allocator();
+var allocator = std.heap.c_allocator;
 
 // Default vertex and fragment shader params
 const VSParams = graphics.VSDefaultUniforms;

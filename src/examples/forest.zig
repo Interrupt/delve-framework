@@ -41,7 +41,8 @@ pub const module = modules.Module{
 const builtin = @import("builtin");
 pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
     pub const heap = struct {
-        pub const page_allocator = std.heap.c_allocator;
+        // pub const page_allocator = std.heap.c_allocator;
+        pub const page_allocator = @compileError("don't do it");
     };
 };
 
@@ -167,6 +168,7 @@ fn on_init() !void {
         debug.log("Assets: Error loading image asset: {s}", .{treesheet_path});
         return;
     };
+    defer treesheet_img.deinit();
 
     sprite_batch = batcher.SpriteBatcher.init(.{}) catch {
         debug.showErrorScreen("Fatal error during batch init!");

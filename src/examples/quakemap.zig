@@ -130,7 +130,8 @@ pub fn on_init() !void {
 
     map_transform = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
-    const allocator = gpa.allocator();
+    // const allocator = gpa.allocator();
+    const allocator = std.heap.c_allocator;
     var err: delve.utils.quakemap.ErrorInfo = undefined;
     quake_map = try delve.utils.quakemap.QuakeMap.read(allocator, test_map_file, map_transform, &err);
 

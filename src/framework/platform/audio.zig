@@ -3,8 +3,10 @@ const std = @import("std");
 const debug = @import("../debug.zig");
 const modules = @import("../modules.zig");
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = gpa.allocator();
+// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+// var allocator = gpa.allocator();
+
+var allocator = std.heap.c_allocator;
 
 // zaudio miniaudio engine
 // var zaudio_engine: ?*zaudio.Engine = null;

@@ -1,8 +1,9 @@
 const std = @import("std");
 const debug = @import("debug.zig");
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = gpa.allocator();
+// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+// var allocator = gpa.allocator();
+var allocator = std.heap.c_allocator;
 
 var modules: std.StringArrayHashMap(Module) = undefined;
 var needs_init: bool = true;

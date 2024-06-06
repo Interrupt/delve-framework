@@ -13,8 +13,11 @@ var console_visible = false;
 pub var log_level = LogLevel.STANDARD;
 
 // Manage our own memory!
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = gpa.allocator();
+// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+// var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+// var allocator = arena_allocator.allocator();
+// var allocator = gpa.allocator();
+var allocator = std.heap.c_allocator;
 
 // List types
 const StringLinkedList = std.TailQueue([:0]const u8);
@@ -140,7 +143,9 @@ pub fn deinit() void {
     log_history_list.deinit();
     cmd_history_list.deinit();
     pending_cmd.deinit();
-    _ = gpa.deinit();
+
+    // arena_allocator.deinit();
+    // _ = gpa.deinit();
 }
 
 pub fn log(comptime fmt: []const u8, args: anytype) void {
