@@ -37,7 +37,6 @@ pub fn build(b: *std.Build) !void {
 
     const sokol_item = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
     const ziglua_item = .{ .module = ziglua_mod, .name = "ziglua" };
-    _ = ziglua_item;
     const zmesh_item = .{ .module = zmesh.module("root"), .name = "zmesh" };
     const zstbi_item = .{ .module = zstbi_pkg.zstbi, .name = "zstbi" };
     const zaudio_item = .{ .module = zaudio.module("root"), .name = "zaudio" };
@@ -45,7 +44,7 @@ pub fn build(b: *std.Build) !void {
 
     const delve_module_imports = [_]ModuleImport{
         sokol_item,
-        // ziglua_item,
+        ziglua_item,
         zmesh_item,
         zstbi_item,
         // zaudio_item,

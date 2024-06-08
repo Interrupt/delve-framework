@@ -24,7 +24,7 @@ pub fn on_game_start() void {
     debug.log("Starting simple Lua lifecycle...", .{});
 
     // Load and run the main script
-    lua.runFile("main.lua") catch {
+    lua.runFile("assets/main.lua") catch {
         debug.showErrorScreen("Fatal error!");
         return;
     };

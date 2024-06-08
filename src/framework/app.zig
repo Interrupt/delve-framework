@@ -2,8 +2,7 @@ const std = @import("std");
 const debug = @import("debug.zig");
 const images = @import("images.zig");
 const colors = @import("colors.zig");
-// const modules = @import("modules.zig");
-// const scripting = @import("scripting/manager.zig");
+const scripting = @import("scripting/manager.zig");
 
 // Main systems
 const app_backend = @import("platform/app.zig");
@@ -57,16 +56,16 @@ pub fn startSubsystems() !void {
     try images.init();
     try colors.init();
     try input.init();
-    // try scripting.init();
+    try scripting.init();
     try audio.init();
 }
 
 pub fn stopSubsystems() void {
     colors.deinit();
     input.deinit();
-    // scripting.deinit();
+    scripting.deinit();
     audio.deinit();
 
     // app_backend.deinit();
-    // debug.deinit();
+    debug.deinit();
 }
