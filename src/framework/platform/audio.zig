@@ -1,5 +1,5 @@
 const std = @import("std");
-// const zaudio = @import("zaudio");
+const zaudio = @import("zaudio");
 const debug = @import("../debug.zig");
 const mem = @import("../mem.zig");
 const modules = @import("../modules.zig");
@@ -7,7 +7,7 @@ const modules = @import("../modules.zig");
 var allocator: std.mem.Allocator = undefined;
 
 // zaudio miniaudio engine
-// var zaudio_engine: ?*zaudio.Engine = null;
+var zaudio_engine: ?*zaudio.Engine = null;
 
 // list of all the loaded sounds, so that they can be garbage collected when done
 var loaded_sounds: std.AutoArrayHashMap(u64, LoadedSound) = undefined;
@@ -16,7 +16,7 @@ var next_sound_idx: u64 = 0;
 /// A wrapper around a loaded sound
 pub const LoadedSound = struct {
     handle: u64,
-    // zaudio_sound: ?*zaudio.Sound,
+    zaudio_sound: ?*zaudio.Sound,
     ready_for_cleanup: bool = false,
 };
 
@@ -54,125 +54,105 @@ pub const Sound = struct {
 
     /// Starts playing this sound
     pub fn start(self: *Sound) void {
-        _ = self;
-        // if (getZaudioSound(self.handle)) |sound| {
-        //     sound.start() catch {
-        //         debug.log("Could not start sound!", .{});
-        //         return;
-        //     };
-        // }
+        if (getZaudioSound(self.handle)) |sound| {
+            sound.start() catch {
+                debug.log("Could not start sound!", .{});
+                return;
+            };
+        }
     }
 
     /// Stops this sound
     pub fn stop(self: *Sound) void {
-        _ = self;
-        // if (getZaudioSound(self.handle)) |sound| {
-        //     sound.stop() catch {
-        //         debug.log("Could not stop sound!", .{});
-        //         return;
-        //     };
-        // }
+        if (getZaudioSound(self.handle)) |sound| {
+            sound.stop() catch {
+                debug.log("Could not stop sound!", .{});
+                return;
+            };
+        }
     }
 
     /// Makes this sound loop, default is to not
     pub fn setLooping(self: *Sound, looping: bool) void {
-        _ = looping;
-        _ = self;
-        // if (getZaudioSound(self.handle)) |sound|
-        //     sound.setLooping(looping);
+        if (getZaudioSound(self.handle)) |sound|
+            sound.setLooping(looping);
     }
 
     /// Sets the volume for this sound
     pub fn setVolume(self: *Sound, volume: f32) void {
-        _ = volume;
-        _ = self;
-        // if (getZaudioSound(self.handle)) |sound|
-        //     sound.setVolume(volume);
+        if (getZaudioSound(self.handle)) |sound|
+            sound.setVolume(volume);
     }
 
     /// Sets the pitch for this sound
     pub fn setPitch(self: *Sound, pitch: f32) void {
-        _ = pitch;
-        _ = self;
-        // if (getZaudioSound(self.handle)) |sound|
-        //     sound.setPitch(pitch);
+        if (getZaudioSound(self.handle)) |sound|
+            sound.setPitch(pitch);
     }
 
     /// Sets the panning for this sound
     pub fn setPan(self: *Sound, pan: f32) void {
-        _ = pan;
-        _ = self;
-        // if (getZaudioSound(self.handle)) |sound|
-        //     sound.setPan(pan);
+        if (getZaudioSound(self.handle)) |sound|
+            sound.setPan(pan);
     }
 
     /// Sets the position of this sound
     pub fn setPosition(self: *Sound, pos: [3]f32, dir: [3]f32, vel: [3]f32) void {
-        _ = vel;
-        _ = dir;
-        _ = pos;
-        _ = self;
-        // if (getZaudioSound(self.handle)) |sound| {
-        //     // Make sure this sound is spatialized! Will be absolute by default
-        //     // if (sound.getPositioning() != zaudio.Positioning.relative)
-        //     //     sound.setPositioning(zaudio.Positioning.relative);
-        //
-        //     sound.setPosition(pos);
-        //     sound.setDirection(dir);
-        //     sound.setVelocity(vel);
-        // }
+        if (getZaudioSound(self.handle)) |sound| {
+            // Make sure this sound is spatialized! Will be absolute by default
+            // if (sound.getPositioning() != zaudio.Positioning.relative)
+            //     sound.setPositioning(zaudio.Positioning.relative);
+
+            sound.setPosition(pos);
+            sound.setDirection(dir);
+            sound.setVelocity(vel);
+        }
     }
 
     /// Gets if the sound is playing
     pub fn getIsPlaying(self: *Sound) bool {
-        _ = self;
-        // if (getZaudioSound(self.handle)) |sound|
-        //     return sound.isPlaying();
+        if (getZaudioSound(self.handle)) |sound|
+            return sound.isPlaying();
 
         return false;
     }
 
     /// Whether or not the sound has played all the way through
     pub fn getIsDone(self: *Sound) bool {
-        _ = self;
-        // if (getZaudioSound(self.handle)) |sound|
-        //     return sound.isAtEnd();
+        if (getZaudioSound(self.handle)) |sound|
+            return sound.isAtEnd();
 
         return true;
     }
 
     /// Gets if the sound is looping
     pub fn getLooping(self: *Sound) bool {
-        _ = self;
-        // if (getZaudioSound(self.handle)) |sound|
-        //     return sound.getLooping();
+        if (getZaudioSound(self.handle)) |sound|
+            return sound.getLooping();
 
         return false;
     }
 
     /// Gets the current volume
     pub fn getVolume(self: *Sound) f32 {
-        _ = self;
-        // if (getZaudioSound(self.handle)) |sound|
-        //     return sound.getVolume();
+        if (getZaudioSound(self.handle)) |sound|
+            return sound.getVolume();
 
         return 1.0;
     }
 
     /// Gets the current pitch
     pub fn getPitch(self: *Sound) f32 {
-        _ = self;
-        // if (getZaudioSound(self.handle)) |sound|
-        //     return sound.getPitch();
+        if (getZaudioSound(self.handle)) |sound|
+            return sound.getPitch();
 
         return 1.0;
     }
 
     /// Gets the current pan
     pub fn getPan(self: *Sound) f32 {
-        _ = self;
-        // if (getZaudioSound(self.handle)) |sound|
-        //     return sound.getPan();
+        if (getZaudioSound(self.handle)) |sound|
+            return sound.getPan();
 
         return 1.0;
     }
@@ -195,8 +175,8 @@ pub fn init() !void {
 
     allocator = mem.getAllocator();
 
-    // zaudio.init(allocator);
-    // zaudio_engine = try zaudio.Engine.create(null);
+    zaudio.init(allocator);
+    zaudio_engine = try zaudio.Engine.create(null);
 
     loaded_sounds = std.AutoArrayHashMap(u64, LoadedSound).init(allocator);
 
@@ -208,107 +188,98 @@ pub fn init() !void {
 pub fn deinit() void {
     loaded_sounds.deinit();
 
-    // if (zaudio_engine) |engine|
-    //     engine.destroy();
+    if (zaudio_engine) |engine|
+        engine.destroy();
 
-    // zaudio.deinit();
+    zaudio.deinit();
 }
 
 /// Loads and plays a piece of music
 pub fn playMusic(filename: [:0]const u8, volume: f32, loop: bool) ?Sound {
-    _ = loop;
-    _ = volume;
-    const sound = loadSound(filename, true) catch {
+    var sound = loadSound(filename, true) catch {
         debug.log("Could not load music file! ({s})", .{filename});
         return null;
     };
 
     // Just do one handle lookup here
-    // if (getZaudioSound(sound.handle)) |zaudio_sound| {
-    //     zaudio_sound.setVolume(volume);
-    //     zaudio_sound.setLooping(loop);
-    //     zaudio_sound.start() catch {
-    //         sound.requestDestroy();
-    //     };
-    // }
+    if (getZaudioSound(sound.handle)) |zaudio_sound| {
+        zaudio_sound.setVolume(volume);
+        zaudio_sound.setLooping(loop);
+        zaudio_sound.start() catch {
+            sound.requestDestroy();
+        };
+    }
 
     return sound;
 }
 
 /// Loads and plays a sound effect
 pub fn playSound(filename: [:0]const u8, volume: f32) ?Sound {
-    _ = volume;
-    const sound = loadSound(filename, false) catch {
+    var sound = loadSound(filename, false) catch {
         debug.log("Could not load sound file! ({s})", .{filename});
         return null;
     };
 
     // Just do one handle lookup here
-    // if (getZaudioSound(sound.handle)) |zaudio_sound| {
-    //     zaudio_sound.setVolume(volume);
-    //     zaudio_sound.start() catch {
-    //         sound.requestDestroy();
-    //     };
-    // }
+    if (getZaudioSound(sound.handle)) |zaudio_sound| {
+        zaudio_sound.setVolume(volume);
+        zaudio_sound.start() catch {
+            sound.requestDestroy();
+        };
+    }
 
     return sound;
 }
 
 /// Loads a sound. Streaming is best for longer samples like music
 pub fn loadSound(filename: [:0]const u8, stream: bool) !Sound {
-    _ = filename;
-    // const zaudio_sound = try zaudio_engine.?.createSoundFromFile(
-    //     filename,
-    //     .{ .flags = .{ .stream = stream, .async_load = true } },
-    // );
-    //
-    // errdefer zaudio_sound.destroy();
+    const zaudio_sound = try zaudio_engine.?.createSoundFromFile(
+        filename,
+        .{ .flags = .{ .stream = stream, .async_load = true } },
+    );
+
+    errdefer zaudio_sound.destroy();
 
     const handle = next_sound_idx;
     next_sound_idx += 1;
 
-    try loaded_sounds.put(handle, LoadedSound{ .handle = handle });
+    try loaded_sounds.put(handle, LoadedSound{ .handle = handle, .zaudio_sound = zaudio_sound });
     return Sound{ .handle = next_sound_idx - 1, .is_streaming = stream };
 }
 
 /// Sets the position of our listener for spatial audio
 pub fn setListenerPosition(pos: [3]f32) void {
-    _ = pos;
-    // if (zaudio_engine) |engine| {
-    //     engine.setListenerPosition(0, pos);
-    // }
+    if (zaudio_engine) |engine| {
+        engine.setListenerPosition(0, pos);
+    }
 }
 
 /// Sets the direction of our listener for spatial audio
 pub fn setListenerDirection(dir: [3]f32) void {
-    _ = dir;
-    // if (zaudio_engine) |engine| {
-    //     engine.setListenerDirection(0, dir);
-    // }
+    if (zaudio_engine) |engine| {
+        engine.setListenerDirection(0, dir);
+    }
 }
 
 /// Sets the velocity of our listener for spatial audio
 pub fn setListenerVelocity(vel: [3]f32) void {
-    _ = vel;
-    // if (zaudio_engine) |engine| {
-    //     engine.setListenerVelocity(0, vel);
-    // }
+    if (zaudio_engine) |engine| {
+        engine.setListenerVelocity(0, vel);
+    }
 }
 
 /// Sets the 'up' value for the listener
 pub fn setListenerWorldUp(up: [3]f32) void {
-    _ = up;
-    // if (zaudio_engine) |engine| {
-    //     engine.setListenerWorldUp(0, up);
-    // }
+    if (zaudio_engine) |engine| {
+        engine.setListenerWorldUp(0, up);
+    }
 }
 
 /// Enables spatial audio
 pub fn enableSpatialAudio(enabled: bool) void {
-    _ = enabled;
-    // if (zaudio_engine) |engine| {
-    //     engine.setListenerEnabled(0, enabled);
-    // }
+    if (zaudio_engine) |engine| {
+        engine.setListenerEnabled(0, enabled);
+    }
 }
 
 /// App lifecycle on_tick
@@ -317,30 +288,29 @@ pub fn on_tick(delta: f32) void {
 
     var it = loaded_sounds.iterator();
     while (it.next()) |sound| {
-        _ = sound;
-        // var needs_destroy = sound.value_ptr.ready_for_cleanup;
-        //
-        // if (!needs_destroy) {
-        //     if (sound.value_ptr.zaudio_sound) |zaudio_sound| {
-        //         needs_destroy = zaudio_sound.isAtEnd();
-        //     } else {
-        //         // How did a null zaudio sound get in here?
-        //         debug.log("Cleaning up a zombie sound pointer!.", .{});
-        //         needs_destroy = true;
-        //     }
-        // }
-        //
-        // if (!needs_destroy)
-        //     continue;
-        //
-        // // debug.log("Cleaning up sound.", .{});
-        // if (sound.value_ptr.zaudio_sound) |zaudio_sound| {
-        //     zaudio_sound.destroy();
-        // }
-        // _ = loaded_sounds.swapRemove(sound.value_ptr.handle);
-        //
-        // // Only do one per-frame for now!
-        // // TODO: this sucks, remove more than one per-tick
+        var needs_destroy = sound.value_ptr.ready_for_cleanup;
+
+        if (!needs_destroy) {
+            if (sound.value_ptr.zaudio_sound) |zaudio_sound| {
+                needs_destroy = zaudio_sound.isAtEnd();
+            } else {
+                // How did a null zaudio sound get in here?
+                debug.log("Cleaning up a zombie sound pointer!.", .{});
+                needs_destroy = true;
+            }
+        }
+
+        if (!needs_destroy)
+            continue;
+
+        // debug.log("Cleaning up sound.", .{});
+        if (sound.value_ptr.zaudio_sound) |zaudio_sound| {
+            zaudio_sound.destroy();
+        }
+        _ = loaded_sounds.swapRemove(sound.value_ptr.handle);
+
+        // Only do one per-frame for now!
+        // TODO: this sucks, remove more than one per-tick
         return;
     }
 }
@@ -349,22 +319,21 @@ pub fn on_tick(delta: f32) void {
 pub fn on_cleanup() !void {
     var it = loaded_sounds.iterator();
     while (it.next()) |sound| {
-        _ = sound;
-        // if (sound.value_ptr.zaudio_sound) |zaudio_sound| {
-        //     debug.log("Cleaning up sound.", .{});
-        //     zaudio_sound.destroy();
-        // }
+        if (sound.value_ptr.zaudio_sound) |zaudio_sound| {
+            debug.log("Cleaning up sound.", .{});
+            zaudio_sound.destroy();
+        }
     }
 }
 
 // Don't hold onto the result of this! It could be garbage collected
-// fn getZaudioSound(handle: u64) ?*zaudio.Sound {
-//     // Need to do a little dance to get the actual zaudio sound pointer
-//     const found = loaded_sounds.getPtr(handle);
-//     if (found) |loaded_sound| {
-//         if (loaded_sound.zaudio_sound) |sound|
-//             return sound;
-//     }
-//
-//     return null;
-// }
+fn getZaudioSound(handle: u64) ?*zaudio.Sound {
+    // Need to do a little dance to get the actual zaudio sound pointer
+    const found = loaded_sounds.getPtr(handle);
+    if (found) |loaded_sound| {
+        if (loaded_sound.zaudio_sound) |sound|
+            return sound;
+    }
+
+    return null;
+}

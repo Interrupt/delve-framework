@@ -51,7 +51,7 @@ fn on_init() !void {
     audio.setListenerDirection(.{ 1.0, 0.0, 0.0 });
     audio.setListenerWorldUp(.{ 0.0, 1.0, 0.0 });
 
-    music_test = audio.playMusic("sample-9s.mp3", 0.5, true);
+    music_test = audio.playMusic("assets/sample-9s.mp3", 0.5, true);
 
     graphics.setClearColor(colors.light_grey);
 
@@ -64,7 +64,7 @@ fn on_tick(delta: f32) void {
     _ = delta;
 
     if (input.isMouseButtonJustPressed(input.MouseButtons.LEFT)) {
-        sound_test = audio.playSound("sample-shoot.wav", 0.1);
+        sound_test = audio.playSound("assets/sample-shoot.wav", 0.1);
     }
 
     if (input.isKeyJustPressed(.ESCAPE))

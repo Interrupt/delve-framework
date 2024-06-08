@@ -40,20 +40,19 @@ pub fn build(b: *std.Build) !void {
     const zmesh_item = .{ .module = zmesh.module("root"), .name = "zmesh" };
     const zstbi_item = .{ .module = zstbi_pkg.zstbi, .name = "zstbi" };
     const zaudio_item = .{ .module = zaudio.module("root"), .name = "zaudio" };
-    _ = zaudio_item;
 
     const delve_module_imports = [_]ModuleImport{
         sokol_item,
         ziglua_item,
         zmesh_item,
         zstbi_item,
-        // zaudio_item,
+        zaudio_item,
     };
 
     const link_libraries = [_]*Build.Step.Compile{
         zmesh.artifact("zmesh"),
         zstbi_pkg.zstbi_c_cpp,
-        // zaudio.artifact("miniaudio"),
+        zaudio.artifact("miniaudio"),
     };
 
     const build_collection: BuildCollection = .{
