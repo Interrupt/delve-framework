@@ -1,5 +1,4 @@
 const std = @import("std");
-const builtin = @import("builtin");
 const delve = @import("delve");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -17,13 +16,6 @@ var loop_delay_time: f32 = 0.0;
 
 // This example shows how to draw animated sprites out of a sprite sheet
 
-// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
-pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
-    pub const heap = struct {
-        pub const page_allocator = std.heap.c_allocator;
-    };
-};
-
 pub const module = delve.modules.Module{
     .name = "animated_sprite_example",
     .init_fn = on_init,
@@ -34,6 +26,7 @@ pub const module = delve.modules.Module{
 
 pub fn main() !void {
     // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
     if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
         // Web builds hack: use the C allocator to avoid OOM errors
         // See https://github.com/ziglang/zig/issues/19072
@@ -52,15 +45,6 @@ pub fn registerModule() !void {
 
 fn on_init() !void {
     delve.debug.log("Sprite animation example module initializing", .{});
-
-    // Pick the allocator to use depending on platform
-    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
-        // Web builds hack: use the C allocator to avoid OOM errors
-        // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(std.heap.c_allocator);
-    } else {
-        try delve.init(gpa.allocator());
-    }
 
     sprite_batch = delve.graphics.batcher.SpriteBatcher.init(.{}) catch {
         delve.debug.showErrorScreen("Fatal error during batch init!");

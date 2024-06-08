@@ -28,6 +28,8 @@ var cloud_batch: batcher.SpriteBatcher = undefined;
 
 var camera: cam.Camera = undefined;
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
 pub const module = modules.Module{
     .name = "forest_example",
     .init_fn = on_init,
@@ -37,19 +39,20 @@ pub const module = modules.Module{
     .cleanup_fn = on_cleanup,
 };
 
-// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
-const builtin = @import("builtin");
-pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
-    pub const heap = struct {
-        // pub const page_allocator = std.heap.c_allocator;
-        pub const page_allocator = @compileError("don't do it");
-    };
-};
-
 // This is an example of using the sprite batcher to draw a forest!
 // shows off: sprite batches, texture regions, billboarding, cameras
 
 pub fn main() !void {
+    // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
+
     try registerModule();
     try fps_module.registerModule();
     try app.start(app.AppConfig{ .title = "Delve Framework - Sprite Batch Forest Example" });

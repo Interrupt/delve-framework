@@ -1,5 +1,4 @@
 const std = @import("std");
-const builtin = @import("builtin");
 const delve = @import("delve");
 const app = delve.app;
 
@@ -20,6 +19,7 @@ var time: f64 = 0.0;
 
 pub fn main() !void {
     // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
     if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
         // Web builds hack: use the C allocator to avoid OOM errors
         // See https://github.com/ziglang/zig/issues/19072

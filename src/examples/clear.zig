@@ -1,7 +1,6 @@
 const delve = @import("delve");
 const app = delve.app;
 const std = @import("std");
-const builtin = @import("builtin");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
@@ -19,6 +18,7 @@ pub fn main() !void {
     };
 
     // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
     if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
         // Web builds hack: use the C allocator to avoid OOM errors
         // See https://github.com/ziglang/zig/issues/19072
@@ -40,6 +40,10 @@ pub fn on_init() !void {
 
 pub fn on_tick(delta: f32) void {
     time += delta;
+
+    if (delve.platform.input.isKeyJustPressed(.ESCAPE)) {
+        delve.platform.app.exit();
+    }
 
     var bg_color = delve.colors.examples_bg_light;
     bg_color.r = (@sin(time * 2.0) + 1.0) * 0.5;

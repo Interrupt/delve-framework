@@ -1,3 +1,4 @@
+const std = @import("std");
 const delve = @import("delve");
 const app = delve.app;
 
@@ -11,10 +12,22 @@ const animation_example = @import("sprite-animation.zig");
 
 const lua_module = delve.module.lua_simple;
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
 // This example loads a bunch of the examples to stress test everything!
 // Also a good example of how the module system can be used to compose apps
 
 pub fn main() !void {
+    // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
+
     try fps_module.registerModule();
     try audio_example.registerModule();
     try debugdraw_example.registerModule();

@@ -24,17 +24,21 @@ var sprite_batch: batcher.SpriteBatcher = undefined;
 var rect1 = Rect.fromSize(Vec2.new(1, 1)).centered();
 var rect2 = Rect.fromSize(Vec2.new(0.75, 0.4)).centered();
 
-// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
-const builtin = @import("builtin");
-pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
-    pub const heap = struct {
-        pub const page_allocator = std.heap.c_allocator;
-    };
-};
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
 // This example shows how to check collision against two rectangles
 
 pub fn main() !void {
+    // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
+
     try registerModule();
     try app.start(app.AppConfig{ .title = "Delve Framework - Collision" });
 }

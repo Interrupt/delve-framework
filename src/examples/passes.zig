@@ -11,6 +11,8 @@ const math = delve.math;
 
 const test_asset = @embedFile("static/test.gif");
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
 var camera: delve.graphics.camera.Camera = undefined;
 var camera_offscreen: delve.graphics.camera.Camera = undefined;
 
@@ -27,14 +29,6 @@ var time: f64 = 0.0;
 var offscreen_pass: graphics.RenderPass = undefined;
 var offscreen_pass_2: graphics.RenderPass = undefined;
 
-// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
-const builtin = @import("builtin");
-pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
-    pub const heap = struct {
-        pub const page_allocator = std.heap.c_allocator;
-    };
-};
-
 pub fn main() !void {
     const example = delve.modules.Module{
         .name = "passes_example",
@@ -43,6 +37,16 @@ pub fn main() !void {
         .pre_draw_fn = pre_draw,
         .draw_fn = on_draw,
     };
+
+    // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
 
     try delve.modules.registerModule(example);
     try delve.module.fps_counter.registerModule();
