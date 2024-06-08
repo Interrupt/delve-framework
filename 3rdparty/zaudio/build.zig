@@ -21,7 +21,16 @@ pub fn build(b: *std.Build) void {
 
     const system_sdk = b.dependency("system_sdk", .{});
 
-    if (target.result.os.tag == .macos) {
+    if (target.result.isWasm()) {
+        // If we have a defined sysroot use that include path too
+        if (b.sysroot) |sysroot| {
+            const include_path = std.fs.path.join(b.allocator, &.{ sysroot, "include" }) catch {
+                return;
+            };
+            defer b.allocator.free(include_path);
+            miniaudio.addIncludePath(.{ .path = include_path });
+        }
+    } else if (target.result.os.tag == .macos) {
         miniaudio.addFrameworkPath(.{ .path = system_sdk.path("macos12/System/Library/Frameworks").getPath(b) });
         miniaudio.addSystemIncludePath(.{ .path = system_sdk.path("macos12/usr/include").getPath(b) });
         miniaudio.addLibraryPath(.{ .path = system_sdk.path("macos12/usr/lib").getPath(b) });
@@ -37,19 +46,20 @@ pub fn build(b: *std.Build) void {
 
     miniaudio.addCSourceFile(.{
         .file = .{ .path = "src/zaudio.c" },
-        .flags = &.{"-std=c99"},
+        .flags = &.{if (target.result.isWasm()) "-std=gnu99" else "-std=c99"},
     });
+
     miniaudio.addCSourceFile(.{
         .file = .{ .path = "libs/miniaudio/miniaudio.c" },
         .flags = &.{
-            "-DMA_NO_WEBAUDIO",
+            // "-DMA_NO_WEBAUDIO",
             "-DMA_NO_ENCODING",
             "-DMA_NO_NULL",
             "-DMA_NO_JACK",
             "-DMA_NO_DSOUND",
             "-DMA_NO_WINMM",
-            "-std=c99",
             "-fno-sanitize=undefined",
+            if (target.result.isWasm()) "-std=gnu99" else "-std=c99",
             if (target.result.os.tag == .macos) "-DMA_NO_RUNTIME_LINKING" else "",
         },
     });

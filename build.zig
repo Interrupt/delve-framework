@@ -32,8 +32,16 @@ pub fn build(b: *std.Build) !void {
     });
 
     const zstbi_pkg = zstbi.package(b, target, optimize, .{});
-    const zmesh = b.dependency("zmesh", .{});
-    const zaudio = b.dependency("zaudio", .{});
+
+    const zmesh = b.dependency("zmesh", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const zaudio = b.dependency("zaudio", .{
+        .target = target,
+        .optimize = optimize,
+    });
 
     const sokol_item = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
     const ziglua_item = .{ .module = ziglua_dep.module("ziglua"), .name = "ziglua" };
