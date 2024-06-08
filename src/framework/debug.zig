@@ -2,6 +2,7 @@ const std = @import("std");
 const lua = @import("scripting/lua.zig");
 const colors = @import("colors.zig");
 const gfx = @import("platform/graphics.zig");
+const mem = @import("mem.zig");
 const papp = @import("platform/app.zig");
 const text_module = @import("api/text.zig");
 const draw_module = @import("api/draw.zig");
@@ -12,12 +13,8 @@ var console_visible = false;
 /// The global log level. Increase to view more logs, decrease to view less.
 pub var log_level = LogLevel.STANDARD;
 
-// Manage our own memory!
-// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-// var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-// var allocator = arena_allocator.allocator();
-// var allocator = gpa.allocator();
-var allocator = std.heap.c_allocator;
+var stack_fallback_allocator: std.heap.StackFallbackAllocator(256) = undefined;
+var allocator: std.mem.Allocator = undefined;
 
 // List types
 const StringLinkedList = std.TailQueue([:0]const u8);
@@ -122,6 +119,9 @@ pub fn init() void {
 
     if (!needs_init)
         return;
+
+    stack_fallback_allocator = std.heap.stackFallback(256, mem.getAllocator());
+    allocator = stack_fallback_allocator.get();
 
     needs_init = false;
     needs_deinit = true;
