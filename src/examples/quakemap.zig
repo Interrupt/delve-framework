@@ -40,8 +40,6 @@ pub fn main() !void {
         try delve.init(gpa.allocator());
     }
 
-    try delve.init(gpa.allocator());
-
     try delve.modules.registerModule(example);
     try delve.module.fps_counter.registerModule();
 
