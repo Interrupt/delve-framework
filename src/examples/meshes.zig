@@ -1,6 +1,9 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const delve = @import("delve");
 const app = delve.app;
+
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
 // easy access to some imports
 const cam = delve.graphics.camera;
@@ -24,17 +27,18 @@ var time: f32 = 0.0;
 var mesh_test: ?mesh.Mesh = null;
 var camera: cam.Camera = undefined;
 
-// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
-const builtin = @import("builtin");
-pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
-    pub const heap = struct {
-        pub const page_allocator = std.heap.c_allocator;
-    };
-};
-
 // This example shows loading and drawing meshes
 
 pub fn main() !void {
+    // Pick the allocator to use depending on platform
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
+
     try registerModule();
     try app.start(app.AppConfig{ .title = "Delve Framework - Mesh Drawing Example" });
 }
@@ -62,7 +66,7 @@ fn on_init() !void {
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
     // Load the base color texture for the mesh
-    const base_texture_file = "meshes/SciFiHelmet_BaseColor_512.png";
+    const base_texture_file = "assets/meshes/SciFiHelmet_BaseColor_512.png";
     var base_img: images.Image = images.loadFile(base_texture_file) catch {
         debug.log("Assets: Error loading image asset: {s}", .{base_texture_file});
         return;
@@ -70,7 +74,7 @@ fn on_init() !void {
     const tex_base = graphics.Texture.init(&base_img);
 
     // Load the emissive texture for the mesh
-    const emissive_texture_file = "meshes/SciFiHelmet_Emissive_512.png";
+    const emissive_texture_file = "assets/meshes/SciFiHelmet_Emissive_512.png";
     var emissive_img: images.Image = images.loadFile(emissive_texture_file) catch {
         debug.log("Assets: Error loading image asset: {s}", .{emissive_texture_file});
         return;
@@ -93,7 +97,7 @@ fn on_init() !void {
     });
 
     // Load our mesh!
-    mesh_test = mesh.Mesh.initFromFile("meshes/SciFiHelmet.gltf", .{ .material = material });
+    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), "assets/meshes/SciFiHelmet.gltf", .{ .material = material });
 }
 
 fn on_tick(delta: f32) void {

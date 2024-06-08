@@ -3,6 +3,7 @@ const graphics = @import("../platform/graphics.zig");
 const debug = @import("../debug.zig");
 const zmesh = @import("zmesh");
 const math = @import("../math.zig");
+const mem = @import("../mem.zig");
 const colors = @import("../colors.zig");
 const boundingbox = @import("../spatial/boundingbox.zig");
 
@@ -12,10 +13,6 @@ const Rect = @import("../spatial/rect.zig").Rect;
 const Frustum = @import("../spatial/frustum.zig").Frustum;
 const Vec3 = math.Vec3;
 const Vec2 = math.Vec2;
-
-// var mesh_gpa = std.heap.GeneralPurposeAllocator(.{}){};
-// var allocator = mesh_gpa.allocator();
-var allocator = std.heap.c_allocator;
 
 // Default vertex and fragment shader params
 const VSParams = graphics.VSDefaultUniforms;
@@ -34,7 +31,7 @@ pub const Mesh = struct {
     material: graphics.Material = undefined,
     bounds: boundingbox.BoundingBox = undefined,
 
-    pub fn initFromFile(filename: [:0]const u8, cfg: MeshConfig) ?Mesh {
+    pub fn initFromFile(allocator: std.mem.Allocator, filename: [:0]const u8, cfg: MeshConfig) ?Mesh {
         zmesh.init(allocator);
         defer zmesh.deinit();
 
@@ -137,7 +134,7 @@ pub fn createMeshWithLayout(vertices: []graphics.Vertex, indices: []u32, normals
 
 /// Creates a cube using a mesh builder
 pub fn createCube(pos: Vec3, size: Vec3, color: Color, material: graphics.Material) !Mesh {
-    var builder = MeshBuilder.init();
+    var builder = MeshBuilder.init(mem.getAllocator());
     defer builder.deinit();
 
     try builder.addCube(pos, size, math.Mat4.identity, color);
@@ -174,7 +171,7 @@ pub const MeshBuilder = struct {
     normals: std.ArrayList([3]f32) = undefined,
     tangents: std.ArrayList([4]f32) = undefined,
 
-    pub fn init() MeshBuilder {
+    pub fn init(allocator: std.mem.Allocator) MeshBuilder {
         return MeshBuilder{
             .vertices = std.ArrayList(Vertex).init(allocator),
             .indices = std.ArrayList(u32).init(allocator),
