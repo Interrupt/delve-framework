@@ -1,12 +1,10 @@
 const std = @import("std");
 // const zaudio = @import("zaudio");
 const debug = @import("../debug.zig");
+const mem = @import("../mem.zig");
 const modules = @import("../modules.zig");
 
-// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-// var allocator = gpa.allocator();
-
-var allocator = std.heap.c_allocator;
+var allocator: std.mem.Allocator = undefined;
 
 // zaudio miniaudio engine
 // var zaudio_engine: ?*zaudio.Engine = null;
@@ -194,6 +192,8 @@ pub fn registerModule() !void {
 /// Starts the audio subsystem
 pub fn init() !void {
     debug.log("Audio system initializing", .{});
+
+    allocator = mem.getAllocator();
 
     // zaudio.init(allocator);
     // zaudio_engine = try zaudio.Engine.create(null);
