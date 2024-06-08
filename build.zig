@@ -26,17 +26,17 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
-    const ziglua_mod = b.dependency("ziglua", .{
+    const ziglua_dep = b.dependency("ziglua", .{
         .target = target,
         .optimize = optimize,
-    }).module("ziglua");
+    });
 
     const zstbi_pkg = zstbi.package(b, target, optimize, .{});
     const zmesh = b.dependency("zmesh", .{});
     const zaudio = b.dependency("zaudio", .{});
 
     const sokol_item = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
-    const ziglua_item = .{ .module = ziglua_mod, .name = "ziglua" };
+    const ziglua_item = .{ .module = ziglua_dep.module("ziglua"), .name = "ziglua" };
     const zmesh_item = .{ .module = zmesh.module("root"), .name = "zmesh" };
     const zstbi_item = .{ .module = zstbi_pkg.zstbi, .name = "zstbi" };
     const zaudio_item = .{ .module = zaudio.module("root"), .name = "zaudio" };
@@ -53,6 +53,7 @@ pub fn build(b: *std.Build) !void {
         zmesh.artifact("zmesh"),
         zstbi_pkg.zstbi_c_cpp,
         zaudio.artifact("miniaudio"),
+        ziglua_dep.artifact("lua"),
     };
 
     const build_collection: BuildCollection = .{
