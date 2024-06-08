@@ -1,9 +1,6 @@
 const std = @import("std");
 const debug = @import("debug.zig");
-
-// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-// var allocator = gpa.allocator();
-var allocator = std.heap.c_allocator;
+const mem = @import("mem.zig");
 
 var modules: std.StringArrayHashMap(Module) = undefined;
 var needs_init: bool = true;
@@ -38,7 +35,7 @@ pub const Module = struct {
 /// Registers a module to tie it into the app lifecycle
 pub fn registerModule(module: Module) !void {
     if (needs_init) {
-        modules = std.StringArrayHashMap(Module).init(allocator);
+        modules = std.StringArrayHashMap(Module).init(mem.getAllocator());
         needs_init = false;
     }
 

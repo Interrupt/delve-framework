@@ -1,14 +1,14 @@
 const std = @import("std");
 const debug = @import("debug.zig");
 const zstbi = @import("zstbi");
+const mem = @import("mem.zig");
 
-// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-// const allocator = gpa.allocator();
-const allocator = std.heap.c_allocator;
+var allocator: std.mem.Allocator = undefined;
 
 pub const Image = zstbi.Image;
 
-pub fn init() void {
+pub fn init() !void {
+    allocator = mem.getAllocator();
     debug.log("Image zstbi init", .{});
     zstbi.init(allocator);
 }

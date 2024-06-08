@@ -57,7 +57,7 @@ pub const App = struct {
             .attachments_pool_size = app_config.pass_pool_size, // sokol default is 16,
         });
 
-        debug.log("Sokol setup backend: {}\n", .{sg.queryBackend()});
+        debug.log("Sokol setup backend: {}", .{sg.queryBackend()});
 
         // call the callback that will tell everything else to start up
         app.on_init_fn();

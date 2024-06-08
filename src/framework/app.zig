@@ -54,6 +54,7 @@ pub fn start(config: AppConfig) !void {
 }
 
 pub fn startSubsystems() !void {
+    try images.init();
     try colors.init();
     try input.init();
     // try scripting.init();

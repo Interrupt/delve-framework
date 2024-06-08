@@ -1,13 +1,10 @@
 const std = @import("std");
 const math = @import("../math.zig");
 const debug = @import("../debug.zig");
+const mem = @import("../mem.zig");
 
 const Vec2 = math.Vec2;
 const AnimationHashMap = std.StringHashMap(SpriteAnimation);
-
-// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-// const allocator = gpa.allocator();
-const allocator = std.heap.c_allocator;
 
 /// Keeps track of a sub region of a texture
 /// Origin is in the upper left, x axis points right, and y axis points down
@@ -64,10 +61,12 @@ pub const SpriteAnimation = struct {
 
 /// AnimatedSpriteSheets contain multiple named animations, each with a number of animation frames
 pub const AnimatedSpriteSheet = struct {
+    allocator: std.mem.Allocator,
     entries: AnimationHashMap = undefined,
 
-    pub fn init() AnimatedSpriteSheet {
+    pub fn init(allocator: std.mem.Allocator) AnimatedSpriteSheet {
         return AnimatedSpriteSheet{
+            .allocator = allocator,
             .entries = AnimationHashMap.init(allocator),
         };
     }
@@ -112,7 +111,8 @@ pub const AnimatedSpriteSheet = struct {
 
     /// Creates a series of animations: one per row in a grid where the columns are frames
     pub fn initFromGrid(rows: u32, cols: u32, anim_name_prefix: [:0]const u8) !AnimatedSpriteSheet {
-        var sheet = AnimatedSpriteSheet.init();
+        const allocator = mem.getAllocator();
+        var sheet = AnimatedSpriteSheet.init(allocator);
         const rows_f: f32 = @floatFromInt(rows);
         const cols_f: f32 = @floatFromInt(cols);
 

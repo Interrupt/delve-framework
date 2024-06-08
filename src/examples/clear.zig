@@ -5,14 +5,6 @@ const builtin = @import("builtin");
 
 // This example does nothing but open a blank window!
 
-// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
-pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
-    pub const heap = struct {
-        // pub const page_allocator = std.heap.c_allocator;
-        pub const page_allocator = @compileError("don't do it");
-    };
-};
-
 pub fn main() !void {
     std.debug.print("starting clear example\n", .{});
 
@@ -21,15 +13,19 @@ pub fn main() !void {
         .init_fn = on_init,
     };
 
-    std.debug.print("1\n", .{});
+    // Pick the allocator to use depending on platform
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        try delve.init(gpa.allocator());
+    }
 
     try delve.modules.registerModule(clear_module);
 
-    std.debug.print("2\n", .{});
-
     try app.start(app.AppConfig{ .title = "Delve Framework - Clear Example" });
-
-    std.debug.print("3\n", .{});
 }
 
 pub fn on_init() !void {

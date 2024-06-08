@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 const delve = @import("delve");
 const app = delve.app;
 
@@ -22,14 +23,6 @@ var player_pos: math.Vec3 = math.Vec3.zero;
 var player_vel: math.Vec3 = math.Vec3.zero;
 var on_ground = true;
 
-// EMSCRIPTEN HACK! See https://github.com/ziglang/zig/issues/19072
-const builtin = @import("builtin");
-pub const os = if (builtin.os.tag != .wasi and builtin.os.tag != .emscripten) std.os else struct {
-    pub const heap = struct {
-        pub const page_allocator = std.heap.c_allocator;
-    };
-};
-
 pub fn main() !void {
     const example = delve.modules.Module{
         .name = "quakemap_example",
@@ -37,6 +30,17 @@ pub fn main() !void {
         .tick_fn = on_tick,
         .draw_fn = on_draw,
     };
+
+    // Pick the allocator to use depending on platform
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
+
+    try delve.init(gpa.allocator());
 
     try delve.modules.registerModule(example);
     try delve.module.fps_counter.registerModule();

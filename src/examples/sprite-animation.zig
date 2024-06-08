@@ -2,6 +2,8 @@ const std = @import("std");
 const builtin = @import("builtin");
 const delve = @import("delve");
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
 const graphics = delve.platform.graphics;
 
 var shader_default: graphics.Shader = undefined;
@@ -31,6 +33,15 @@ pub const module = delve.modules.Module{
 };
 
 pub fn main() !void {
+    // Pick the allocator to use depending on platform
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
+
     try registerModule();
     try delve.app.start(delve.app.AppConfig{ .title = "Delve Framework - Animated Sprite" });
 }
@@ -41,6 +52,15 @@ pub fn registerModule() !void {
 
 fn on_init() !void {
     delve.debug.log("Sprite animation example module initializing", .{});
+
+    // Pick the allocator to use depending on platform
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
 
     sprite_batch = delve.graphics.batcher.SpriteBatcher.init(.{}) catch {
         delve.debug.showErrorScreen("Fatal error during batch init!");

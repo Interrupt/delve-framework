@@ -1,3 +1,5 @@
+const std = @import("std");
+
 // top level imports
 
 pub const app = @import("app.zig");
@@ -5,6 +7,7 @@ pub const colors = @import("colors.zig");
 pub const debug = @import("debug.zig");
 pub const images = @import("images.zig");
 pub const math = @import("math.zig");
+pub const mem = @import("mem.zig");
 
 // platform level imports
 
@@ -71,3 +74,9 @@ pub const shaders = struct {
     pub const default = @import("graphics/shaders/default.glsl.zig");
     pub const default_emissive = @import("graphics/shaders/emissive.glsl.zig");
 };
+
+// initial setup. Call before any other Delve Framework functions!
+pub fn init(allocator: std.mem.Allocator) !void {
+    mem.init(allocator);
+    debug.log("Delve Framework Initialized", .{});
+}

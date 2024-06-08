@@ -161,21 +161,10 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
         });
     }
 
-    // app.linkLibC();
-    // app.linkLibCpp();
-
-    // app.addSystemIncludePath(.{ .path = "/Library/Developer/CommandLineTools/usr/include/c++/v1" });
-    // app.addIncludePath(.{ .path = "/Library/Developer/CommandLineTools/usr/include/c++/v1" });
-    // app.addIncludePath("/usr/include");
-
     app.root_module.addImport("delve", delve_module);
     app.linkLibrary(delve_lib);
 
     if (target.result.isWasm()) {
-        // TODO: Still sorting out WASM builds
-        //
-        // create a build step which invokes the Emscripten linker
-
         const dep_sokol = b.dependency("sokol", .{
             .target = target,
             .optimize = optimize,
@@ -199,19 +188,10 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
                 "--preload-file=assets/",
                 "-sALLOW_MEMORY_GROWTH=1",
                 "-sSAFE_HEAP=0",
-                // "-sEMULATE_FUNCTION_POINTER_CASTS=1",
-                // "-sSAFE_HEAP_LOG=1",
-                // "-sINITIAL_MEMORY=64MB",
-                // "-sLOAD_SOURCE_MAP=1",
-                // "-sINITIAL_HEAP=256MB",
-                // "-sABORT_ON_WASM_EXCEPTIONS=1",
-                // "-sASSERTIONS=1",
-                // "-fsanitize=address",
-                // "-gsource-map",
             },
         });
 
-        // // ...and a special run step to start the web build output via 'emrun'
+        // ...and a special run step to start the web build output via 'emrun'
         const run = sokol.emRunStep(b, .{ .name = example, .emsdk = emsdk });
         run.step.dependOn(&link_step.step);
 
