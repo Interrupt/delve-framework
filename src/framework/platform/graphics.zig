@@ -3,6 +3,7 @@ const colors = @import("../colors.zig");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
 const math = @import("../math.zig");
+const mem = @import("../mem.zig");
 const mesh = @import("../graphics/mesh.zig");
 const papp = @import("app.zig");
 const sokol_gfx_backend = @import("backends/sokol/graphics.zig");
@@ -14,10 +15,7 @@ const sapp = sokol.app;
 const sglue = sokol.glue;
 const debugtext = sokol.debugtext;
 
-// general allocator for graphics functions
-// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-// pub var allocator = gpa.allocator();
-pub var allocator = std.heap.c_allocator;
+pub var allocator: std.mem.Allocator = undefined;
 
 // compile built-in shaders via:
 // ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl300es:glsl330:wgsl:metal_macos:metal_ios:metal_sim:hlsl4 -f sokol_zig
@@ -791,6 +789,8 @@ var default_pass_action: sg.PassAction = .{};
 /// Initializes the graphics subsystem
 pub fn init() !void {
     debug.log("Graphics subsystem starting", .{});
+
+    allocator = mem.getAllocator();
 
     // Setup some debug textures
     tex_white = createSolidTexture(0xFFFFFFFF);
