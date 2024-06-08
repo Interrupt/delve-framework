@@ -129,8 +129,16 @@ zig build -Doptimize=ReleaseSafe run-forest
 zig build -Doptimize=ReleaseSmall run-forest
 ```
 
-### Building for emscripten
-When building for Emscripten, you may need to point it at some system headers by passing a sysroot arg:
+### Building for web
+To build for web, use the `-Dtarget=wasm32-emscripten` build argument.
+
 ```java
-zig build run-clear -Dtarget=wasm32-emscripten --sysroot ~/Github/emsdk/upstream/emscripten/cache/sysroot
+zig build run-clear -Dtarget=wasm32-emscripten
+```
+
+You may need to point it at the Emscripten headers. If you encounter linker errors finding system headers,
+download the Emscripten SDK and point your build at those headers by passing a sysroot arg:
+
+```java
+zig build run-clear -Dtarget=wasm32-emscripten --sysroot /path/to/emsdk/upstream/emscripten/cache/sysroot
 ```
