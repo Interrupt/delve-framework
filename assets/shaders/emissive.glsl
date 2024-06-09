@@ -22,11 +22,17 @@ in vec4 tangents;
 
 out vec4 color;
 out vec2 uv;
+out vec3 normal;
+out vec4 tangent;
 
 void main() {
     gl_Position = u_projViewMatrix * u_modelMatrix * pos;
     color = color0 * u_color;
     uv = texcoord0;
+
+    // have to use these attributes to keep them from being stripped out
+    normal = normals;
+    tangent = tangents;
 }
 #pragma sokol @end
 
@@ -41,6 +47,8 @@ uniform fs_params {
 
 in vec4 color;
 in vec2 uv;
+in vec3 normal;
+in vec4 tangent;
 out vec4 frag_color;
 
 void main() {
