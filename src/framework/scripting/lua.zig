@@ -15,6 +15,9 @@ var lua: *Lua = undefined;
 // Enable for extra logging
 var enable_debug_logging = false;
 
+// are we ready to use?
+pub var did_init: bool = false;
+
 pub fn init() !void {
     debug.log("Lua: system starting up!", .{});
 
@@ -31,10 +34,17 @@ pub fn init() !void {
     lua.openLibs(); // open standard libs
 
     debug.log("Lua: ready to go!", .{});
+
+    did_init = true;
 }
 
 pub fn runFile(lua_filename: [:0]const u8) !void {
     debug.log("Lua: running file {s}", .{lua_filename});
+
+    if (!did_init) {
+        debug.log("Lua: could not run file, lua is not initialized yet.", .{});
+        return;
+    }
 
     defer lua.setTop(0);
     lua.doFile(lua_filename) catch |err| {
@@ -49,6 +59,11 @@ pub fn runFile(lua_filename: [:0]const u8) !void {
 }
 
 pub fn runLine(lua_string: [:0]const u8) !void {
+    if (!did_init) {
+        debug.log("Lua: could not run line, lua is not initialized yet.", .{});
+        return;
+    }
+
     // Compile the new line
     lua.loadString(lua_string) catch |err| {
         debug.log("{s}", .{try lua.toString(-1)});

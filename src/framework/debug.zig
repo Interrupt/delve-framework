@@ -173,7 +173,7 @@ fn addLogEntry(comptime fmt: []const u8, args: anytype, level: LogLevel) void {
     if (needs_init)
         init();
 
-    // // Only log if our log level is high enough
+    // Only log if our log level is high enough
     if (@intFromEnum(log_level) < @intFromEnum(level)) {
         return;
     }
@@ -376,7 +376,10 @@ pub fn runPendingCommand() void {
     pending_cmd.append(0x00) catch {};
 
     const final_command = pending_cmd.items[0 .. pending_cmd.items.len - 1 :0];
-    // lua.runLine(final_command) catch {};
+
+    if (lua.did_init)
+        lua.runLine(final_command) catch {};
+
     trackCommand(final_command);
 }
 
@@ -413,7 +416,11 @@ pub fn showErrorScreen(error_header: [:0]const u8) void {
 
     // run the new lua statement
     std.debug.print("Showing error screen: {s}\n", .{error_header});
-    // lua.runLine(written) catch {
-    //     std.debug.print("Error running lua to show error screen?\n", .{});
-    // };
+
+    if (!lua.did_init)
+        return;
+
+    lua.runLine(written) catch {
+        std.debug.print("Error running lua to show error screen?\n", .{});
+    };
 }
