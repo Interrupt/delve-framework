@@ -2,10 +2,8 @@ const std = @import("std");
 const Build = std.Build;
 const ziglua = @import("ziglua");
 const zstbi = @import("zstbi");
+const sokol = @import("sokol");
 const system_sdk = @import("system-sdk");
-
-// give upstream builds access to the sokol import
-pub const sokol = @import("sokol");
 
 var target: Build.ResolvedTarget = undefined;
 var optimize: std.builtin.OptimizeMode = undefined;
@@ -179,34 +177,11 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
     app.linkLibrary(delve_lib);
 
     if (target.result.isWasm()) {
-        const dep_sokol = b.dependency("sokol", .{
-            .target = target,
-            .optimize = optimize,
-        });
+        // link with emscripten
+        const link_step = try emscriptenLinkStep(b, app);
 
-        app.defineCMacro("__EMSCRIPTEN__", "1");
-
-        const emsdk = dep_sokol.builder.dependency("emsdk", .{});
-        const link_step = try sokol.emLinkStep(b, .{
-            .lib_main = app,
-            .target = target,
-            .optimize = optimize,
-            .emsdk = emsdk,
-            .use_webgl2 = true,
-            .use_emmalloc = true,
-            .use_filesystem = true,
-            .shell_file_path = dep_sokol.path("src/sokol/web/shell.html").getPath(b),
-            .extra_args = &.{
-                "-sUSE_OFFSET_CONVERTER=1",
-                "-sTOTAL_STACK=16MB",
-                "--preload-file=assets/",
-                "-sALLOW_MEMORY_GROWTH=1",
-                "-sSAFE_HEAP=0",
-            },
-        });
-
-        // ...and a special run step to start the web build output via 'emrun'
-        const run = sokol.emRunStep(b, .{ .name = example, .emsdk = emsdk });
+        // and add a run step
+        const run = emscriptenRunStep(b, example);
         run.step.dependOn(&link_step.step);
 
         var option_buffer = [_]u8{undefined} ** 100;
@@ -224,4 +199,44 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
 
         b.step(run_name, descr_name).dependOn(&run.step);
     }
+}
+
+pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile) !*Build.Step.Run {
+    const dep_sokol = b.dependency("sokol", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    app.defineCMacro("__EMSCRIPTEN__", "1");
+
+    const emsdk = dep_sokol.builder.dependency("emsdk", .{});
+
+    return try sokol.emLinkStep(b, .{
+        .lib_main = app,
+        .target = target,
+        .optimize = optimize,
+        .emsdk = emsdk,
+        .use_webgl2 = true,
+        .use_emmalloc = true,
+        .use_filesystem = true,
+        .shell_file_path = dep_sokol.path("src/sokol/web/shell.html").getPath(b),
+        .extra_args = &.{
+            "-sUSE_OFFSET_CONVERTER=1",
+            "-sTOTAL_STACK=16MB",
+            "--preload-file=assets/",
+            "-sALLOW_MEMORY_GROWTH=1",
+            "-sSAFE_HEAP=0",
+        },
+    });
+}
+
+pub fn emscriptenRunStep(b: *Build, name: []const u8) *Build.Step.Run {
+    const dep_sokol = b.dependency("sokol", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const emsdk = dep_sokol.builder.dependency("emsdk", .{});
+
+    return sokol.emRunStep(b, .{ .name = name, .emsdk = emsdk });
 }
