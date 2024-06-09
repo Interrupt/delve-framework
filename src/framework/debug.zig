@@ -1,11 +1,12 @@
 const std = @import("std");
-const lua = @import("scripting/lua.zig");
 const colors = @import("colors.zig");
 const gfx = @import("platform/graphics.zig");
 const mem = @import("mem.zig");
 const papp = @import("platform/app.zig");
 const text_module = @import("api/text.zig");
 const draw_module = @import("api/draw.zig");
+
+pub var use_scripting_integration: bool = false;
 
 const console_num_to_show: u32 = 8;
 var console_visible = false;
@@ -377,8 +378,11 @@ pub fn runPendingCommand() void {
 
     const final_command = pending_cmd.items[0 .. pending_cmd.items.len - 1 :0];
 
-    if (lua.did_init)
-        lua.runLine(final_command) catch {};
+    // if (use_scripting_integration) {
+    //     const lua = @import("scripting/lua.zig");
+    //     if (lua.did_init)
+    //         lua.runLine(final_command) catch {};
+    // }
 
     trackCommand(final_command);
 }
@@ -417,10 +421,13 @@ pub fn showErrorScreen(error_header: [:0]const u8) void {
     // run the new lua statement
     std.debug.print("Showing error screen: {s}\n", .{error_header});
 
-    if (!lua.did_init)
-        return;
-
-    lua.runLine(written) catch {
-        std.debug.print("Error running lua to show error screen?\n", .{});
-    };
+    // if (use_scripting_integration) {
+    //     const lua = @import("scripting/lua.zig");
+    //     if (!lua.did_init)
+    //         return;
+    //
+    //     lua.runLine(written) catch {
+    //         std.debug.print("Error running lua to show error screen?\n", .{});
+    //     };
+    // }
 }
