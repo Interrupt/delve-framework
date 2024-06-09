@@ -177,11 +177,16 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
     app.linkLibrary(delve_lib);
 
     if (target.result.isWasm()) {
+        const dep_sokol = b.dependency("sokol", .{
+            .target = target,
+            .optimize = optimize,
+        });
+
         // link with emscripten
-        const link_step = try emscriptenLinkStep(b, app);
+        const link_step = try emscriptenLinkStep(b, app, dep_sokol);
 
         // and add a run step
-        const run = emscriptenRunStep(b, example);
+        const run = emscriptenRunStep(b, example, dep_sokol);
         run.step.dependOn(&link_step.step);
 
         var option_buffer = [_]u8{undefined} ** 100;
@@ -201,12 +206,7 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
     }
 }
 
-pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile) !*Build.Step.Run {
-    const dep_sokol = b.dependency("sokol", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
+pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build.Dependency) !*Build.Step.Run {
     app.defineCMacro("__EMSCRIPTEN__", "1");
 
     const emsdk = dep_sokol.builder.dependency("emsdk", .{});
@@ -230,13 +230,7 @@ pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile) !*Build.Step.Run 
     });
 }
 
-pub fn emscriptenRunStep(b: *Build, name: []const u8) *Build.Step.Run {
-    const dep_sokol = b.dependency("sokol", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
+pub fn emscriptenRunStep(b: *Build, name: []const u8, dep_sokol: *Build.Dependency) *Build.Step.Run {
     const emsdk = dep_sokol.builder.dependency("emsdk", .{});
-
     return sokol.emRunStep(b, .{ .name = name, .emsdk = emsdk });
 }
