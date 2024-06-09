@@ -1,9 +1,11 @@
 const std = @import("std");
 const Build = std.Build;
-const sokol = @import("sokol");
 const ziglua = @import("ziglua");
 const zstbi = @import("zstbi");
 const system_sdk = @import("system-sdk");
+
+// give upstream builds access to the sokol import
+pub const sokol = @import("sokol");
 
 var target: Build.ResolvedTarget = undefined;
 var optimize: std.builtin.OptimizeMode = undefined;
