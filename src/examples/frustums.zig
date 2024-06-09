@@ -2,6 +2,8 @@ const std = @import("std");
 const delve = @import("delve");
 const app = delve.app;
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
 var primary_camera: delve.graphics.camera.Camera = undefined;
 var secondary_camera: delve.graphics.camera.Camera = undefined;
 
@@ -15,6 +17,16 @@ var cube_mesh: delve.graphics.mesh.Mesh = undefined;
 var time: f32 = 0.0;
 
 pub fn main() !void {
+    // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
+
     const example = delve.modules.Module{
         .name = "frustums_example",
         .init_fn = on_init,
@@ -108,7 +120,7 @@ pub fn on_draw() void {
 }
 
 pub fn createFrustumMesh() !delve.graphics.mesh.Mesh {
-    var builder = delve.graphics.mesh.MeshBuilder.init();
+    var builder = delve.graphics.mesh.MeshBuilder.init(delve.mem.getAllocator());
     defer builder.deinit();
 
     try builder.addFrustum(secondary_camera.getViewFrustum(), delve.math.Mat4.identity, delve.colors.cyan);

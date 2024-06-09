@@ -57,7 +57,7 @@ pub const App = struct {
             .attachments_pool_size = app_config.pass_pool_size, // sokol default is 16,
         });
 
-        debug.log("Sokol setup backend: {}\n", .{sg.queryBackend()});
+        debug.log("Sokol setup backend: {}", .{sg.queryBackend()});
 
         // call the callback that will tell everything else to start up
         app.on_init_fn();
@@ -92,6 +92,8 @@ pub const App = struct {
     pub fn startMainLoop(config: main_app.AppConfig) void {
         app_config = config;
 
+        debug.log("Sokol app starting main loop", .{});
+
         sapp.run(.{
             .init_cb = sokol_init,
             .frame_cb = sokol_frame,
@@ -106,7 +108,7 @@ pub const App = struct {
             .logger = .{
                 .func = slog.func,
             },
-            .win32_console_attach = true,
+            // .win32_console_attach = true,
         });
     }
 

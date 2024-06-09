@@ -14,6 +14,8 @@ const fps_module = delve.module.fps_counter;
 
 pub const test_asset = @embedFile("static/test.gif");
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
 var texture: graphics.Texture = undefined;
 var test_image: images.Image = undefined;
 
@@ -29,6 +31,16 @@ const state = struct {
 // These functions are slow, but a quick way to get stuff on screen!
 
 pub fn main() !void {
+    // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
+
     try registerModule();
     try fps_module.registerModule();
     try app.start(app.AppConfig{ .title = "Delve Framework - Frame Pacing Test" });

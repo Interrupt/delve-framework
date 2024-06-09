@@ -150,11 +150,11 @@ fn bindFuncLua(comptime function: anytype) fn (lua: *Lua) i32 {
                     },
                     c_int, usize, i8, i16, i32, i64, u8, u16, u32, u64 => {
                         // ints
-                        args[i] = @intFromFloat(lua.toNumber(lua_idx) catch 0);
+                        args[i] = std.math.lossyCast(param_type, lua.toNumber(lua_idx) catch 0);
                     },
                     f16, f32, f64 => {
                         // floats
-                        args[i] = @floatCast(lua.toNumber(lua_idx) catch 0);
+                        args[i] = std.math.lossyCast(param_type, lua.toNumber(lua_idx) catch 0);
                     },
                     [*:0]const u8 => {
                         // strings

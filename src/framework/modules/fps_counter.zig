@@ -3,13 +3,13 @@ const colors = @import("../colors.zig");
 const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
 const papp = @import("../platform/app.zig");
+const mem = @import("../mem.zig");
 const modules = @import("../modules.zig");
 const input = @import("../platform/input.zig");
 
 // This is a module that will draw the current FPS in the corner of the screen
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = gpa.allocator();
+var allocator: std.mem.Allocator = undefined;
 
 var show_fps: bool = false;
 var last_fps_str: ?[:0]u8 = null;
@@ -19,12 +19,17 @@ var last_fps: i32 = -1;
 pub fn registerModule() !void {
     const fpsCounter = modules.Module{
         .name = "fps_counter",
+        .init_fn = on_init,
         .tick_fn = on_tick,
         .draw_fn = on_draw,
         .cleanup_fn = on_cleanup,
     };
 
     try modules.registerModule(fpsCounter);
+}
+
+fn on_init() !void {
+    allocator = mem.getAllocator();
 }
 
 fn on_cleanup() !void {

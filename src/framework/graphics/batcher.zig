@@ -4,6 +4,7 @@ const colors = @import("../colors.zig");
 const graphics = @import("../platform/graphics.zig");
 const images = @import("../images.zig");
 const math = @import("../math.zig");
+const mem = @import("../mem.zig");
 const sprites = @import("sprites.zig");
 const spatial_rect = @import("../spatial/rect.zig");
 
@@ -18,9 +19,6 @@ const Mat4 = math.Mat4;
 const Color = colors.Color;
 const TextureRegion = sprites.TextureRegion;
 const Rect = spatial_rect.Rect;
-
-var batch_gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var batch_allocator = batch_gpa.allocator();
 
 const max_indices = 64000;
 const max_vertices = max_indices;
@@ -40,6 +38,7 @@ const BatcherConfig = struct {
 
 /// Handles drawing batches of primitive shapes, bucketed by texture / shader
 pub const SpriteBatcher = struct {
+    allocator: std.mem.Allocator,
     batches: std.AutoArrayHashMap(u64, Batcher) = undefined,
     transform: Mat4 = Mat4.identity,
     draw_color: colors.Color = colors.white,
@@ -51,7 +50,8 @@ pub const SpriteBatcher = struct {
 
     /// Creates a new SpriteBatcher using the given config
     pub fn init(cfg: BatcherConfig) !SpriteBatcher {
-        var sprite_batcher = SpriteBatcher{ .batches = std.AutoArrayHashMap(u64, Batcher).init(batch_allocator), .config = cfg };
+        const allocator = mem.getAllocator();
+        var sprite_batcher = SpriteBatcher{ .allocator = allocator, .batches = std.AutoArrayHashMap(u64, Batcher).init(allocator), .config = cfg };
 
         // set initial texture and shader
         const tex = if (cfg.texture != null) cfg.texture.? else graphics.createDebugTexture();
@@ -221,6 +221,7 @@ fn makeSpriteBatchKeyFromMaterial(material: *const graphics.Material) u64 {
 
 /// Handles drawing a batch of primitive shapes all with the same texture / shader
 pub const Batcher = struct {
+    allocator: std.mem.Allocator,
     vertex_buffer: []Vertex,
     index_buffer: []u32,
     vertex_pos: usize,
@@ -233,11 +234,13 @@ pub const Batcher = struct {
 
     /// Setup and return a new Batcher
     pub fn init(cfg: BatcherConfig) !Batcher {
+        var allocator = mem.getAllocator();
         var batcher: Batcher = Batcher{
+            .allocator = allocator,
             .vertex_pos = 0,
             .index_pos = 0,
-            .vertex_buffer = try batch_allocator.alloc(Vertex, cfg.min_vertices),
-            .index_buffer = try batch_allocator.alloc(u32, cfg.min_indices),
+            .vertex_buffer = try allocator.alloc(Vertex, cfg.min_vertices),
+            .index_buffer = try allocator.alloc(u32, cfg.min_indices),
             .bindings = graphics.Bindings.init(.{ .updatable = true, .index_len = cfg.min_indices, .vert_len = cfg.min_vertices }),
             .shader = if (cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{}),
             .material = if (cfg.material != null) cfg.material.? else null,
@@ -256,8 +259,8 @@ pub const Batcher = struct {
     /// Frees a batcher
     pub fn deinit(self: *Batcher) void {
         self.bindings.destroy();
-        batch_allocator.free(self.vertex_buffer);
-        batch_allocator.free(self.index_buffer);
+        self.allocator.free(self.vertex_buffer);
+        self.allocator.free(self.index_buffer);
     }
 
     /// Sets the texture from an Image that will be used when drawing the batch
@@ -500,7 +503,7 @@ pub const Batcher = struct {
 
         if (self.vertex_buffer.len < needed_vertices) {
             // debug.log("Growing vertex buffer to {d}", .{self.vertex_buffer.len * 2});
-            self.vertex_buffer = batch_allocator.realloc(self.vertex_buffer, self.vertex_buffer.len * 2) catch {
+            self.vertex_buffer = self.allocator.realloc(self.vertex_buffer, self.vertex_buffer.len * 2) catch {
                 debug.log("Could not allocate needed vertices! Needed {d}", .{needed_vertices});
                 return;
             };
@@ -508,7 +511,7 @@ pub const Batcher = struct {
         }
         if (self.index_buffer.len < needed_indices) {
             // debug.log("Growing index buffer to {d}", .{self.index_buffer.len * 2});
-            self.index_buffer = batch_allocator.realloc(self.index_buffer, self.index_buffer.len * 2) catch {
+            self.index_buffer = self.allocator.realloc(self.index_buffer, self.index_buffer.len * 2) catch {
                 debug.log("Could not allocate needed indices! Needed {d}", .{needed_indices});
                 return;
             };

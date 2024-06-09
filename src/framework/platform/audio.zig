@@ -1,10 +1,10 @@
 const std = @import("std");
 const zaudio = @import("zaudio");
 const debug = @import("../debug.zig");
+const mem = @import("../mem.zig");
 const modules = @import("../modules.zig");
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = gpa.allocator();
+var allocator: std.mem.Allocator = undefined;
 
 // zaudio miniaudio engine
 var zaudio_engine: ?*zaudio.Engine = null;
@@ -100,8 +100,8 @@ pub const Sound = struct {
     pub fn setPosition(self: *Sound, pos: [3]f32, dir: [3]f32, vel: [3]f32) void {
         if (getZaudioSound(self.handle)) |sound| {
             // Make sure this sound is spatialized! Will be absolute by default
-            if (sound.getPositioning() != zaudio.Positioning.relative)
-                sound.setPositioning(zaudio.Positioning.relative);
+            // if (sound.getPositioning() != zaudio.Positioning.relative)
+            //     sound.setPositioning(zaudio.Positioning.relative);
 
             sound.setPosition(pos);
             sound.setDirection(dir);
@@ -172,6 +172,8 @@ pub fn registerModule() !void {
 /// Starts the audio subsystem
 pub fn init() !void {
     debug.log("Audio system initializing", .{});
+
+    allocator = mem.getAllocator();
 
     zaudio.init(allocator);
     zaudio_engine = try zaudio.Engine.create(null);
@@ -324,7 +326,7 @@ pub fn on_cleanup() !void {
     }
 }
 
-/// Don't hold onto the result of this! It could be garbage collected
+// Don't hold onto the result of this! It could be garbage collected
 fn getZaudioSound(handle: u64) ?*zaudio.Sound {
     // Need to do a little dance to get the actual zaudio sound pointer
     const found = loaded_sounds.getPtr(handle);

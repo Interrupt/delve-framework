@@ -1,6 +1,8 @@
 const std = @import("std");
 const delve = @import("delve");
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
 const graphics = delve.platform.graphics;
 
 var shader_default: graphics.Shader = undefined;
@@ -23,6 +25,16 @@ pub const module = delve.modules.Module{
 };
 
 pub fn main() !void {
+    // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
+
     try registerModule();
     try delve.app.start(delve.app.AppConfig{ .title = "Delve Framework - Animated Sprite" });
 }
@@ -39,7 +51,7 @@ fn on_init() !void {
         return;
     };
 
-    var spritesheet_image = delve.images.loadFile("sprites/cat-anim-sheet.png") catch {
+    var spritesheet_image = delve.images.loadFile("assets/sprites/cat-anim-sheet.png") catch {
         delve.debug.log("Could not load image", .{});
         return;
     };

@@ -26,31 +26,42 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
-    const ziglua_mod = b.dependency("ziglua", .{
+    const ziglua_dep = b.dependency("ziglua", .{
         .target = target,
         .optimize = optimize,
-    }).module("ziglua");
+    });
 
     const zstbi_pkg = zstbi.package(b, target, optimize, .{});
-    const zmesh = b.dependency("zmesh", .{});
-    const zaudio = b.dependency("zaudio", .{});
+
+    const zmesh = b.dependency("zmesh", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const zaudio = b.dependency("zaudio", .{
+        .target = target,
+        .optimize = optimize,
+    });
 
     const sokol_item = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
-    const ziglua_item = .{ .module = ziglua_mod, .name = "ziglua" };
+    const ziglua_item = .{ .module = ziglua_dep.module("ziglua"), .name = "ziglua" };
     const zmesh_item = .{ .module = zmesh.module("root"), .name = "zmesh" };
     const zstbi_item = .{ .module = zstbi_pkg.zstbi, .name = "zstbi" };
     const zaudio_item = .{ .module = zaudio.module("root"), .name = "zaudio" };
+
     const delve_module_imports = [_]ModuleImport{
         sokol_item,
-        ziglua_item,
         zmesh_item,
         zstbi_item,
         zaudio_item,
+        // ziglua_item,
     };
+
     const link_libraries = [_]*Build.Step.Compile{
         zmesh.artifact("zmesh"),
         zstbi_pkg.zstbi_c_cpp,
         zaudio.artifact("miniaudio"),
+        // ziglua_dep.artifact("lua"),
     };
 
     const build_collection: BuildCollection = .{
@@ -68,8 +79,25 @@ pub fn build(b: *std.Build) !void {
     for (build_collection.add_imports) |build_import| {
         delve_mod.addImport(build_import.name, build_import.module);
     }
+
+    if (!target.result.isWasm()) {
+        // Ziglua isn't building under Emscripten yet!
+        delve_mod.addImport(ziglua_item.name, ziglua_item.module);
+    }
+
     for (build_collection.link_libraries) |lib| {
         delve_mod.linkLibrary(lib);
+    }
+
+    // If we have a defined sysroot, eg for emscpriten, use that include path too
+    if (b.sysroot) |sysroot| {
+        const include_path = try std.fs.path.join(b.allocator, &.{ sysroot, "include" });
+        defer b.allocator.free(include_path);
+        delve_mod.addIncludePath(.{ .path = include_path });
+
+        for (build_collection.link_libraries) |lib| {
+            lib.addIncludePath(.{ .path = include_path });
+        }
     }
 
     // Delve Static Library artifact
@@ -132,6 +160,10 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
             .name = name,
             .root_source_file = .{ .path = root_source_file },
         });
+
+        const include_path = try std.fs.path.join(b.allocator, &.{ b.sysroot.?, "include" });
+        defer b.allocator.free(include_path);
+        app.addIncludePath(.{ .path = include_path });
     } else {
         app = b.addExecutable(.{
             .target = target,
@@ -145,35 +177,41 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
     app.linkLibrary(delve_lib);
 
     if (target.result.isWasm()) {
-        // TODO: Still sorting out WASM builds
-        //
-        // create a build step which invokes the Emscripten linker
-        // const emsdk = dep_sokol.builder.dependency("emsdk", .{});
-        // const link_step = try sokol.emLinkStep(b, .{
-        //     .lib_main = app,
-        //     .target = target,
-        //     .optimize = optimize,
-        //     .emsdk = emsdk,
-        //     .use_webgl2 = true,
-        //     .use_emmalloc = true,
-        //     .use_filesystem = false,
-        //     .shell_file_path = dep_sokol.path("3rdparty/sokol-zig/web/shell.html").getPath(b),
-        // });
-        //
-        // const dep_sokol = b.dependency("sokol", .{
-        //     .target = target,
-        //     .optimize = optimize,
-        // });
-        //
-        // // // ...and a special run step to start the web build output via 'emrun'
-        // const run = sokol.emRunStep(b, .{ .name = example, .emsdk = emsdk });
-        // run.step.dependOn(&link_step.step);
-        //
-        // var option_buffer = [_]u8{undefined} ** 100;
-        // const run_name = try std.fmt.bufPrint(&option_buffer, "run-{s}", .{name});
-        // var description_buffer = [_]u8{undefined} ** 200;
-        // const descr_name = try std.fmt.bufPrint(&description_buffer, "run {s}", .{name});
-        // b.step(run_name, descr_name).dependOn(&run.step);
+        const dep_sokol = b.dependency("sokol", .{
+            .target = target,
+            .optimize = optimize,
+        });
+
+        app.defineCMacro("__EMSCRIPTEN__", "1");
+
+        const emsdk = dep_sokol.builder.dependency("emsdk", .{});
+        const link_step = try sokol.emLinkStep(b, .{
+            .lib_main = app,
+            .target = target,
+            .optimize = optimize,
+            .emsdk = emsdk,
+            .use_webgl2 = true,
+            .use_emmalloc = true,
+            .use_filesystem = true,
+            .shell_file_path = dep_sokol.path("src/sokol/web/shell.html").getPath(b),
+            .extra_args = &.{
+                "-sUSE_OFFSET_CONVERTER=1",
+                "-sTOTAL_STACK=16MB",
+                "--preload-file=assets/",
+                "-sALLOW_MEMORY_GROWTH=1",
+                "-sSAFE_HEAP=0",
+            },
+        });
+
+        // ...and a special run step to start the web build output via 'emrun'
+        const run = sokol.emRunStep(b, .{ .name = example, .emsdk = emsdk });
+        run.step.dependOn(&link_step.step);
+
+        var option_buffer = [_]u8{undefined} ** 100;
+        const run_name = try std.fmt.bufPrint(&option_buffer, "run-{s}", .{name});
+        var description_buffer = [_]u8{undefined} ** 200;
+        const descr_name = try std.fmt.bufPrint(&description_buffer, "run {s}", .{name});
+        b.step(run_name, descr_name).dependOn(&run.step);
     } else {
         b.installArtifact(app);
         const run = b.addRunArtifact(app);

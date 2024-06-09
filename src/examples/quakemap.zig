@@ -30,6 +30,16 @@ pub fn main() !void {
         .draw_fn = on_draw,
     };
 
+    // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
+
     try delve.modules.registerModule(example);
     try delve.module.fps_counter.registerModule();
 
@@ -122,7 +132,8 @@ pub fn on_init() !void {
 
     map_transform = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
-    const allocator = gpa.allocator();
+    // const allocator = gpa.allocator();
+    const allocator = std.heap.c_allocator;
     var err: delve.utils.quakemap.ErrorInfo = undefined;
     quake_map = try delve.utils.quakemap.QuakeMap.read(allocator, test_map_file, map_transform, &err);
 
@@ -149,7 +160,7 @@ pub fn on_init() !void {
             var tex_path = std.ArrayList(u8).init(allocator);
             try mat_name.writer().print("{s}", .{face.texture_name});
             try mat_name.append(0);
-            try tex_path.writer().print("textures/{s}.png", .{face.texture_name});
+            try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
             try tex_path.append(0);
 
             const mat_name_owned = try mat_name.toOwnedSlice();

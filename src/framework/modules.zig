@@ -1,11 +1,12 @@
 const std = @import("std");
 const debug = @import("debug.zig");
-
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = gpa.allocator();
+const mem = @import("mem.zig");
 
 var modules: std.StringArrayHashMap(Module) = undefined;
 var needs_init: bool = true;
+
+// don't put modules in the main list while iterating
+var modules_to_add: std.StringArrayHashMap(Module) = undefined;
 
 // Maybe we should store ArrayLists of functions to call instead of iterating through a map?
 // - that would avoid a lot of checking for null when lots of moduels are registered
@@ -37,12 +38,13 @@ pub const Module = struct {
 /// Registers a module to tie it into the app lifecycle
 pub fn registerModule(module: Module) !void {
     if (needs_init) {
-        modules = std.StringArrayHashMap(Module).init(allocator);
+        modules = std.StringArrayHashMap(Module).init(mem.getAllocator());
+        modules_to_add = std.StringArrayHashMap(Module).init(mem.getAllocator());
         needs_init = false;
     }
 
     // only allow one version of a module to be registered!
-    try modules.putNoClobber(module.name, module);
+    try modules_to_add.putNoClobber(module.name, module);
     debug.log("Registered module: {s}", .{module.name});
 }
 
@@ -53,16 +55,38 @@ pub fn getModule(module_name: [:0]const u8) ?Module {
 
 /// Initialize all the modules
 pub fn initModules() void {
-    var it = modules.iterator();
-    while (it.next()) |module| {
-        if (module.value_ptr.init_fn != null)
-            module.value_ptr.init_fn.?() catch {
-                debug.err("Error initializing module: {s}", .{module.value_ptr.name});
-                continue;
-            };
+    debug.log("Initializing modules!", .{});
 
-        module.value_ptr.did_init = true;
+    // Modules could register other modules during init, so make sure to collect them all
+    while (modules_to_add.count() > 0) {
+        var add_iterator = modules_to_add.iterator();
+        while (add_iterator.next()) |module| {
+            modules.putNoClobber(module.value_ptr.name, module.value_ptr.*) catch {
+                debug.err("Error adding module to initialize: {s}", .{module.value_ptr.name});
+            };
+        }
+
+        // empty the modules to add until more gets added to it
+        modules_to_add.clearRetainingCapacity();
+
+        // now, initialize any modules that need to be
+        var it = modules.iterator();
+        while (it.next()) |module| {
+            if (module.value_ptr.did_init)
+                continue;
+
+            debug.log("Initializing module: {s}", .{module.value_ptr.name});
+            if (module.value_ptr.init_fn != null)
+                module.value_ptr.init_fn.?() catch {
+                    debug.err("Error initializing module: {s}", .{module.value_ptr.name});
+                    continue;
+                };
+
+            module.value_ptr.did_init = true;
+        }
     }
+
+    modules_to_add.clearAndFree();
 }
 
 /// Let all modules know that initialization is done

@@ -2,6 +2,8 @@ const std = @import("std");
 const delve = @import("delve");
 const app = delve.app;
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
 var camera: delve.graphics.camera.Camera = undefined;
 
 var material_frustum: delve.platform.graphics.Material = undefined;
@@ -23,6 +25,16 @@ pub fn main() !void {
         .tick_fn = on_tick,
         .draw_fn = on_draw,
     };
+
+    // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
 
     try delve.modules.registerModule(example);
     try delve.module.fps_counter.registerModule();

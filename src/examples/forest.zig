@@ -28,6 +28,8 @@ var cloud_batch: batcher.SpriteBatcher = undefined;
 
 var camera: cam.Camera = undefined;
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
 pub const module = modules.Module{
     .name = "forest_example",
     .init_fn = on_init,
@@ -41,6 +43,16 @@ pub const module = modules.Module{
 // shows off: sprite batches, texture regions, billboarding, cameras
 
 pub fn main() !void {
+    // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
+
     try registerModule();
     try fps_module.registerModule();
     try app.start(app.AppConfig{ .title = "Delve Framework - Sprite Batch Forest Example" });
@@ -153,6 +165,14 @@ fn on_init() !void {
     papp.setTargetFPS(60);
     papp.setFixedTimestep(1.0 / 60.0);
 
+    // Load some trees in a spritesheet
+    const treesheet_path = "assets/sprites/treesheet.png";
+    var treesheet_img: images.Image = delve.images.loadFile(treesheet_path) catch {
+        debug.log("Assets: Error loading image asset: {s}", .{treesheet_path});
+        return;
+    };
+    defer treesheet_img.deinit();
+
     sprite_batch = batcher.SpriteBatcher.init(.{}) catch {
         debug.showErrorScreen("Fatal error during batch init!");
         return;
@@ -168,12 +188,6 @@ fn on_init() !void {
         return;
     };
 
-    // Load some trees in a spritesheet
-    const treesheet_path = "sprites/treesheet.png";
-    var treesheet_img: images.Image = images.loadFile(treesheet_path) catch {
-        debug.log("Assets: Error loading image asset: {s}", .{treesheet_path});
-        return;
-    };
     tex_treesheet = graphics.Texture.init(&treesheet_img);
 
     // make our default shader
@@ -210,7 +224,7 @@ fn pre_draw() void {
     const rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
 
     // make our grass, if needed
-    addGrass(camera.position, 30, 1.25, 1.0);
+    // addGrass(camera.position, 30, 1.25, 1.0);
     addClouds(0.12);
 
     // reset the sprite batch to clear everything that was added for the previous frame

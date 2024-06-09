@@ -589,7 +589,7 @@ pub const QuakeMap = struct {
 
         // Add our solids
         for (self.worldspawn.solids.items) |solid| {
-            try addSolidToMeshBuilders(&mesh_builders, solid, materials, transform);
+            try addSolidToMeshBuilders(allocator, &mesh_builders, solid, materials, transform);
         }
 
         // We're ready to build all of our mesh builders now!
@@ -607,7 +607,7 @@ pub const QuakeMap = struct {
         // Add the solids for all of the entities
         for (self.entities.items) |entity| {
             for (entity.solids.items) |solid| {
-                try addSolidToMeshBuilders(&mesh_builders, solid, materials, transform);
+                try addSolidToMeshBuilders(allocator, &mesh_builders, solid, materials, transform);
             }
         }
 
@@ -636,7 +636,7 @@ pub const QuakeMap = struct {
     }
 
     /// Adds all of the faces of a solid to a list of MeshBuilders, based on the face's texture name
-    pub fn addSolidToMeshBuilders(builders: *std.StringHashMap(mesh.MeshBuilder), solid: Solid, materials: std.StringHashMap(QuakeMaterial), transform: math.Mat4) !void {
+    pub fn addSolidToMeshBuilders(allocator: std.mem.Allocator, builders: *std.StringHashMap(mesh.MeshBuilder), solid: Solid, materials: std.StringHashMap(QuakeMaterial), transform: math.Mat4) !void {
         for (solid.faces.items) |face| {
             const found_builder = builders.getPtr(face.texture_name);
             var builder: *mesh.MeshBuilder = undefined;
@@ -645,7 +645,7 @@ pub const QuakeMap = struct {
                 builder = b;
             } else {
                 // This is ugly - is there a better way?
-                try builders.put(face.texture_name, mesh.MeshBuilder.init());
+                try builders.put(face.texture_name, mesh.MeshBuilder.init(allocator));
                 builder = builders.getPtr(face.texture_name).?;
             }
 

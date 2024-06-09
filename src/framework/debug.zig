@@ -2,6 +2,7 @@ const std = @import("std");
 const lua = @import("scripting/lua.zig");
 const colors = @import("colors.zig");
 const gfx = @import("platform/graphics.zig");
+const mem = @import("mem.zig");
 const papp = @import("platform/app.zig");
 const text_module = @import("api/text.zig");
 const draw_module = @import("api/draw.zig");
@@ -12,9 +13,8 @@ var console_visible = false;
 /// The global log level. Increase to view more logs, decrease to view less.
 pub var log_level = LogLevel.STANDARD;
 
-// Manage our own memory!
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = gpa.allocator();
+var stack_fallback_allocator: std.heap.StackFallbackAllocator(256) = undefined;
+var allocator: std.mem.Allocator = undefined;
 
 // List types
 const StringLinkedList = std.TailQueue([:0]const u8);
@@ -63,6 +63,7 @@ const LogList = struct {
         const log_mem = self.log_allocator.alloc(u8, log_string.len + 1) catch {
             return;
         };
+
         std.mem.copyForwards(u8, log_mem, log_string);
         log_mem[log_mem.len - 1] = 0x00; // Ensure the sentinel
 
@@ -114,8 +115,14 @@ const LogList = struct {
 };
 
 pub fn init() void {
+    std.debug.print("debug module initializing\n", .{});
+
     if (!needs_init)
         return;
+
+    stack_fallback_allocator = std.heap.stackFallback(256, mem.getAllocator());
+    allocator = stack_fallback_allocator.get();
+
     needs_init = false;
     needs_deinit = true;
 
@@ -125,15 +132,20 @@ pub fn init() void {
 }
 
 pub fn deinit() void {
+    std.debug.print("debug module deinitializing\n", .{});
+
     if (!needs_deinit)
         return;
+
     needs_deinit = false;
     needs_init = true;
 
     log_history_list.deinit();
     cmd_history_list.deinit();
     pending_cmd.deinit();
-    _ = gpa.deinit();
+
+    // arena_allocator.deinit();
+    // _ = gpa.deinit();
 }
 
 pub fn log(comptime fmt: []const u8, args: anytype) void {
@@ -364,7 +376,10 @@ pub fn runPendingCommand() void {
     pending_cmd.append(0x00) catch {};
 
     const final_command = pending_cmd.items[0 .. pending_cmd.items.len - 1 :0];
-    lua.runLine(final_command) catch {};
+
+    if (lua.did_init)
+        lua.runLine(final_command) catch {};
+
     trackCommand(final_command);
 }
 
@@ -401,6 +416,10 @@ pub fn showErrorScreen(error_header: [:0]const u8) void {
 
     // run the new lua statement
     std.debug.print("Showing error screen: {s}\n", .{error_header});
+
+    if (!lua.did_init)
+        return;
+
     lua.runLine(written) catch {
         std.debug.print("Error running lua to show error screen?\n", .{});
     };

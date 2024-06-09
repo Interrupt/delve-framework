@@ -13,6 +13,8 @@ const math = delve.math;
 const modules = delve.modules;
 const sprites = delve.graphics.sprites;
 
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
 const Color = colors.Color;
 const Rect = delve.spatial.Rect;
 
@@ -35,6 +37,16 @@ const stress_test_count = 10000;
 // This example shows how to draw sprites and shapes using the sprite batchers
 
 pub fn main() !void {
+    // Pick the allocator to use depending on platform
+    const builtin = @import("builtin");
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // Web builds hack: use the C allocator to avoid OOM errors
+        // See https://github.com/ziglang/zig/issues/19072
+        try delve.init(std.heap.c_allocator);
+    } else {
+        try delve.init(gpa.allocator());
+    }
+
     try registerModule();
     try app.start(app.AppConfig{ .title = "Delve Framework - Sprite Batch Example" });
 }
