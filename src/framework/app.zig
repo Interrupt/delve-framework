@@ -46,8 +46,10 @@ pub fn start(config: AppConfig) !void {
     // App backend init
     try app_backend.init();
 
+    // TODO: Handle how the assets path works!
+
     // Change the working dir to where the assets are
-    debug.log("Assets Path: {s}", .{assets_path});
+    // debug.log("Assets Path: {s}", .{assets_path});
     // const chdir_res = std.c.chdir(assets_path);
     // if (chdir_res == -1) return error.Oops;
 
