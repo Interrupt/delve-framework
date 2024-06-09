@@ -8,9 +8,6 @@ var needs_init: bool = true;
 // don't put modules in the main list while iterating
 var modules_to_add: std.StringArrayHashMap(Module) = undefined;
 
-// whether we are in the middle of initializing the submodules
-var is_initializing_modules: bool = false;
-
 // Maybe we should store ArrayLists of functions to call instead of iterating through a map?
 // - that would avoid a lot of checking for null when lots of moduels are registered
 
@@ -46,13 +43,6 @@ pub fn registerModule(module: Module) !void {
         needs_init = false;
     }
 
-    if (!is_initializing_modules) {
-        // only allow one version of a module to be registered!
-        try modules.putNoClobber(module.name, module);
-        debug.log("Registered module: {s}", .{module.name});
-        return;
-    }
-
     // only allow one version of a module to be registered!
     try modules_to_add.putNoClobber(module.name, module);
     debug.log("Registered module: {s}", .{module.name});
@@ -67,28 +57,25 @@ pub fn getModule(module_name: [:0]const u8) ?Module {
 pub fn initModules() void {
     debug.log("Initializing modules!", .{});
 
-    is_initializing_modules = true;
-
-    var it = modules.iterator();
-    while (it.next()) |module| {
-        debug.log("Initializing module: {s}", .{module.value_ptr.name});
-        if (module.value_ptr.init_fn != null)
-            module.value_ptr.init_fn.?() catch {
-                debug.err("Error initializing module: {s}", .{module.value_ptr.name});
-                continue;
-            };
-
-        module.value_ptr.did_init = true;
-    }
-
-    is_initializing_modules = false;
-
-    // If we registered more modules during init, go find and init those too
-
+    // Modules could register other modules during init, so make sure to collect them all
     while (modules_to_add.count() > 0) {
-        it = modules_to_add.iterator();
+        var add_iterator = modules_to_add.iterator();
+        while (add_iterator.next()) |module| {
+            modules.putNoClobber(module.value_ptr.name, module.value_ptr.*) catch {
+                debug.err("Error adding module to initialize: {s}", .{module.value_ptr.name});
+            };
+        }
+
+        // empty the modules to add until more gets added to it
+        modules_to_add.clearRetainingCapacity();
+
+        // now, initialize any modules that need to be
+        var it = modules.iterator();
         while (it.next()) |module| {
-            debug.log("Initializing late module: {s}", .{module.value_ptr.name});
+            if (module.value_ptr.did_init)
+                continue;
+
+            debug.log("Initializing module: {s}", .{module.value_ptr.name});
             if (module.value_ptr.init_fn != null)
                 module.value_ptr.init_fn.?() catch {
                     debug.err("Error initializing module: {s}", .{module.value_ptr.name});
@@ -96,14 +83,10 @@ pub fn initModules() void {
                 };
 
             module.value_ptr.did_init = true;
-            modules.putNoClobber(module.value_ptr.name, module.value_ptr.*) catch {
-                debug.err("Error registering module: {s}", .{module.value_ptr.name});
-            };
         }
-
-        // done with this list now
-        modules_to_add.clearAndFree();
     }
+
+    modules_to_add.clearAndFree();
 }
 
 /// Let all modules know that initialization is done
