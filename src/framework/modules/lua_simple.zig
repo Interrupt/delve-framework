@@ -1,5 +1,6 @@
 const debug = @import("../debug.zig");
 const lua = @import("../scripting/lua.zig");
+const scripting_manager = @import("../scripting/manager.zig");
 const modules = @import("../modules.zig");
 
 // This is a module that emulates a Pico-8 style simple app.
@@ -12,12 +13,18 @@ pub fn registerModule() !void {
         .name = "lua_simple_lifecycle",
         .start_fn = on_game_start,
         .stop_fn = on_game_stop,
+        .init_fn = on_init,
         .tick_fn = on_tick,
         .draw_fn = on_draw,
         .cleanup_fn = on_cleanup,
     };
 
     try modules.registerModule(luaSimpleLifecycle);
+}
+
+pub fn on_init() !void {
+    // start up the scripting manager!
+    try scripting_manager.init();
 }
 
 pub fn on_game_start() void {
@@ -44,7 +51,9 @@ pub fn on_game_stop() void {
     };
 }
 
-pub fn on_cleanup() !void {}
+pub fn on_cleanup() !void {
+    scripting_manager.deinit();
+}
 
 pub fn on_tick(delta: f32) void {
     _ = delta;

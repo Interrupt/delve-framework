@@ -30,11 +30,15 @@ pub const AppConfig = struct {
     pass_pool_size: i32 = 32,
 };
 
+var app_config: AppConfig = undefined;
+
 pub fn setAssetsPath(path: [:0]const u8) !void {
     assets_path = path;
 }
 
 pub fn start(config: AppConfig) !void {
+    app_config = config;
+
     debug.init();
 
     debug.log("Delve Framework Starting!", .{});
@@ -56,14 +60,12 @@ pub fn startSubsystems() !void {
     try images.init();
     try colors.init();
     try input.init();
-    try scripting.init();
     try audio.init();
 }
 
 pub fn stopSubsystems() void {
     colors.deinit();
     input.deinit();
-    scripting.deinit();
     audio.deinit();
 
     // app_backend.deinit();

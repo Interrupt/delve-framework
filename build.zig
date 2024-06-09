@@ -51,17 +51,17 @@ pub fn build(b: *std.Build) !void {
 
     const delve_module_imports = [_]ModuleImport{
         sokol_item,
-        ziglua_item,
         zmesh_item,
         zstbi_item,
         zaudio_item,
+        // ziglua_item,
     };
 
     const link_libraries = [_]*Build.Step.Compile{
         zmesh.artifact("zmesh"),
         zstbi_pkg.zstbi_c_cpp,
         zaudio.artifact("miniaudio"),
-        ziglua_dep.artifact("lua"),
+        // ziglua_dep.artifact("lua"),
     };
 
     const build_collection: BuildCollection = .{
@@ -78,6 +78,11 @@ pub fn build(b: *std.Build) !void {
 
     for (build_collection.add_imports) |build_import| {
         delve_mod.addImport(build_import.name, build_import.module);
+    }
+
+    if (!target.result.isWasm()) {
+        // Ziglua isn't building under Emscripten yet!
+        delve_mod.addImport(ziglua_item.name, ziglua_item.module);
     }
 
     for (build_collection.link_libraries) |lib| {
