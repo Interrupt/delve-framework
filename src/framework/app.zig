@@ -17,6 +17,8 @@ pub const AppConfig = struct {
     width: i32 = 960,
     height: i32 = 540,
 
+    enable_audio: bool = false,
+
     target_fps: ?i32 = null,
     use_fixed_timestep: bool = false,
     fixed_timestep_delta: f32 = 1.0 / 60.0,
@@ -62,14 +64,17 @@ pub fn startSubsystems() !void {
     try images.init();
     try colors.init();
     try input.init();
-    try audio.init();
+
+    if (app_config.enable_audio)
+        try audio.init();
 }
 
 pub fn stopSubsystems() void {
     colors.deinit();
     input.deinit();
-    audio.deinit();
 
-    // app_backend.deinit();
+    if (app_config.enable_audio)
+        audio.deinit();
+
     debug.deinit();
 }

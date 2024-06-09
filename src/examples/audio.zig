@@ -28,7 +28,9 @@ pub fn main() !void {
     }
 
     try registerModule();
-    try app.start(app.AppConfig{ .title = "Delve Framework - Sprite Batch Example" });
+
+    // make sure to set enable_audio to true when starting!
+    try app.start(app.AppConfig{ .title = "Delve Framework - Sprite Batch Example", .enable_audio = true });
 }
 
 pub fn registerModule() !void {
