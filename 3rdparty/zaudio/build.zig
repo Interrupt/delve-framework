@@ -5,7 +5,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
 
     _ = b.addModule("root", .{
-        .root_source_file = .{ .path = "src/zaudio.zig" },
+        .root_source_file = b.path("src/zaudio.zig"),
     });
 
     const miniaudio = b.addStaticLibrary(.{
@@ -16,24 +16,15 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(miniaudio);
 
-    miniaudio.addIncludePath(.{ .path = "libs/miniaudio" });
+    miniaudio.addIncludePath(b.path("libs/miniaudio"));
     miniaudio.linkLibC();
 
     const system_sdk = b.dependency("system_sdk", .{});
 
-    if (target.result.isWasm()) {
-        // If we have a defined sysroot use that include path too
-        if (b.sysroot) |sysroot| {
-            const include_path = std.fs.path.join(b.allocator, &.{ sysroot, "include" }) catch {
-                return;
-            };
-            defer b.allocator.free(include_path);
-            miniaudio.addIncludePath(.{ .path = include_path });
-        }
-    } else if (target.result.os.tag == .macos) {
-        miniaudio.addFrameworkPath(.{ .path = system_sdk.path("macos12/System/Library/Frameworks").getPath(b) });
-        miniaudio.addSystemIncludePath(.{ .path = system_sdk.path("macos12/usr/include").getPath(b) });
-        miniaudio.addLibraryPath(.{ .path = system_sdk.path("macos12/usr/lib").getPath(b) });
+    if (target.result.os.tag == .macos) {
+        miniaudio.addFrameworkPath(system_sdk.path("macos12/System/Library/Frameworks"));
+        miniaudio.addSystemIncludePath(system_sdk.path("macos12/usr/include"));
+        miniaudio.addLibraryPath(system_sdk.path("macos12/usr/lib"));
         miniaudio.linkFramework("CoreAudio");
         miniaudio.linkFramework("CoreFoundation");
         miniaudio.linkFramework("AudioUnit");
@@ -45,21 +36,20 @@ pub fn build(b: *std.Build) void {
     }
 
     miniaudio.addCSourceFile(.{
-        .file = .{ .path = "src/zaudio.c" },
-        .flags = &.{if (target.result.isWasm()) "-std=gnu99" else "-std=c99"},
+        .file = b.path("src/zaudio.c"),
+        .flags = &.{"-std=c99"},
     });
-
     miniaudio.addCSourceFile(.{
-        .file = .{ .path = "libs/miniaudio/miniaudio.c" },
+        .file = b.path("libs/miniaudio/miniaudio.c"),
         .flags = &.{
-            // "-DMA_NO_WEBAUDIO",
+            "-DMA_NO_WEBAUDIO",
             "-DMA_NO_ENCODING",
             "-DMA_NO_NULL",
             "-DMA_NO_JACK",
             "-DMA_NO_DSOUND",
             "-DMA_NO_WINMM",
+            "-std=c99",
             "-fno-sanitize=undefined",
-            if (target.result.isWasm()) "-std=gnu99" else "-std=c99",
             if (target.result.os.tag == .macos) "-DMA_NO_RUNTIME_LINKING" else "",
         },
     });
@@ -68,7 +58,7 @@ pub fn build(b: *std.Build) void {
 
     const tests = b.addTest(.{
         .name = "zaudio-tests",
-        .root_source_file = .{ .path = "src/zaudio.zig" },
+        .root_source_file = b.path("src/zaudio.zig"),
         .target = target,
         .optimize = optimize,
     });
