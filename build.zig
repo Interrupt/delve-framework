@@ -61,7 +61,7 @@ pub fn build(b: *std.Build) !void {
         zmesh.artifact("zmesh"),
         zstbi_pkg.zstbi_c_cpp,
         zaudio.artifact("miniaudio"),
-        // ziglua_dep.artifact("lua"),
+        // ziglua_dep.artifact("lua")
     };
 
     const build_collection: BuildCollection = .{
@@ -201,7 +201,7 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
     }
 }
 
-pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build.Dependency) !*Build.Step.Run {
+pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build.Dependency) !*Build.Step.InstallDir {
     app.defineCMacro("__EMSCRIPTEN__", "1");
 
     const emsdk = dep_sokol.builder.dependency("emsdk", .{});

@@ -15,8 +15,8 @@
             .hash = "12208603e0f51fa6ce7201d8e851c5979b6b78887434623ac87a0f2a5a3dd3e75130",
         },
         .sokol = .{
-            .url = "git+https://github.com/floooh/sokol-zig.git#18f4f3d6188f4faff2fab6bd7f8abc58e6e26b04",
-            .hash = "12204b76dc14c74da9d61d01b5bd7a4fbfd0614aa7cc0a7428de0742129203ca5008",
+            .url = "git+https://github.com/floooh/sokol-zig.git#d9f3ef983b7021417cc91bd5788cd925ca06aa83",
+            .hash = "12200a472b4f1a3a6db1002f39f10ae0cccf58ada45bf25ddc5fd48384dd187f55ea",
         },
         .zstbi = .{
             .path = "3rdparty/zstbi",
