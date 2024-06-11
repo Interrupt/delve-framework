@@ -34,7 +34,7 @@ Delve will use the `assets/main.lua` Lua file for scripting unless given a new p
 
 ## 2D and 3D rendering
 
-Rendering uses the Sokol framework to use modern, cross platform graphics APIs. Supports Vulkan, Metal, DirectX 11/12, OpenGL 3/ES, and WebGPU.
+Rendering uses the Sokol framework to use modern, cross platform graphics APIs. Supports Vulkan, Metal, DirectX 11/12, OpenGL 3/ES, and [WebGPU](WebGPU).
 
 Batched 2d shape rendering:
 
@@ -135,11 +135,4 @@ To build for web, use the `-Dtarget=wasm32-emscripten` build argument.
 
 ```java
 zig build run-clear -Dtarget=wasm32-emscripten
-```
-
-You may need to point it at the Emscripten headers. If you encounter linker errors finding system headers,
-download the Emscripten SDK and point your build at those headers by passing a sysroot arg:
-
-```java
-zig build run-clear -Dtarget=wasm32-emscripten --sysroot /path/to/emsdk/upstream/emscripten/cache/sysroot
 ```
