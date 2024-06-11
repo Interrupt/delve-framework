@@ -91,14 +91,13 @@ pub fn build(b: *std.Build) !void {
         delve_mod.linkLibrary(lib);
     }
 
-    // If we have a defined sysroot, eg for emscpriten, use that include path too
+    // For web builds, add the Emscripten system headers so C libraries can find the stdlib headers
     if (target.result.isWasm()) {
-        const dep_emsdk = dep_sokol.builder.dependency("emsdk", .{});
-        const emsdk_incl_path = dep_emsdk.path("upstream/emscripten/cache/sysroot/include");
-        delve_mod.addIncludePath(emsdk_incl_path);
+        const emsdk_include_path = getEmsdkSystemIncludePath(dep_sokol);
+        delve_mod.addSystemIncludePath(emsdk_include_path);
 
         for (build_collection.link_libraries) |lib| {
-            lib.addIncludePath(emsdk_incl_path);
+            lib.addSystemIncludePath(emsdk_include_path);
         }
     }
 
@@ -180,12 +179,6 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
             .optimize = optimize,
         });
 
-        // get the Emscripten SDK dependency from the sokol dependency
-        const dep_emsdk = dep_sokol.builder.dependency("emsdk", .{});
-
-        const emsdk_incl_path = dep_emsdk.path("upstream/emscripten/cache/sysroot/include");
-        app.addIncludePath(emsdk_incl_path);
-
         // link with emscripten
         const link_step = try emscriptenLinkStep(b, app, dep_sokol);
 
@@ -215,6 +208,10 @@ pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build
 
     const emsdk = dep_sokol.builder.dependency("emsdk", .{});
 
+    // Add the Emscripten system include path for the app too
+    const emsdk_include_path = emsdk.path("upstream/emscripten/cache/sysroot/include");
+    app.addSystemIncludePath(emsdk_include_path);
+
     return try sokol.emLinkStep(b, .{
         .lib_main = app,
         .target = target,
@@ -232,6 +229,11 @@ pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build
             "-sSAFE_HEAP=0",
         },
     });
+}
+
+pub fn getEmsdkSystemIncludePath(dep_sokol: *Build.Dependency) Build.LazyPath {
+    const dep_emsdk = dep_sokol.builder.dependency("emsdk", .{});
+    return dep_emsdk.path("upstream/emscripten/cache/sysroot/include");
 }
 
 pub fn emscriptenRunStep(b: *Build, name: []const u8, dep_sokol: *Build.Dependency) *Build.Step.Run {
