@@ -92,13 +92,13 @@ pub fn build(b: *std.Build) !void {
     }
 
     // If we have a defined sysroot, eg for emscpriten, use that include path too
-    if (b.sysroot) |sysroot| {
-        const include_path = try std.fs.path.join(b.allocator, &.{ sysroot, "include" });
-        defer b.allocator.free(include_path);
-        delve_mod.addIncludePath(b.path(include_path));
+    if (target.result.isWasm()) {
+        const dep_emsdk = dep_sokol.builder.dependency("emsdk", .{});
+        const emsdk_incl_path = dep_emsdk.path("upstream/emscripten/cache/sysroot/include");
+        delve_mod.addIncludePath(emsdk_incl_path);
 
         for (build_collection.link_libraries) |lib| {
-            lib.addIncludePath(b.path(include_path));
+            lib.addIncludePath(emsdk_incl_path);
         }
     }
 
@@ -162,10 +162,6 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
             .name = name,
             .root_source_file = b.path(root_source_file),
         });
-
-        const include_path = try std.fs.path.join(b.allocator, &.{ b.sysroot.?, "include" });
-        defer b.allocator.free(include_path);
-        app.addIncludePath(b.path(include_path));
     } else {
         app = b.addExecutable(.{
             .target = target,
@@ -183,6 +179,12 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
             .target = target,
             .optimize = optimize,
         });
+
+        // get the Emscripten SDK dependency from the sokol dependency
+        const dep_emsdk = dep_sokol.builder.dependency("emsdk", .{});
+
+        const emsdk_incl_path = dep_emsdk.path("upstream/emscripten/cache/sysroot/include");
+        app.addIncludePath(emsdk_incl_path);
 
         // link with emscripten
         const link_step = try emscriptenLinkStep(b, app, dep_sokol);
