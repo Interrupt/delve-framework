@@ -37,5 +37,5 @@ pub fn main() !void {
     // try animation_example.registerModule();
     // try forest_example.registerModule();
 
-    try app.start(app.AppConfig{ .title = "Delve Framework - Stress Test" });
+    try app.start(app.AppConfig{ .title = "Delve Framework - Stress Test", .enable_audio = true });
 }
