@@ -1,7 +1,6 @@
 const std = @import("std");
 const Build = std.Build;
 const ziglua = @import("ziglua");
-const zstbi = @import("zstbi");
 const sokol = @import("sokol");
 const system_sdk = @import("system-sdk");
 
@@ -31,8 +30,6 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
-    const zstbi_pkg = zstbi.package(b, target, optimize, .{});
-
     const zmesh = b.dependency("zmesh", .{
         .target = target,
         .optimize = optimize,
@@ -43,10 +40,15 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
+    const zstbi = b.dependency("zstbi", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     const sokol_item = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
     const ziglua_item = .{ .module = ziglua_dep.module("ziglua"), .name = "ziglua" };
     const zmesh_item = .{ .module = zmesh.module("root"), .name = "zmesh" };
-    const zstbi_item = .{ .module = zstbi_pkg.zstbi, .name = "zstbi" };
+    const zstbi_item = .{ .module = zstbi.module("root"), .name = "zstbi" };
     const zaudio_item = .{ .module = zaudio.module("root"), .name = "zaudio" };
 
     const delve_module_imports = [_]ModuleImport{
@@ -59,7 +61,7 @@ pub fn build(b: *std.Build) !void {
 
     const link_libraries = [_]*Build.Step.Compile{
         zmesh.artifact("zmesh"),
-        zstbi_pkg.zstbi_c_cpp,
+        zstbi.artifact("zstbi"),
         zaudio.artifact("miniaudio"),
         // ziglua_dep.artifact("lua"),
     };
@@ -71,7 +73,7 @@ pub fn build(b: *std.Build) !void {
 
     // Delve module
     const delve_mod = b.addModule("delve", .{
-        .root_source_file = .{ .path = "src/framework/delve.zig" },
+        .root_source_file = b.path("src/framework/delve.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -104,7 +106,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
         .name = "delve",
-        .root_source_file = .{ .path = "src/framework/delve.zig" },
+        .root_source_file = b.path("src/framework/delve.zig"),
     });
 
     b.installArtifact(delve_lib);
@@ -136,7 +138,7 @@ pub fn build(b: *std.Build) !void {
 
     // TESTS
     const exe_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/framework/delve.zig" },
+        .root_source_file = b.path("src/framework/delve.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -157,14 +159,14 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
             .target = target,
             .optimize = optimize,
             .name = name,
-            .root_source_file = .{ .path = root_source_file },
+            .root_source_file = b.path(root_source_file),
         });
     } else {
         app = b.addExecutable(.{
             .target = target,
             .optimize = optimize,
             .name = name,
-            .root_source_file = .{ .path = root_source_file },
+            .root_source_file = b.path(root_source_file),
         });
     }
 
@@ -201,7 +203,7 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
     }
 }
 
-pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build.Dependency) !*Build.Step.Run {
+pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build.Dependency) !*Build.Step.InstallDir {
     app.defineCMacro("__EMSCRIPTEN__", "1");
 
     const emsdk = dep_sokol.builder.dependency("emsdk", .{});
