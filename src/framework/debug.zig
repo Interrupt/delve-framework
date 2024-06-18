@@ -346,7 +346,7 @@ pub fn handleKeyboardTextInput(char: u8) void {
         handleKeyboardBackspace();
         return;
     } else if (char == 13) {
-        runPendingCommand();
+        // ignore enter, seems to hit both this and handleKeyDown
         return;
     }
 
@@ -354,10 +354,20 @@ pub fn handleKeyboardTextInput(char: u8) void {
 }
 
 pub fn handleKeyDown(keycode: i32) void {
-    if (keycode == 264) { // DOWN
-        scrollCommandFromHistory(1);
-    } else if (keycode == 265) { // UP
-        scrollCommandFromHistory(-1);
+    switch (keycode) {
+        264 => { // DOWN
+            scrollCommandFromHistory(1);
+        },
+        265 => { // UP
+            scrollCommandFromHistory(-1);
+        },
+        257 => { // ENTER
+            runPendingCommand();
+        },
+        259 => { // BACKSPACE
+            handleKeyboardBackspace();
+        },
+        else => {},
     }
 }
 
@@ -380,8 +390,9 @@ pub fn runPendingCommand() void {
     const final_command = pending_cmd.items[0 .. pending_cmd.items.len - 1 :0];
 
     if (use_scripting_integration) {
-        if (lua.did_init)
+        if (lua.did_init) {
             lua.runLine(final_command) catch {};
+        }
     }
 
     trackCommand(final_command);
