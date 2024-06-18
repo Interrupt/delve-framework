@@ -133,6 +133,8 @@ zig build -Doptimize=ReleaseSmall run-forest
 ### Building for web
 To build for web, use the `-Dtarget=wasm32-emscripten` build argument.
 
+Building with optmizations is also required in some cases when the Javascript being built is large, that can be rectified with `--release=small`
+
 ```java
-zig build run-clear -Dtarget=wasm32-emscripten
+zig build run-clear --release=small -Dtarget=wasm32-emscripten
 ```

@@ -216,7 +216,7 @@ pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build
     return try sokol.emLinkStep(b, .{
         .lib_main = app,
         .target = target,
-        .optimize = if (optimize == .ReleaseFast) .ReleaseFast else .ReleaseSmall, // looks like we need SOME optimization when including Lua
+        .optimize = optimize,
         .emsdk = emsdk,
         .use_webgl2 = true,
         .release_use_closure = false, // causing errors with miniaudio? might need to add a custom exerns file for closure
