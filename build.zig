@@ -28,6 +28,7 @@ pub fn build(b: *std.Build) !void {
     const ziglua_dep = b.dependency("ziglua", .{
         .target = target,
         .optimize = optimize,
+        .can_use_jmp = !target.result.isWasm(),
     });
 
     const zmesh = b.dependency("zmesh", .{
@@ -56,14 +57,14 @@ pub fn build(b: *std.Build) !void {
         zmesh_item,
         zstbi_item,
         zaudio_item,
-        // ziglua_item,
+        ziglua_item,
     };
 
     const link_libraries = [_]*Build.Step.Compile{
         zmesh.artifact("zmesh"),
         zstbi.artifact("zstbi"),
         zaudio.artifact("miniaudio"),
-        // ziglua_dep.artifact("lua"),
+        ziglua_dep.artifact("lua"),
     };
 
     const build_collection: BuildCollection = .{
@@ -82,11 +83,6 @@ pub fn build(b: *std.Build) !void {
         delve_mod.addImport(build_import.name, build_import.module);
     }
 
-    if (!target.result.isWasm()) {
-        // Ziglua isn't building under Emscripten yet!
-        delve_mod.addImport(ziglua_item.name, ziglua_item.module);
-    }
-
     for (build_collection.link_libraries) |lib| {
         delve_mod.linkLibrary(lib);
     }
@@ -95,6 +91,11 @@ pub fn build(b: *std.Build) !void {
     if (target.result.isWasm()) {
         const emsdk_include_path = getEmsdkSystemIncludePath(dep_sokol);
         delve_mod.addSystemIncludePath(emsdk_include_path);
+
+        // add these new system includes to all the libs and modules
+        for (build_collection.add_imports) |build_import| {
+            build_import.module.addSystemIncludePath(emsdk_include_path);
+        }
 
         for (build_collection.link_libraries) |lib| {
             lib.addSystemIncludePath(emsdk_include_path);
@@ -215,9 +216,10 @@ pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build
     return try sokol.emLinkStep(b, .{
         .lib_main = app,
         .target = target,
-        .optimize = optimize,
+        .optimize = if (optimize == .ReleaseFast) .ReleaseFast else .ReleaseSmall, // looks like we need SOME optimization when including Lua
         .emsdk = emsdk,
         .use_webgl2 = true,
+        .release_use_closure = false, // causing errors with miniaudio? might need to add a custom exerns file for closure
         .use_emmalloc = true,
         .use_filesystem = true,
         .shell_file_path = dep_sokol.path("src/sokol/web/shell.html").getPath(b),
@@ -227,6 +229,7 @@ pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build
             "--preload-file=assets/",
             "-sALLOW_MEMORY_GROWTH=1",
             "-sSAFE_HEAP=0",
+            "-sERROR_ON_UNDEFINED_SYMBOLS=0",
         },
     });
 }

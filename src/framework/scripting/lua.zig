@@ -36,6 +36,9 @@ pub fn init() !void {
     debug.log("Lua: ready to go!", .{});
 
     did_init = true;
+
+    // turn on scripting integration for the console
+    debug.use_scripting_integration = true;
 }
 
 pub fn runFile(lua_filename: [:0]const u8) !void {
