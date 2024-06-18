@@ -381,21 +381,74 @@ pub fn handleKeyboardBackspace() void {
 
 pub fn runPendingCommand() void {
     // Run the lua command!
-    log("{s}", .{pending_cmd.items});
+    log(">{s}", .{pending_cmd.items});
     defer pending_cmd.clearAndFree();
 
     // Ensure there is a sentinel at the end
     pending_cmd.append(0x00) catch {};
 
     const final_command = pending_cmd.items[0 .. pending_cmd.items.len - 1 :0];
+    defer trackCommand(final_command);
 
-    if (use_scripting_integration) {
-        if (lua.did_init) {
-            lua.runLine(final_command) catch {};
-        }
+    // Try any registered commands first
+    if (tryRegisteredCommands(final_command))
+        return;
+
+    log("Unknown command: {s}", .{final_command});
+}
+
+pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
+    var it = std.mem.splitAny(u8, command_with_args, " ");
+
+    var command: []const u8 = undefined;
+    if (it.next()) |cmd| {
+        command = cmd;
+    } else {
+        // ignore empty commands
+        return false;
     }
 
-    trackCommand(final_command);
+    // collect all of the arguments into a list of arguments for commands to use
+    var arg_list = std.ArrayList([]const u8).init(allocator);
+    defer arg_list.clearAndFree();
+
+    while (it.next()) |arg| {
+        arg_list.append(arg) catch {
+            return false;
+        };
+    }
+
+    // This is where we should go check a list of pre-registered console commands, with callbacks
+    // For now, demonstrate some built in commands
+
+    if (std.mem.eql(u8, command, "exit")) {
+        // console command to exit the app
+        const app = @import("platform/app.zig");
+        app.exit();
+        return true;
+    } else if (std.mem.eql(u8, command, "echo")) {
+        // console command to do a simple echo
+        const string_to_echo = command_with_args[5..command_with_args.len :0];
+        log("{s}", .{string_to_echo});
+        return true;
+    } else if (std.mem.eql(u8, command, "lua")) {
+        // console command to run a lua string
+        if (use_scripting_integration) {
+            if (lua.did_init) {
+                const lua_command = command_with_args[4..command_with_args.len :0];
+                lua.runLine(lua_command) catch {};
+            }
+        } else {
+            log("Lua is not initialized.", .{});
+        }
+        return true;
+    } else if (std.mem.eql(u8, command, "help")) {
+        // console command to print the list of all commands
+        log("commands:\nexit\necho\nlua", .{});
+        return true;
+    }
+
+    return false;
 }
 
 pub fn showErrorScreen(error_header: [:0]const u8) void {
