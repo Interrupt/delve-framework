@@ -20,6 +20,7 @@ Delve uses Zig to make writing cross platform games easy, and because it is easy
 * Lua for scripting using ziglua
 * stb_image for loading images
 * zaudio and zmesh from zig-gamedev
+* Dear Imgui for UI
 
 ## Scripting
 
