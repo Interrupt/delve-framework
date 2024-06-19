@@ -23,34 +23,50 @@ pub fn build(b: *std.Build) !void {
     const dep_sokol = b.dependency("sokol", .{
         .target = target,
         .optimize = optimize,
+        .with_sokol_imgui = true,
     });
 
-    const ziglua_dep = b.dependency("ziglua", .{
+    const dep_ziglua = b.dependency("ziglua", .{
         .target = target,
         .optimize = optimize,
         .can_use_jmp = !target.result.isWasm(),
     });
 
-    const zmesh = b.dependency("zmesh", .{
+    const dep_zmesh = b.dependency("zmesh", .{
         .target = target,
         .optimize = optimize,
     });
 
-    const zaudio = b.dependency("zaudio", .{
+    const dep_zaudio = b.dependency("zaudio", .{
         .target = target,
         .optimize = optimize,
     });
 
-    const zstbi = b.dependency("zstbi", .{
+    const dep_zstbi = b.dependency("zstbi", .{
         .target = target,
         .optimize = optimize,
     });
+
+    const dep_cimgui = b.dependency("cimgui", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
+    // inject the cimgui header search path into the sokol C library compile step
+    const cimgui_root = dep_cimgui.namedWriteFiles("cimgui").getDirectory();
+    dep_sokol.artifact("sokol_clib").addIncludePath(cimgui_root);
+
+    // C libraries need to depend on the sokol library to make sure the Emscripten SDK is setup first
+    // when doing web builds
+    dep_cimgui.artifact("cimgui_clib").step.dependOn(&dep_sokol.artifact("sokol_clib").step);
+    dep_ziglua.artifact("lua").step.dependOn(&dep_sokol.artifact("sokol_clib").step);
 
     const sokol_item = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
-    const ziglua_item = .{ .module = ziglua_dep.module("ziglua"), .name = "ziglua" };
-    const zmesh_item = .{ .module = zmesh.module("root"), .name = "zmesh" };
-    const zstbi_item = .{ .module = zstbi.module("root"), .name = "zstbi" };
-    const zaudio_item = .{ .module = zaudio.module("root"), .name = "zaudio" };
+    const ziglua_item = .{ .module = dep_ziglua.module("ziglua"), .name = "ziglua" };
+    const zmesh_item = .{ .module = dep_zmesh.module("root"), .name = "zmesh" };
+    const zstbi_item = .{ .module = dep_zstbi.module("root"), .name = "zstbi" };
+    const zaudio_item = .{ .module = dep_zaudio.module("root"), .name = "zaudio" };
+    const cimgui_item = .{ .module = dep_cimgui.module("cimgui"), .name = "cimgui" };
 
     const delve_module_imports = [_]ModuleImport{
         sokol_item,
@@ -58,13 +74,15 @@ pub fn build(b: *std.Build) !void {
         zstbi_item,
         zaudio_item,
         ziglua_item,
+        cimgui_item,
     };
 
     const link_libraries = [_]*Build.Step.Compile{
-        zmesh.artifact("zmesh"),
-        zstbi.artifact("zstbi"),
-        zaudio.artifact("miniaudio"),
-        ziglua_dep.artifact("lua"),
+        dep_zmesh.artifact("zmesh"),
+        dep_zstbi.artifact("zstbi"),
+        dep_zaudio.artifact("miniaudio"),
+        dep_ziglua.artifact("lua"),
+        dep_cimgui.artifact("cimgui_clib"),
     };
 
     const build_collection: BuildCollection = .{
@@ -124,6 +142,7 @@ pub fn build(b: *std.Build) !void {
         "forest",
         "framepacing",
         "frustums",
+        "imgui",
         "lua",
         "meshbuilder",
         "meshes",
@@ -178,6 +197,7 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
         const dep_sokol = b.dependency("sokol", .{
             .target = target,
             .optimize = optimize,
+            .with_sokol_imgui = true,
         });
 
         // link with emscripten

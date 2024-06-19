@@ -1,0 +1,18 @@
+.{
+    .name = "cimgui",
+    .version = "0.0.0",
+
+    .dependencies = .{
+        .cimgui = .{
+            .url = "git+https://github.com/cimgui/cimgui.git#1.90.7",
+            .hash = "1220d925a8374fbc3a21a5b46025fb867672d85b4099d2151bed607618e08b0cd71c",
+        },
+        .imgui = .{
+            .url = "git+https://github.com/ocornut/imgui.git#v1.90.7",
+            .hash = "122072b125179c7cbdbbee8fa81d22a1050a950ad61cfeefee8dc0dca5423b5d05b9",
+        },
+    },
+    .paths = .{
+        "",
+    },
+}

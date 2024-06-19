@@ -288,3 +288,13 @@ pub fn exit() void {
 pub fn exitWithError() void {
     std.posix.exit(1);
 }
+
+// Start a new Imgui frame
+pub fn startImguiFrame() void {
+    sokol_app_backend.startImguiFrame();
+}
+
+// Render Imgui
+pub fn renderImgui() void {
+    sokol_app_backend.renderImgui();
+}

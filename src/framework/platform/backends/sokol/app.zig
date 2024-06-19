@@ -10,6 +10,7 @@ const slog = sokol.log;
 const sg = sokol.gfx;
 const sapp = sokol.app;
 const sglue = sokol.glue;
+const simgui = sokol.imgui;
 
 var app_config: main_app.AppConfig = undefined;
 
@@ -57,6 +58,10 @@ pub const App = struct {
             .attachments_pool_size = app_config.pass_pool_size, // sokol default is 16,
         });
 
+        simgui.setup(.{
+            .logger = .{ .func = slog.func },
+        });
+
         debug.log("Sokol setup backend: {}", .{sg.queryBackend()});
 
         // call the callback that will tell everything else to start up
@@ -74,6 +79,11 @@ pub const App = struct {
 
     export fn sokol_input(event: ?*const sapp.Event) void {
         const ev = event.?;
+
+        const imgui_did_handle = simgui.handleEvent(ev.*);
+        if (imgui_did_handle)
+            return;
+
         if (ev.type == .MOUSE_DOWN) {
             input.onMouseDown(@intFromEnum(ev.mouse_button));
         } else if (ev.type == .MOUSE_UP) {
@@ -124,6 +134,19 @@ pub const App = struct {
         sapp.lockMouse(captured);
     }
 };
+
+pub fn startImguiFrame() void {
+    simgui.newFrame(.{
+        .width = sapp.width(),
+        .height = sapp.height(),
+        .delta_time = sapp.frameDuration(),
+        .dpi_scale = sapp.dpiScale(),
+    });
+}
+
+pub fn renderImgui() void {
+    simgui.render();
+}
 
 pub fn exit() void {
     sapp.quit();

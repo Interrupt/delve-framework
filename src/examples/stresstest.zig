@@ -9,6 +9,7 @@ const meshes_example = @import("meshes.zig");
 const sprites_example = @import("sprites.zig");
 const forest_example = @import("forest.zig");
 const animation_example = @import("sprite-animation.zig");
+const imgui_example = @import("imgui.zig");
 
 const lua_module = delve.module.lua_simple;
 
@@ -34,6 +35,7 @@ pub fn main() !void {
     try meshes_example.registerModule();
     try lua_module.registerModule();
     try sprites_example.registerModule();
+    try imgui_example.registerModule();
     // try animation_example.registerModule();
     // try forest_example.registerModule();
 
