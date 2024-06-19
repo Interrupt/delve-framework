@@ -128,8 +128,8 @@ zig build run-stresstest
 ### Set optimization
 
 ```java
-zig build -Doptimize=ReleaseSafe run-forest
-zig build -Doptimize=ReleaseSmall run-forest
+zig build --release=fast run-forest
+zig build --release=small run-forest
 ```
 
 ### Building for web
