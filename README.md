@@ -113,6 +113,7 @@ zig build run-debugdraw
 zig build run-easing
 zig build run-forest
 zig build run-framepacing
+zig build run-imgui
 zig build run-lua
 zig build run-meshbuilder
 zig build run-meshes
