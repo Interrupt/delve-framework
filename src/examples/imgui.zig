@@ -8,16 +8,16 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
 // This example shows how to use Dear Imgui!
 
+const imgui_module = delve.modules.Module{
+    .name = "imgui_example",
+    .init_fn = on_init,
+    .tick_fn = on_tick,
+    .draw_fn = on_draw,
+};
+
 var bg_color: [4]f32 = [4]f32{ 0.25, 0.85, 0.55, 1.0 };
 
 pub fn main() !void {
-    const imgui_module = delve.modules.Module{
-        .name = "imgui_example",
-        .init_fn = on_init,
-        .tick_fn = on_tick,
-        .draw_fn = on_draw,
-    };
-
     // Pick the allocator to use depending on platform
     const builtin = @import("builtin");
     if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
@@ -28,9 +28,13 @@ pub fn main() !void {
         try delve.init(gpa.allocator());
     }
 
-    try delve.modules.registerModule(imgui_module);
+    try registerModule();
 
     try app.start(app.AppConfig{ .title = "Delve Framework - Imgui Example" });
+}
+
+pub fn registerModule() !void {
+    try delve.modules.registerModule(imgui_module);
 }
 
 pub fn on_init() !void {
@@ -46,7 +50,7 @@ pub fn on_tick(delta: f32) void {
 
     delve.platform.app.startImguiFrame();
 
-    imgui.igSetNextWindowPos(.{ .x = 10, .y = 10 }, imgui.ImGuiCond_Once, .{ .x = 0, .y = 0 });
+    imgui.igSetNextWindowPos(.{ .x = 40, .y = 60 }, imgui.ImGuiCond_Once, .{ .x = 0, .y = 0 });
     imgui.igSetNextWindowSize(.{ .x = 400, .y = 100 }, imgui.ImGuiCond_Once);
     _ = imgui.igBegin("Hello Dear ImGui!", 0, imgui.ImGuiWindowFlags_None);
     _ = imgui.igColorEdit3("Background", &bg_color[0], imgui.ImGuiColorEditFlags_None);
