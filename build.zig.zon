@@ -27,6 +27,9 @@
         .zaudio = .{
             .path = "3rdparty/zaudio",
         },
+        .cimgui = .{
+            .path = "3rdparty/cimgui",
+        },
         .system_sdk = .{
             .path = "3rdparty/system-sdk",
         },
