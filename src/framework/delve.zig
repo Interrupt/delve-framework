@@ -75,6 +75,10 @@ pub const shaders = struct {
     pub const default_emissive = @import("graphics/shaders/emissive.glsl.zig");
 };
 
+// dear imgui
+
+pub const imgui = @import("cimgui");
+
 // initial setup. Call before any other Delve Framework functions!
 pub fn init(allocator: std.mem.Allocator) !void {
     mem.init(allocator);

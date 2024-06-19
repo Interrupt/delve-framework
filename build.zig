@@ -23,6 +23,7 @@ pub fn build(b: *std.Build) !void {
     const dep_sokol = b.dependency("sokol", .{
         .target = target,
         .optimize = optimize,
+        .with_sokol_imgui = true,
     });
 
     const dep_ziglua = b.dependency("ziglua", .{
@@ -141,6 +142,7 @@ pub fn build(b: *std.Build) !void {
         "forest",
         "framepacing",
         "frustums",
+        "imgui",
         "lua",
         "meshbuilder",
         "meshes",
@@ -195,6 +197,7 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
         const dep_sokol = b.dependency("sokol", .{
             .target = target,
             .optimize = optimize,
+            .with_sokol_imgui = true,
         });
 
         // link with emscripten
