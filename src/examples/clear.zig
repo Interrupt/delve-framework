@@ -9,8 +9,6 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var time: f32 = 0.0;
 
 pub fn main() !void {
-    std.debug.print("starting clear example\n", .{});
-
     const clear_module = delve.modules.Module{
         .name = "clear_example",
         .init_fn = on_init,
@@ -33,8 +31,7 @@ pub fn main() !void {
 }
 
 pub fn on_init() !void {
-    std.debug.print("clear module on_init()\n", .{});
-
+    delve.debug.log("Clear Example Initializing", .{});
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_light);
 }
 
