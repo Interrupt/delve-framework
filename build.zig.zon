@@ -14,6 +14,11 @@
             .url = "git+https://github.com/interrupt/ziglua#3d7532ec73202bddfbeba1933d43fe427ca6d80d",
             .hash = "12207a933b3cca4e301c711acbdb045a50c1d90f9525ab6544e409427b9672a6821f",
         },
+        // needed because Lua is a lazy dependency inside of ziglua
+        .lua54 = .{
+            .url = "https://www.lua.org/ftp/lua-5.4.6.tar.gz",
+            .hash = "1220f93ada1fa077ab096bf88a5b159ad421dbf6a478edec78ddb186d0c21d3476d9",
+        },
         .sokol = .{
             .url = "git+https://github.com/floooh/sokol-zig.git#d3e21f76498213d6d58179065756f5f2ed9b90cf",
             .hash = "122052a192829b377c637ce242ee8c9121e03d8cd10c889758dc6fb176368de7d67b",
