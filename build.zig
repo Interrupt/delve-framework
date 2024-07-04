@@ -29,6 +29,7 @@ pub fn build(b: *std.Build) !void {
     const dep_ziglua = b.dependency("ziglua", .{
         .target = target,
         .optimize = optimize,
+        .lang = .lua54,
         .can_use_jmp = !target.result.isWasm(),
     });
 
@@ -60,11 +61,6 @@ pub fn build(b: *std.Build) !void {
     // inject the cimgui header search path into the sokol C library compile step
     const cimgui_root = dep_cimgui.namedWriteFiles("cimgui").getDirectory();
     dep_sokol.artifact("sokol_clib").addIncludePath(cimgui_root);
-
-    // C libraries need to depend on the sokol library to make sure the Emscripten SDK is setup first
-    // when doing web builds
-    dep_cimgui.artifact("cimgui_clib").step.dependOn(&dep_sokol.artifact("sokol_clib").step);
-    dep_ziglua.artifact("lua").step.dependOn(&dep_sokol.artifact("sokol_clib").step);
 
     const sokol_item = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
     const ziglua_item = .{ .module = dep_ziglua.module("ziglua"), .name = "ziglua" };
@@ -109,6 +105,11 @@ pub fn build(b: *std.Build) !void {
     }
 
     for (build_collection.link_libraries) |lib| {
+        if (target.result.isWasm()) {
+            // ensure these libs all depend on the emcc C lib
+            lib.step.dependOn(&dep_sokol.artifact("sokol_clib").step);
+        }
+
         delve_mod.linkLibrary(lib);
     }
 
