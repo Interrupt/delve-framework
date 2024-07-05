@@ -13,4 +13,11 @@ test "stb_truetype test import" {
     char_info_type.xoff = 1.0;
 
     try testing.expect(char_info_type.xoff == 1.0);
+
+    const font_mem = &[_]u8{0} ** 128;
+
+    var pack_context: stbtt.stbtt_pack_context = undefined;
+    const r0 = stbtt.stbtt_PackBegin(&pack_context, @ptrCast(@constCast(font_mem)), 32, 32, 0, 1, null);
+
+    try testing.expect(r0 == 0);
 }

@@ -62,6 +62,8 @@ pub fn build(b: *std.Build) !void {
     const cimgui_root = dep_cimgui.namedWriteFiles("cimgui").getDirectory();
     dep_sokol.artifact("sokol_clib").addIncludePath(cimgui_root);
 
+    dep_stb_truetype.artifact("stb_truetype").addIncludePath(b.path("3rdparty/stb_truetype/libs"));
+
     const sokol_item = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
     const ziglua_item = .{ .module = dep_ziglua.module("ziglua"), .name = "ziglua" };
     const zmesh_item = .{ .module = dep_zmesh.module("root"), .name = "zmesh" };
@@ -86,6 +88,7 @@ pub fn build(b: *std.Build) !void {
         dep_zaudio.artifact("miniaudio"),
         dep_ziglua.artifact("lua"),
         dep_cimgui.artifact("cimgui_clib"),
+        dep_stb_truetype.artifact("stb_truetype"),
     };
 
     const build_collection: BuildCollection = .{
@@ -147,6 +150,7 @@ pub fn build(b: *std.Build) !void {
         "collision",
         "debugdraw",
         "easing",
+        "fonts",
         "forest",
         "framepacing",
         "frustums",
