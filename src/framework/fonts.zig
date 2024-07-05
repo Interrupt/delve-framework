@@ -40,7 +40,7 @@ pub fn getCharQuad(font_name: []const u8, char_index: usize, x_pos: *f32, y_pos:
     if (found_char_info) |char_info| {
         stb_truetype.stbtt.stbtt_GetPackedQuad(@ptrCast(char_info), 1024, 1024, @intCast(char_index), @ptrCast(x_pos), @ptrCast(y_pos), &aligned_quad, 1);
 
-        debug.log("{}", .{aligned_quad});
+        // debug.log("{}", .{aligned_quad});
 
         // tex region
         char_quad.tex_region.u = aligned_quad.s0;
