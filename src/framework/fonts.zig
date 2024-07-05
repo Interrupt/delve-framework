@@ -14,7 +14,11 @@ pub fn init() !void {
     loaded_fonts = std.StringHashMap([]u8).init(mem.getAllocator());
     loaded_fonts_charinfo = std.StringHashMap([]stb_truetype.stbtt.stbtt_packedchar).init(mem.getAllocator());
 
-    default_font_tex = try loadFont("DroidSans", "assets/fonts/DroidSans.ttf", 512, 200);
+    default_font_tex = try loadFont("DroidSans", "assets/fonts/DroidSans.ttf", 1024, 200);
+}
+
+pub fn getCharInfo(font_name: []const u8) ?[]stb_truetype.stbtt.stbtt_packedchar {
+    return loaded_fonts_charinfo.get(font_name);
 }
 
 pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, font_size: f32) !gfx.Texture {
@@ -31,13 +35,12 @@ pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, fon
 
     // set some sizes for loading
     const font_atlas_size = tex_size;
-    const font_atlas_scale = 2;
-    const atlas_size = font_atlas_size * font_atlas_size * font_atlas_scale * font_atlas_scale;
+    const atlas_size = font_atlas_size * font_atlas_size;
 
-    const atlas = try mem.getAllocator().alloc(u8, atlas_size);
+    const atlas_img = try mem.getAllocator().alloc(u8, atlas_size);
 
     var pack_context: stb_truetype.stbtt.stbtt_pack_context = undefined;
-    const r0 = stb_truetype.stbtt.stbtt_PackBegin(&pack_context, @ptrCast(atlas), @intCast(font_atlas_size * font_atlas_scale), @intCast(font_atlas_size * font_atlas_scale), 0, 1, null);
+    const r0 = stb_truetype.stbtt.stbtt_PackBegin(&pack_context, @ptrCast(atlas_img), @intCast(font_atlas_size), @intCast(font_atlas_size), 0, 1, null);
 
     if (r0 != 0) {
         debug.log("stbtt PackBegin success!", .{});
@@ -45,7 +48,6 @@ pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, fon
         debug.log("stbtt PackBegin failed!", .{});
     }
 
-    // const font_size = 200;
     const ascii_first = 32;
     const ascii_num = 95;
 
@@ -59,12 +61,13 @@ pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, fon
         debug.log("stbtt PackFontRange failed!", .{});
     }
 
-    // Cache character info
+    // Cache character info!
     try loaded_fonts_charinfo.put(font_name, char_info);
 
     stb_truetype.stbtt.stbtt_PackEnd(&pack_context);
 
     debug.log("Number of cached fonts: {}", .{loaded_fonts.count()});
 
-    return gfx.Texture.initFromBytesForFont(font_atlas_size * font_atlas_scale, font_atlas_size * font_atlas_scale, atlas);
+    // Create and return a texture based on our atlas bytes
+    return gfx.Texture.initFromBytesForFont(font_atlas_size, font_atlas_size, atlas_img);
 }
