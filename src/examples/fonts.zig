@@ -51,7 +51,7 @@ fn on_tick(delta: f32) void {
 }
 
 fn on_draw() void {
-    const texture = delve.fonts.font_tex;
+    const texture = delve.fonts.default_font_tex;
     const mouse_pos = input.getMousePosition();
 
     const size = 50.0 + (400.0 * mouse_pos.x * 0.008);
