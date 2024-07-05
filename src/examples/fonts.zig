@@ -13,6 +13,11 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
 var font_batch: delve.graphics.batcher.SpriteBatcher = undefined;
 
+// let our example cycle through some fonts
+const example_fonts = [_][]const u8{ "DroidSans", "Tiny5", "CrimsonPro", "AmaticSC", "KodeMono", "Rajdhani", "IBMPlexSerif" };
+var cur_font_idx: usize = 0;
+var time: f64 = 0.0;
+
 pub fn main() !void {
     // Pick the allocator to use depending on platform
     const builtin = @import("builtin");
@@ -48,48 +53,81 @@ fn on_init() !void {
         debug.showErrorScreen("Fatal error during batch init!");
         return;
     };
+
+    _ = try delve.fonts.loadFont("DroidSans", "assets/fonts/DroidSans.ttf", 1024, 200);
+    _ = try delve.fonts.loadFont("Tiny5", "assets/fonts/Tiny5-Regular.ttf", 512, 100);
+    _ = try delve.fonts.loadFont("CrimsonPro", "assets/fonts/CrimsonPro-Regular.ttf", 1024, 200);
+    _ = try delve.fonts.loadFont("AmaticSC", "assets/fonts/AmaticSC-Regular.ttf", 1024, 200);
+    _ = try delve.fonts.loadFont("KodeMono", "assets/fonts/KodeMono-Regular.ttf", 1024, 200);
+    _ = try delve.fonts.loadFont("Rajdhani", "assets/fonts/Rajdhani-Regular.ttf", 1024, 200);
+    _ = try delve.fonts.loadFont("IBMPlexSerif", "assets/fonts/IBMPlexSerif-Regular.ttf", 1024, 200);
 }
 
 fn on_tick(delta: f32) void {
-    _ = delta;
+    time += @floatCast(delta);
+
     if (input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
 }
 
+// Debug function to visualize a font atlas
+pub fn debugDrawTexAtlas(font: *delve.fonts.LoadedFont) void {
+    const size = 200.0;
+    graphics.drawDebugRectangle(font.texture, 120.0, 40.0, size, size, colors.white);
+}
+
 fn on_draw() void {
-    const texture = delve.fonts.default_font_tex;
-    const mouse_pos = input.getMousePosition();
+    cur_font_idx = @as(usize, @intFromFloat(time)) % example_fonts.len;
 
-    // const size = 50.0 + (400.0 * mouse_pos.x * 0.008);
-    // const size = 200.0;
-    // graphics.drawDebugRectangle(texture, 120.0, 40.0, size, size, colors.white);
+    const font_to_use = example_fonts[cur_font_idx];
+    const text_scale: f32 = 0.003;
 
+    // Drawing position of characters, updated as each gets added
+    var x_pos: f32 = 0.0;
+    var y_pos: f32 = 0.0;
+
+    const message = "This is some text!\nHello World!\n[]'.@%#$<>?;:-=_+'";
+
+    const font_name_string = std.fmt.allocPrintZ(delve.mem.getAllocator(), "Drawing from {s}", .{font_to_use}) catch {
+        return;
+    };
+    defer delve.mem.getAllocator().free(font_name_string);
+
+    // grab the font to use
+    const found_font = delve.fonts.getLoadedFont(font_to_use);
+
+    // Add font characters as sprites to our sprite batch
     font_batch.reset();
-    font_batch.useTexture(texture);
 
-    var x_pos: f32 = -1600.0;
-    var y_pos: f32 = -400.0;
-
-    const message = "This is some text!\nDrawing from DroidSans.ttf\nHello World [] '.@$'";
-
-    const text_scale: f32 = mouse_pos.y * 0.00002;
-
-    for (message) |char| {
-        if (char == '\n') {
-            x_pos = -1600.0;
-            y_pos += 200;
-            continue;
-        }
-
-        const char_quad_t = delve.fonts.getCharQuad("DroidSans", char - 32, &x_pos, &y_pos);
-        font_batch.addRectangle(char_quad_t.rect.scale(text_scale), char_quad_t.tex_region, colors.white);
+    if (found_font) |font| {
+        addStringToFontBatch(font, font_name_string, &x_pos, &y_pos, text_scale);
+        addStringToFontBatch(font, message, &x_pos, &y_pos, text_scale);
     }
 
     font_batch.apply();
 
     const projection = graphics.getProjectionPerspective(60.0, 0.01, 50.0);
     const view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, math.Vec3.zero, math.Vec3.up);
-    font_batch.draw(projection.mul(view), math.Mat4.identity);
+
+    font_batch.draw(projection.mul(view), math.Mat4.translate(.{ .x = -3.25, .y = 1.25, .z = 0.0 }));
+}
+
+pub fn addStringToFontBatch(font: *delve.fonts.LoadedFont, string: []const u8, x_pos: *f32, y_pos: *f32, scale: f32) void {
+    font_batch.useTexture(font.texture);
+
+    for (string) |char| {
+        if (char == '\n') {
+            x_pos.* = 0.0;
+            y_pos.* += font.font_size;
+            continue;
+        }
+
+        const char_quad_t = delve.fonts.getCharQuad(font, char - 32, x_pos, y_pos);
+        font_batch.addRectangle(char_quad_t.rect.scale(scale), char_quad_t.tex_region, colors.white);
+    }
+
+    x_pos.* = 0.0;
+    y_pos.* += font.font_size;
 }
 
 fn on_cleanup() !void {
