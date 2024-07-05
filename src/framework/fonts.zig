@@ -1,9 +1,13 @@
 const std = @import("std");
 const debug = @import("debug.zig");
+const math = @import("math.zig");
 const mem = @import("mem.zig");
 const gfx = @import("platform/graphics.zig");
+const sprites = @import("graphics/sprites.zig");
 
 const stb_truetype = @import("stb_truetype");
+
+const Rect = @import("spatial/rect.zig").Rect;
 
 var loaded_fonts: std.StringHashMap([]u8) = undefined;
 var loaded_fonts_charinfo: std.StringHashMap([]stb_truetype.stbtt.stbtt_packedchar) = undefined;
@@ -19,6 +23,42 @@ pub fn init() !void {
 
 pub fn getCharInfo(font_name: []const u8) ?[]stb_truetype.stbtt.stbtt_packedchar {
     return loaded_fonts_charinfo.get(font_name);
+}
+
+pub const CharQuad = struct {
+    rect: Rect,
+    tex_region: sprites.TextureRegion,
+};
+
+pub fn getCharQuad(font_name: []const u8, char_index: usize, x_pos: *f32, y_pos: *f32) CharQuad {
+    const found_char_info = getCharInfo(font_name);
+
+    var aligned_quad: stb_truetype.stbtt.stbtt_aligned_quad = undefined;
+
+    var char_quad: CharQuad = undefined;
+
+    if (found_char_info) |char_info| {
+        stb_truetype.stbtt.stbtt_GetPackedQuad(@ptrCast(char_info), 1024, 1024, @intCast(char_index), @ptrCast(x_pos), @ptrCast(y_pos), &aligned_quad, 1);
+
+        debug.log("{}", .{aligned_quad});
+
+        // tex region
+        char_quad.tex_region.u = aligned_quad.s0;
+        char_quad.tex_region.v = aligned_quad.t0;
+        char_quad.tex_region.u_2 = aligned_quad.s1;
+        char_quad.tex_region.v_2 = aligned_quad.t1;
+
+        // pos rect
+        char_quad.rect.x = aligned_quad.x0;
+        char_quad.rect.y = -aligned_quad.y0;
+        char_quad.rect.width = aligned_quad.x1 - aligned_quad.x0;
+        char_quad.rect.height = aligned_quad.y1 - aligned_quad.y0;
+
+        // adjust to line height
+        char_quad.rect.y -= char_quad.rect.height;
+    }
+
+    return char_quad;
 }
 
 pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, font_size: f32) !gfx.Texture {
