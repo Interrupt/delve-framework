@@ -1,9 +1,11 @@
 const std = @import("std");
+const colors = @import("colors.zig");
 const debug = @import("debug.zig");
 const math = @import("math.zig");
 const mem = @import("mem.zig");
 const gfx = @import("platform/graphics.zig");
 const sprites = @import("graphics/sprites.zig");
+const batcher = @import("graphics/batcher.zig");
 
 const stb_truetype = @import("stb_truetype");
 
@@ -110,4 +112,22 @@ pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, fon
 
     try loaded_fonts.put(font_name, loaded_font);
     return loaded_fonts.getPtr(font_name).?;
+}
+
+pub fn addStringToSpriteBatch(font: *LoadedFont, sprite_batch: *batcher.SpriteBatcher, string: []const u8, x_pos: *f32, y_pos: *f32, scale: f32) void {
+    sprite_batch.useTexture(font.texture);
+
+    for (string) |char| {
+        if (char == '\n') {
+            x_pos.* = 0.0;
+            y_pos.* += font.font_size;
+            continue;
+        }
+
+        const char_quad_t = getCharQuad(font, char - 32, x_pos, y_pos);
+        sprite_batch.addRectangle(char_quad_t.rect.scale(scale), char_quad_t.tex_region, colors.white);
+    }
+
+    x_pos.* = 0.0;
+    y_pos.* += font.font_size;
 }

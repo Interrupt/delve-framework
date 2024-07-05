@@ -100,8 +100,8 @@ fn on_draw() void {
     font_batch.reset();
 
     if (found_font) |font| {
-        addStringToFontBatch(font, font_name_string, &x_pos, &y_pos, text_scale);
-        addStringToFontBatch(font, message, &x_pos, &y_pos, text_scale);
+        delve.fonts.addStringToSpriteBatch(font, &font_batch, font_name_string, &x_pos, &y_pos, text_scale);
+        delve.fonts.addStringToSpriteBatch(font, &font_batch, message, &x_pos, &y_pos, text_scale);
     }
 
     font_batch.apply();
@@ -110,24 +110,6 @@ fn on_draw() void {
     const view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, math.Vec3.zero, math.Vec3.up);
 
     font_batch.draw(projection.mul(view), math.Mat4.translate(.{ .x = -3.25, .y = 1.25, .z = 0.0 }));
-}
-
-pub fn addStringToFontBatch(font: *delve.fonts.LoadedFont, string: []const u8, x_pos: *f32, y_pos: *f32, scale: f32) void {
-    font_batch.useTexture(font.texture);
-
-    for (string) |char| {
-        if (char == '\n') {
-            x_pos.* = 0.0;
-            y_pos.* += font.font_size;
-            continue;
-        }
-
-        const char_quad_t = delve.fonts.getCharQuad(font, char - 32, x_pos, y_pos);
-        font_batch.addRectangle(char_quad_t.rect.scale(scale), char_quad_t.tex_region, colors.white);
-    }
-
-    x_pos.* = 0.0;
-    y_pos.* += font.font_size;
 }
 
 fn on_cleanup() !void {
