@@ -19,6 +19,7 @@ Delve uses Zig to make writing cross platform games easy, and because it is easy
 * Sokol for cross platform graphics and input
 * Lua for scripting using ziglua
 * stb_image for loading images
+* stb_truetype for font loading and rendering
 * zaudio and zmesh from zig-gamedev
 * Dear Imgui for UI
 
@@ -111,6 +112,7 @@ zig build run-clear
 zig build run-collision
 zig build run-debugdraw
 zig build run-easing
+zig build run-fonts
 zig build run-forest
 zig build run-framepacing
 zig build run-imgui
