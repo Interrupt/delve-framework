@@ -96,6 +96,21 @@ pub const App = struct {
             input.onKeyUp(@intFromEnum(ev.key_code));
         } else if (ev.type == .CHAR) {
             input.onKeyChar(ev.char_code);
+        } else if (ev.type == .TOUCHES_BEGAN) {
+            for (ev.touches) |touch| {
+                if (touch.changed)
+                    input.onTouchBegin(touch.pos_x, touch.pos_y, touch.identifier);
+            }
+        } else if (ev.type == .TOUCHES_MOVED) {
+            for (ev.touches) |touch| {
+                if (touch.changed)
+                    input.onTouchMoved(touch.pos_x, touch.pos_y, touch.identifier);
+            }
+        } else if (ev.type == .TOUCHES_ENDED) {
+            for (ev.touches) |touch| {
+                if (touch.changed)
+                    input.onTouchEnded(touch.pos_x, touch.pos_y, touch.identifier);
+            }
         }
     }
 

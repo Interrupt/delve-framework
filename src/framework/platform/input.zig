@@ -135,6 +135,12 @@ pub const MouseButtons = enum(i32) {
     MIDDLE = 2,
 };
 
+// pub const Touch = struct {
+//     x: f32,
+//     y: f32,
+//     id: u32,
+// }
+
 /// Current input state
 const state = struct {
     // current pos
@@ -270,6 +276,29 @@ pub fn onMouseMoved(x: f32, y: f32, dx: f32, dy: f32) void {
         state.last_mouse_x = x;
         state.last_mouse_y = y;
     }
+}
+
+pub fn onTouchBegin(x: f32, y: f32, idx: usize) void {
+    onTouchMoved(x, y, idx);
+    debug.log("Touch began: id: {} pos: {},{}", .{ idx, x, y });
+
+    // Todo: keep a list of touches around?
+}
+
+pub fn onTouchMoved(x: f32, y: f32, idx: usize) void {
+    state.mouse_dx += x - state.mouse_x;
+    state.mouse_dy += y - state.mouse_y;
+    state.mouse_x = x;
+    state.mouse_y = y;
+
+    debug.log("Touch moved: id: {} pos: {},{}", .{ idx, x, y });
+}
+
+pub fn onTouchEnded(x: f32, y: f32, idx: usize) void {
+    onTouchMoved(x, y, idx);
+    debug.log("Touch ended: id: {} pos: {},{}", .{ idx, x, y });
+
+    // todo: emulate mouse click if touch was short enough?
 }
 
 /// Update the keypress state when a key is pressed down
