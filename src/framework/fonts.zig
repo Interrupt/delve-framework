@@ -32,6 +32,11 @@ pub fn init() !void {
     loaded_fonts = std.StringHashMap(LoadedFont).init(mem.getAllocator());
 }
 
+pub fn deinit() void {
+    loaded_fonts.clearAndFree();
+}
+
+// Grab a single character from a font, updating cursor position
 pub fn getCharQuad(font: *LoadedFont, char_index: usize, x_pos: *f32, y_pos: *f32) CharQuad {
     var aligned_quad: stb_truetype.stbtt.stbtt_aligned_quad = undefined;
 
@@ -70,6 +75,7 @@ const LoadFontErrors = error{
     ErrorPacking,
 };
 
+// Load and cache a font to be used later
 pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, font_size: f32) !*LoadedFont {
     var allocator = mem.getAllocator();
 
@@ -138,6 +144,7 @@ pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, fon
     return loaded_fonts.getPtr(font_name).?;
 }
 
+// Adds a string to an existing sprite batch
 pub fn addStringToSpriteBatch(font: *LoadedFont, sprite_batch: *batcher.SpriteBatcher, string: []const u8, x_pos: *f32, y_pos: *f32, scale: f32, color: colors.Color) void {
     sprite_batch.useTexture(font.texture);
 
@@ -154,4 +161,50 @@ pub fn addStringToSpriteBatch(font: *LoadedFont, sprite_batch: *batcher.SpriteBa
 
     x_pos.* = 0.0;
     y_pos.* += font.font_size;
+}
+
+// Returns the rectangle of where and how big this string would be
+pub fn getStringBounds(font: *LoadedFont, string: []const u8, x: f32, y: f32, scale: f32) Rect {
+    var x_pos: f32 = x;
+    var y_pos: f32 = y;
+
+    var rect_min: ?math.Vec2 = null;
+    var rect_max: ?math.Vec2 = null;
+
+    for (string) |char| {
+        if (char == '\n') {
+            x_pos = 0.0;
+            y_pos += font.font_size;
+            continue;
+        }
+
+        const char_quad_t = getCharQuad(font, char - 32, &x_pos, &y_pos);
+        const rect = char_quad_t.rect.scale(scale);
+
+        const bot_left = rect.getBottomLeft();
+        const top_right = rect.getTopRight();
+
+        if (rect_min) |min| {
+            if (min.x > bot_left.x)
+                rect_min.?.x = bot_left.x;
+            if (min.y > bot_left.y)
+                rect_min.?.y = bot_left.y;
+        } else {
+            rect_min = bot_left;
+        }
+
+        if (rect_max) |max| {
+            if (max.x < top_right.x)
+                rect_max.?.x = top_right.x;
+            if (max.y < top_right.y)
+                rect_max.?.y = top_right.y;
+        } else {
+            rect_max = top_right;
+        }
+    }
+
+    if (rect_min == null or rect_max == null)
+        return Rect.fromSize(math.Vec2.new(0.0, 0.0));
+
+    return Rect.new(rect_min.?, rect_max.?.sub(rect_min.?));
 }

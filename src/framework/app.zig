@@ -74,6 +74,7 @@ pub fn startSubsystems() !void {
 pub fn stopSubsystems() void {
     colors.deinit();
     input.deinit();
+    fonts.deinit();
 
     if (app_config.enable_audio)
         audio.deinit();
