@@ -4,6 +4,7 @@ const debug = @import("debug.zig");
 const math = @import("math.zig");
 const mem = @import("mem.zig");
 const gfx = @import("platform/graphics.zig");
+const images = @import("images.zig");
 const sprites = @import("graphics/sprites.zig");
 const batcher = @import("graphics/batcher.zig");
 
@@ -77,7 +78,13 @@ pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, fon
     const font_atlas_size = tex_size;
     const atlas_size = font_atlas_size * font_atlas_size;
 
-    const atlas_img = try mem.getAllocator().alloc(u8, atlas_size);
+    var allocator = mem.getAllocator();
+    const atlas_img = try allocator.alloc(u8, atlas_size);
+    const atlas_img_expanded = try allocator.alloc(u8, atlas_size * 4);
+
+    // will be done with these after the texture is created
+    defer allocator.free(atlas_img);
+    defer allocator.free(atlas_img_expanded);
 
     var pack_context: stb_truetype.stbtt.stbtt_pack_context = undefined;
     const r0 = stb_truetype.stbtt.stbtt_PackBegin(&pack_context, @ptrCast(atlas_img), @intCast(font_atlas_size), @intCast(font_atlas_size), 0, 1, null);
@@ -101,12 +108,22 @@ pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, fon
 
     stb_truetype.stbtt.stbtt_PackEnd(&pack_context);
 
+    // expand the image to add the other three channels in the image bytes
+    var idx: u32 = 0;
+    for (atlas_img) |v| {
+        atlas_img_expanded[idx] = v;
+        atlas_img_expanded[idx + 1] = v;
+        atlas_img_expanded[idx + 2] = v;
+        atlas_img_expanded[idx + 3] = v;
+        idx += 4;
+    }
+
     const loaded_font: LoadedFont = .{
         .font_name = font_name,
         .font_mem = font_mem,
         .tex_size = tex_size,
         .font_size = font_size,
-        .texture = gfx.Texture.initFromBytesForFont(font_atlas_size, font_atlas_size, atlas_img),
+        .texture = gfx.Texture.initFromBytes(font_atlas_size, font_atlas_size, atlas_img_expanded),
         .char_info = char_info,
     };
 
@@ -114,7 +131,7 @@ pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, fon
     return loaded_fonts.getPtr(font_name).?;
 }
 
-pub fn addStringToSpriteBatch(font: *LoadedFont, sprite_batch: *batcher.SpriteBatcher, string: []const u8, x_pos: *f32, y_pos: *f32, scale: f32) void {
+pub fn addStringToSpriteBatch(font: *LoadedFont, sprite_batch: *batcher.SpriteBatcher, string: []const u8, x_pos: *f32, y_pos: *f32, scale: f32, color: colors.Color) void {
     sprite_batch.useTexture(font.texture);
 
     for (string) |char| {
@@ -125,7 +142,7 @@ pub fn addStringToSpriteBatch(font: *LoadedFont, sprite_batch: *batcher.SpriteBa
         }
 
         const char_quad_t = getCharQuad(font, char - 32, x_pos, y_pos);
-        sprite_batch.addRectangle(char_quad_t.rect.scale(scale), char_quad_t.tex_region, colors.white);
+        sprite_batch.addRectangle(char_quad_t.rect.scale(scale), char_quad_t.tex_region, color);
     }
 
     x_pos.* = 0.0;

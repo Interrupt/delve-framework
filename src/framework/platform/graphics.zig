@@ -348,26 +348,6 @@ pub const Texture = struct {
         };
     }
 
-    /// Creates a new Texture from the given image bytes
-    pub fn initFromBytesForFont(width: u32, height: u32, image_bytes: anytype) Texture {
-        defer next_texture_handle += 1;
-
-        var img_desc: sg.ImageDesc = .{
-            .width = @intCast(width),
-            .height = @intCast(height),
-            .pixel_format = .R8,
-        };
-
-        img_desc.data.subimage[0][0] = sg.asRange(image_bytes);
-
-        return Texture{
-            .width = width,
-            .height = height,
-            .sokol_image = sg.makeImage(img_desc),
-            .handle = next_texture_handle,
-        };
-    }
-
     /// Creates a texture to be used as a render pass texture
     pub fn initRenderTexture(width: u32, height: u32, is_depth: bool) Texture {
         defer next_texture_handle += 1;

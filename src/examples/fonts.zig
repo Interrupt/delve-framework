@@ -47,7 +47,7 @@ pub fn registerModule() !void {
 
 fn on_init() !void {
     debug.log("Fonts example module initializing", .{});
-    graphics.setClearColor(colors.black);
+    graphics.setClearColor(colors.examples_bg_dark);
 
     font_batch = delve.graphics.batcher.SpriteBatcher.init(.{}) catch {
         debug.showErrorScreen("Fatal error during batch init!");
@@ -97,19 +97,24 @@ fn on_draw() void {
     const found_font = delve.fonts.getLoadedFont(font_to_use);
 
     // Add font characters as sprites to our sprite batch
+    // Ideally you would only do this when the text updates, and just draw the batch until then
     font_batch.reset();
 
     if (found_font) |font| {
-        delve.fonts.addStringToSpriteBatch(font, &font_batch, font_name_string, &x_pos, &y_pos, text_scale);
-        delve.fonts.addStringToSpriteBatch(font, &font_batch, message, &x_pos, &y_pos, text_scale);
+        delve.fonts.addStringToSpriteBatch(font, &font_batch, font_name_string, &x_pos, &y_pos, text_scale, colors.blue);
+        delve.fonts.addStringToSpriteBatch(font, &font_batch, message, &x_pos, &y_pos, text_scale, colors.white);
     }
 
     font_batch.apply();
 
-    const projection = graphics.getProjectionPerspective(60.0, 0.01, 50.0);
-    const view = math.Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 6.0 }, math.Vec3.zero, math.Vec3.up);
+    // animate the text position a bit
+    const x_wave: f32 = std.math.sin(@as(f32, @floatCast(time)));
+    const y_wave: f32 = std.math.sin(@as(f32, @floatCast(time * 0.88)));
 
-    font_batch.draw(projection.mul(view), math.Mat4.translate(.{ .x = -3.25, .y = 1.25, .z = 0.0 }));
+    const projection = graphics.getProjectionPerspective(60.0, 0.01, 50.0);
+    const view = math.Mat4.lookat(.{ .x = x_wave, .y = y_wave, .z = 6.0 }, math.Vec3.zero, math.Vec3.up);
+
+    font_batch.draw(projection.mul(view), math.Mat4.translate(.{ .x = -3.1, .y = 1.1, .z = 0.0 }));
 }
 
 fn on_cleanup() !void {
