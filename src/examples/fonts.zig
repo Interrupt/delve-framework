@@ -109,7 +109,10 @@ fn on_pre_draw() void {
     font_batch.useShader(shader_blend);
 
     if (found_font) |font| {
-        delve.fonts.addStringToSpriteBatch(font, &font_batch, font_name_string, &x_pos, &y_pos, text_scale, colors.blue);
+        // give the header a bit of padding
+        const extra_header_line_height = font.font_size / 8;
+
+        delve.fonts.addStringToSpriteBatchWithKerning(font, &font_batch, font_name_string, &x_pos, &y_pos, extra_header_line_height, 0, text_scale, colors.blue);
         delve.fonts.addStringToSpriteBatch(font, &font_batch, message, &x_pos, &y_pos, text_scale, colors.white);
     }
 

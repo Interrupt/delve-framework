@@ -165,6 +165,27 @@ pub fn addStringToSpriteBatch(font: *LoadedFont, sprite_batch: *batcher.SpriteBa
     y_pos.* += font.font_size;
 }
 
+pub fn addStringToSpriteBatchWithKerning(font: *LoadedFont, sprite_batch: *batcher.SpriteBatcher, string: []const u8, x_pos: *f32, y_pos: *f32, line_height_mod: f32, kerning_mod: f32, scale: f32, color: colors.Color) void {
+    sprite_batch.useTexture(font.texture);
+
+    const orig_x: f32 = x_pos.*;
+
+    for (string) |char| {
+        if (char == '\n') {
+            x_pos.* = orig_x;
+            y_pos.* += font.font_size + line_height_mod;
+            continue;
+        }
+
+        const char_quad_t = getCharQuad(font, char - 32, x_pos, y_pos);
+        sprite_batch.addRectangle(char_quad_t.rect.scale(scale), char_quad_t.tex_region, color);
+        x_pos.* += kerning_mod;
+    }
+
+    x_pos.* = orig_x;
+    y_pos.* += font.font_size + line_height_mod;
+}
+
 // Returns the rectangle of where and how big this string would be
 pub fn getStringBounds(font: *LoadedFont, string: []const u8, x: f32, y: f32, scale: f32) Rect {
     var x_pos: f32 = x;
@@ -187,6 +208,56 @@ pub fn getStringBounds(font: *LoadedFont, string: []const u8, x: f32, y: f32, sc
 
         const char_quad_t = getCharQuad(font, char - 32, &x_pos, &y_pos);
         const rect = char_quad_t.rect.scale(scale);
+
+        const bot_left = rect.getBottomLeft();
+        const top_right = rect.getTopRight();
+
+        if (set_min) {
+            if (rect_min.x > bot_left.x)
+                rect_min.x = bot_left.x;
+            if (rect_min.y > bot_left.y)
+                rect_min.y = bot_left.y;
+        } else {
+            rect_min = bot_left;
+            set_min = true;
+        }
+
+        if (set_max) {
+            if (rect_max.x < top_right.x)
+                rect_max.x = top_right.x;
+            if (rect_max.y < top_right.y)
+                rect_max.y = top_right.y;
+        } else {
+            rect_max = top_right;
+            set_max = true;
+        }
+    }
+
+    return Rect.new(rect_min, rect_max.sub(rect_min));
+}
+
+pub fn getStringBoundsWithKerning(font: *LoadedFont, string: []const u8, x: f32, y: f32, scale: f32, line_height_mod: f32, kerning_mod: f32) Rect {
+    var x_pos: f32 = x;
+    var y_pos: f32 = y;
+
+    const orig_x: f32 = x_pos;
+
+    var set_min: bool = false;
+    var rect_min: math.Vec2 = math.Vec2.zero;
+
+    var set_max: bool = false;
+    var rect_max: math.Vec2 = math.Vec2.zero;
+
+    for (string) |char| {
+        if (char == '\n') {
+            x_pos = orig_x;
+            y_pos += font.font_size + line_height_mod;
+            continue;
+        }
+
+        const char_quad_t = getCharQuad(font, char - 32, &x_pos, &y_pos);
+        const rect = char_quad_t.rect.scale(scale);
+        x_pos.* += kerning_mod;
 
         const bot_left = rect.getBottomLeft();
         const top_right = rect.getTopRight();
