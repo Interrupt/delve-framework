@@ -111,8 +111,6 @@ fn on_pre_draw() void {
     if (found_font) |font| {
         delve.fonts.addStringToSpriteBatch(font, &font_batch, font_name_string, &x_pos, &y_pos, text_scale, colors.blue);
         delve.fonts.addStringToSpriteBatch(font, &font_batch, message, &x_pos, &y_pos, text_scale, colors.white);
-
-        // debugDrawTexAtlas(font);
     }
 
     font_batch.apply();

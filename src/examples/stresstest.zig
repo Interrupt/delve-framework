@@ -8,6 +8,7 @@ const debugdraw_example = @import("debugdraw.zig");
 const meshes_example = @import("meshes.zig");
 const sprites_example = @import("sprites.zig");
 const forest_example = @import("forest.zig");
+const fonts_example = @import("fonts.zig");
 const animation_example = @import("sprite-animation.zig");
 const imgui_example = @import("imgui.zig");
 
@@ -36,7 +37,8 @@ pub fn main() !void {
     try lua_module.registerModule();
     try sprites_example.registerModule();
     try imgui_example.registerModule();
-    // try animation_example.registerModule();
+    try fonts_example.registerModule();
+    try animation_example.registerModule();
     // try forest_example.registerModule();
 
     try app.start(app.AppConfig{ .title = "Delve Framework - Stress Test", .enable_audio = true });
