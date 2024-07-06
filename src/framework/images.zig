@@ -46,9 +46,3 @@ pub fn loadBytes(image_bytes: []const u8) !Image {
     defer debug.log("Done loading image bytes", .{});
     return Image.loadFromMemory(image_bytes, 0);
 }
-
-pub fn loadBytesWithChannels(image_bytes: []const u8, forced_components: u32) !Image {
-    debug.log("Loading image bytes", .{});
-    defer debug.log("Done loading image bytes", .{});
-    return Image.loadFromMemory(image_bytes, forced_components);
-}
