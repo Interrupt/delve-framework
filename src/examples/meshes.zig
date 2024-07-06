@@ -28,6 +28,8 @@ var camera: cam.Camera = undefined;
 
 // This example shows loading and drawing meshes
 
+// Web build note: this does not seem to work when built in --release=fast or --release=small
+
 pub fn main() !void {
     // Pick the allocator to use depending on platform
     const builtin = @import("builtin");
