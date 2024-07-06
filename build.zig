@@ -53,9 +53,16 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
+    const dep_stb_truetype = b.dependency("stb_truetype", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     // inject the cimgui header search path into the sokol C library compile step
     const cimgui_root = dep_cimgui.namedWriteFiles("cimgui").getDirectory();
     dep_sokol.artifact("sokol_clib").addIncludePath(cimgui_root);
+
+    dep_stb_truetype.artifact("stb_truetype").addIncludePath(b.path("3rdparty/stb_truetype/libs"));
 
     const sokol_item = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
     const ziglua_item = .{ .module = dep_ziglua.module("ziglua"), .name = "ziglua" };
@@ -63,6 +70,7 @@ pub fn build(b: *std.Build) !void {
     const zstbi_item = .{ .module = dep_zstbi.module("root"), .name = "zstbi" };
     const zaudio_item = .{ .module = dep_zaudio.module("root"), .name = "zaudio" };
     const cimgui_item = .{ .module = dep_cimgui.module("cimgui"), .name = "cimgui" };
+    const stb_truetype_item = .{ .module = dep_stb_truetype.module("root"), .name = "stb_truetype" };
 
     const delve_module_imports = [_]ModuleImport{
         sokol_item,
@@ -71,6 +79,7 @@ pub fn build(b: *std.Build) !void {
         zaudio_item,
         ziglua_item,
         cimgui_item,
+        stb_truetype_item,
     };
 
     const link_libraries = [_]*Build.Step.Compile{
@@ -79,6 +88,7 @@ pub fn build(b: *std.Build) !void {
         dep_zaudio.artifact("miniaudio"),
         dep_ziglua.artifact("lua"),
         dep_cimgui.artifact("cimgui_clib"),
+        dep_stb_truetype.artifact("stb_truetype"),
     };
 
     const build_collection: BuildCollection = .{
@@ -140,6 +150,7 @@ pub fn build(b: *std.Build) !void {
         "collision",
         "debugdraw",
         "easing",
+        "fonts",
         "forest",
         "framepacing",
         "frustums",

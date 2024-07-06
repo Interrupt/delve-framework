@@ -6,6 +6,7 @@ pub const app = @import("app.zig");
 pub const colors = @import("colors.zig");
 pub const debug = @import("debug.zig");
 pub const images = @import("images.zig");
+pub const fonts = @import("fonts.zig");
 pub const math = @import("math.zig");
 pub const mem = @import("mem.zig");
 
