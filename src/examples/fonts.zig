@@ -18,6 +18,8 @@ const example_fonts = [_][]const u8{ "DroidSans", "Tiny5", "CrimsonPro", "Amatic
 var cur_font_idx: usize = 0;
 var time: f64 = 0.0;
 
+var shader_blend: graphics.Shader = undefined;
+
 pub fn main() !void {
     // Pick the allocator to use depending on platform
     const builtin = @import("builtin");
@@ -38,6 +40,7 @@ pub fn registerModule() !void {
         .name = "fonts_example",
         .init_fn = on_init,
         .tick_fn = on_tick,
+        .pre_draw_fn = on_pre_draw,
         .draw_fn = on_draw,
         .cleanup_fn = on_cleanup,
     };
@@ -50,7 +53,7 @@ fn on_init() !void {
     graphics.setClearColor(colors.examples_bg_dark);
 
     font_batch = delve.graphics.batcher.SpriteBatcher.init(.{}) catch {
-        debug.showErrorScreen("Fatal error during batch init!");
+        debug.log("Error creating font sprite batch!", .{});
         return;
     };
 
@@ -61,6 +64,9 @@ fn on_init() !void {
     _ = try delve.fonts.loadFont("KodeMono", "assets/fonts/KodeMono-Regular.ttf", 1024, 200);
     _ = try delve.fonts.loadFont("Rajdhani", "assets/fonts/Rajdhani-Regular.ttf", 1024, 200);
     _ = try delve.fonts.loadFont("IBMPlexSerif", "assets/fonts/IBMPlexSerif-Regular.ttf", 1024, 200);
+
+    // make a shader with alpha blending
+    shader_blend = graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.BLEND });
 }
 
 fn on_tick(delta: f32) void {
@@ -76,7 +82,7 @@ pub fn debugDrawTexAtlas(font: *delve.fonts.LoadedFont) void {
     graphics.drawDebugRectangle(font.texture, 120.0, 40.0, size, size, colors.white);
 }
 
-fn on_draw() void {
+fn on_pre_draw() void {
     cur_font_idx = @as(usize, @intFromFloat(time)) % example_fonts.len;
 
     const font_to_use = example_fonts[cur_font_idx];
@@ -100,13 +106,19 @@ fn on_draw() void {
     // Ideally you would only do this when the text updates, and just draw the batch until then
     font_batch.reset();
 
+    font_batch.useShader(shader_blend);
+
     if (found_font) |font| {
         delve.fonts.addStringToSpriteBatch(font, &font_batch, font_name_string, &x_pos, &y_pos, text_scale, colors.blue);
         delve.fonts.addStringToSpriteBatch(font, &font_batch, message, &x_pos, &y_pos, text_scale, colors.white);
+
+        // debugDrawTexAtlas(font);
     }
 
     font_batch.apply();
+}
 
+fn on_draw() void {
     // animate the text position a bit
     const x_wave: f32 = std.math.sin(@as(f32, @floatCast(time)));
     const y_wave: f32 = std.math.sin(@as(f32, @floatCast(time * 0.88)));

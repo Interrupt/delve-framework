@@ -34,9 +34,15 @@ pub fn init() !void {
 
 pub fn getCharQuad(font: *LoadedFont, char_index: usize, x_pos: *f32, y_pos: *f32) CharQuad {
     var aligned_quad: stb_truetype.stbtt.stbtt_aligned_quad = undefined;
-    var char_quad: CharQuad = undefined;
 
     stb_truetype.stbtt.stbtt_GetPackedQuad(@ptrCast(font.char_info), @intCast(font.tex_size), @intCast(font.tex_size), @intCast(char_index), @ptrCast(x_pos), @ptrCast(y_pos), &aligned_quad, 1);
+
+    // debug.log("{}", .{aligned_quad});
+
+    var char_quad: CharQuad = .{
+        .tex_region = sprites.TextureRegion.default(),
+        .rect = Rect.fromSize(math.Vec2.new(1.0, 1.0)),
+    };
 
     // tex region
     char_quad.tex_region.u = aligned_quad.s0;
