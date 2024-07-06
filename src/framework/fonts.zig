@@ -65,20 +65,19 @@ const LoadFontErrors = error{
 };
 
 pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, font_size: f32) !*LoadedFont {
-    debug.log("Loading font {s}", .{file_name});
+    var allocator = mem.getAllocator();
 
+    debug.log("Loading font {s}", .{file_name});
     const file = try std.fs.cwd().openFile(file_name, .{});
     defer file.close();
 
     const stat = try file.stat();
-
-    const font_mem = try file.reader().readAllAlloc(mem.getAllocator(), stat.size);
+    const font_mem = try file.reader().readAllAlloc(allocator, @intCast(stat.size));
 
     // set some sizes for loading
     const font_atlas_size = tex_size;
     const atlas_size = font_atlas_size * font_atlas_size;
 
-    var allocator = mem.getAllocator();
     const atlas_img = try allocator.alloc(u8, atlas_size);
     const atlas_img_expanded = try allocator.alloc(u8, atlas_size * 4);
 
@@ -117,6 +116,8 @@ pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, fon
         atlas_img_expanded[idx + 3] = v;
         idx += 4;
     }
+
+    // debug.log("Creating font texture, len: {d}", .{idx});
 
     const loaded_font: LoadedFont = .{
         .font_name = font_name,
