@@ -24,6 +24,7 @@ pub fn build(b: *std.Build) void {
     });
 
     lib.addIncludePath(b.path("libs"));
+    lib.linkLibC();
 
     b.installArtifact(lib);
 
