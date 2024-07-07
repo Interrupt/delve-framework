@@ -20,7 +20,7 @@ const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 const Color = colors.Color;
 
-const emissive_shader_builtin = delve.shaders.default_emissive;
+const shader_builtin = delve.shaders.default_emissive;
 
 var time: f32 = 0.0;
 var mesh_test: ?mesh.Mesh = null;
@@ -42,12 +42,12 @@ pub fn main() !void {
     }
 
     try registerModule();
-    try app.start(app.AppConfig{ .title = "Delve Framework - Mesh Drawing Example" });
+    try app.start(app.AppConfig{ .title = "Delve Framework - Skinned Mesh Drawing Example" });
 }
 
 pub fn registerModule() !void {
     const meshExample = modules.Module{
-        .name = "mesh_example",
+        .name = "skinned_mesh_example",
         .init_fn = on_init,
         .tick_fn = on_tick,
         .draw_fn = on_draw,
@@ -58,48 +58,32 @@ pub fn registerModule() !void {
 }
 
 fn on_init() !void {
-    debug.log("Mesh example module initializing", .{});
+    debug.log("Skinned mesh example module initializing", .{});
 
     graphics.setClearColor(colors.examples_bg_light);
 
     // Make a perspective camera, with a 90 degree FOV
-    camera = cam.Camera.initThirdPerson(90.0, 0.01, 50.0, 5.0, Vec3.up);
+    camera = cam.Camera.initThirdPerson(90.0, 0.01, 50.0, 2.5, Vec3.up);
     camera.position = Vec3.new(0.0, 0.0, 0.0);
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
-    // Load the base color texture for the mesh
-    const base_texture_file = "assets/meshes/SciFiHelmet_BaseColor_512.png";
-    var base_img: images.Image = images.loadFile(base_texture_file) catch {
-        debug.log("Assets: Error loading image asset: {s}", .{base_texture_file});
-        return;
-    };
-    const tex_base = graphics.Texture.init(&base_img);
-
-    // Load the emissive texture for the mesh
-    const emissive_texture_file = "assets/meshes/SciFiHelmet_Emissive_512.png";
-    var emissive_img: images.Image = images.loadFile(emissive_texture_file) catch {
-        debug.log("Assets: Error loading image asset: {s}", .{emissive_texture_file});
-        return;
-    };
-    const tex_emissive = graphics.Texture.init(&emissive_img);
-
     // Make our emissive shader from one that is pre-compiled
-    const shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = mesh.getShaderAttributes() }, emissive_shader_builtin);
+    const shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = mesh.getShaderAttributes() }, shader_builtin);
 
     if (shader == null) {
-        debug.log("Could not get emissive shader", .{});
+        debug.log("Could not get shader", .{});
         return;
     }
 
     // Create a material out of our shader and textures
-    const material = graphics.Material.init(.{
+    const material = delve.platform.graphics.Material.init(.{
         .shader = shader.?,
-        .texture_0 = tex_base,
-        .texture_1 = tex_emissive,
+        .texture_0 = delve.platform.graphics.createSolidTexture(0xFF0000FF),
+        .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
     });
 
     // Load our mesh!
-    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), "assets/meshes/SciFiHelmet.gltf", .{ .material = material });
+    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), "assets/meshes/RiggedFigure.gltf", .{ .material = material });
 }
 
 fn on_tick(delta: f32) void {
@@ -119,19 +103,14 @@ fn on_draw() void {
 
     const proj_view_matrix = camera.getProjView();
 
-    var model = Mat4.translate(Vec3.new(2.0, 0.0, 0.0));
-    model = model.mul(Mat4.rotate(time * 0.6, Vec3.new(0.0, 1.0, 0.0)));
+    var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
+    model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
 
-    const sin_val = std.math.sin(time * 0.006) + 0.5;
-    mesh_test.?.material.params.draw_color = Color.new(sin_val, sin_val, sin_val, 1.0);
-    mesh_test.?.draw(proj_view_matrix, model);
-
-    model = Mat4.translate(Vec3.new(-2.0, 0.0, 0.0));
     mesh_test.?.draw(proj_view_matrix, model);
 }
 
 fn on_cleanup() !void {
-    debug.log("Mesh example module cleaning up", .{});
+    debug.log("Skinned mesh example module cleaning up", .{});
 
     if (mesh_test == null)
         return;

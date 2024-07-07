@@ -161,6 +161,7 @@ pub fn build(b: *std.Build) !void {
         "passes",
         "quakemap",
         "rays",
+        "skinned-mesh",
         "stresstest",
     };
 
