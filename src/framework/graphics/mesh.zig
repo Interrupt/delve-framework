@@ -48,6 +48,9 @@ pub const Mesh = struct {
         var mesh_texcoords = std.ArrayList([2]f32).init(allocator);
         var mesh_tangents = std.ArrayList([4]f32).init(allocator);
 
+        var mesh_joints = std.ArrayList([4]f32).init(allocator);
+        var mesh_weights = std.ArrayList([4]f32).init(allocator);
+
         defer mesh_indices.deinit();
         defer mesh_positions.deinit();
         defer mesh_normals.deinit();
@@ -62,6 +65,8 @@ pub const Mesh = struct {
             &mesh_normals, // normals (optional)
             &mesh_texcoords, // texcoords (optional)
             &mesh_tangents, // tangents (optional)
+            &mesh_joints, // joints (optional)
+            &mesh_weights, // weights (optional)
         ) catch {
             debug.log("Could not process mesh file!", .{});
             return null;
@@ -74,12 +79,18 @@ pub const Mesh = struct {
             return null;
         };
 
-        for (mesh_positions.items, mesh_texcoords.items, 0..) |vert, texcoord, i| {
+        for (mesh_positions.items, 0..) |vert, i| {
             vertices[i].x = vert[0];
             vertices[i].y = vert[1];
             vertices[i].z = vert[2];
-            vertices[i].u = texcoord[0];
-            vertices[i].v = texcoord[1];
+
+            if (mesh_texcoords.items.len > i) {
+                vertices[i].u = mesh_texcoords.items[i][0];
+                vertices[i].v = mesh_texcoords.items[i][1];
+            } else {
+                vertices[i].u = 0.0;
+                vertices[i].v = 0.0;
+            }
         }
 
         var material: graphics.Material = undefined;
@@ -89,6 +100,29 @@ pub const Mesh = struct {
         } else {
             material = cfg.material.?;
         }
+
+        // Fill in normals if none were given, to match vertex layout
+        if (mesh_normals.items.len == 0) {
+            for (0..mesh_positions.items.len) |_| {
+                const empty = [3]f32{ 0.0, 0.0, 0.0 };
+                mesh_normals.append(empty) catch {
+                    return null;
+                };
+            }
+        }
+
+        // Fill in tangents if none were given, to match vertex layout
+        if (mesh_tangents.items.len == 0) {
+            for (0..mesh_positions.items.len) |_| {
+                const empty = [4]f32{ 0.0, 0.0, 0.0, 0.0 };
+                mesh_tangents.append(empty) catch {
+                    return null;
+                };
+            }
+        }
+
+        debug.log("Found {d} joints in mesh", .{mesh_joints.items.len});
+        debug.log("Found {d} weights in mesh", .{mesh_weights.items.len});
 
         return createMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, material);
     }
@@ -116,6 +150,8 @@ pub fn createMesh(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32
 
 /// Create a mesh out of some vertex data with a given vertex layout
 pub fn createMeshWithLayout(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: graphics.Material, layout: graphics.VertexLayout) Mesh {
+    debug.log("Creating mesh: {d} indices, {d} normals, {d}tangents", .{ indices.len, normals.len, tangents.len });
+
     var bindings = graphics.Bindings.init(.{
         .index_len = indices.len,
         .vert_len = vertices.len,

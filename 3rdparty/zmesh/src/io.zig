@@ -32,6 +32,8 @@ pub fn appendMeshPrimitive(
     normals: ?*std.ArrayList([3]f32),
     texcoords0: ?*std.ArrayList([2]f32),
     tangents: ?*std.ArrayList([4]f32),
+    joints: ?*std.ArrayList([4]f32),
+    weights: ?*std.ArrayList([4]f32),
 ) !void {
     assert(mesh_index < data.meshes_count);
     assert(prim_index < data.meshes.?[mesh_index].primitives_count);
@@ -87,13 +89,16 @@ pub fn appendMeshPrimitive(
         const attributes = prim.attributes[0..prim.attributes_count];
         for (attributes) |attrib| {
             const accessor = attrib.data;
-            assert(accessor.component_type == .r_32f);
+            std.debug.print("{}\n", .{attrib.type});
+            std.debug.print("{}\n", .{accessor.component_type});
+            std.debug.print("{}\n", .{accessor.type});
+            // assert(accessor.component_type == .r_32f);
 
             const buffer_view = accessor.buffer_view.?;
             assert(buffer_view.buffer.data != null);
 
             assert(accessor.stride == buffer_view.stride or buffer_view.stride == 0);
-            assert(accessor.stride * accessor.count == buffer_view.size);
+            // assert(accessor.stride * accessor.count == buffer_view.size);
 
             const data_addr = @as([*]const u8, @ptrCast(buffer_view.buffer.data)) +
                 accessor.offset + buffer_view.offset;
@@ -119,6 +124,18 @@ pub fn appendMeshPrimitive(
                     assert(accessor.type == .vec4);
                     const slice = @as([*]const [4]f32, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
                     try tan.appendSlice(slice);
+                }
+            } else if (attrib.type == .joints) {
+                if (joints) |j| {
+                    assert(accessor.type == .vec4);
+                    const slice = @as([*]const [4]f32, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
+                    try j.appendSlice(slice);
+                }
+            } else if (attrib.type == .weights) {
+                if (weights) |w| {
+                    assert(accessor.type == .vec4);
+                    const slice = @as([*]const [4]f32, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
+                    try w.appendSlice(slice);
                 }
             }
         }
