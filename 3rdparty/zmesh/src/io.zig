@@ -127,9 +127,12 @@ pub fn appendMeshPrimitive(
                 }
             } else if (attrib.type == .joints) {
                 if (joints) |j| {
-                    assert(accessor.type == .vec4);
-                    const slice = @as([*]const [4]f32, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
-                    try j.appendSlice(slice);
+                    const src = @as([*]const u16, @ptrCast(@alignCast(data_addr)));
+                    var i: u32 = 0;
+                    while (i < num_vertices) : (i += 4) {
+                        const joint = [4]f32{ @floatFromInt(src[i]), @floatFromInt(src[i + 1]), @floatFromInt(src[i + 2]), @floatFromInt(src[i + 3]) };
+                        try j.append(joint);
+                    }
                 }
             } else if (attrib.type == .weights) {
                 if (weights) |w| {

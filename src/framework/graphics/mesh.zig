@@ -124,7 +124,7 @@ pub const Mesh = struct {
         debug.log("Found {d} joints in mesh", .{mesh_joints.items.len});
         debug.log("Found {d} weights in mesh", .{mesh_weights.items.len});
 
-        return createMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, material);
+        return createSkinnedMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_joints.items, mesh_weights.items, material);
     }
 
     pub fn deinit(self: *Mesh) void {
@@ -146,6 +146,31 @@ pub const Mesh = struct {
 pub fn createMesh(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: graphics.Material) Mesh {
     // create a mesh with the default vertex layout
     return createMeshWithLayout(vertices, indices, normals, tangents, material, vertex_layout);
+}
+
+pub fn createSkinnedMesh(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, joints: [][4]f32, weights: [][4]f32, material: graphics.Material) Mesh {
+    // create a mesh with the default vertex layout
+    debug.log("Creating skinned mesh: {d} indices, {d} normals, {d}tangents, {d}joints, {d}weights", .{ indices.len, normals.len, tangents.len, joints.len, weights.len });
+
+    const layout = getSkinnedVertexLayout();
+    var bindings = graphics.Bindings.init(.{
+        .index_len = indices.len,
+        .vert_len = vertices.len,
+        .vertex_layout = layout,
+    });
+
+    // for (joints) |j| {
+    //     debug.log("Joint: {d:.1} {d:.1} {d:.1} {d:.1}", .{ j[0], j[1], j[2], j[3] });
+    // }
+
+    bindings.setWithJoints(vertices, indices, normals, tangents, joints, weights, indices.len);
+
+    const m: Mesh = Mesh{
+        .bindings = bindings,
+        .material = material,
+        .bounds = boundingbox.BoundingBox.initFromVerts(vertices),
+    };
+    return m;
 }
 
 /// Create a mesh out of some vertex data with a given vertex layout
@@ -189,6 +214,18 @@ pub fn getVertexLayout() graphics.VertexLayout {
     };
 }
 
+pub fn getSkinnedVertexLayout() graphics.VertexLayout {
+    return graphics.VertexLayout{
+        .attributes = &[_]graphics.VertexLayoutAttribute{
+            .{ .binding = .VERT_PACKED, .buffer_slot = 0, .item_size = @sizeOf(Vertex) },
+            .{ .binding = .VERT_NORMALS, .buffer_slot = 1, .item_size = @sizeOf([3]f32) },
+            .{ .binding = .VERT_TANGENTS, .buffer_slot = 2, .item_size = @sizeOf([4]f32) },
+            .{ .binding = .VERT_JOINTS, .buffer_slot = 3, .item_size = @sizeOf([4]f32) },
+            .{ .binding = .VERT_WEIGHTS, .buffer_slot = 4, .item_size = @sizeOf([4]f32) },
+        },
+    };
+}
+
 /// Returns the default shader attribute layout used by meshes
 pub fn getShaderAttributes() []const graphics.ShaderAttribute {
     return &[_]graphics.ShaderAttribute{
@@ -197,6 +234,18 @@ pub fn getShaderAttributes() []const graphics.ShaderAttribute {
         .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_PACKED },
         .{ .name = "normals", .attr_type = .FLOAT3, .binding = .VERT_NORMALS },
         .{ .name = "tangents", .attr_type = .FLOAT4, .binding = .VERT_TANGENTS },
+    };
+}
+
+pub fn getSkinnedShaderAttributes() []const graphics.ShaderAttribute {
+    return &[_]graphics.ShaderAttribute{
+        .{ .name = "pos", .attr_type = .FLOAT3, .binding = .VERT_PACKED },
+        .{ .name = "color0", .attr_type = .UBYTE4N, .binding = .VERT_PACKED },
+        .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_PACKED },
+        .{ .name = "normals", .attr_type = .FLOAT3, .binding = .VERT_NORMALS },
+        .{ .name = "tangents", .attr_type = .FLOAT4, .binding = .VERT_TANGENTS },
+        .{ .name = "joints", .attr_type = .FLOAT4, .binding = .VERT_JOINTS },
+        .{ .name = "weights", .attr_type = .FLOAT4, .binding = .VERT_WEIGHTS },
     };
 }
 

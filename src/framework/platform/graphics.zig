@@ -156,6 +156,11 @@ pub const Bindings = struct {
         BindingsImpl.set(self, vertices, indices, normals, tangents, length);
     }
 
+    /// Creates new buffers to hold vertices, indices, and joints / weights
+    pub fn setWithJoints(self: *Bindings, vertices: anytype, indices: anytype, normals: anytype, tangents: anytype, joints: anytype, weights: anytype, length: usize) void {
+        BindingsImpl.setWithJoints(self, vertices, indices, normals, tangents, joints, weights, length);
+    }
+
     /// Updates the existing buffers with new data
     pub fn update(self: *Bindings, vertices: anytype, indices: anytype, vert_len: usize, index_len: usize) void {
         BindingsImpl.update(self, vertices, indices, vert_len, index_len);
@@ -193,6 +198,8 @@ pub const VertexBinding = enum(i32) {
     VERT_PACKED,
     VERT_NORMALS,
     VERT_TANGENTS,
+    VERT_JOINTS,
+    VERT_WEIGHTS,
 };
 
 /// A vertex layout tells a shader how to use its attributes.
