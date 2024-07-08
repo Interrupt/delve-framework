@@ -89,15 +89,18 @@ pub fn appendMeshPrimitive(
         const attributes = prim.attributes[0..prim.attributes_count];
         for (attributes) |attrib| {
             const accessor = attrib.data;
-            std.debug.print("{}\n", .{attrib.type});
-            std.debug.print("{}\n", .{accessor.component_type});
-            std.debug.print("{}\n", .{accessor.type});
+            // std.debug.print("{}\n", .{attrib.type});
+            // std.debug.print("{}\n", .{accessor.component_type});
+            // std.debug.print("{}\n", .{accessor.type});
+            // std.debug.print("{}\n", .{accessor.stride});
             // assert(accessor.component_type == .r_32f);
 
             const buffer_view = accessor.buffer_view.?;
             assert(buffer_view.buffer.data != null);
 
             assert(accessor.stride == buffer_view.stride or buffer_view.stride == 0);
+
+            // std.debug.print("Accessor stride: {d} Accessor count: {d} Buffer View size {d}\n", .{ accessor.stride, accessor.count, buffer_view.size });
             // assert(accessor.stride * accessor.count == buffer_view.size);
 
             const data_addr = @as([*]const u8, @ptrCast(buffer_view.buffer.data)) +
@@ -127,11 +130,9 @@ pub fn appendMeshPrimitive(
                 }
             } else if (attrib.type == .joints) {
                 if (joints) |j| {
-                    const src = @as([*]const u16, @ptrCast(@alignCast(data_addr)));
-                    var i: u32 = 0;
-                    while (i < num_vertices) : (i += 4) {
-                        const joint = [4]f32{ @floatFromInt(src[i]), @floatFromInt(src[i + 1]), @floatFromInt(src[i + 2]), @floatFromInt(src[i + 3]) };
-                        try j.append(joint);
+                    const slice = @as([*]const [4]u16, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
+                    for (slice) |v| {
+                        try j.append([4]f32{ @floatFromInt(v[0]), @floatFromInt(v[1]), @floatFromInt(v[2]), @floatFromInt(v[3]) });
                     }
                 }
             } else if (attrib.type == .weights) {

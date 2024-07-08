@@ -121,6 +121,24 @@ pub const Mesh = struct {
             }
         }
 
+        if (mesh_joints.items.len == 0) {
+            for (0..mesh_positions.items.len) |_| {
+                const empty = [4]f32{ 0.0, 0.0, 0.0, 0.0 };
+                mesh_joints.append(empty) catch {
+                    return null;
+                };
+            }
+        }
+
+        if (mesh_weights.items.len == 0) {
+            for (0..mesh_positions.items.len) |_| {
+                const empty = [4]f32{ 0.0, 0.0, 0.0, 0.0 };
+                mesh_weights.append(empty) catch {
+                    return null;
+                };
+            }
+        }
+
         debug.log("Found {d} joints in mesh", .{mesh_joints.items.len});
         debug.log("Found {d} weights in mesh", .{mesh_weights.items.len});
 
@@ -159,9 +177,12 @@ pub fn createSkinnedMesh(vertices: []graphics.Vertex, indices: []u32, normals: [
         .vertex_layout = layout,
     });
 
-    // for (joints) |j| {
-    //     debug.log("Joint: {d:.1} {d:.1} {d:.1} {d:.1}", .{ j[0], j[1], j[2], j[3] });
-    // }
+    for (joints) |j| {
+        debug.log("Joint: {d:.1} {d:.1} {d:.1} {d:.1}", .{ j[0], j[1], j[2], j[3] });
+    }
+    for (weights) |j| {
+        debug.log("Weights: {d:.1} {d:.1} {d:.1} {d:.1}", .{ j[0], j[1], j[2], j[3] });
+    }
 
     bindings.setWithJoints(vertices, indices, normals, tangents, joints, weights, indices.len);
 

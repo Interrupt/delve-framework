@@ -80,7 +80,8 @@ fn on_init() !void {
         .shader = shader.?,
         .texture_0 = delve.platform.graphics.createSolidTexture(0xFF0000FF),
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
-        .num_uniform_fs_blocks = 2,
+        .num_uniform_vs_blocks = 2,
+        .use_default_params = false,
     });
 
     // Load our mesh!
@@ -107,9 +108,26 @@ fn on_draw() void {
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
 
-    mesh_test.?.material.fs_uniforms[1].?.begin();
-    mesh_test.?.material.fs_uniforms[1].?.addFloat("u_test", std.math.sin(time * 0.1) * 0.5 + 0.5);
-    mesh_test.?.material.fs_uniforms[1].?.end();
+    const test_joint = Mat4.rotate(std.math.sin(time * 0.01) * 30, Vec3.new(1.0, 0.0, 0.0)).invert();
+
+    var uniform_joints = [_]Mat4{Mat4.identity} ** 16;
+    uniform_joints[1] = test_joint;
+    // uniform_joints[3] = test_joint;
+    // uniform_joints[4] = test_joint;
+
+    // uniform_joints[@as(u32, @intFromFloat(time * 0.1)) % 13] = test_joint;
+
+    debug.log("Setting joints!", .{});
+
+    var material: *delve.platform.graphics.Material = &mesh_test.?.material;
+    material.vs_uniforms[0].?.begin();
+    material.vs_uniforms[0].?.addBytesFrom(&uniform_joints);
+    material.vs_uniforms[0].?.end();
+
+    material.setDefaultUniformVars(material.default_vs_uniform_layout, &material.vs_uniforms[1].?, proj_view_matrix, model);
+    material.setDefaultUniformVars(material.default_fs_uniform_layout, &material.fs_uniforms[0].?, proj_view_matrix, model);
+
+    debug.log("Setting joints done", .{});
 
     mesh_test.?.draw(proj_view_matrix, model);
 }

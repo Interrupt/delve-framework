@@ -251,6 +251,10 @@ pub const Vec4 = extern struct {
 pub const Mat4 = extern struct {
     m: [4][4]f32,
 
+    pub fn toArray(self: *const Mat4) [4][4]f32 {
+        return self.m;
+    }
+
     pub fn mul(left: *const Mat4, right: Mat4) Mat4 {
         var res = Mat4.zero;
         var col: usize = 0;

@@ -519,6 +519,9 @@ pub const MaterialConfig = struct {
     // Number of uniform blocks to create. Default to 1 to always make the default block
     num_uniform_vs_blocks: u8 = 1,
     num_uniform_fs_blocks: u8 = 1,
+
+    // whether to automatically bind the 0 slot for a material using MaterialParams
+    use_default_params: bool = true,
 };
 
 /// Material params can get binded automatically to the default uniform block (0)
@@ -539,7 +542,7 @@ pub const MaterialUniformBlock = struct {
         };
     }
 
-    fn addBytesFrom(self: *MaterialUniformBlock, value: anytype) void {
+    pub fn addBytesFrom(self: *MaterialUniformBlock, value: anytype) void {
         self.bytes.appendSlice(std.mem.asBytes(value)) catch {
             debug.log("Error adding material uniform!", .{});
             return;
@@ -559,9 +562,13 @@ pub const MaterialUniformBlock = struct {
         const commit_next: u64 = @intFromFloat(@ceil(sizef / 16));
         const commit_size = commit_next * 16;
 
+        debug.log("Commiting block {d}", .{self.size});
+
         if (self.size < commit_size) {
             const diff_bytes = commit_size - self.size;
             self.addPadding(diff_bytes);
+
+            debug.log("Added padding: {d}", .{diff_bytes});
         }
     }
 
@@ -647,6 +654,7 @@ pub const Material = struct {
     depth_write_enabled: bool,
     depth_compare: CompareFunc,
     cull_mode: CullMode,
+    use_default_params: bool = true,
 
     // Material params are used for automatic binding
     params: MaterialParams = MaterialParams{},
@@ -669,6 +677,7 @@ pub const Material = struct {
             .cull_mode = cfg.cull_mode,
             .default_vs_uniform_layout = cfg.default_vs_uniform_layout,
             .default_fs_uniform_layout = cfg.default_fs_uniform_layout,
+            .use_default_params = cfg.use_default_params,
         };
 
         // Make samplers from filter modes
@@ -756,11 +765,11 @@ pub const Material = struct {
         const has_default_fs: bool = self.default_fs_uniform_layout.len > 0;
 
         // Set our default uniform vars first
-        if (has_default_vs) {
+        if (has_default_vs and self.use_default_params) {
             if (self.vs_uniforms[0] != null)
                 self.setDefaultUniformVars(self.default_vs_uniform_layout, &self.vs_uniforms[0].?, proj_view_matrix, model_matrix);
         }
-        if (has_default_fs) {
+        if (has_default_fs and self.use_default_params) {
             if (self.fs_uniforms[0] != null)
                 self.setDefaultUniformVars(self.default_fs_uniform_layout, &self.fs_uniforms[0].?, proj_view_matrix, model_matrix);
         }

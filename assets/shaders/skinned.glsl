@@ -14,6 +14,10 @@ uniform vs_params {
     vec4 u_color;
 };
 
+uniform vs_more_params {
+    mat4 u_joints[16];
+};
+
 in vec4 pos;
 in vec4 color0;
 in vec2 texcoord0;
@@ -30,7 +34,17 @@ out vec4 joint;
 out vec4 weight;
 
 void main() {
-    gl_Position = u_projViewMatrix * u_modelMatrix * pos;
+    mat4 skin = (weights.x * u_joints[int(joints.x)] +
+                weights.y * u_joints[int(joints.y)] +
+                weights.z * u_joints[int(joints.z)] +
+                weights.w * u_joints[int(joints.w)]);
+
+    mat4 model = u_modelMatrix * skin;
+
+    // mat4 skin = (weights.x * u_joints[int(joints.x)]);
+    // mat4 model = u_modelMatrix;
+
+    gl_Position = u_projViewMatrix * model * pos;
     color = color0 * u_color;
     uv = texcoord0;
 
@@ -53,10 +67,6 @@ uniform sampler smp;
 uniform fs_params {
     vec4 u_color_override;
     float u_alpha_cutoff;
-};
-
-uniform fs_more_params {
-    float u_test;
 };
 
 in vec4 color;
@@ -85,7 +95,7 @@ void main() {
     float override_mod = 1.0 - u_color_override.a;
     c.rgb = (c.rgb * override_mod) + (u_color_override.rgb * u_color_override.a);
 
-    frag_color = c * u_test;
+    frag_color = c;
 }
 #pragma sokol @end
 
