@@ -15,7 +15,7 @@ uniform vs_params {
 };
 
 uniform vs_more_params {
-    mat4 u_joints[16];
+    mat4 u_joints[64];
 };
 
 in vec4 pos;

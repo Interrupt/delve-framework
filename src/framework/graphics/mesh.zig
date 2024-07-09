@@ -30,17 +30,19 @@ pub const Mesh = struct {
     bindings: graphics.Bindings = undefined,
     material: graphics.Material = undefined,
     bounds: boundingbox.BoundingBox = undefined,
+    zmesh_data: *zmesh.io.zcgltf.Data = undefined,
+    joint_locations: [64]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** 64,
 
     pub fn initFromFile(allocator: std.mem.Allocator, filename: [:0]const u8, cfg: MeshConfig) ?Mesh {
         zmesh.init(allocator);
-        defer zmesh.deinit();
+        // defer zmesh.deinit();
 
         const data = zmesh.io.parseAndLoadFile(filename) catch {
             debug.log("Could not load mesh file {s}", .{filename});
             return null;
         };
 
-        defer zmesh.io.freeData(data);
+        // defer zmesh.io.freeData(data);
 
         var mesh_indices = std.ArrayList(u32).init(allocator);
         var mesh_positions = std.ArrayList([3]f32).init(allocator);
@@ -142,7 +144,7 @@ pub const Mesh = struct {
         debug.log("Found {d} joints in mesh", .{mesh_joints.items.len});
         debug.log("Found {d} weights in mesh", .{mesh_weights.items.len});
 
-        return createSkinnedMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_joints.items, mesh_weights.items, material);
+        return createSkinnedMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_joints.items, mesh_weights.items, material, data);
     }
 
     pub fn deinit(self: *Mesh) void {
@@ -158,6 +160,68 @@ pub const Mesh = struct {
     pub fn drawWithMaterial(self: *Mesh, material: *graphics.Material, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
         graphics.drawWithMaterial(&self.bindings, material, proj_view_matrix, model_matrix);
     }
+
+    pub fn sampleAnimation(self: *Mesh, sampler: *zmesh.io.zcgltf.AnimationSampler, time: f32) void {
+        _ = time;
+        _ = sampler;
+        _ = self;
+
+        // const samples = self.model.getFloatBuffer(self.model.gltf.data.accessors.items[sampler.input]);
+        // const data = self.model.getFloatBuffer(self.model.gltf.data.accessors.items[sampler.output]);
+    }
+
+    pub fn updateAnimation(self: *Mesh, time: f32) void {
+        _ = time;
+        const nodes = self.zmesh_data.nodes;
+        const nodes_count = self.zmesh_data.nodes_count;
+
+        var local_transforms: [64]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** 64;
+
+        for (0..nodes_count) |i| {
+            const node = nodes.?[i];
+            local_transforms[i] = math.Mat4.translate(math.Vec3.fromArray(node.translation)).mul(math.Mat4.scale(math.Vec3.fromArray(node.scale)));
+        }
+
+        const animation = self.zmesh_data.animations.?[0];
+        for (0..animation.channels_count) |i| {
+            const channel = animation.channels[i];
+            const sampler = channel.sampler;
+
+            if (channel.target_path == .translation) {
+                _ = sampler;
+                // check sampler here!
+                var node_idx: usize = 0;
+                for (0..nodes_count) |ni| {
+                    if (&nodes.?[ni] == channel.target_node.?) {
+                        node_idx = ni;
+                        // debug.log("Found target node! {d}", .{ni});
+                        break;
+                    }
+                }
+
+                local_transforms[node_idx] = math.Mat4.identity;
+            }
+        }
+
+        // update each joint location based on each node in the joint heirarchy
+        for (0..nodes_count) |i| {
+            var node = nodes.?[i];
+            self.joint_locations[i] = local_transforms[i];
+            while (node.parent) |parent| : (node = parent.*) {
+                var parent_idx: usize = 0;
+                for (0..nodes_count) |ni| {
+                    if (&nodes.?[ni] == parent) {
+                        parent_idx = ni;
+                        // debug.log("Found parent target node! {d}", .{ni});
+                        break;
+                    }
+                }
+
+                const parent_transform = local_transforms[parent_idx];
+                self.joint_locations[i] = parent_transform.mul(self.joint_locations[i]);
+            }
+        }
+    }
 };
 
 /// Create a mesh out of some vertex data
@@ -166,7 +230,7 @@ pub fn createMesh(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32
     return createMeshWithLayout(vertices, indices, normals, tangents, material, vertex_layout);
 }
 
-pub fn createSkinnedMesh(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, joints: [][4]f32, weights: [][4]f32, material: graphics.Material) Mesh {
+pub fn createSkinnedMesh(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, joints: [][4]f32, weights: [][4]f32, material: graphics.Material, data: *zmesh.io.zcgltf.Data) Mesh {
     // create a mesh with the default vertex layout
     debug.log("Creating skinned mesh: {d} indices, {d} normals, {d}tangents, {d}joints, {d}weights", .{ indices.len, normals.len, tangents.len, joints.len, weights.len });
 
@@ -190,6 +254,7 @@ pub fn createSkinnedMesh(vertices: []graphics.Vertex, indices: []u32, normals: [
         .bindings = bindings,
         .material = material,
         .bounds = boundingbox.BoundingBox.initFromVerts(vertices),
+        .zmesh_data = data,
     };
     return m;
 }

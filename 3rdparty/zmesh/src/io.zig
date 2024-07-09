@@ -146,6 +146,20 @@ pub fn appendMeshPrimitive(
     }
 }
 
+pub fn getAnimationSamplerData(sampler: *zcgltf.AnimationSampler) void {
+    const buffer_view = sampler.accessor.buffer_view.?;
+    assert(buffer_view.buffer.data != null);
+    assert(sampler.accessor.stride == buffer_view.stride or buffer_view.stride == 0);
+
+    const data_addr = @as([*]const u8, @ptrCast(buffer_view.buffer.data)) +
+        sampler.accessor.offset + buffer_view.offset;
+    _ = data_addr;
+
+    // const slice = @as([*]const [3]f32, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
+
+    return;
+}
+
 test {
     std.testing.refAllDeclsRecursive(@This());
 }
