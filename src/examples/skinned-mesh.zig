@@ -63,7 +63,7 @@ fn on_init() !void {
     graphics.setClearColor(colors.examples_bg_light);
 
     // Make a perspective camera, with a 90 degree FOV
-    camera = cam.Camera.initThirdPerson(90.0, 0.01, 50.0, 10.0, Vec3.up);
+    camera = cam.Camera.initThirdPerson(90.0, 0.01, 50.0, 2.0, Vec3.up);
     camera.position = Vec3.new(0.0, 0.0, 0.0);
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
@@ -108,15 +108,6 @@ fn on_draw() void {
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
 
-    // const test_joint = Mat4.rotate(std.math.sin(time * 0.01) * 30, Vec3.new(1.0, 0.0, 0.0)).invert();
-    // var uniform_joints = [_]Mat4{Mat4.identity} ** 64;
-    // uniform_joints[1] = test_joint;
-    // uniform_joints[3] = test_joint;
-    // uniform_joints[4] = test_joint;
-    // uniform_joints[@as(u32, @intFromFloat(time * 0.1)) % 13] = test_joint;
-
-    debug.log("Setting joints!", .{});
-
     mesh_test.?.updateAnimation(time);
 
     var material: *delve.platform.graphics.Material = &mesh_test.?.material;
@@ -127,15 +118,7 @@ fn on_draw() void {
     material.setDefaultUniformVars(material.default_vs_uniform_layout, &material.vs_uniforms[1].?, proj_view_matrix, model);
     material.setDefaultUniformVars(material.default_fs_uniform_layout, &material.fs_uniforms[0].?, proj_view_matrix, model);
 
-    debug.log("Setting joints done", .{});
-
     mesh_test.?.draw(proj_view_matrix, model);
-
-    var bytes = [_]u8{0} ** 64; // 64 bytes of zeroes
-    const ptr: *[4]u8 = bytes[8..12];
-    const float_val: f32 = @bitCast(ptr.*);
-
-    debug.log("Float val: {d:.2}", .{float_val});
 }
 
 fn on_cleanup() !void {

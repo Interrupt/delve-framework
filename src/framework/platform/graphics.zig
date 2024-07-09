@@ -562,13 +562,9 @@ pub const MaterialUniformBlock = struct {
         const commit_next: u64 = @intFromFloat(@ceil(sizef / 16));
         const commit_size = commit_next * 16;
 
-        debug.log("Commiting block {d}", .{self.size});
-
         if (self.size < commit_size) {
             const diff_bytes = commit_size - self.size;
             self.addPadding(diff_bytes);
-
-            debug.log("Added padding: {d}", .{diff_bytes});
         }
     }
 

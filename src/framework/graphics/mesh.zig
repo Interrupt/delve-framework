@@ -171,14 +171,17 @@ pub const Mesh = struct {
     }
 
     pub fn updateAnimation(self: *Mesh, time: f32) void {
-        _ = time;
-        const nodes = self.zmesh_data.nodes;
-        const nodes_count = self.zmesh_data.nodes_count;
+        if (self.zmesh_data.skins == null)
+            return;
+
+        const nodes = self.zmesh_data.skins.?[0].joints;
+        // const nodes_count = self.zmesh_data.nodes_count;
+        const nodes_count = self.zmesh_data.skins.?[0].joints_count;
 
         var local_transforms: [64]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** 64;
 
         for (0..nodes_count) |i| {
-            const node = nodes.?[i];
+            const node = nodes[i];
             local_transforms[i] = math.Mat4.translate(math.Vec3.fromArray(node.translation)).mul(math.Mat4.scale(math.Vec3.fromArray(node.scale)));
         }
 
@@ -190,11 +193,11 @@ pub const Mesh = struct {
             if (channel.target_path == .translation) {
                 _ = sampler;
                 // check sampler here!
+
                 var node_idx: usize = 0;
                 for (0..nodes_count) |ni| {
-                    if (&nodes.?[ni] == channel.target_node.?) {
+                    if (nodes[ni] == channel.target_node.?) {
                         node_idx = ni;
-                        // debug.log("Found target node! {d}", .{ni});
                         break;
                     }
                 }
@@ -203,16 +206,20 @@ pub const Mesh = struct {
             }
         }
 
+        // test moving a joint around to check the joint chain heirarchy
+        const test_joint_idx = @as(usize, @intFromFloat(time * 0.03)) % nodes_count;
+        local_transforms[test_joint_idx] = math.Mat4.translate(math.Vec3.new(std.math.sin(time * 0.04) * 0.1, 0.0, 0.0));
+
         // update each joint location based on each node in the joint heirarchy
         for (0..nodes_count) |i| {
-            var node = nodes.?[i];
+            var node = nodes[i];
             self.joint_locations[i] = local_transforms[i];
-            while (node.parent) |parent| : (node = parent.*) {
+
+            while (node.parent) |parent| : (node = parent) {
                 var parent_idx: usize = 0;
                 for (0..nodes_count) |ni| {
-                    if (&nodes.?[ni] == parent) {
+                    if (nodes[ni] == parent) {
                         parent_idx = ni;
-                        // debug.log("Found parent target node! {d}", .{ni});
                         break;
                     }
                 }
@@ -232,7 +239,7 @@ pub fn createMesh(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32
 
 pub fn createSkinnedMesh(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, joints: [][4]f32, weights: [][4]f32, material: graphics.Material, data: *zmesh.io.zcgltf.Data) Mesh {
     // create a mesh with the default vertex layout
-    debug.log("Creating skinned mesh: {d} indices, {d} normals, {d}tangents, {d}joints, {d}weights", .{ indices.len, normals.len, tangents.len, joints.len, weights.len });
+    // debug.log("Creating skinned mesh: {d} indices, {d} normals, {d}tangents, {d} joints, {d} weights", .{ indices.len, normals.len, tangents.len, joints.len, weights.len });
 
     const layout = getSkinnedVertexLayout();
     var bindings = graphics.Bindings.init(.{
@@ -241,12 +248,12 @@ pub fn createSkinnedMesh(vertices: []graphics.Vertex, indices: []u32, normals: [
         .vertex_layout = layout,
     });
 
-    for (joints) |j| {
-        debug.log("Joint: {d:.1} {d:.1} {d:.1} {d:.1}", .{ j[0], j[1], j[2], j[3] });
-    }
-    for (weights) |j| {
-        debug.log("Weights: {d:.1} {d:.1} {d:.1} {d:.1}", .{ j[0], j[1], j[2], j[3] });
-    }
+    // for (joints) |j| {
+    //     debug.log("Joint: {d:.1} {d:.1} {d:.1} {d:.1}", .{ j[0], j[1], j[2], j[3] });
+    // }
+    // for (weights) |j| {
+    //     debug.log("Weights: {d:.1} {d:.1} {d:.1} {d:.1}", .{ j[0], j[1], j[2], j[3] });
+    // }
 
     bindings.setWithJoints(vertices, indices, normals, tangents, joints, weights, indices.len);
 
