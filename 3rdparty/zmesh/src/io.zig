@@ -52,7 +52,7 @@ pub fn appendMeshPrimitive(
         const buffer_view = accessor.buffer_view.?;
 
         assert(accessor.stride == buffer_view.stride or buffer_view.stride == 0);
-        assert(accessor.stride * accessor.count == buffer_view.size);
+        // assert(accessor.stride * accessor.count == buffer_view.size);
         assert(buffer_view.buffer.data != null);
 
         const data_addr = @as([*]const u8, @ptrCast(buffer_view.buffer.data)) +
@@ -146,18 +146,32 @@ pub fn appendMeshPrimitive(
     }
 }
 
-pub fn getAnimationSamplerData(sampler: *zcgltf.AnimationSampler) void {
-    const buffer_view = sampler.accessor.buffer_view.?;
+pub fn getAnimationSamplerData(accessor: *zcgltf.Accessor) []const f32 {
+    const buffer_view = accessor.buffer_view.?;
+    // std.debug.print("accessor type:   {}\n", .{accessor.component_type});
+    // std.debug.print("accessor count:  {d}\n", .{accessor.count});
+    // std.debug.print("accessor type:   {}\n", .{accessor.type});
+    // std.debug.print("accessor stride: {d}\n", .{accessor.stride});
+
     assert(buffer_view.buffer.data != null);
-    assert(sampler.accessor.stride == buffer_view.stride or buffer_view.stride == 0);
+    assert(accessor.stride == buffer_view.stride or buffer_view.stride == 0);
 
-    const data_addr = @as([*]const u8, @ptrCast(buffer_view.buffer.data)) +
-        sampler.accessor.offset + buffer_view.offset;
-    _ = data_addr;
+    const data_addr = @as([*]const u8, @ptrCast(buffer_view.buffer.data)) + accessor.offset + buffer_view.offset;
 
-    // const slice = @as([*]const [3]f32, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
+    const slice = @as([*]const f32, @ptrCast(@alignCast(data_addr)))[0 .. accessor.count * zcgltf.Type.numComponents(accessor.type)];
+    return slice;
+}
 
-    return;
+pub fn computeAnimationDuration(animation: *const zcgltf.Animation) f32 {
+    var duration: f32 = 0;
+
+    for (0..animation.samplers_count, animation.samplers) |_, sampler| {
+        const samples = getAnimationSamplerData(sampler.input);
+        duration = @max(duration, samples[samples.len - 1]);
+    }
+
+    // std.debug.print("Computed animation duration: {d:.2}\n", .{duration});
+    return duration;
 }
 
 test {

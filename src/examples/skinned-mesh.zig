@@ -75,17 +75,24 @@ fn on_init() !void {
         return;
     }
 
+    const base_texture_file = "assets/meshes/CesiumMan.png";
+    var base_img: images.Image = images.loadFile(base_texture_file) catch {
+        debug.log("Assets: Error loading image asset: {s}", .{base_texture_file});
+        return;
+    };
+    const tex_base = graphics.Texture.init(&base_img);
+
     // Create a material out of our shader and textures
     const material = delve.platform.graphics.Material.init(.{
         .shader = shader.?,
-        .texture_0 = delve.platform.graphics.createSolidTexture(0xFF0000FF),
+        .texture_0 = tex_base,
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
         .num_uniform_vs_blocks = 2,
         .use_default_params = false,
     });
 
     // Load our mesh!
-    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), "assets/meshes/RiggedFigure.gltf", .{ .material = material });
+    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), "assets/meshes/CesiumMan.gltf", .{ .material = material });
 }
 
 fn on_tick(delta: f32) void {

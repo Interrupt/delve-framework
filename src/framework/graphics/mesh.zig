@@ -161,39 +161,94 @@ pub const Mesh = struct {
         graphics.drawWithMaterial(&self.bindings, material, proj_view_matrix, model_matrix);
     }
 
-    pub fn sampleAnimation(self: *Mesh, sampler: *zmesh.io.zcgltf.AnimationSampler, time: f32) void {
-        _ = time;
-        _ = sampler;
+    pub fn sampleAnimation(self: *Mesh, sampler: *zmesh.io.zcgltf.AnimationSampler, t: f32) math.Vec3 {
         _ = self;
 
-        // const samples = self.model.getFloatBuffer(self.model.gltf.data.accessors.items[sampler.input]);
-        // const data = self.model.getFloatBuffer(self.model.gltf.data.accessors.items[sampler.output]);
+        const samples = zmesh.io.getAnimationSamplerData(sampler.input);
+        const data = zmesh.io.getAnimationSamplerData(sampler.output);
+
+        switch (sampler.interpolation) {
+            .step => {
+                // debug.log("Step animation!", .{});
+                return access(math.Vec3, data, stepInterpolation(samples, t));
+            },
+            .linear => {
+                // debug.log("Lerp animation!", .{});
+                const r = linearInterpolation(samples, t);
+                const v0 = access(math.Vec3, data, r.prev_i);
+                const v1 = access(math.Vec3, data, r.next_i);
+                return math.Vec3.lerp(v0, v1, r.alpha);
+            },
+            .cubic_spline => {
+                @panic("Cubicspline in animations not implemented!");
+            },
+        }
+    }
+
+    /// Returns the index of the last sample less than `t`.
+    fn stepInterpolation(samples: []const f32, t: f32) usize {
+        std.debug.assert(samples.len > 0);
+        const S = struct {
+            fn lessThan(_: void, lhs: f32, rhs: f32) bool {
+                return lhs < rhs;
+            }
+        };
+        const i = std.sort.lowerBound(f32, t, samples, {}, S.lessThan);
+        return if (i > 0) i - 1 else 0;
+    }
+
+    /// Returns the indices of the samples around `t` and `alpha` to interpolate between those.
+    fn linearInterpolation(samples: []const f32, t: f32) struct {
+        prev_i: usize,
+        next_i: usize,
+        alpha: f32,
+    } {
+        const i = stepInterpolation(samples, t);
+        if (i == samples.len - 1) return .{ .prev_i = i, .next_i = i, .alpha = 0 };
+
+        const d = samples[i + 1] - samples[i];
+        std.debug.assert(d > 0);
+        const alpha = std.math.clamp((t - samples[i]) / d, 0, 1);
+
+        return .{ .prev_i = i, .next_i = i + 1, .alpha = alpha };
+    }
+
+    pub fn access(comptime T: type, data: []const f32, i: usize) T {
+        return switch (T) {
+            Vec3 => Vec3.new(data[3 * i + 0], data[3 * i + 1], data[3 * i + 2]),
+            // Quat => Quat.new(data[4 * i + 3], data[4 * i + 0], data[4 * i + 1], data[4 * i + 2]),
+            // Mat4 => Mat4.fromSlice(data[16 * i ..][0..16]),
+            else => @compileError("unexpected type"),
+        };
     }
 
     pub fn updateAnimation(self: *Mesh, time: f32) void {
         if (self.zmesh_data.skins == null)
             return;
 
+        const animation = self.zmesh_data.animations.?[0];
+        const animation_duration = zmesh.io.computeAnimationDuration(&animation);
+
+        // loop animation for now!
+        const t: f32 = @mod(time * 0.01, animation_duration);
+        // debug.log("Animation time: {d:.2}", .{t});
+
         const nodes = self.zmesh_data.skins.?[0].joints;
-        // const nodes_count = self.zmesh_data.nodes_count;
         const nodes_count = self.zmesh_data.skins.?[0].joints_count;
 
         var local_transforms: [64]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** 64;
 
         for (0..nodes_count) |i| {
-            const node = nodes[i];
-            local_transforms[i] = math.Mat4.translate(math.Vec3.fromArray(node.translation)).mul(math.Mat4.scale(math.Vec3.fromArray(node.scale)));
+            // const node = nodes[i];
+            // local_transforms[i] = math.Mat4.translate(math.Vec3.fromArray(node.translation)).mul(math.Mat4.scale(math.Vec3.fromArray(node.scale)));
+            local_transforms[i] = math.Mat4.identity;
         }
 
-        const animation = self.zmesh_data.animations.?[0];
         for (0..animation.channels_count) |i| {
             const channel = animation.channels[i];
             const sampler = channel.sampler;
 
             if (channel.target_path == .translation) {
-                _ = sampler;
-                // check sampler here!
-
                 var node_idx: usize = 0;
                 for (0..nodes_count) |ni| {
                     if (nodes[ni] == channel.target_node.?) {
@@ -202,13 +257,16 @@ pub const Mesh = struct {
                     }
                 }
 
-                local_transforms[node_idx] = math.Mat4.identity;
+                const sampled = self.sampleAnimation(sampler, t);
+
+                // debug.log("Channel {d} Sampled: {d:.2} {d:.2} {d:.2}", .{ i, sampled.x, sampled.y, sampled.z });
+                local_transforms[node_idx] = local_transforms[node_idx].mul(math.Mat4.translate(sampled));
             }
         }
 
         // test moving a joint around to check the joint chain heirarchy
-        const test_joint_idx = @as(usize, @intFromFloat(time * 0.03)) % nodes_count;
-        local_transforms[test_joint_idx] = math.Mat4.translate(math.Vec3.new(std.math.sin(time * 0.04) * 0.1, 0.0, 0.0));
+        // const test_joint_idx = @as(usize, @intFromFloat(time * 0.03)) % nodes_count;
+        // local_transforms[test_joint_idx] = math.Mat4.translate(math.Vec3.new(std.math.sin(time * 0.04) * 0.1, 0.0, 0.0));
 
         // update each joint location based on each node in the joint heirarchy
         for (0..nodes_count) |i| {

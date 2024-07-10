@@ -54,9 +54,9 @@ void main() {
     joint = joints;
     weight = weights;
 
-    color.r = joint.x * weight.x;
-    color.g = joint.y * weight.y;
-    color.b = joint.z * weight.z;
+    // color.r = joint.x * weight.x;
+    // color.g = joint.y * weight.y;
+    // color.b = joint.z * weight.z;
 }
 #pragma sokol @end
 
