@@ -275,10 +275,9 @@ pub const Mesh = struct {
 
         for (0..nodes_count) |i| {
             const node = nodes[i];
-            _ = node;
-            // local_transforms[i] = math.Mat4.translate(math.Vec3.fromArray(node.translation)).mul(math.Mat4.scale(math.Vec3.fromArray(node.scale)));
-            // local_transforms[i] = local_transforms[i].mul(math.Quaternion.new(node.rotation[0], node.rotation[1], node.rotation[2], node.rotation[3]).toMat4());
-            local_transforms[i] = math.Mat4.identity;
+            local_transforms[i] = math.Mat4.translate(math.Vec3.fromArray(node.translation)).mul(math.Mat4.scale(math.Vec3.fromArray(node.scale)));
+            local_transforms[i] = local_transforms[i].mul(math.Quaternion.new(node.rotation[0], node.rotation[1], node.rotation[2], node.rotation[3]).toMat4());
+            local_transforms[i] = local_transforms[i].invert();
         }
 
         // debug.log("Animation: {} {}", .{ animation.channels_count, animation.samplers_count });
