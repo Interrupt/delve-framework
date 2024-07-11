@@ -235,7 +235,7 @@ pub const Mesh = struct {
         return switch (T) {
             Vec3 => Vec3.new(data[3 * i + 0], data[3 * i + 1], data[3 * i + 2]),
             math.Quaternion => math.Quaternion.new(data[4 * i + 0], data[4 * i + 1], data[4 * i + 2], data[4 * i + 3]),
-            // Mat4 => Mat4.fromSlice(data[16 * i ..][0..16]),
+            math.Mat4 => math.Mat4.fromSlice(data[16 * i ..][0..16]),
             else => @compileError("unexpected type"),
         };
     }
@@ -274,10 +274,10 @@ pub const Mesh = struct {
         var local_transforms: [64]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** 64;
 
         for (0..nodes_count) |i| {
-            const node = nodes[i];
-            local_transforms[i] = math.Mat4.translate(math.Vec3.fromArray(node.translation)).mul(math.Mat4.scale(math.Vec3.fromArray(node.scale)));
-            local_transforms[i] = local_transforms[i].mul(math.Quaternion.new(node.rotation[0], node.rotation[1], node.rotation[2], node.rotation[3]).toMat4());
-            local_transforms[i] = local_transforms[i].invert();
+            // const node = nodes[i];
+            // local_transforms[i] = math.Mat4.translate(math.Vec3.fromArray(node.translation)).mul(math.Mat4.scale(math.Vec3.fromArray(node.scale)));
+            // local_transforms[i] = local_transforms[i].mul(math.Quaternion.new(node.rotation[0], node.rotation[1], node.rotation[2], node.rotation[3]).toMat4());
+            local_transforms[i] = math.Mat4.identity;
         }
 
         // debug.log("Animation: {} {}", .{ animation.channels_count, animation.samplers_count });
@@ -336,6 +336,13 @@ pub const Mesh = struct {
                 const parent_transform = local_transforms[parent_idx];
                 self.joint_locations[i] = parent_transform.mul(self.joint_locations[i]);
             }
+        }
+
+        // apply the inverse bind matrices
+        const inverse_bind_mat_data = zmesh.io.getAnimationSamplerData(self.zmesh_data.skins.?[0].inverse_bind_matrices.?);
+        for (0..nodes_count) |i| {
+            const inverse_mat = access(math.Mat4, inverse_bind_mat_data, i);
+            self.joint_locations[i] = self.joint_locations[i].mul(inverse_mat);
         }
     }
 };

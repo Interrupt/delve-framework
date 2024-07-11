@@ -255,6 +255,27 @@ pub const Mat4 = extern struct {
         return self.m;
     }
 
+    pub fn fromSlice(slice: *const [16]f32) Mat4 {
+        var res = Mat4.zero;
+        res.m[0][0] = slice[0];
+        res.m[0][1] = slice[1];
+        res.m[0][2] = slice[2];
+        res.m[0][3] = slice[3];
+        res.m[1][0] = slice[4];
+        res.m[1][1] = slice[5];
+        res.m[1][2] = slice[6];
+        res.m[1][3] = slice[7];
+        res.m[2][0] = slice[8];
+        res.m[2][1] = slice[9];
+        res.m[2][2] = slice[10];
+        res.m[2][3] = slice[11];
+        res.m[3][0] = slice[12];
+        res.m[3][1] = slice[13];
+        res.m[3][2] = slice[14];
+        res.m[3][3] = slice[15];
+        return res;
+    }
+
     pub fn mul(left: *const Mat4, right: Mat4) Mat4 {
         var res = Mat4.zero;
         var col: usize = 0;
