@@ -170,7 +170,7 @@ pub const Mesh = struct {
         graphics.drawWithMaterial(&self.bindings, material, proj_view_matrix, model_matrix);
     }
 
-    pub fn sampleAnimation(self: *Mesh, sampler: zmesh.io.zcgltf.AnimationSampler, t: f32) math.Vec3 {
+    pub fn sampleAnimation(self: *Mesh, comptime T: type, sampler: zmesh.io.zcgltf.AnimationSampler, t: f32) T {
         _ = self;
 
         const samples = zmesh.io.getAnimationSamplerData(sampler.input);
@@ -179,17 +179,21 @@ pub const Mesh = struct {
         switch (sampler.interpolation) {
             .step => {
                 // debug.log("Step animation!", .{});
-                return access(math.Vec3, data, stepInterpolation(samples, t));
+                return access(T, data, stepInterpolation(samples, t));
             },
             .linear => {
                 // debug.log("Lerp animation!", .{});
                 const r = linearInterpolation(samples, t);
-                const v0 = access(math.Vec3, data, r.prev_i);
-                const v1 = access(math.Vec3, data, r.next_i);
+                const v0 = access(T, data, r.prev_i);
+                const v1 = access(T, data, r.next_i);
 
                 // debug.log("    v0 {d:.2} {d:.2} {d:.2} v1 {d:.2} {d:.2} {d:.2}", .{ v0.x, v0.y, v0.z, v1.x, v1.y, v1.z });
 
-                return math.Vec3.lerp(v0, v1, r.alpha);
+                if (T == math.Quaternion) {
+                    return T.slerp(v0, v1, r.alpha);
+                }
+
+                return T.lerp(v0, v1, r.alpha);
             },
             .cubic_spline => {
                 @panic("Cubicspline in animations not implemented!");
@@ -230,7 +234,7 @@ pub const Mesh = struct {
     pub fn access(comptime T: type, data: []const f32, i: usize) T {
         return switch (T) {
             Vec3 => Vec3.new(data[3 * i + 0], data[3 * i + 1], data[3 * i + 2]),
-            // Quat => Quat.new(data[4 * i + 3], data[4 * i + 0], data[4 * i + 1], data[4 * i + 2]),
+            math.Quaternion => math.Quaternion.new(data[4 * i + 0], data[4 * i + 1], data[4 * i + 2], data[4 * i + 3]),
             // Mat4 => Mat4.fromSlice(data[16 * i ..][0..16]),
             else => @compileError("unexpected type"),
         };
@@ -270,8 +274,10 @@ pub const Mesh = struct {
         var local_transforms: [64]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** 64;
 
         for (0..nodes_count) |i| {
-            // const node = nodes[i];
+            const node = nodes[i];
+            _ = node;
             // local_transforms[i] = math.Mat4.translate(math.Vec3.fromArray(node.translation)).mul(math.Mat4.scale(math.Vec3.fromArray(node.scale)));
+            // local_transforms[i] = local_transforms[i].mul(math.Quaternion.new(node.rotation[0], node.rotation[1], node.rotation[2], node.rotation[3]).toMat4());
             local_transforms[i] = math.Mat4.identity;
         }
 
@@ -283,12 +289,16 @@ pub const Mesh = struct {
             var sampled_mat: math.Mat4 = math.Mat4.identity;
             switch (channel.target_path) {
                 .translation => {
-                    const sampled_translation = self.sampleAnimation(sampler, t);
+                    const sampled_translation = self.sampleAnimation(math.Vec3, sampler, t);
                     sampled_mat = math.Mat4.translate(sampled_translation);
                 },
                 .scale => {
-                    const sampled_scale = self.sampleAnimation(sampler, t);
+                    const sampled_scale = self.sampleAnimation(math.Vec3, sampler, t);
                     sampled_mat = math.Mat4.scale(sampled_scale);
+                },
+                .rotation => {
+                    const sampled_quaternion = self.sampleAnimation(math.Quaternion, sampler, t);
+                    sampled_mat = sampled_quaternion.toMat4();
                 },
                 else => {
                     sampled_mat = math.Mat4.identity;

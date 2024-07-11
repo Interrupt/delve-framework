@@ -26,7 +26,7 @@ var time: f32 = 0.0;
 var mesh_test: ?mesh.Mesh = null;
 var camera: cam.Camera = undefined;
 
-const mesh_file = "assets/meshes/CesiumMan.gltf";
+const mesh_file = "assets/meshes/RiggedSimple.gltf";
 const mesh_texture_file = "assets/meshes/CesiumMan.png";
 
 // This example shows loading and drawing meshes
