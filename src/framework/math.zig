@@ -488,8 +488,21 @@ pub const Quaternion = struct {
     }
 
     pub fn norm(self: *const Quaternion) Quaternion {
-        const r = Vec4.new(self.x, self.y, self.z, self.w).norm();
-        return Quaternion.new(r.x, r.y, r.z, r.w);
+        const l = self.length();
+        if (l == 0) {
+            return self.*;
+        }
+
+        return Quaternion.new(
+            self.x / l,
+            self.y / l,
+            self.z / l,
+            self.w / l,
+        );
+    }
+
+    pub fn length(self: *const Quaternion) f32 {
+        return @sqrt(self.dot(self.*));
     }
 
     pub fn add(left: Quaternion, right: Quaternion) Quaternion {
