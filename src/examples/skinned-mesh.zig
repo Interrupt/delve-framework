@@ -26,6 +26,9 @@ var time: f32 = 0.0;
 var mesh_test: ?mesh.Mesh = null;
 var camera: cam.Camera = undefined;
 
+const mesh_file = "assets/meshes/CesiumMan.gltf";
+const mesh_texture_file = "assets/meshes/CesiumMan.png";
+
 // This example shows loading and drawing meshes
 
 // Web build note: this does not seem to work when built in --release=fast or --release=small
@@ -42,7 +45,7 @@ pub fn main() !void {
     }
 
     try registerModule();
-    try app.start(app.AppConfig{ .title = "Delve Framework - Skinned Mesh Drawing Example" });
+    try app.start(app.AppConfig{ .title = "Delve Framework - Skinned Mesh Drawing Example", .sampler_pool_size = 1024 });
 }
 
 pub fn registerModule() !void {
@@ -75,9 +78,8 @@ fn on_init() !void {
         return;
     }
 
-    const base_texture_file = "assets/meshes/CesiumMan.png";
-    var base_img: images.Image = images.loadFile(base_texture_file) catch {
-        debug.log("Assets: Error loading image asset: {s}", .{base_texture_file});
+    var base_img: images.Image = images.loadFile(mesh_texture_file) catch {
+        debug.log("Assets: Error loading image asset: {s}", .{mesh_texture_file});
         return;
     };
     const tex_base = graphics.Texture.init(&base_img);
@@ -89,10 +91,11 @@ fn on_init() !void {
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
         .num_uniform_vs_blocks = 2,
         .use_default_params = false,
+        .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
 
     // Load our mesh!
-    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), "assets/meshes/CesiumMan.gltf", .{ .material = material });
+    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = material });
 }
 
 fn on_tick(delta: f32) void {
@@ -100,6 +103,8 @@ fn on_tick(delta: f32) void {
     camera.runSimpleCamera(4 * delta, 120 * delta, false);
 
     time += delta * 100;
+
+    mesh_test.?.updateAnimation(delta);
 
     if (input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
@@ -114,8 +119,6 @@ fn on_draw() void {
 
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
-
-    mesh_test.?.updateAnimation(time);
 
     var material: *delve.platform.graphics.Material = &mesh_test.?.material;
     material.vs_uniforms[0].?.begin();

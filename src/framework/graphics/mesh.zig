@@ -31,7 +31,10 @@ pub const Mesh = struct {
     material: graphics.Material = undefined,
     bounds: boundingbox.BoundingBox = undefined,
     zmesh_data: *zmesh.io.zcgltf.Data = undefined,
+
     joint_locations: [64]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** 64,
+    current_anim: usize = 0,
+    current_anim_time: f32 = 0,
 
     pub fn initFromFile(allocator: std.mem.Allocator, filename: [:0]const u8, cfg: MeshConfig) ?Mesh {
         zmesh.init(allocator);
@@ -58,21 +61,23 @@ pub const Mesh = struct {
         defer mesh_normals.deinit();
         defer mesh_texcoords.deinit();
 
-        zmesh.io.appendMeshPrimitive(
-            data, // *zmesh.io.cgltf.Data
-            0, // mesh index
-            0, // gltf primitive index (submesh index)
-            &mesh_indices,
-            &mesh_positions,
-            &mesh_normals, // normals (optional)
-            &mesh_texcoords, // texcoords (optional)
-            &mesh_tangents, // tangents (optional)
-            &mesh_joints, // joints (optional)
-            &mesh_weights, // weights (optional)
-        ) catch {
-            debug.log("Could not process mesh file!", .{});
-            return null;
-        };
+        for (0..data.meshes_count) |i| {
+            zmesh.io.appendMeshPrimitive(
+                data, // *zmesh.io.cgltf.Data
+                @intCast(i), // mesh index
+                0, // gltf primitive index (submesh index)
+                &mesh_indices,
+                &mesh_positions,
+                &mesh_normals, // normals (optional)
+                &mesh_texcoords, // texcoords (optional)
+                &mesh_tangents, // tangents (optional)
+                &mesh_joints, // joints (optional)
+                &mesh_weights, // weights (optional)
+            ) catch {
+                debug.log("Could not process mesh file!", .{});
+                return null;
+            };
+        }
 
         debug.log("Loaded mesh file {s} with {d} indices", .{ filename, mesh_indices.items.len });
 
@@ -123,7 +128,9 @@ pub const Mesh = struct {
             }
         }
 
+        const had_joints = mesh_joints.items.len > 0;
         if (mesh_joints.items.len == 0) {
+            debug.log("Adding joints", .{});
             for (0..mesh_positions.items.len) |_| {
                 const empty = [4]f32{ 0.0, 0.0, 0.0, 0.0 };
                 mesh_joints.append(empty) catch {
@@ -141,10 +148,12 @@ pub const Mesh = struct {
             }
         }
 
-        debug.log("Found {d} joints in mesh", .{mesh_joints.items.len});
-        debug.log("Found {d} weights in mesh", .{mesh_weights.items.len});
+        // TODO: Split this into two functions? one for skinned meshes, one for static
+        if (had_joints) {
+            return createSkinnedMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_joints.items, mesh_weights.items, material, data);
+        }
 
-        return createSkinnedMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_joints.items, mesh_weights.items, material, data);
+        return createMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, material);
     }
 
     pub fn deinit(self: *Mesh) void {
@@ -161,7 +170,7 @@ pub const Mesh = struct {
         graphics.drawWithMaterial(&self.bindings, material, proj_view_matrix, model_matrix);
     }
 
-    pub fn sampleAnimation(self: *Mesh, sampler: *zmesh.io.zcgltf.AnimationSampler, t: f32) math.Vec3 {
+    pub fn sampleAnimation(self: *Mesh, sampler: zmesh.io.zcgltf.AnimationSampler, t: f32) math.Vec3 {
         _ = self;
 
         const samples = zmesh.io.getAnimationSamplerData(sampler.input);
@@ -177,6 +186,9 @@ pub const Mesh = struct {
                 const r = linearInterpolation(samples, t);
                 const v0 = access(math.Vec3, data, r.prev_i);
                 const v1 = access(math.Vec3, data, r.next_i);
+
+                // debug.log("    v0 {d:.2} {d:.2} {d:.2} v1 {d:.2} {d:.2} {d:.2}", .{ v0.x, v0.y, v0.z, v1.x, v1.y, v1.z });
+
                 return math.Vec3.lerp(v0, v1, r.alpha);
             },
             .cubic_spline => {
@@ -210,6 +222,8 @@ pub const Mesh = struct {
         std.debug.assert(d > 0);
         const alpha = std.math.clamp((t - samples[i]) / d, 0, 1);
 
+        // debug.log("    prev_i {}, next_i {}, alpha: {d:.2}", .{ i, i + 1, alpha });
+
         return .{ .prev_i = i, .next_i = i + 1, .alpha = alpha };
     }
 
@@ -222,15 +236,32 @@ pub const Mesh = struct {
         };
     }
 
-    pub fn updateAnimation(self: *Mesh, time: f32) void {
-        if (self.zmesh_data.skins == null)
+    pub fn resetJoints(self: *Mesh) void {
+        for (0..self.joint_locations.len) |i| {
+            self.joint_locations[i] = math.Mat4.identity;
+        }
+    }
+
+    pub fn updateAnimation(self: *Mesh, delta_time: f32) void {
+        if (self.zmesh_data.skins == null or self.zmesh_data.animations == null)
             return;
 
-        const animation = self.zmesh_data.animations.?[0];
+        self.current_anim_time += delta_time;
+
+        var animation = self.zmesh_data.animations.?[self.current_anim];
         const animation_duration = zmesh.io.computeAnimationDuration(&animation);
 
+        if (self.current_anim_time > animation_duration) {
+            self.current_anim_time = self.current_anim_time - animation_duration;
+            self.current_anim = @mod(self.current_anim + 1, self.zmesh_data.animations_count);
+        }
+
+        animation = self.zmesh_data.animations.?[self.current_anim];
+
+        const t = self.current_anim_time;
+
         // loop animation for now!
-        const t: f32 = @mod(time * 0.01, animation_duration);
+        // const t: f32 = @mod(delta_time * 0.01, animation_duration);
         // debug.log("Animation time: {d:.2}", .{t});
 
         const nodes = self.zmesh_data.skins.?[0].joints;
@@ -244,24 +275,35 @@ pub const Mesh = struct {
             local_transforms[i] = math.Mat4.identity;
         }
 
+        // debug.log("Animation: {} {}", .{ animation.channels_count, animation.samplers_count });
         for (0..animation.channels_count) |i| {
             const channel = animation.channels[i];
-            const sampler = channel.sampler;
+            const sampler = animation.samplers[i];
 
-            if (channel.target_path == .translation) {
-                var node_idx: usize = 0;
-                for (0..nodes_count) |ni| {
-                    if (nodes[ni] == channel.target_node.?) {
-                        node_idx = ni;
-                        break;
-                    }
-                }
-
-                const sampled = self.sampleAnimation(sampler, t);
-
-                // debug.log("Channel {d} Sampled: {d:.2} {d:.2} {d:.2}", .{ i, sampled.x, sampled.y, sampled.z });
-                local_transforms[node_idx] = local_transforms[node_idx].mul(math.Mat4.translate(sampled));
+            var sampled_mat: math.Mat4 = math.Mat4.identity;
+            switch (channel.target_path) {
+                .translation => {
+                    const sampled_translation = self.sampleAnimation(sampler, t);
+                    sampled_mat = math.Mat4.translate(sampled_translation);
+                },
+                .scale => {
+                    const sampled_scale = self.sampleAnimation(sampler, t);
+                    sampled_mat = math.Mat4.scale(sampled_scale);
+                },
+                else => {
+                    sampled_mat = math.Mat4.identity;
+                },
             }
+
+            var node_idx: usize = 0;
+            for (0..nodes_count) |ni| {
+                if (nodes[ni] == channel.target_node.?) {
+                    node_idx = ni;
+                    break;
+                }
+            }
+
+            local_transforms[node_idx] = local_transforms[node_idx].mul(sampled_mat);
         }
 
         // test moving a joint around to check the joint chain heirarchy

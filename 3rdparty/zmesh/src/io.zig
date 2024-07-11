@@ -44,6 +44,8 @@ pub fn appendMeshPrimitive(
     const num_vertices: u32 = @as(u32, @intCast(prim.attributes[0].data.count));
     const num_indices: u32 = @as(u32, @intCast(prim.indices.?.count));
 
+    const start_indices: u32 = @intCast(positions.items.len);
+
     // Indices.
     {
         try indices.ensureTotalCapacity(indices.items.len + num_indices);
@@ -63,21 +65,21 @@ pub fn appendMeshPrimitive(
             const src = @as([*]const u8, @ptrCast(data_addr));
             var i: u32 = 0;
             while (i < num_indices) : (i += 1) {
-                indices.appendAssumeCapacity(src[i]);
+                indices.appendAssumeCapacity(src[i] + start_indices);
             }
         } else if (accessor.stride == 2) {
             assert(accessor.component_type == .r_16u);
             const src = @as([*]const u16, @ptrCast(@alignCast(data_addr)));
             var i: u32 = 0;
             while (i < num_indices) : (i += 1) {
-                indices.appendAssumeCapacity(src[i]);
+                indices.appendAssumeCapacity(src[i] + start_indices);
             }
         } else if (accessor.stride == 4) {
             assert(accessor.component_type == .r_32u);
             const src = @as([*]const u32, @ptrCast(@alignCast(data_addr)));
             var i: u32 = 0;
             while (i < num_indices) : (i += 1) {
-                indices.appendAssumeCapacity(src[i]);
+                indices.appendAssumeCapacity(src[i] + start_indices);
             }
         } else {
             unreachable;
@@ -107,36 +109,48 @@ pub fn appendMeshPrimitive(
                 accessor.offset + buffer_view.offset;
 
             if (attrib.type == .position) {
+                assert(accessor.component_type == .r_32f);
                 assert(accessor.type == .vec3);
                 const slice = @as([*]const [3]f32, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
                 try positions.appendSlice(slice);
             } else if (attrib.type == .normal) {
                 if (normals) |n| {
+                    assert(accessor.component_type == .r_32f);
                     assert(accessor.type == .vec3);
                     const slice = @as([*]const [3]f32, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
                     try n.appendSlice(slice);
                 }
             } else if (attrib.type == .texcoord) {
                 if (texcoords0) |tc| {
+                    assert(accessor.component_type == .r_32f);
                     assert(accessor.type == .vec2);
                     const slice = @as([*]const [2]f32, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
                     try tc.appendSlice(slice);
                 }
             } else if (attrib.type == .tangent) {
                 if (tangents) |tan| {
+                    assert(accessor.component_type == .r_32f);
                     assert(accessor.type == .vec4);
                     const slice = @as([*]const [4]f32, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
                     try tan.appendSlice(slice);
                 }
             } else if (attrib.type == .joints) {
                 if (joints) |j| {
-                    const slice = @as([*]const [4]u16, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
-                    for (slice) |v| {
-                        try j.append([4]f32{ @floatFromInt(v[0]), @floatFromInt(v[1]), @floatFromInt(v[2]), @floatFromInt(v[3]) });
+                    if (accessor.component_type == .r_8u) {
+                        const slice = @as([*]const [4]u8, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
+                        for (slice) |v| {
+                            try j.append([4]f32{ @floatFromInt(v[0]), @floatFromInt(v[1]), @floatFromInt(v[2]), @floatFromInt(v[3]) });
+                        }
+                    } else if (accessor.component_type == .r_16u) {
+                        const slice = @as([*]const [4]u16, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
+                        for (slice) |v| {
+                            try j.append([4]f32{ @floatFromInt(v[0]), @floatFromInt(v[1]), @floatFromInt(v[2]), @floatFromInt(v[3]) });
+                        }
                     }
                 }
             } else if (attrib.type == .weights) {
                 if (weights) |w| {
+                    assert(accessor.component_type == .r_32f);
                     assert(accessor.type == .vec4);
                     const slice = @as([*]const [4]f32, @ptrCast(@alignCast(data_addr)))[0..num_vertices];
                     try w.appendSlice(slice);
