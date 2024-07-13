@@ -29,7 +29,10 @@ var camera: cam.Camera = undefined;
 const mesh_file = "assets/meshes/CesiumMan.gltf";
 const mesh_texture_file = "assets/meshes/CesiumMan.png";
 
-// This example shows loading and drawing meshes
+// currently playing animation
+var anim_idx: usize = 0;
+
+// This example shows loading and drawing animated meshes
 
 // Web build note: this does not seem to work when built in --release=fast or --release=small
 
@@ -66,7 +69,7 @@ fn on_init() !void {
     graphics.setClearColor(colors.examples_bg_light);
 
     // Make a perspective camera, with a 90 degree FOV
-    camera = cam.Camera.initThirdPerson(90.0, 0.01, 50.0, 2.0, Vec3.up);
+    camera = cam.Camera.initThirdPerson(90.0, 0.01, 150.0, 2.0, Vec3.up);
     camera.position = Vec3.new(0.0, 0.0, 0.0);
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
@@ -96,6 +99,9 @@ fn on_init() !void {
 
     // Load our mesh!
     mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = material });
+
+    // start looping the first animation
+    mesh_test.?.playAnimation(0, 1.0, true);
 }
 
 fn on_tick(delta: f32) void {
@@ -108,6 +114,17 @@ fn on_tick(delta: f32) void {
 
     if (input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
+
+    if (input.isKeyJustPressed(.SPACE)) {
+        if (input.isKeyPressed(.LEFT_SHIFT)) {
+            anim_idx -= 1;
+        } else {
+            anim_idx += 1;
+        }
+
+        const anim_count = mesh_test.?.getAnimationsCount();
+        mesh_test.?.playAnimation(@mod(anim_idx, anim_count), 1.0, true);
+    }
 }
 
 fn on_draw() void {
