@@ -12,9 +12,6 @@ uniform vs_params {
     mat4 u_projViewMatrix;
     mat4 u_modelMatrix;
     vec4 u_color;
-};
-
-uniform vs_more_params {
     mat4 u_joints[64];
 };
 

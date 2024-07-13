@@ -192,11 +192,13 @@ pub const Mesh = struct {
 
     /// Draw this mesh
     pub fn draw(self: *Mesh, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
+        self.material.params.joints = &self.joint_locations;
         graphics.drawWithMaterial(&self.bindings, &self.material, proj_view_matrix, model_matrix);
     }
 
     /// Draw this mesh, using the specified material instead of the set one
     pub fn drawWithMaterial(self: *Mesh, material: *graphics.Material, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
+        self.material.params.joints = &self.joint_locations;
         graphics.drawWithMaterial(&self.bindings, material, proj_view_matrix, model_matrix);
     }
 

@@ -92,9 +92,9 @@ fn on_init() !void {
         .shader = shader.?,
         .texture_0 = tex_base,
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
-        .num_uniform_vs_blocks = 2,
-        .use_default_params = false,
-        .samplers = &[_]graphics.FilterMode{.NEAREST},
+
+        // use the VS layout that supports sending joints to the shader
+        .default_vs_uniform_layout = delve.platform.graphics.DefaultSkinnedMeshVSUniforms,
     });
 
     // Load our mesh!
@@ -136,14 +136,6 @@ fn on_draw() void {
 
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
-
-    var material: *delve.platform.graphics.Material = &mesh_test.?.material;
-    material.vs_uniforms[0].?.begin();
-    material.vs_uniforms[0].?.addBytesFrom(&mesh_test.?.joint_locations);
-    material.vs_uniforms[0].?.end();
-
-    material.setDefaultUniformVars(material.default_vs_uniform_layout, &material.vs_uniforms[1].?, proj_view_matrix, model);
-    material.setDefaultUniformVars(material.default_fs_uniform_layout, &material.fs_uniforms[0].?, proj_view_matrix, model);
 
     mesh_test.?.draw(proj_view_matrix, model);
 }

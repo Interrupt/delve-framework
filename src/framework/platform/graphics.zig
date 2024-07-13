@@ -85,8 +85,15 @@ pub const MaterialUniformDefaults = enum(i32) {
     COLOR,
     COLOR_OVERRIDE,
     ALPHA_CUTOFF,
+    JOINTS_64,
 };
 
+// Default uniform block layout for meshes
+pub const DefaultVSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR };
+pub const DefaultFSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .COLOR_OVERRIDE, .ALPHA_CUTOFF };
+
+// Default uniform block layout for skinend meshes
+pub const DefaultSkinnedMeshVSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR, .JOINTS_64 };
 /// Default vertex shader uniform block layout
 pub const VSDefaultUniforms = struct {
     projViewMatrix: math.Mat4 align(16),
@@ -510,8 +517,8 @@ pub const MaterialConfig = struct {
     shader: ?Shader = null,
 
     // The layouts of the default (0th) vertex and fragment shaders
-    default_vs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR },
-    default_fs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .COLOR_OVERRIDE, .ALPHA_CUTOFF },
+    default_vs_uniform_layout: []const MaterialUniformDefaults = DefaultVSUniforms,
+    default_fs_uniform_layout: []const MaterialUniformDefaults = DefaultFSUniforms,
 
     // Samplers to create. Defaults to making one linearly filtered sampler
     samplers: []const FilterMode = &[_]FilterMode{.LINEAR},
@@ -529,6 +536,7 @@ pub const MaterialParams = struct {
     draw_color: Color = colors.white,
     color_override: Color = colors.transparent,
     alpha_cutoff: f32 = 0.0,
+    joints: []Mat4 = undefined,
 };
 
 /// Holds the data for and builds a uniform block that can be passed to a shader
@@ -547,6 +555,7 @@ pub const MaterialUniformBlock = struct {
             debug.log("Error adding material uniform!", .{});
             return;
         };
+
         self.size = self.bytes.items.len;
     }
 
@@ -747,6 +756,9 @@ pub const Material = struct {
                 },
                 .ALPHA_CUTOFF => {
                     u_block.addFloat("u_alphaCutoff", self.params.alpha_cutoff);
+                },
+                .JOINTS_64 => {
+                    u_block.addBytesFrom(self.params.joints[0..64]);
                 },
             }
         }
