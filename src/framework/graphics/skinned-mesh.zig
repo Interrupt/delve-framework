@@ -84,7 +84,7 @@ pub const SkinnedMesh = struct {
     }
 
     pub fn getAnimationsCount(self: *SkinnedMesh) usize {
-        return self.mesh.zmesh_data.animations_count;
+        return self.mesh.zmesh_data.?.animations_count;
     }
 
     pub fn playAnimation(self: *SkinnedMesh, anim_idx: usize, speed: f32, loop: bool) void {
@@ -92,7 +92,10 @@ pub const SkinnedMesh = struct {
         self.playing_animation.time = 0.0;
         self.playing_animation.speed = speed;
 
-        if (anim_idx >= self.mesh.zmesh_data.animations_count) {
+        if(self.mesh.zmesh_data == null)
+            return;
+
+        if (anim_idx >= self.mesh.zmesh_data.?.animations_count) {
             debug.log("warning: animation {} not found!", .{anim_idx});
             self.playing_animation.anim_idx = 0;
             self.playing_animation.playing = false;
@@ -103,7 +106,7 @@ pub const SkinnedMesh = struct {
         self.playing_animation.anim_idx = anim_idx;
         self.playing_animation.playing = true;
 
-        const animation = self.mesh.zmesh_data.animations.?[anim_idx];
+        const animation = self.mesh.zmesh_data.?.animations.?[anim_idx];
         self.playing_animation.duration = zmesh.io.computeAnimationDuration(&animation);
     }
 
@@ -112,8 +115,8 @@ pub const SkinnedMesh = struct {
         const anim_name_z = @as([*:0]u8, @constCast(@ptrCast(anim_name)));
 
         // Go find the animation whose name matches
-        for (0..self.mesh.zmesh_data.animations_count) |i| {
-            if (self.mesh.zmesh_data.animations.?[i].name) |name| {
+        for (0..self.mesh.zmesh_data.?.animations_count) |i| {
+            if (self.mesh.zmesh_data.?.animations.?[i].name) |name| {
                 const result = std.mem.orderZ(u8, name, anim_name_z);
                 if (result == .eq) {
                     // debug.log("Found animation index for {s} : {}", .{ anim_name, i });
@@ -127,7 +130,7 @@ pub const SkinnedMesh = struct {
     }
 
     pub fn updateAnimation(self: *SkinnedMesh, delta_time: f32) void {
-        if (self.mesh.zmesh_data.skins == null or self.mesh.zmesh_data.animations == null)
+        if (self.mesh.zmesh_data.?.skins == null or self.mesh.zmesh_data.?.animations == null)
             return;
 
         if (!self.playing_animation.playing)
@@ -135,7 +138,7 @@ pub const SkinnedMesh = struct {
 
         self.playing_animation.time += delta_time * self.playing_animation.speed;
 
-        const animation = self.mesh.zmesh_data.animations.?[self.playing_animation.anim_idx];
+        const animation = self.mesh.zmesh_data.?.animations.?[self.playing_animation.anim_idx];
         const animation_duration = self.playing_animation.duration;
 
         // loop if we need to!
@@ -144,8 +147,8 @@ pub const SkinnedMesh = struct {
             t = @mod(t, animation_duration);
         }
 
-        const nodes = self.mesh.zmesh_data.skins.?[0].joints;
-        const nodes_count = self.mesh.zmesh_data.skins.?[0].joints_count;
+        const nodes = self.mesh.zmesh_data.?.skins.?[0].joints;
+        const nodes_count = self.mesh.zmesh_data.?.skins.?[0].joints_count;
 
         var local_transforms: [64]AnimationTransform = [_]AnimationTransform{undefined} ** 64;
 
@@ -225,7 +228,7 @@ pub const SkinnedMesh = struct {
         }
 
         // apply the inverse bind matrices
-        const inverse_bind_mat_data = zmesh.io.getAnimationSamplerData(self.mesh.zmesh_data.skins.?[0].inverse_bind_matrices.?);
+        const inverse_bind_mat_data = zmesh.io.getAnimationSamplerData(self.mesh.zmesh_data.?.skins.?[0].inverse_bind_matrices.?);
         for (0..nodes_count) |i| {
             const inverse_mat = access(math.Mat4, inverse_bind_mat_data, i);
             self.joint_locations[i] = self.joint_locations[i].mul(inverse_mat);

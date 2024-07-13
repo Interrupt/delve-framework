@@ -40,7 +40,7 @@ pub const Mesh = struct {
     bounds: boundingbox.BoundingBox = undefined,
 
     has_skin: bool = false,
-    zmesh_data: *zmesh.io.zcgltf.Data = undefined,
+    zmesh_data: ?*zmesh.io.zcgltf.Data = null,
 
     pub fn initFromFile(allocator: std.mem.Allocator, filename: [:0]const u8, cfg: MeshConfig) ?Mesh {
         const data = zmesh.io.parseAndLoadFile(filename) catch {
@@ -146,8 +146,9 @@ pub const Mesh = struct {
     }
 
     pub fn deinit(self: *Mesh) void {
-        if (self.has_skin)
-            zmesh.io.freeData(self.zmesh_data);
+        if (self.zmesh_data) |mesh_data| {
+            zmesh.io.freeData(mesh_data);
+        }
 
         self.bindings.destroy();
     }
