@@ -91,18 +91,12 @@ pub fn appendMeshPrimitive(
         const attributes = prim.attributes[0..prim.attributes_count];
         for (attributes) |attrib| {
             const accessor = attrib.data;
-            // std.debug.print("{}\n", .{attrib.type});
-            // std.debug.print("{}\n", .{accessor.component_type});
-            // std.debug.print("{}\n", .{accessor.type});
-            // std.debug.print("{}\n", .{accessor.stride});
             // assert(accessor.component_type == .r_32f);
 
             const buffer_view = accessor.buffer_view.?;
             assert(buffer_view.buffer.data != null);
 
             assert(accessor.stride == buffer_view.stride or buffer_view.stride == 0);
-
-            // std.debug.print("Accessor stride: {d} Accessor count: {d} Buffer View size {d}\n", .{ accessor.stride, accessor.count, buffer_view.size });
             // assert(accessor.stride * accessor.count == buffer_view.size);
 
             const data_addr = @as([*]const u8, @ptrCast(buffer_view.buffer.data)) +
@@ -162,10 +156,6 @@ pub fn appendMeshPrimitive(
 
 pub fn getAnimationSamplerData(accessor: *zcgltf.Accessor) []const f32 {
     const buffer_view = accessor.buffer_view.?;
-    // std.debug.print("accessor type:   {}\n", .{accessor.component_type});
-    // std.debug.print("accessor count:  {d}\n", .{accessor.count});
-    // std.debug.print("accessor type:   {}\n", .{accessor.type});
-    // std.debug.print("accessor stride: {d}\n", .{accessor.stride});
 
     assert(buffer_view.buffer.data != null);
     assert(accessor.stride == buffer_view.stride or buffer_view.stride == 0);
@@ -184,7 +174,6 @@ pub fn computeAnimationDuration(animation: *const zcgltf.Animation) f32 {
         duration = @max(duration, samples[samples.len - 1]);
     }
 
-    // std.debug.print("Computed animation duration: {d:.2}\n", .{duration});
     return duration;
 }
 
