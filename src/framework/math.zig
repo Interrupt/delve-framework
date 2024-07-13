@@ -312,6 +312,27 @@ pub const Mat4 = extern struct {
         return res;
     }
 
+    // Create a Mat4 out of a translation, rotation, and scale
+    pub fn recompose(translation: Vec3, rotation: Quaternion, scalar: Vec3) Mat4 {
+        var r = rotation.toMat4();
+
+        r.m[0][0] *= scalar.x;
+        r.m[0][1] *= scalar.x;
+        r.m[0][2] *= scalar.x;
+        r.m[1][0] *= scalar.y;
+        r.m[1][1] *= scalar.y;
+        r.m[1][2] *= scalar.y;
+        r.m[2][0] *= scalar.z;
+        r.m[2][1] *= scalar.z;
+        r.m[2][2] *= scalar.z;
+
+        r.m[3][0] = translation.x;
+        r.m[3][1] = translation.y;
+        r.m[3][2] = translation.z;
+
+        return r;
+    }
+
     pub fn detsubs(self: *const Mat4) [12]f32 {
         return .{
             self.m[0][0] * self.m[1][1] - self.m[1][0] * self.m[0][1],

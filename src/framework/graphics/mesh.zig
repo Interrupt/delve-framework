@@ -40,15 +40,12 @@ pub const PlayingAnimation = struct {
 };
 
 const AnimationTransform = struct {
-    translation: math.Vec3,
-    scale: math.Vec3,
-    rotation: math.Quaternion,
+    translation: math.Vec3 = math.Vec3.zero,
+    scale: math.Vec3 = math.Vec3.one,
+    rotation: math.Quaternion = math.Quaternion.zero,
 
     pub fn toMat4(self: *const AnimationTransform) math.Mat4 {
-        const translate_mat = math.Mat4.translate(self.translation);
-        const scale_mat = math.Mat4.scale(self.scale);
-        const rot_mat = self.rotation.toMat4();
-        return translate_mat.mul(scale_mat).mul(rot_mat);
+        return math.Mat4.recompose(self.translation, self.rotation, self.scale);
     }
 };
 
@@ -340,16 +337,12 @@ pub const Mesh = struct {
 
         switch (sampler.interpolation) {
             .step => {
-                // debug.log("Step animation!", .{});
                 return access(T, data, stepInterpolation(samples, t));
             },
             .linear => {
-                // debug.log("Lerp animation!", .{});
                 const r = linearInterpolation(samples, t);
                 const v0 = access(T, data, r.prev_i);
                 const v1 = access(T, data, r.next_i);
-
-                // debug.log("    v0 {d:.2} {d:.2} {d:.2} v1 {d:.2} {d:.2} {d:.2}", .{ v0.x, v0.y, v0.z, v1.x, v1.y, v1.z });
 
                 if (T == math.Quaternion) {
                     return T.slerp(v0, v1, r.alpha);
