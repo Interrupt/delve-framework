@@ -139,6 +139,9 @@ pub const Mesh = struct {
             return createSkinnedMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_joints.items, mesh_weights.items, material, data);
         }
 
+        // only skinned meshes need to keep the model metadata around
+        zmesh.io.freeData(data);
+
         return createMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, material);
     }
 
