@@ -271,12 +271,17 @@ pub const Mesh = struct {
             const sampler = animation.samplers[i];
 
             var node_idx: usize = 0;
+            var found_node = false;
             for (0..nodes_count) |ni| {
                 if (nodes[ni] == channel.target_node.?) {
                     node_idx = ni;
+                    found_node = true;
                     break;
                 }
             }
+
+            if (!found_node)
+                continue;
 
             switch (channel.target_path) {
                 .translation => {
@@ -309,12 +314,18 @@ pub const Mesh = struct {
 
             while (node.parent) |parent| : (node = parent) {
                 var parent_idx: usize = 0;
+                var found_node = false;
+
                 for (0..nodes_count) |ni| {
                     if (nodes[ni] == parent) {
                         parent_idx = ni;
+                        found_node = true;
                         break;
                     }
                 }
+
+                if (!found_node)
+                    continue;
 
                 const parent_transform = local_transform_mats[parent_idx];
                 self.joint_locations[i] = parent_transform.mul(self.joint_locations[i]);
