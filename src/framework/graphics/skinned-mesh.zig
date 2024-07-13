@@ -129,6 +129,23 @@ pub const SkinnedMesh = struct {
         debug.log("Could not find skined mesh animation to play: '{s}'", .{anim_name});
     }
 
+    pub fn pauseAnimation(self: *SkinnedMesh) void {
+        self.playing_animation.playing = false;
+    }
+
+    pub fn stopAnimation(self: *SkinnedMesh) void {
+        self.playing_animation.playing = false;
+        self.playing_animation.time = 0.0;
+    }
+
+    pub fn resumeAnimation(self: *SkinnedMesh) void {
+        self.playing_animation.playing = true;
+    }
+
+    pub fn setAnimationSpeed(self: *SkinnedMesh, speed: f32) void {
+        self.playing_animation.speed = speed;
+    }
+
     pub fn updateAnimation(self: *SkinnedMesh, delta_time: f32) void {
         if (self.mesh.zmesh_data.?.skins == null or self.mesh.zmesh_data.?.animations == null)
             return;
