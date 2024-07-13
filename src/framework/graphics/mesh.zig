@@ -52,6 +52,14 @@ const AnimationTransform = struct {
     }
 };
 
+pub fn init() !void {
+    zmesh.init(mem.getAllocator());
+}
+
+pub fn deinit() void {
+    defer zmesh.deinit();
+}
+
 /// A mesh is a drawable set of vertex positions, normals, tangents, and uvs.
 /// These can be created on the fly, using a MeshBuilder, or loaded from GLTF files.
 pub const Mesh = struct {
@@ -64,15 +72,11 @@ pub const Mesh = struct {
     playing_animation: PlayingAnimation = .{},
 
     pub fn initFromFile(allocator: std.mem.Allocator, filename: [:0]const u8, cfg: MeshConfig) ?Mesh {
-        zmesh.init(allocator);
-        // defer zmesh.deinit();
-
         const data = zmesh.io.parseAndLoadFile(filename) catch {
             debug.log("Could not load mesh file {s}", .{filename});
             return null;
         };
 
-        // defer zmesh.io.freeData(data);
         var mesh_indices = std.ArrayList(u32).init(allocator);
         var mesh_positions = std.ArrayList([3]f32).init(allocator);
         var mesh_normals = std.ArrayList([3]f32).init(allocator);
@@ -168,6 +172,7 @@ pub const Mesh = struct {
     }
 
     pub fn deinit(self: *Mesh) void {
+        zmesh.io.freeData(self.zmesh_data);
         self.bindings.destroy();
     }
 
