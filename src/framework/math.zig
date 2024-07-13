@@ -524,6 +524,7 @@ pub const Quaternion = struct {
     w: f32,
 
     pub const zero = Quaternion{ .x = 0.0, .y = 0.0, .z = 0.0, .w = 0.0 };
+    pub const identity = Quaternion{ .x = 0.0, .y = 0.0, .z = 0.0, .w = 1.0 };
 
     pub fn new(x: f32, y: f32, z: f32, w: f32) Quaternion {
         return Quaternion{ .x = x, .y = y, .z = z, .w = w };

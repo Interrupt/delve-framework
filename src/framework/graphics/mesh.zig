@@ -42,7 +42,7 @@ pub const PlayingAnimation = struct {
 const AnimationTransform = struct {
     translation: math.Vec3 = math.Vec3.zero,
     scale: math.Vec3 = math.Vec3.one,
-    rotation: math.Quaternion = math.Quaternion.zero,
+    rotation: math.Quaternion = math.Quaternion.identity,
 
     pub fn toMat4(self: *const AnimationTransform) math.Mat4 {
         return math.Mat4.recompose(self.translation, self.rotation, self.scale);
