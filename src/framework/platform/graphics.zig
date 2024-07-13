@@ -86,6 +86,7 @@ pub const MaterialUniformDefaults = enum(i32) {
     COLOR_OVERRIDE,
     ALPHA_CUTOFF,
     JOINTS_64,
+    JOINTS_256,
 };
 
 // Default uniform block layout for meshes
@@ -759,6 +760,9 @@ pub const Material = struct {
                 },
                 .JOINTS_64 => {
                     u_block.addBytesFrom(self.params.joints[0..64]);
+                },
+                .JOINTS_256 => {
+                    u_block.addBytesFrom(self.params.joints[0..256]);
                 },
             }
         }
