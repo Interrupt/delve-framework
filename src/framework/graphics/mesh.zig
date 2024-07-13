@@ -158,27 +158,8 @@ pub const Mesh = struct {
         }
 
         // Fill in joints, if none were given, to match vertex layout
-        const had_joints = mesh_joints.items.len > 0;
-        if (mesh_joints.items.len == 0) {
-            for (0..mesh_positions.items.len) |_| {
-                const empty = [4]f32{ 0.0, 0.0, 0.0, 0.0 };
-                mesh_joints.append(empty) catch {
-                    return null;
-                };
-            }
-        }
+        const had_joints = mesh_joints.items.len > 0 and mesh_weights.items.len > 0;
 
-        // Fill in weights, if none were given, to match vertex layout
-        if (mesh_weights.items.len == 0) {
-            for (0..mesh_positions.items.len) |_| {
-                const empty = [4]f32{ 0.0, 0.0, 0.0, 0.0 };
-                mesh_weights.append(empty) catch {
-                    return null;
-                };
-            }
-        }
-
-        // TODO: Split this into two functions? one for skinned meshes, one for static
         if (had_joints) {
             return createSkinnedMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_joints.items, mesh_weights.items, material, data);
         }
@@ -230,6 +211,25 @@ pub const Mesh = struct {
 
         const animation = self.zmesh_data.animations.?[anim_idx];
         self.playing_animation.duration = zmesh.io.computeAnimationDuration(&animation);
+    }
+
+    pub fn playAnimationByName(self: *Mesh, anim_name: []const u8, speed: f32, loop: bool) void {
+        // convert to a sentinel terminated pointer
+        const anim_name_z = @as([*:0]u8, @constCast(@ptrCast(anim_name)));
+
+        // Go find the animation whose name matches
+        for (0..self.zmesh_data.animations_count) |i| {
+            if (self.zmesh_data.animations.?[i].name) |name| {
+                const result = std.mem.orderZ(u8, name, anim_name_z);
+                if (result == .eq) {
+                    // debug.log("Found animation index for {s} : {}", .{ anim_name, i });
+                    self.playAnimation(i, speed, loop);
+                    return;
+                }
+            }
+        }
+
+        debug.log("Could not find skined mesh animation to play: '{s}'", .{anim_name});
     }
 
     pub fn updateAnimation(self: *Mesh, delta_time: f32) void {
@@ -406,6 +406,8 @@ pub fn createSkinnedMesh(vertices: []graphics.Vertex, indices: []u32, normals: [
     // create a mesh with the default vertex layout
     // debug.log("Creating skinned mesh: {d} indices, {d} normals, {d}tangents, {d} joints, {d} weights", .{ indices.len, normals.len, tangents.len, joints.len, weights.len });
 
+    debug.log("Creating skinned mesh: {d} indices", .{indices.len});
+
     const layout = getSkinnedVertexLayout();
     var bindings = graphics.Bindings.init(.{
         .index_len = indices.len,
@@ -426,7 +428,7 @@ pub fn createSkinnedMesh(vertices: []graphics.Vertex, indices: []u32, normals: [
 
 /// Create a mesh out of some vertex data with a given vertex layout
 pub fn createMeshWithLayout(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: graphics.Material, layout: graphics.VertexLayout) Mesh {
-    debug.log("Creating mesh: {d} indices, {d} normals, {d}tangents", .{ indices.len, normals.len, tangents.len });
+    debug.log("Creating mesh: {d} indices", .{indices.len});
 
     var bindings = graphics.Bindings.init(.{
         .index_len = indices.len,
