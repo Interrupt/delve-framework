@@ -13,7 +13,7 @@ const images = delve.images;
 const input = delve.platform.input;
 const math = delve.math;
 const modules = delve.modules;
-const mesh = delve.graphics.mesh;
+const skinned_mesh = delve.graphics.skinned_mesh;
 
 // easy access to some types
 const Vec3 = math.Vec3;
@@ -23,7 +23,7 @@ const Color = colors.Color;
 const shader_builtin = delve.shaders.default_skinned;
 
 var time: f32 = 0.0;
-var mesh_test: ?mesh.Mesh = null;
+var mesh_test: ?skinned_mesh.SkinnedMesh = null;
 var camera: cam.Camera = undefined;
 
 const mesh_file = "assets/meshes/CesiumMan.gltf";
@@ -74,7 +74,7 @@ fn on_init() !void {
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
     // Make our emissive shader from one that is pre-compiled
-    const shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = mesh.getSkinnedShaderAttributes() }, shader_builtin);
+    const shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() }, shader_builtin);
 
     if (shader == null) {
         debug.log("Could not get shader", .{});
@@ -98,7 +98,7 @@ fn on_init() !void {
     });
 
     // Load our mesh!
-    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = material });
+    mesh_test = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = material });
 
     // start looping the first animation
     mesh_test.?.playAnimation(0, 1.0, true);
