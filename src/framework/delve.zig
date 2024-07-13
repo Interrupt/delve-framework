@@ -40,6 +40,7 @@ pub const graphics = struct {
     pub const batcher = @import("graphics/batcher.zig");
     pub const camera = @import("graphics/camera.zig");
     pub const mesh = @import("graphics/mesh.zig");
+    pub const skinned_mesh = @import("graphics/skinned-mesh.zig");
     pub const sprites = @import("graphics/sprites.zig");
 };
 
@@ -74,6 +75,7 @@ pub const utils = struct {
 pub const shaders = struct {
     pub const default = @import("graphics/shaders/default.glsl.zig");
     pub const default_emissive = @import("graphics/shaders/emissive.glsl.zig");
+    pub const default_skinned = @import("graphics/shaders/skinned.glsl.zig");
 };
 
 // dear imgui

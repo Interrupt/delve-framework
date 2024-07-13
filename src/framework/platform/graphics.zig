@@ -85,8 +85,16 @@ pub const MaterialUniformDefaults = enum(i32) {
     COLOR,
     COLOR_OVERRIDE,
     ALPHA_CUTOFF,
+    JOINTS_64,
+    JOINTS_256,
 };
 
+// Default uniform block layout for meshes
+pub const DefaultVSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR };
+pub const DefaultFSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .COLOR_OVERRIDE, .ALPHA_CUTOFF };
+
+// Default uniform block layout for skinend meshes
+pub const DefaultSkinnedMeshVSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR, .JOINTS_64 };
 /// Default vertex shader uniform block layout
 pub const VSDefaultUniforms = struct {
     projViewMatrix: math.Mat4 align(16),
@@ -156,6 +164,11 @@ pub const Bindings = struct {
         BindingsImpl.set(self, vertices, indices, normals, tangents, length);
     }
 
+    /// Creates new buffers to hold vertices, indices, and joints / weights
+    pub fn setWithJoints(self: *Bindings, vertices: anytype, indices: anytype, normals: anytype, tangents: anytype, joints: anytype, weights: anytype, length: usize) void {
+        BindingsImpl.setWithJoints(self, vertices, indices, normals, tangents, joints, weights, length);
+    }
+
     /// Updates the existing buffers with new data
     pub fn update(self: *Bindings, vertices: anytype, indices: anytype, vert_len: usize, index_len: usize) void {
         BindingsImpl.update(self, vertices, indices, vert_len, index_len);
@@ -193,6 +206,8 @@ pub const VertexBinding = enum(i32) {
     VERT_PACKED,
     VERT_NORMALS,
     VERT_TANGENTS,
+    VERT_JOINTS,
+    VERT_WEIGHTS,
 };
 
 /// A vertex layout tells a shader how to use its attributes.
@@ -503,8 +518,8 @@ pub const MaterialConfig = struct {
     shader: ?Shader = null,
 
     // The layouts of the default (0th) vertex and fragment shaders
-    default_vs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR },
-    default_fs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .COLOR_OVERRIDE, .ALPHA_CUTOFF },
+    default_vs_uniform_layout: []const MaterialUniformDefaults = DefaultVSUniforms,
+    default_fs_uniform_layout: []const MaterialUniformDefaults = DefaultFSUniforms,
 
     // Samplers to create. Defaults to making one linearly filtered sampler
     samplers: []const FilterMode = &[_]FilterMode{.LINEAR},
@@ -512,6 +527,9 @@ pub const MaterialConfig = struct {
     // Number of uniform blocks to create. Default to 1 to always make the default block
     num_uniform_vs_blocks: u8 = 1,
     num_uniform_fs_blocks: u8 = 1,
+
+    // whether to automatically bind the 0 slot for a material using MaterialParams
+    use_default_params: bool = true,
 };
 
 /// Material params can get binded automatically to the default uniform block (0)
@@ -519,6 +537,7 @@ pub const MaterialParams = struct {
     draw_color: Color = colors.white,
     color_override: Color = colors.transparent,
     alpha_cutoff: f32 = 0.0,
+    joints: []Mat4 = undefined,
 };
 
 /// Holds the data for and builds a uniform block that can be passed to a shader
@@ -532,11 +551,12 @@ pub const MaterialUniformBlock = struct {
         };
     }
 
-    fn addBytesFrom(self: *MaterialUniformBlock, value: anytype) void {
+    pub fn addBytesFrom(self: *MaterialUniformBlock, value: anytype) void {
         self.bytes.appendSlice(std.mem.asBytes(value)) catch {
             debug.log("Error adding material uniform!", .{});
             return;
         };
+
         self.size = self.bytes.items.len;
     }
 
@@ -640,6 +660,7 @@ pub const Material = struct {
     depth_write_enabled: bool,
     depth_compare: CompareFunc,
     cull_mode: CullMode,
+    use_default_params: bool = true,
 
     // Material params are used for automatic binding
     params: MaterialParams = MaterialParams{},
@@ -662,6 +683,7 @@ pub const Material = struct {
             .cull_mode = cfg.cull_mode,
             .default_vs_uniform_layout = cfg.default_vs_uniform_layout,
             .default_fs_uniform_layout = cfg.default_fs_uniform_layout,
+            .use_default_params = cfg.use_default_params,
         };
 
         // Make samplers from filter modes
@@ -736,6 +758,12 @@ pub const Material = struct {
                 .ALPHA_CUTOFF => {
                     u_block.addFloat("u_alphaCutoff", self.params.alpha_cutoff);
                 },
+                .JOINTS_64 => {
+                    u_block.addBytesFrom(self.params.joints[0..64]);
+                },
+                .JOINTS_256 => {
+                    u_block.addBytesFrom(self.params.joints[0..256]);
+                },
             }
         }
         u_block.end();
@@ -749,11 +777,11 @@ pub const Material = struct {
         const has_default_fs: bool = self.default_fs_uniform_layout.len > 0;
 
         // Set our default uniform vars first
-        if (has_default_vs) {
+        if (has_default_vs and self.use_default_params) {
             if (self.vs_uniforms[0] != null)
                 self.setDefaultUniformVars(self.default_vs_uniform_layout, &self.vs_uniforms[0].?, proj_view_matrix, model_matrix);
         }
-        if (has_default_fs) {
+        if (has_default_fs and self.use_default_params) {
             if (self.fs_uniforms[0] != null)
                 self.setDefaultUniformVars(self.default_fs_uniform_layout, &self.fs_uniforms[0].?, proj_view_matrix, model_matrix);
         }

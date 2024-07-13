@@ -251,6 +251,31 @@ pub const Vec4 = extern struct {
 pub const Mat4 = extern struct {
     m: [4][4]f32,
 
+    pub fn toArray(self: *const Mat4) [4][4]f32 {
+        return self.m;
+    }
+
+    pub fn fromSlice(slice: *const [16]f32) Mat4 {
+        var res = Mat4.zero;
+        res.m[0][0] = slice[0];
+        res.m[0][1] = slice[1];
+        res.m[0][2] = slice[2];
+        res.m[0][3] = slice[3];
+        res.m[1][0] = slice[4];
+        res.m[1][1] = slice[5];
+        res.m[1][2] = slice[6];
+        res.m[1][3] = slice[7];
+        res.m[2][0] = slice[8];
+        res.m[2][1] = slice[9];
+        res.m[2][2] = slice[10];
+        res.m[2][3] = slice[11];
+        res.m[3][0] = slice[12];
+        res.m[3][1] = slice[13];
+        res.m[3][2] = slice[14];
+        res.m[3][3] = slice[15];
+        return res;
+    }
+
     pub fn mul(left: *const Mat4, right: Mat4) Mat4 {
         var res = Mat4.zero;
         var col: usize = 0;
@@ -285,6 +310,27 @@ pub const Mat4 = extern struct {
         res.m[3][2] = self.m[2][3];
         res.m[3][3] = self.m[3][3];
         return res;
+    }
+
+    // Create a Mat4 out of a translation, rotation, and scale
+    pub fn recompose(translation: Vec3, rotation: Quaternion, scalar: Vec3) Mat4 {
+        var r = rotation.toMat4();
+
+        r.m[0][0] *= scalar.x;
+        r.m[0][1] *= scalar.x;
+        r.m[0][2] *= scalar.x;
+        r.m[1][0] *= scalar.y;
+        r.m[1][1] *= scalar.y;
+        r.m[1][2] *= scalar.y;
+        r.m[2][0] *= scalar.z;
+        r.m[2][1] *= scalar.z;
+        r.m[2][2] *= scalar.z;
+
+        r.m[3][0] = translation.x;
+        r.m[3][1] = translation.y;
+        r.m[3][2] = translation.z;
+
+        return r;
     }
 
     pub fn detsubs(self: *const Mat4) [12]f32 {
@@ -469,6 +515,167 @@ pub const Mat4 = extern struct {
     pub const zero = Mat4{
         .m = [_][4]f32{ .{ 0.0, 0.0, 0.0, 0.0 }, .{ 0.0, 0.0, 0.0, 0.0 }, .{ 0.0, 0.0, 0.0, 0.0 }, .{ 0.0, 0.0, 0.0, 0.0 } },
     };
+};
+
+pub const Quaternion = struct {
+    x: f32,
+    y: f32,
+    z: f32,
+    w: f32,
+
+    pub const zero = Quaternion{ .x = 0.0, .y = 0.0, .z = 0.0, .w = 0.0 };
+    pub const identity = Quaternion{ .x = 0.0, .y = 0.0, .z = 0.0, .w = 1.0 };
+
+    pub fn new(x: f32, y: f32, z: f32, w: f32) Quaternion {
+        return Quaternion{ .x = x, .y = y, .z = z, .w = w };
+    }
+
+    pub fn norm(self: *const Quaternion) Quaternion {
+        const l = self.length();
+        if (l == 0) {
+            return self.*;
+        }
+
+        return Quaternion.new(
+            self.x / l,
+            self.y / l,
+            self.z / l,
+            self.w / l,
+        );
+    }
+
+    pub fn length(self: *const Quaternion) f32 {
+        return @sqrt(self.dot(self.*));
+    }
+
+    pub fn add(left: Quaternion, right: Quaternion) Quaternion {
+        return Quaternion.new(left.x + right.x, left.y + right.y, left.z + right.z, left.w + right.w);
+    }
+
+    pub fn sub(left: Quaternion, right: Quaternion) Quaternion {
+        return Quaternion.new(left.x - right.x, left.y - right.y, left.z - right.z, left.w - right.w);
+    }
+
+    pub fn scale(left: Quaternion, right: f32) Quaternion {
+        return Quaternion.new(left.x * right, left.y * right, left.z * right, left.w * right);
+    }
+
+    pub fn div(left: Quaternion, right: f32) Quaternion {
+        return Quaternion.new(left.x / right, left.y / right, left.z / right, left.w / right);
+    }
+
+    pub fn mix(left: Quaternion, mix_left: f32, right: Quaternion, mix_right: f32) Quaternion {
+        var result = Quaternion.zero;
+
+        result.x = left.x * mix_left + right.x * mix_right;
+        result.y = left.y * mix_left + right.y * mix_right;
+        result.z = left.z * mix_left + right.z * mix_right;
+        result.w = left.w * mix_left + right.w * mix_right;
+
+        return result;
+    }
+
+    pub fn dot(left: *const Quaternion, right: Quaternion) f32 {
+        return ((left.x * right.x) + (left.z * right.z)) + ((left.y * right.y) + (left.w * right.w));
+    }
+
+    pub fn inv(self: *const Quaternion) Quaternion {
+        const result = Quaternion.new(-self.x, -self.y, -self.z, self.w);
+        return result.div(self.dot(self));
+    }
+
+    pub fn lerp(left: Quaternion, right: Quaternion, alpha: f32) Quaternion {
+        const result = Quaternion.mix(left, 1.0 - alpha, right, alpha);
+        return result.norm();
+    }
+
+    pub fn slerp(left: Quaternion, right: Quaternion, alpha: f32) Quaternion {
+        var cos_theta = left.dot(right);
+        var new_right = right;
+
+        var result: Quaternion = undefined;
+
+        if (cos_theta < 0.0) { // Take shortest path on Hyper-sphere
+            cos_theta = -cos_theta;
+            new_right = Quaternion.new(-right.x, -right.y, -right.z, -right.w);
+        }
+
+        // Use Normalized Linear interpolation when vectors are roughly not L.I.
+        if (cos_theta > 0.9995) {
+            result = Quaternion.lerp(left, right, alpha);
+        } else {
+            const angle: f32 = std.math.cos(cos_theta);
+            const mix_left: f32 = std.math.sin((1.0 - alpha) * angle);
+            const mix_right: f32 = std.math.sin(alpha * angle);
+
+            result = Quaternion.mix(left, mix_left, right, mix_right).norm();
+        }
+
+        return result;
+    }
+
+    pub fn toMat4(self: *const Quaternion) Mat4 {
+        var result: Mat4 = Mat4.identity;
+
+        const normalized = self.norm();
+
+        const xx = normalized.x * normalized.x;
+        const yy = normalized.y * normalized.y;
+        const zz = normalized.z * normalized.z;
+        const xy = normalized.x * normalized.y;
+        const xz = normalized.x * normalized.z;
+        const yz = normalized.y * normalized.z;
+        const wx = normalized.w * normalized.x;
+        const wy = normalized.w * normalized.y;
+        const wz = normalized.w * normalized.z;
+
+        result.m[0][0] = 1.0 - 2.0 * (yy + zz);
+        result.m[0][1] = 2.0 * (xy + wz);
+        result.m[0][2] = 2.0 * (xz - wy);
+        result.m[0][3] = 0.0;
+
+        result.m[1][0] = 2.0 * (xy - wz);
+        result.m[1][1] = 1.0 - 2.0 * (xx + zz);
+        result.m[1][2] = 2.0 * (yz + wx);
+        result.m[1][3] = 0.0;
+
+        result.m[2][0] = 2.0 * (xz + wy);
+        result.m[2][1] = 2.0 * (yz - wx);
+        result.m[2][2] = 1.0 - 2.0 * (xx + yy);
+        result.m[2][3] = 0.0;
+
+        result.m[3][0] = 0.0;
+        result.m[3][1] = 0.0;
+        result.m[3][2] = 0.0;
+        result.m[3][3] = 1.0;
+
+        return result;
+    }
+
+    pub fn fromAxisAngleRH(axis: Vec3, angle: f32) Quaternion {
+        var result = Quaternion.zero;
+        const axis_normalized: Vec3 = axis.norm();
+        const sin_of_rotation = std.math.sin(angle / 2.0);
+
+        const r = axis_normalized.scale(sin_of_rotation);
+
+        result.x = r.x;
+        result.y = r.y;
+        result.z = r.z;
+        result.w = std.math.cos(angle / 2.0);
+
+        return result;
+    }
+
+    pub fn rotateVec3(left: Quaternion, right: Vec3) Vec3 {
+        const quat_vec = Vec3.new(left.x, left.y, left.z);
+        const t = quat_vec.cross(right).scale(2.0);
+        return right.add(t.scale(left.w).add(quat_vec.cross(t)));
+    }
+
+    pub fn fromAxisAngleLH(axis: Vec3, angle: f32) Quaternion {
+        return Quaternion.fromAxisAngleRH(axis, -angle);
+    }
 };
 
 test "Vec3.zero" {
