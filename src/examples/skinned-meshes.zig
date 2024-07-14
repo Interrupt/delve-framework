@@ -101,10 +101,10 @@ fn on_init() !void {
     mesh_test = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = material });
 
     // start looping the first animation
-    mesh_test.?.playAnimation(0, 1.0, true);
+    // mesh_test.?.playAnimation(0, 1.0, true);
 
     // also try to play an animation by name, if it exists!
-    mesh_test.?.playAnimationByName("Run", 1.0, true);
+    // mesh_test.?.playAnimationByName("Run", 1.0, true);
 }
 
 fn on_tick(delta: f32) void {
@@ -114,7 +114,7 @@ fn on_tick(delta: f32) void {
     time += delta * 100;
 
     // test anim blending
-    mesh_test.?.playing_animation.blend_alpha = std.math.sin(time * 0.05) * 0.5 + 0.5;
+    // mesh_test.?.playing_animation.blend_alpha = std.math.sin(time * 0.05) * 0.5 + 0.5;
 
     mesh_test.?.updateAnimation(delta);
 

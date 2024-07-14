@@ -7,6 +7,7 @@ const mem = @import("../mem.zig");
 const colors = @import("../colors.zig");
 const boundingbox = @import("../spatial/boundingbox.zig");
 const mesh = @import("mesh.zig");
+const interpolation = @import("../utils/interpolation.zig");
 
 const Vertex = graphics.Vertex;
 const Color = colors.Color;
@@ -28,6 +29,12 @@ pub const PlayingAnimation = struct {
     playing: bool = false,
     looping: bool = true,
     blend_alpha: f32 = 1.0,
+
+    // lerp into or out of an animation
+    lerp_timer: f32 = 0.0,
+    lerp_time: f32 = 0.25,
+    lerp_start_amount: f32 = 0.0,   // eg: set start to 1 and end to 0 to blend out
+    lerp_end_amount: f32 = 1.0,
 
     // calculated on play
     duration: f32 = 0.0,
@@ -193,6 +200,9 @@ pub const SkinnedMesh = struct {
 
         playing_animation.time += delta_time * playing_animation.speed;
 
+        if(playing_animation.lerp_timer < 1.0)
+            playing_animation.lerp_timer += delta_time * playing_animation.speed;
+
         const animation = self.mesh.zmesh_data.?.animations.?[playing_animation.anim_idx];
         const animation_duration = playing_animation.duration;
 
@@ -235,7 +245,8 @@ pub const SkinnedMesh = struct {
             if (!found_node)
                 continue;
 
-            const alpha: f32 = playing_animation.blend_alpha;
+            const anim_lerp_amt = interpolation.Lerp.applyIn(playing_animation.lerp_start_amount, playing_animation.lerp_end_amount, playing_animation.lerp_timer);
+            const alpha: f32 = playing_animation.blend_alpha * anim_lerp_amt;
 
             switch (channel.target_path) {
                 .translation => {
