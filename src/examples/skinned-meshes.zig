@@ -101,10 +101,10 @@ fn on_init() !void {
     mesh_test = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = material });
 
     // start looping the first animation
-    // mesh_test.?.playAnimation(0, 1.0, true);
+    mesh_test.?.playAnimation(0, 1.0, true);
 
     // also try to play an animation by name, if it exists!
-    // mesh_test.?.playAnimationByName("Run", 1.0, true);
+    mesh_test.?.playAnimationByName("Run", 1.0, true);
 }
 
 fn on_tick(delta: f32) void {
