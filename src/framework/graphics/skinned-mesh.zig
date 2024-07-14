@@ -31,12 +31,12 @@ pub const PlayingAnimation = struct {
     blend_alpha: f32 = 1.0,
 
     // lerp into or out of an animation
-    lerp_timer: f32 = 0.0,
-    lerp_time: f32 = 0.25,
+    lerp_time: f32 = 0.0,// how long it takes to blend into this animation
+    lerp_timer: f32 = 0.0, // current lerp time
     lerp_start_amount: f32 = 0.0,   // eg: set start to 1 and end to 0 to blend out
     lerp_end_amount: f32 = 1.0,
 
-    // calculated on play
+    // length of animation. calculated on play
     duration: f32 = 0.0,
 
     // calculated transforms of all joints in the animation (excluding skeleton)
@@ -119,6 +119,7 @@ pub const SkinnedMesh = struct {
         self.playing_animation.looping = loop;
         self.playing_animation.time = 0.0;
         self.playing_animation.speed = speed;
+        self.playing_animation.lerp_timer = 0.0;
 
         if(self.mesh.zmesh_data == null)
             return;
@@ -200,7 +201,7 @@ pub const SkinnedMesh = struct {
 
         playing_animation.time += delta_time * playing_animation.speed;
 
-        if(playing_animation.lerp_timer < 1.0)
+        if(playing_animation.lerp_timer < playing_animation.lerp_time)
             playing_animation.lerp_timer += delta_time * playing_animation.speed;
 
         const animation = self.mesh.zmesh_data.?.animations.?[playing_animation.anim_idx];
@@ -245,7 +246,8 @@ pub const SkinnedMesh = struct {
             if (!found_node)
                 continue;
 
-            const anim_lerp_amt = interpolation.Lerp.applyIn(playing_animation.lerp_start_amount, playing_animation.lerp_end_amount, playing_animation.lerp_timer);
+            const lerp_alpha = if(playing_animation.lerp_time <= 0.0) 1.0 else playing_animation.lerp_timer / playing_animation.lerp_time;
+            const anim_lerp_amt = interpolation.Lerp.applyIn(playing_animation.lerp_start_amount, playing_animation.lerp_end_amount, @min(lerp_alpha, 1.0));
             const alpha: f32 = playing_animation.blend_alpha * anim_lerp_amt;
 
             switch (channel.target_path) {
