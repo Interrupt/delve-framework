@@ -113,6 +113,9 @@ fn on_tick(delta: f32) void {
 
     time += delta * 100;
 
+    // test anim blending
+    mesh_test.?.playing_animation.blend_alpha = std.math.sin(time * 0.05) * 0.5 + 0.5;
+
     mesh_test.?.updateAnimation(delta);
 
     if (input.isKeyJustPressed(.ESCAPE))

@@ -27,9 +27,16 @@ pub const PlayingAnimation = struct {
     speed: f32 = 0.0,
     playing: bool = false,
     looping: bool = true,
+    blend_alpha: f32 = 1.0,
 
     // calculated on play
     duration: f32 = 0.0,
+
+    // calculated transforms of all joints in the animation (excluding skeleton)
+    joint_transforms: ?std.ArrayList(AnimationTransform) = null,
+
+    // calced transform matrices of all joints (including skeleton)
+    joint_calced_matrices: ?std.ArrayList(math.Mat4) = null,
 
     pub fn isDonePlaying(self: *PlayingAnimation) bool {
         return self.time >= self.duration;
@@ -41,8 +48,16 @@ const AnimationTransform = struct {
     scale: math.Vec3 = math.Vec3.one,
     rotation: math.Quaternion = math.Quaternion.identity,
 
-    pub fn toMat4(self: *const AnimationTransform) math.Mat4 {
-        return math.Mat4.recompose(self.translation, self.rotation, self.scale);
+    // cache the calculated mat4
+    calced_matrix: math.Mat4 = undefined,
+
+    pub fn toMat4(self: *AnimationTransform) math.Mat4 {
+        const mat = math.Mat4.recompose(self.translation, self.rotation, self.scale);
+
+        // cache this calc to use later
+        self.calced_matrix = mat;
+
+        return mat;
     }
 };
 
@@ -63,6 +78,12 @@ pub const SkinnedMesh = struct {
 
     pub fn deinit(self: *SkinnedMesh) void {
         self.mesh.deinit();
+        if(self.playing_animation.joint_transforms) |transforms| {
+            transforms.deinit();
+        }
+        if(self.playing_animation.joint_calced_matrices) |mats| {
+            mats.deinit();
+        }
     }
 
     /// Draw this mesh
@@ -101,6 +122,17 @@ pub const SkinnedMesh = struct {
             self.playing_animation.playing = false;
             self.playing_animation.duration = 0;
             return;
+        }
+
+        if(self.playing_animation.joint_transforms == null) {
+            self.playing_animation.joint_transforms = std.ArrayList(AnimationTransform).init(mem.getAllocator());
+            self.playing_animation.joint_calced_matrices = std.ArrayList(math.Mat4).init(mem.getAllocator());
+
+            // assume 64 joints for now!
+            for(0..64) |_| {
+                self.playing_animation.joint_transforms.?.append(.{}) catch { return; };
+                self.playing_animation.joint_calced_matrices.?.append(math.Mat4.identity) catch { return; };
+            }
         }
 
         self.playing_animation.anim_idx = anim_idx;
@@ -150,24 +182,32 @@ pub const SkinnedMesh = struct {
         if (self.mesh.zmesh_data.?.skins == null or self.mesh.zmesh_data.?.animations == null)
             return;
 
-        if (!self.playing_animation.playing)
+        // todo: blend multiple animations
+        var playing_animation = &self.playing_animation;
+        if(self.playing_animation.joint_transforms == null)
             return;
 
-        self.playing_animation.time += delta_time * self.playing_animation.speed;
+        if (!playing_animation.playing)
+            return;
 
-        const animation = self.mesh.zmesh_data.?.animations.?[self.playing_animation.anim_idx];
-        const animation_duration = self.playing_animation.duration;
+
+        playing_animation.time += delta_time * playing_animation.speed;
+
+        const animation = self.mesh.zmesh_data.?.animations.?[playing_animation.anim_idx];
+        const animation_duration = playing_animation.duration;
 
         // loop if we need to!
-        var t = self.playing_animation.time;
-        if (self.playing_animation.looping) {
+        var t = playing_animation.time;
+        if (playing_animation.looping) {
             t = @mod(t, animation_duration);
         }
 
         const nodes = self.mesh.zmesh_data.?.skins.?[0].joints;
         const nodes_count = self.mesh.zmesh_data.?.skins.?[0].joints_count;
 
-        var local_transforms: [64]AnimationTransform = [_]AnimationTransform{undefined} ** 64;
+        var local_transforms = playing_animation.joint_transforms.?.items;
+        if(local_transforms.len == 0)
+            return;
 
         for (0..nodes_count) |i| {
             const node = nodes[i];
@@ -195,18 +235,32 @@ pub const SkinnedMesh = struct {
             if (!found_node)
                 continue;
 
+            const alpha: f32 = playing_animation.blend_alpha;
+
             switch (channel.target_path) {
                 .translation => {
                     const sampled_translation = self.sampleAnimation(math.Vec3, sampler, t);
-                    local_transforms[node_idx].translation = sampled_translation;
+                    if(alpha == 1.0) {
+                        local_transforms[node_idx].translation = sampled_translation;
+                    } else {
+                        local_transforms[node_idx].translation = math.Vec3.lerp(local_transforms[node_idx].translation, sampled_translation, alpha);
+                    }
                 },
                 .scale => {
                     const sampled_scale = self.sampleAnimation(math.Vec3, sampler, t);
-                    local_transforms[node_idx].scale = sampled_scale;
+                    if(alpha == 1.0) {
+                        local_transforms[node_idx].scale = sampled_scale;
+                    } else {
+                        local_transforms[node_idx].scale = math.Vec3.lerp(local_transforms[node_idx].scale, sampled_scale, alpha);
+                    }
                 },
                 .rotation => {
                     const sampled_quaternion = self.sampleAnimation(math.Quaternion, sampler, t);
-                    local_transforms[node_idx].rotation = sampled_quaternion;
+                    if(alpha == 1.0) {
+                        local_transforms[node_idx].rotation = sampled_quaternion;
+                    } else {
+                        local_transforms[node_idx].rotation = math.Quaternion.slerp(local_transforms[node_idx].rotation, sampled_quaternion, alpha);
+                    }
                 },
                 else => {
                     // unhandled!
@@ -214,15 +268,10 @@ pub const SkinnedMesh = struct {
             }
         }
 
-        var local_transform_mats: [64]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** 64;
-        for (0..nodes_count) |i| {
-            local_transform_mats[i] = local_transforms[i].toMat4();
-        }
-
         // update each joint location based on each node in the joint heirarchy
         for (0..nodes_count) |i| {
             var node = nodes[i];
-            self.joint_locations[i] = local_transform_mats[i];
+            playing_animation.joint_calced_matrices.?.items[i] = local_transforms[i].toMat4();
 
             while (node.parent) |parent| : (node = parent) {
                 var parent_idx: usize = 0;
@@ -239,8 +288,8 @@ pub const SkinnedMesh = struct {
                 if (!found_node)
                     continue;
 
-                const parent_transform = local_transform_mats[parent_idx];
-                self.joint_locations[i] = parent_transform.mul(self.joint_locations[i]);
+                const parent_transform = local_transforms[parent_idx].calced_matrix;
+                playing_animation.joint_calced_matrices.?.items[i] = parent_transform.mul(playing_animation.joint_calced_matrices.?.items[i]);
             }
         }
 
@@ -248,7 +297,7 @@ pub const SkinnedMesh = struct {
         const inverse_bind_mat_data = zmesh.io.getAnimationSamplerData(self.mesh.zmesh_data.?.skins.?[0].inverse_bind_matrices.?);
         for (0..nodes_count) |i| {
             const inverse_mat = access(math.Mat4, inverse_bind_mat_data, i);
-            self.joint_locations[i] = self.joint_locations[i].mul(inverse_mat);
+            self.joint_locations[i] = playing_animation.joint_calced_matrices.?.items[i].mul(inverse_mat);
         }
     }
 
