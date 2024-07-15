@@ -115,11 +115,14 @@ pub const SkinnedMesh = struct {
         return self.mesh.zmesh_data.?.animations_count;
     }
 
-    pub fn playAnimation(self: *SkinnedMesh, anim_idx: usize, speed: f32, loop: bool) void {
+    pub fn playAnimation(self: *SkinnedMesh, anim_idx: usize, speed: f32, lerp_time: f32, loop: bool) void {
         self.playing_animation.looping = loop;
         self.playing_animation.time = 0.0;
         self.playing_animation.speed = speed;
         self.playing_animation.lerp_timer = 0.0;
+        self.playing_animation.lerp_time = lerp_time;
+        self.playing_animation.lerp_start_amount = 0.0;
+        self.playing_animation.lerp_end_amount = 1.0;
 
         if(self.mesh.zmesh_data == null)
             return;
@@ -150,7 +153,7 @@ pub const SkinnedMesh = struct {
         self.playing_animation.duration = zmesh.io.computeAnimationDuration(&animation);
     }
 
-    pub fn playAnimationByName(self: *SkinnedMesh, anim_name: []const u8, speed: f32, loop: bool) void {
+    pub fn playAnimationByName(self: *SkinnedMesh, anim_name: []const u8, speed: f32, lerp_time: f32, loop: bool) void {
         // convert to a sentinel terminated pointer
         const anim_name_z = @as([*:0]u8, @constCast(@ptrCast(anim_name)));
 
@@ -160,7 +163,7 @@ pub const SkinnedMesh = struct {
                 const result = std.mem.orderZ(u8, name, anim_name_z);
                 if (result == .eq) {
                     // debug.log("Found animation index for {s} : {}", .{ anim_name, i });
-                    self.playAnimation(i, speed, loop);
+                    self.playAnimation(i, speed, lerp_time, loop);
                     return;
                 }
             }
@@ -173,9 +176,17 @@ pub const SkinnedMesh = struct {
         self.playing_animation.playing = false;
     }
 
-    pub fn stopAnimation(self: *SkinnedMesh) void {
-        self.playing_animation.playing = false;
-        self.playing_animation.time = 0.0;
+    pub fn stopAnimation(self: *SkinnedMesh, lerp_time: f32) void {
+        if(lerp_time <= 0.0) {
+            self.playing_animation.playing = false;
+            self.playing_animation.time = 0.0;
+            return;
+        }
+
+        self.playing_animation.lerp_timer = 0.0;
+        self.playing_animation.lerp_time = lerp_time;
+        self.playing_animation.lerp_start_amount = 1.0;
+        self.playing_animation.lerp_end_amount = 0.0;
     }
 
     pub fn resumeAnimation(self: *SkinnedMesh) void {
@@ -201,8 +212,14 @@ pub const SkinnedMesh = struct {
 
         playing_animation.time += delta_time * playing_animation.speed;
 
-        if(playing_animation.lerp_timer < playing_animation.lerp_time)
+        if(playing_animation.lerp_timer < playing_animation.lerp_time) {
             playing_animation.lerp_timer += delta_time * playing_animation.speed;
+        } else if(playing_animation.lerp_end_amount == 0.0) {
+            // if we were lerping out, just stop the animation when done
+            playing_animation.playing = false;
+            return;
+        }
+
 
         const animation = self.mesh.zmesh_data.?.animations.?[playing_animation.anim_idx];
         const animation_duration = playing_animation.duration;
