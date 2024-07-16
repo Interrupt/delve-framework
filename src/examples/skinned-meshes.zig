@@ -22,8 +22,10 @@ const Color = colors.Color;
 
 const shader_builtin = delve.shaders.default_skinned;
 
-var time: f32 = 0.0;
 var mesh_test: ?skinned_mesh.SkinnedMesh = null;
+var animation: ?skinned_mesh.PlayingAnimation = null;
+
+var time: f32 = 0.0;
 var camera: cam.Camera = undefined;
 
 const mesh_file = "assets/meshes/CesiumMan.gltf";
@@ -99,12 +101,7 @@ fn on_init() !void {
 
     // Load our mesh!
     mesh_test = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = material });
-
-    // start looping the first animation
-    mesh_test.?.playAnimation(0, 1.0, 1.0, true);
-
-    // also try to play an animation by name, if it exists!
-    mesh_test.?.playAnimationByName("Run", 1.0, 1.0, true);
+    animation = try mesh_test.?.createAnimation(0, 1.0, true);
 }
 
 fn on_tick(delta: f32) void {
@@ -113,18 +110,22 @@ fn on_tick(delta: f32) void {
 
     time += delta * 100;
 
-    mesh_test.?.updateAnimation(delta);
+    mesh_test.?.updateAnimation(&animation.?, delta);
 
     if (input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
 
     if (input.isKeyJustPressed(.SPACE)) {
-        if (!mesh_test.?.playing_animation.playing) {
-            const anim_count = mesh_test.?.getAnimationsCount();
-            mesh_test.?.playAnimation(@mod(anim_idx, anim_count), 1.0, 1.0, true);
+        if (input.isKeyPressed(.LEFT_SHIFT)) {
+            animation.?.anim_idx -= 1;
         } else {
-            mesh_test.?.stopAnimation(1.0);
+            animation.?.anim_idx += 1;
         }
+
+        const anim_count = mesh_test.?.getAnimationsCount();
+        animation.?.anim_idx = @mod(anim_idx, anim_count);
+        animation.?.time = 0.0;
+        animation.?.playing = true;
     }
 }
 
@@ -138,6 +139,7 @@ fn on_draw() void {
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
 
+    mesh_test.?.applyAnimation(&animation.?);
     mesh_test.?.draw(proj_view_matrix, model);
 }
 

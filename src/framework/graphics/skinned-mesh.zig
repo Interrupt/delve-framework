@@ -26,7 +26,7 @@ pub const PlayingAnimation = struct {
     anim_idx: usize = 0,
     time: f32 = 0.0,
     speed: f32 = 0.0,
-    playing: bool = false,
+    playing: bool = true,
     looping: bool = true,
     blend_alpha: f32 = 1.0,
 
@@ -39,7 +39,7 @@ pub const PlayingAnimation = struct {
     // length of animation. calculated on play
     duration: f32 = 0.0,
 
-    // calculated transforms of all joints in the animation (excluding skeleton)
+    // calced transforms of all joints in the animation (excluding skeleton)
     joint_transforms: ?std.ArrayList(AnimationTransform) = null,
 
     // calced transform matrices of all joints (including skeleton)
@@ -115,45 +115,37 @@ pub const SkinnedMesh = struct {
         return self.mesh.zmesh_data.?.animations_count;
     }
 
-    pub fn playAnimation(self: *SkinnedMesh, anim_idx: usize, speed: f32, lerp_time: f32, loop: bool) void {
-        self.playing_animation.looping = loop;
-        self.playing_animation.time = 0.0;
-        self.playing_animation.speed = speed;
-        self.playing_animation.lerp_timer = 0.0;
-        self.playing_animation.lerp_time = lerp_time;
-        self.playing_animation.lerp_start_amount = 0.0;
-        self.playing_animation.lerp_end_amount = 1.0;
+    pub fn createAnimation(self: *SkinnedMesh, anim_idx: usize, speed: f32, loop: bool) !PlayingAnimation {
+        var new_anim: PlayingAnimation = .{ .anim_idx = anim_idx, .speed = speed, .looping = loop };
 
-        if(self.mesh.zmesh_data == null)
-            return;
+        if(self.mesh.zmesh_data == null) {
+            debug.log("warning: mesh skin data not found!", .{});
+            return new_anim;
+        }
 
         if (anim_idx >= self.mesh.zmesh_data.?.animations_count) {
             debug.log("warning: animation {} not found!", .{anim_idx});
-            self.playing_animation.anim_idx = 0;
-            self.playing_animation.playing = false;
-            self.playing_animation.duration = 0;
-            return;
+            new_anim.playing = false;
+            return new_anim;
         }
 
-        if(self.playing_animation.joint_transforms == null) {
-            self.playing_animation.joint_transforms = std.ArrayList(AnimationTransform).init(mem.getAllocator());
-            self.playing_animation.joint_calced_matrices = std.ArrayList(math.Mat4).init(mem.getAllocator());
+        new_anim.joint_transforms = std.ArrayList(AnimationTransform).init(mem.getAllocator());
+        new_anim.joint_calced_matrices = std.ArrayList(math.Mat4).init(mem.getAllocator());
 
-            // assume 64 joints for now!
-            for(0..64) |_| {
-                self.playing_animation.joint_transforms.?.append(.{}) catch { return; };
-                self.playing_animation.joint_calced_matrices.?.append(math.Mat4.identity) catch { return; };
-            }
+        // assume 64 joints for now!
+        for(0..64) |_| {
+            try new_anim.joint_transforms.?.append(.{});
+            try new_anim.joint_calced_matrices.?.append(math.Mat4.identity);
         }
 
-        self.playing_animation.anim_idx = anim_idx;
-        self.playing_animation.playing = true;
-
+        // save the duration
         const animation = self.mesh.zmesh_data.?.animations.?[anim_idx];
-        self.playing_animation.duration = zmesh.io.computeAnimationDuration(&animation);
+        new_anim.duration = zmesh.io.computeAnimationDuration(&animation);
+
+        return new_anim;
     }
 
-    pub fn playAnimationByName(self: *SkinnedMesh, anim_name: []const u8, speed: f32, lerp_time: f32, loop: bool) void {
+    pub fn createAnimationByName(self: *SkinnedMesh, anim_name: []const u8, speed: f32, loop: bool) !PlayingAnimation {
         // convert to a sentinel terminated pointer
         const anim_name_z = @as([*:0]u8, @constCast(@ptrCast(anim_name)));
 
@@ -162,48 +154,21 @@ pub const SkinnedMesh = struct {
             if (self.mesh.zmesh_data.?.animations.?[i].name) |name| {
                 const result = std.mem.orderZ(u8, name, anim_name_z);
                 if (result == .eq) {
-                    // debug.log("Found animation index for {s} : {}", .{ anim_name, i });
-                    self.playAnimation(i, speed, lerp_time, loop);
-                    return;
+                    return self.createAnimation(i, speed, loop);
                 }
             }
         }
 
         debug.log("Could not find skined mesh animation to play: '{s}'", .{anim_name});
+        return self.createAnimation(0, speed, loop);
     }
 
-    pub fn pauseAnimation(self: *SkinnedMesh) void {
-        self.playing_animation.playing = false;
-    }
-
-    pub fn stopAnimation(self: *SkinnedMesh, lerp_time: f32) void {
-        if(lerp_time <= 0.0) {
-            self.playing_animation.playing = false;
-            self.playing_animation.time = 0.0;
-            return;
-        }
-
-        self.playing_animation.lerp_timer = 0.0;
-        self.playing_animation.lerp_time = lerp_time;
-        self.playing_animation.lerp_start_amount = 1.0;
-        self.playing_animation.lerp_end_amount = 0.0;
-    }
-
-    pub fn resumeAnimation(self: *SkinnedMesh) void {
-        self.playing_animation.playing = true;
-    }
-
-    pub fn setAnimationSpeed(self: *SkinnedMesh, speed: f32) void {
-        self.playing_animation.speed = speed;
-    }
-
-    pub fn updateAnimation(self: *SkinnedMesh, delta_time: f32) void {
+    pub fn updateAnimation(self: *SkinnedMesh, playing_animation: *PlayingAnimation, delta_time: f32) void {
         if (self.mesh.zmesh_data.?.skins == null or self.mesh.zmesh_data.?.animations == null)
             return;
 
         // todo: blend multiple animations
-        var playing_animation = &self.playing_animation;
-        if(self.playing_animation.joint_transforms == null)
+        if(playing_animation.joint_transforms == null)
             return;
 
         if (!playing_animation.playing)
@@ -322,6 +287,13 @@ pub const SkinnedMesh = struct {
                 playing_animation.joint_calced_matrices.?.items[i] = parent_transform.mul(playing_animation.joint_calced_matrices.?.items[i]);
             }
         }
+    }
+
+    pub fn applyAnimation(self: *SkinnedMesh, playing_animation: *PlayingAnimation) void {
+        if(playing_animation.joint_transforms == null)
+            return;
+
+        const nodes_count = self.mesh.zmesh_data.?.skins.?[0].joints_count;
 
         // apply the inverse bind matrices
         const inverse_bind_mat_data = zmesh.io.getAnimationSamplerData(self.mesh.zmesh_data.?.skins.?[0].inverse_bind_matrices.?);
