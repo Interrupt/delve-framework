@@ -139,7 +139,8 @@ fn on_draw() void {
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
 
-    mesh_test.?.applyAnimation(&animation.?);
+    mesh_test.?.resetAnimation();
+    mesh_test.?.applyAnimation(&animation.?, 0.75);
     mesh_test.?.draw(proj_view_matrix, model);
 }
 

@@ -18,6 +18,9 @@ const Vec2 = math.Vec2;
 const Mesh = mesh.Mesh;
 const MeshConfig = mesh.MeshConfig;
 
+// For now, support just 64 bones
+pub const max_joints: usize = 64;
+
 pub fn getSkinnedShaderAttributes() []const graphics.ShaderAttribute {
     return mesh.getSkinnedShaderAttributes();
 }
@@ -72,24 +75,27 @@ const AnimationTransform = struct {
 pub const SkinnedMesh = struct {
     mesh: Mesh = undefined,
 
-    joint_locations: [64]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** 64,
-    playing_animation: PlayingAnimation = .{},
+    joint_transforms: ?std.ArrayList(AnimationTransform) = null,
+    joint_transform_mats: [max_joints]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** max_joints,
+
+    joint_locations: [max_joints]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** max_joints,
 
     pub fn initFromFile(allocator: std.mem.Allocator, filename: [:0]const u8, cfg: MeshConfig) ?SkinnedMesh {
         const loaded_mesh = Mesh.initFromFile(allocator, filename, cfg);
         if (loaded_mesh) |loaded| {
-            return .{ .mesh = loaded };
+            var transforms = std.ArrayList(AnimationTransform).init(allocator);
+            for(0..max_joints) |_| {
+                transforms.append(.{}) catch { };
+            }
+            return .{ .mesh = loaded, .joint_transforms = transforms };
         }
         return null;
     }
 
     pub fn deinit(self: *SkinnedMesh) void {
         self.mesh.deinit();
-        if(self.playing_animation.joint_transforms) |transforms| {
+        if(self.joint_transforms) |transforms| {
             transforms.deinit();
-        }
-        if(self.playing_animation.joint_calced_matrices) |mats| {
-            mats.deinit();
         }
     }
 
@@ -133,7 +139,7 @@ pub const SkinnedMesh = struct {
         new_anim.joint_calced_matrices = std.ArrayList(math.Mat4).init(mem.getAllocator());
 
         // assume 64 joints for now!
-        for(0..64) |_| {
+        for(0..max_joints) |_| {
             try new_anim.joint_transforms.?.append(.{});
             try new_anim.joint_calced_matrices.?.append(math.Mat4.identity);
         }
@@ -262,11 +268,46 @@ pub const SkinnedMesh = struct {
                 },
             }
         }
+    }
 
-        // update each joint location based on each node in the joint heirarchy
+    // Reset back to the base pose
+    pub fn resetAnimation(self: *SkinnedMesh) void {
+        if (self.mesh.zmesh_data.?.skins == null or self.mesh.zmesh_data.?.animations == null)
+            return;
+
+        if(self.joint_transforms == null)
+            return;
+
+        const nodes = self.mesh.zmesh_data.?.skins.?[0].joints;
+        const nodes_count = self.mesh.zmesh_data.?.skins.?[0].joints_count;
+
+        var local_transforms = self.joint_transforms.?.items;
+        if(local_transforms.len == 0)
+            return;
+
+        // set initial bone positions
+        for (0..nodes_count) |i| {
+            const node = nodes[i];
+            local_transforms[i] = .{
+                .translation = math.Vec3.fromArray(node.translation),
+                .scale = math.Vec3.fromArray(node.scale),
+                .rotation = math.Quaternion.new(node.rotation[0], node.rotation[1], node.rotation[2], node.rotation[3]),
+            };
+        }
+
+        self.applySkeletonTransforms();
+    }
+
+    // Turns the local joint transforms into the final world space transforms
+    pub fn applySkeletonTransforms(self: *SkinnedMesh) void {
+        var local_transforms = self.joint_transforms.?.items;
+        const nodes = self.mesh.zmesh_data.?.skins.?[0].joints;
+        const nodes_count = self.mesh.zmesh_data.?.skins.?[0].joints_count;
+
+        // apply bone heirarchy
         for (0..nodes_count) |i| {
             var node = nodes[i];
-            playing_animation.joint_calced_matrices.?.items[i] = local_transforms[i].toMat4();
+            self.joint_transform_mats[i] = local_transforms[i].toMat4();
 
             while (node.parent) |parent| : (node = parent) {
                 var parent_idx: usize = 0;
@@ -283,24 +324,43 @@ pub const SkinnedMesh = struct {
                 if (!found_node)
                     continue;
 
-                const parent_transform = local_transforms[parent_idx].calced_matrix;
-                playing_animation.joint_calced_matrices.?.items[i] = parent_transform.mul(playing_animation.joint_calced_matrices.?.items[i]);
+                const parent_transform = local_transforms[parent_idx].toMat4();
+                self.joint_transform_mats[i] = parent_transform.mul(self.joint_transform_mats[i]);
             }
         }
-    }
-
-    pub fn applyAnimation(self: *SkinnedMesh, playing_animation: *PlayingAnimation) void {
-        if(playing_animation.joint_transforms == null)
-            return;
-
-        const nodes_count = self.mesh.zmesh_data.?.skins.?[0].joints_count;
 
         // apply the inverse bind matrices
         const inverse_bind_mat_data = zmesh.io.getAnimationSamplerData(self.mesh.zmesh_data.?.skins.?[0].inverse_bind_matrices.?);
         for (0..nodes_count) |i| {
             const inverse_mat = access(math.Mat4, inverse_bind_mat_data, i);
-            self.joint_locations[i] = playing_animation.joint_calced_matrices.?.items[i].mul(inverse_mat);
+            self.joint_locations[i] = self.joint_transform_mats[i].mul(inverse_mat);
         }
+    }
+
+    pub fn applyAnimation(self: *SkinnedMesh, playing_animation: *const PlayingAnimation, blend_alpha: f32) void {
+        if(playing_animation.joint_transforms == null)
+            return;
+
+        const nodes_count = self.mesh.zmesh_data.?.skins.?[0].joints_count;
+        const alpha = blend_alpha;
+
+        var local_transforms = self.joint_transforms.?.items;
+        const anim_transforms = playing_animation.joint_transforms.?.items;
+
+        if(blend_alpha == 1.0) {
+            // easy case, just grab the transforms without blending
+            for(0..nodes_count) |i| {
+                local_transforms[i] = playing_animation.joint_transforms.?.items[i];
+            }
+        } else {
+            for(0..nodes_count) |i| {
+                local_transforms[i].translation = math.Vec3.lerp(local_transforms[i].translation, anim_transforms[i].translation, alpha);
+                local_transforms[i].scale = math.Vec3.lerp(local_transforms[i].scale, anim_transforms[i].scale, alpha);
+                local_transforms[i].rotation = math.Quaternion.slerp(local_transforms[i].rotation, anim_transforms[i].rotation, alpha);
+            }
+        }
+
+        self.applySkeletonTransforms();
     }
 
     pub fn sampleAnimation(self: *SkinnedMesh, comptime T: type, sampler: zmesh.io.zcgltf.AnimationSampler, t: f32) T {
