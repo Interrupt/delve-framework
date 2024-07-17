@@ -27,6 +27,7 @@ pub fn getSkinnedShaderAttributes() []const graphics.ShaderAttribute {
 
 pub const PlayingAnimation = struct {
     anim_idx: usize = 0,
+
     time: f32 = 0.0,
     speed: f32 = 0.0,
     playing: bool = true,
@@ -34,9 +35,9 @@ pub const PlayingAnimation = struct {
     blend_alpha: f32 = 1.0,
 
     // lerp into or out of an animation
-    lerp_time: f32 = 0.0,// how long it takes to blend into this animation
+    lerp_time: f32 = 0.0, // how long it takes to blend into this animation
     lerp_timer: f32 = 0.0, // current lerp time
-    lerp_start_amount: f32 = 0.0,   // eg: set start to 1 and end to 0 to blend out
+    lerp_start_amount: f32 = 0.0, // eg: set start to 1 and end to 0 to blend out
     lerp_end_amount: f32 = 1.0,
 
     // length of animation. calculated on play
@@ -50,6 +51,42 @@ pub const PlayingAnimation = struct {
 
     pub fn isDonePlaying(self: *PlayingAnimation) bool {
         return self.time >= self.duration;
+    }
+
+    pub fn blendIn(self: *PlayingAnimation, blend_time: f32, preserve_lerp: bool) void {
+        const cur_lerp_amt = self.getLerpAmount();
+
+        self.lerp_time = blend_time;
+        self.lerp_timer = 0.0;
+        self.lerp_start_amount = if (preserve_lerp) cur_lerp_amt else 0.0;
+        self.lerp_end_amount = 1.0;
+        self.playing = true;
+    }
+
+    pub fn blendOut(self: *PlayingAnimation, blend_time: f32, preserve_lerp: bool) void {
+        const cur_lerp_amt = self.getLerpAmount();
+
+        self.lerp_time = blend_time;
+        self.lerp_timer = 0.0;
+        self.lerp_start_amount = if (preserve_lerp) cur_lerp_amt else 1.0;
+        self.lerp_end_amount = 0.0;
+        self.playing = true;
+    }
+
+    pub fn reset(self: *PlayingAnimation, playing: bool) void {
+        self.time = 0.0;
+        self.lerp_time = 0.0;
+        self.lerp_timer = 0.0;
+        self.lerp_start_amount = 0.0;
+        self.lerp_end_amount = 1.0;
+        self.blend_alpha = 1.0;
+
+        self.playing = playing;
+    }
+
+    pub fn getLerpAmount(self: *const PlayingAnimation) f32 {
+        const lerp_alpha = if (self.lerp_time <= 0.0) 1.0 else self.lerp_timer / self.lerp_time;
+        return interpolation.Lerp.applyIn(self.lerp_start_amount, self.lerp_end_amount, @min(lerp_alpha, 1.0));
     }
 };
 
@@ -75,26 +112,30 @@ const AnimationTransform = struct {
 pub const SkinnedMesh = struct {
     mesh: Mesh = undefined,
 
+    // local space joint locations
     joint_transforms: ?std.ArrayList(AnimationTransform) = null,
     joint_transform_mats: [max_joints]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** max_joints,
 
+    // the world space joint locations, with the skeleton's heirarchy applied
     joint_locations: [max_joints]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** max_joints,
 
+    /// Load a mesh with animation data from a gltf file
     pub fn initFromFile(allocator: std.mem.Allocator, filename: [:0]const u8, cfg: MeshConfig) ?SkinnedMesh {
         const loaded_mesh = Mesh.initFromFile(allocator, filename, cfg);
         if (loaded_mesh) |loaded| {
             var transforms = std.ArrayList(AnimationTransform).init(allocator);
-            for(0..max_joints) |_| {
-                transforms.append(.{}) catch { };
+            for (0..max_joints) |_| {
+                transforms.append(.{}) catch {};
             }
             return .{ .mesh = loaded, .joint_transforms = transforms };
         }
         return null;
     }
 
+    /// Free a previously initialized skinned mesh
     pub fn deinit(self: *SkinnedMesh) void {
         self.mesh.deinit();
-        if(self.joint_transforms) |transforms| {
+        if (self.joint_transforms) |transforms| {
             transforms.deinit();
         }
     }
@@ -111,6 +152,7 @@ pub const SkinnedMesh = struct {
         graphics.drawWithMaterial(&self.mesh.bindings, material, proj_view_matrix, model_matrix);
     }
 
+    /// Resets all joints back to their identity matrix
     pub fn resetJoints(self: *SkinnedMesh) void {
         for (0..self.joint_locations.len) |i| {
             self.joint_locations[i] = math.Mat4.identity;
@@ -121,10 +163,11 @@ pub const SkinnedMesh = struct {
         return self.mesh.zmesh_data.?.animations_count;
     }
 
-    pub fn createAnimation(self: *SkinnedMesh, anim_idx: usize, speed: f32, loop: bool) !PlayingAnimation {
+    /// Creates a new animation that can be played and applied to this mesh
+    pub fn createAnimation(self: *const SkinnedMesh, anim_idx: usize, speed: f32, loop: bool) !PlayingAnimation {
         var new_anim: PlayingAnimation = .{ .anim_idx = anim_idx, .speed = speed, .looping = loop };
 
-        if(self.mesh.zmesh_data == null) {
+        if (self.mesh.zmesh_data == null) {
             debug.log("warning: mesh skin data not found!", .{});
             return new_anim;
         }
@@ -139,7 +182,7 @@ pub const SkinnedMesh = struct {
         new_anim.joint_calced_matrices = std.ArrayList(math.Mat4).init(mem.getAllocator());
 
         // assume 64 joints for now!
-        for(0..max_joints) |_| {
+        for (0..max_joints) |_| {
             try new_anim.joint_transforms.?.append(.{});
             try new_anim.joint_calced_matrices.?.append(math.Mat4.identity);
         }
@@ -151,7 +194,8 @@ pub const SkinnedMesh = struct {
         return new_anim;
     }
 
-    pub fn createAnimationByName(self: *SkinnedMesh, anim_name: []const u8, speed: f32, loop: bool) !PlayingAnimation {
+    /// Creates a new animation that can be played and applied to this mesh, looked up by name
+    pub fn createAnimationByName(self: *const SkinnedMesh, anim_name: []const u8, speed: f32, loop: bool) !PlayingAnimation {
         // convert to a sentinel terminated pointer
         const anim_name_z = @as([*:0]u8, @constCast(@ptrCast(anim_name)));
 
@@ -169,28 +213,27 @@ pub const SkinnedMesh = struct {
         return self.createAnimation(0, speed, loop);
     }
 
+    /// Updates an animation's state and transforms
     pub fn updateAnimation(self: *SkinnedMesh, playing_animation: *PlayingAnimation, delta_time: f32) void {
         if (self.mesh.zmesh_data.?.skins == null or self.mesh.zmesh_data.?.animations == null)
             return;
 
         // todo: blend multiple animations
-        if(playing_animation.joint_transforms == null)
+        if (playing_animation.joint_transforms == null)
             return;
 
         if (!playing_animation.playing)
             return;
 
-
         playing_animation.time += delta_time * playing_animation.speed;
 
-        if(playing_animation.lerp_timer < playing_animation.lerp_time) {
+        if (playing_animation.lerp_timer < playing_animation.lerp_time) {
             playing_animation.lerp_timer += delta_time * playing_animation.speed;
-        } else if(playing_animation.lerp_end_amount == 0.0) {
+        } else if (playing_animation.lerp_end_amount == 0.0) {
             // if we were lerping out, just stop the animation when done
             playing_animation.playing = false;
             return;
         }
-
 
         const animation = self.mesh.zmesh_data.?.animations.?[playing_animation.anim_idx];
         const animation_duration = playing_animation.duration;
@@ -205,7 +248,7 @@ pub const SkinnedMesh = struct {
         const nodes_count = self.mesh.zmesh_data.?.skins.?[0].joints_count;
 
         var local_transforms = playing_animation.joint_transforms.?.items;
-        if(local_transforms.len == 0)
+        if (local_transforms.len == 0)
             return;
 
         for (0..nodes_count) |i| {
@@ -234,34 +277,18 @@ pub const SkinnedMesh = struct {
             if (!found_node)
                 continue;
 
-            const lerp_alpha = if(playing_animation.lerp_time <= 0.0) 1.0 else playing_animation.lerp_timer / playing_animation.lerp_time;
-            const anim_lerp_amt = interpolation.Lerp.applyIn(playing_animation.lerp_start_amount, playing_animation.lerp_end_amount, @min(lerp_alpha, 1.0));
-            const alpha: f32 = playing_animation.blend_alpha * anim_lerp_amt;
-
             switch (channel.target_path) {
                 .translation => {
-                    const sampled_translation = self.sampleAnimation(math.Vec3, sampler, t);
-                    if(alpha == 1.0) {
-                        local_transforms[node_idx].translation = sampled_translation;
-                    } else {
-                        local_transforms[node_idx].translation = math.Vec3.lerp(local_transforms[node_idx].translation, sampled_translation, alpha);
-                    }
+                    const sampled_translation = sampleAnimation(math.Vec3, sampler, t);
+                    local_transforms[node_idx].translation = sampled_translation;
                 },
                 .scale => {
-                    const sampled_scale = self.sampleAnimation(math.Vec3, sampler, t);
-                    if(alpha == 1.0) {
-                        local_transforms[node_idx].scale = sampled_scale;
-                    } else {
-                        local_transforms[node_idx].scale = math.Vec3.lerp(local_transforms[node_idx].scale, sampled_scale, alpha);
-                    }
+                    const sampled_scale = sampleAnimation(math.Vec3, sampler, t);
+                    local_transforms[node_idx].scale = sampled_scale;
                 },
                 .rotation => {
-                    const sampled_quaternion = self.sampleAnimation(math.Quaternion, sampler, t);
-                    if(alpha == 1.0) {
-                        local_transforms[node_idx].rotation = sampled_quaternion;
-                    } else {
-                        local_transforms[node_idx].rotation = math.Quaternion.slerp(local_transforms[node_idx].rotation, sampled_quaternion, alpha);
-                    }
+                    const sampled_quaternion = sampleAnimation(math.Quaternion, sampler, t);
+                    local_transforms[node_idx].rotation = sampled_quaternion;
                 },
                 else => {
                     // unhandled!
@@ -270,19 +297,19 @@ pub const SkinnedMesh = struct {
         }
     }
 
-    // Reset back to the base pose
+    /// Reset joints back to the base pose
     pub fn resetAnimation(self: *SkinnedMesh) void {
         if (self.mesh.zmesh_data.?.skins == null or self.mesh.zmesh_data.?.animations == null)
             return;
 
-        if(self.joint_transforms == null)
+        if (self.joint_transforms == null)
             return;
 
         const nodes = self.mesh.zmesh_data.?.skins.?[0].joints;
         const nodes_count = self.mesh.zmesh_data.?.skins.?[0].joints_count;
 
         var local_transforms = self.joint_transforms.?.items;
-        if(local_transforms.len == 0)
+        if (local_transforms.len == 0)
             return;
 
         // set initial bone positions
@@ -298,7 +325,7 @@ pub const SkinnedMesh = struct {
         self.applySkeletonTransforms();
     }
 
-    // Turns the local joint transforms into the final world space transforms
+    /// Turns the local joint transforms into the final world space transforms
     pub fn applySkeletonTransforms(self: *SkinnedMesh) void {
         var local_transforms = self.joint_transforms.?.items;
         const nodes = self.mesh.zmesh_data.?.skins.?[0].joints;
@@ -337,23 +364,24 @@ pub const SkinnedMesh = struct {
         }
     }
 
+    /// Apply an animation to our mesh, given a specified blend value
     pub fn applyAnimation(self: *SkinnedMesh, playing_animation: *const PlayingAnimation, blend_alpha: f32) void {
-        if(playing_animation.joint_transforms == null)
+        if (playing_animation.joint_transforms == null)
             return;
 
         const nodes_count = self.mesh.zmesh_data.?.skins.?[0].joints_count;
-        const alpha = blend_alpha;
+        const alpha: f32 = blend_alpha * playing_animation.getLerpAmount();
 
         var local_transforms = self.joint_transforms.?.items;
         const anim_transforms = playing_animation.joint_transforms.?.items;
 
-        if(blend_alpha == 1.0) {
+        if (blend_alpha == 1.0) {
             // easy case, just grab the transforms without blending
-            for(0..nodes_count) |i| {
+            for (0..nodes_count) |i| {
                 local_transforms[i] = playing_animation.joint_transforms.?.items[i];
             }
         } else {
-            for(0..nodes_count) |i| {
+            for (0..nodes_count) |i| {
                 local_transforms[i].translation = math.Vec3.lerp(local_transforms[i].translation, anim_transforms[i].translation, alpha);
                 local_transforms[i].scale = math.Vec3.lerp(local_transforms[i].scale, anim_transforms[i].scale, alpha);
                 local_transforms[i].rotation = math.Quaternion.slerp(local_transforms[i].rotation, anim_transforms[i].rotation, alpha);
@@ -363,9 +391,8 @@ pub const SkinnedMesh = struct {
         self.applySkeletonTransforms();
     }
 
-    pub fn sampleAnimation(self: *SkinnedMesh, comptime T: type, sampler: zmesh.io.zcgltf.AnimationSampler, t: f32) T {
-        _ = self;
-
+    /// Use a gltf sampler to get animation data from a track
+    pub fn sampleAnimation(comptime T: type, sampler: zmesh.io.zcgltf.AnimationSampler, t: f32) T {
         const samples = zmesh.io.getAnimationSamplerData(sampler.input);
         const data = zmesh.io.getAnimationSamplerData(sampler.output);
 
@@ -418,6 +445,7 @@ pub const SkinnedMesh = struct {
         return .{ .prev_i = i, .next_i = i + 1, .alpha = alpha };
     }
 
+    /// Grab animation data from a slice
     pub fn access(comptime T: type, data: []const f32, i: usize) T {
         return switch (T) {
             Vec3 => Vec3.new(data[3 * i + 0], data[3 * i + 1], data[3 * i + 2]),

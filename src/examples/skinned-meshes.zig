@@ -115,6 +115,7 @@ fn on_tick(delta: f32) void {
     if (input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
 
+    // Cycle through animations with the space key
     if (input.isKeyJustPressed(.SPACE)) {
         if (input.isKeyPressed(.LEFT_SHIFT)) {
             animation.?.anim_idx -= 1;
@@ -124,8 +125,20 @@ fn on_tick(delta: f32) void {
 
         const anim_count = mesh_test.?.getAnimationsCount();
         animation.?.anim_idx = @mod(anim_idx, anim_count);
-        animation.?.time = 0.0;
-        animation.?.playing = true;
+
+        // reset the animation lerp state
+        animation.?.reset(true);
+        animation.?.blendIn(1.0, false);
+    }
+
+    // blend into an animation with the E key
+    if (input.isKeyJustPressed(.E)) {
+        animation.?.blendIn(1.0, true);
+    }
+
+    // blend out of an animation with the R key
+    if (input.isKeyJustPressed(.R)) {
+        animation.?.blendOut(1.0, true);
     }
 }
 
@@ -139,8 +152,8 @@ fn on_draw() void {
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
 
-    mesh_test.?.resetAnimation();
-    mesh_test.?.applyAnimation(&animation.?, 0.75);
+    mesh_test.?.resetAnimation(); // reset back to the default pose
+    mesh_test.?.applyAnimation(&animation.?, 0.9); // apply an animation to the mesh, with 90% blend
     mesh_test.?.draw(proj_view_matrix, model);
 }
 
