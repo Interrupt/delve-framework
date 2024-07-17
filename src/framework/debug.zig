@@ -19,7 +19,7 @@ var stack_fallback_allocator: std.heap.StackFallbackAllocator(256) = undefined;
 var allocator: std.mem.Allocator = undefined;
 
 // List types
-const StringLinkedList = std.TailQueue([:0]const u8);
+const StringLinkedList = std.DoublyLinkedList([:0]const u8);
 const char_array = std.ArrayList(u8);
 
 // Lists for log history and command history
@@ -473,7 +473,7 @@ pub fn showErrorScreen(error_header: [:0]const u8) void {
     }
 
     // Only use until the first newline
-    var error_desc_splits = std.mem.split(u8, error_desc, "\n");
+    var error_desc_splits = std.mem.splitSequence(u8, error_desc, "\n");
     const first_split = error_desc_splits.first();
 
     const written = std.fmt.allocPrintZ(allocator, error_screen_lua, .{ error_header, first_split }) catch {

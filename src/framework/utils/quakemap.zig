@@ -459,7 +459,7 @@ pub const QuakeMap = struct {
     pub fn read(allocator: Allocator, data: []const u8, transform: math.Mat4, error_info: *ErrorInfo) !QuakeMap {
         var worldspawn: ?Entity = null;
         var entities = std.ArrayList(Entity).init(allocator);
-        var iter = std.mem.tokenize(u8, data, "\r\n");
+        var iter = std.mem.tokenizeAny(u8, data, "\r\n");
 
         error_info.line_number = 0;
         while (iter.next()) |line| {
