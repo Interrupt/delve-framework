@@ -50,6 +50,7 @@ pub const PlayingAnimation = struct {
     joint_calced_matrices: ?std.ArrayList(math.Mat4) = null,
 
     // the index at which a named joint lives
+    // should this live here, or in the mesh? the mesh could eventually have more than one skin
     bone_indices: std.StringHashMap(usize) = undefined,
 
     pub fn isDonePlaying(self: *PlayingAnimation) bool {
@@ -87,9 +88,28 @@ pub const PlayingAnimation = struct {
         self.playing = playing;
     }
 
+    // Gets the current lerp amount of the animation, based on the lerp time, and start and end amounts
     pub fn getLerpAmount(self: *const PlayingAnimation) f32 {
         const lerp_alpha = if (self.lerp_time <= 0.0) 1.0 else self.lerp_timer / self.lerp_time;
         return interpolation.Lerp.applyIn(self.lerp_start_amount, self.lerp_end_amount, @min(lerp_alpha, 1.0));
+    }
+
+    // Returns the current local space transform of a named bone, if it exists in the animation
+    pub fn getBoneTransform(self: *const PlayingAnimation, bone_name: []const u8) ?AnimationTransform {
+        const bone_idx = self.bone_indices.get(bone_name);
+        if (bone_idx) |idx| {
+            return self.joint_transforms.?.items[idx];
+        }
+
+        return null;
+    }
+
+    // Sets the transform of a bone, by name
+    pub fn setBoneTransform(self: *const PlayingAnimation, bone_name: []const u8, new_transform: AnimationTransform) void {
+        const bone_idx = self.bone_indices.get(bone_name);
+        if (bone_idx) |idx| {
+            self.joint_transforms.?.items[idx] = new_transform;
+        }
     }
 
     // setup this animation with memory for N joints
@@ -123,7 +143,7 @@ pub const PlayingAnimation = struct {
     }
 };
 
-const AnimationTransform = struct {
+pub const AnimationTransform = struct {
     translation: math.Vec3 = math.Vec3.zero,
     scale: math.Vec3 = math.Vec3.one,
     rotation: math.Quaternion = math.Quaternion.identity,
@@ -211,12 +231,27 @@ pub const SkinnedMesh = struct {
             return new_anim;
         }
 
-        // just assume 64 joints for now
+        // just assume 64 joints for now, since the shaders hold a static amount
         try new_anim.init(max_joints);
 
         // save the duration
         const animation = self.mesh.zmesh_data.?.animations.?[anim_idx];
         new_anim.duration = zmesh.io.computeAnimationDuration(&animation);
+
+        // save the named bone locations in the skin
+        if (self.mesh.zmesh_data.?.skins) |skins| {
+            const skin = skins[0];
+
+            for (0..skin.joints_count) |i| {
+                const joint_node = skin.joints[i];
+
+                if (joint_node.name) |name| {
+                    const name_slice: []const u8 = std.mem.span(name);
+                    // debug.log("Found named bone in animation {s} at index {d}", .{ name_slice, i });
+                    try new_anim.bone_indices.put(name_slice, i);
+                }
+            }
+        }
 
         return new_anim;
     }
@@ -236,7 +271,7 @@ pub const SkinnedMesh = struct {
             }
         }
 
-        debug.log("Could not find skined mesh animation to play: '{s}'", .{anim_name});
+        debug.log("Could not find skinned mesh animation to play: '{s}'", .{anim_name});
         return self.createAnimation(0, speed, loop);
     }
 

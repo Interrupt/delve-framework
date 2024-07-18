@@ -112,6 +112,15 @@ fn on_tick(delta: f32) void {
 
     mesh_test.?.updateAnimation(&animation.?, delta);
 
+    const neck_bone_name = "Skeleton_neck_joint_1";
+    var neck_transform = animation.?.getBoneTransform(neck_bone_name);
+    if (neck_transform) |_| {
+        neck_transform.?.translation.z += 0.25;
+        neck_transform.?.translation.x += std.math.sin(time * 0.1) * 0.25;
+        neck_transform.?.translation.y += std.math.cos(time * 0.1) * 0.25;
+        animation.?.setBoneTransform(neck_bone_name, neck_transform.?);
+    }
+
     if (input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
 
