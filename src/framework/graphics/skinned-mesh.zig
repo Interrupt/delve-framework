@@ -128,11 +128,11 @@ pub const PlayingAnimation = struct {
 
     pub fn deinit(self: *PlayingAnimation) void {
         if (self.joint_transforms) |transforms| {
-            transforms.free();
+            transforms.deinit();
         }
 
         if (self.joint_calced_matrices) |calced_mats| {
-            calced_mats.free();
+            calced_mats.deinit();
         }
 
         self.bone_indices.clearAndFree();

@@ -22,8 +22,8 @@ const Color = colors.Color;
 
 const shader_builtin = delve.shaders.default_skinned;
 
-var mesh_test: ?skinned_mesh.SkinnedMesh = null;
-var animation: ?skinned_mesh.PlayingAnimation = null;
+var mesh_test: skinned_mesh.SkinnedMesh = undefined;
+var animation: skinned_mesh.PlayingAnimation = undefined;
 
 var time: f32 = 0.0;
 var camera: cam.Camera = undefined;
@@ -100,8 +100,15 @@ fn on_init() !void {
     });
 
     // Load our mesh!
-    mesh_test = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = material });
-    animation = try mesh_test.?.createAnimation(0, 1.0, true);
+    const loaded = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = material });
+
+    if (loaded == null) {
+        debug.fatal("Could not load skinned mesh!", .{});
+        return;
+    }
+
+    mesh_test = loaded.?;
+    animation = try mesh_test.createAnimation(0, 1.0, true);
 }
 
 fn on_tick(delta: f32) void {
@@ -110,15 +117,15 @@ fn on_tick(delta: f32) void {
 
     time += delta * 100;
 
-    mesh_test.?.updateAnimation(&animation.?, delta);
+    mesh_test.updateAnimation(&animation, delta);
 
     const neck_bone_name = "Skeleton_neck_joint_1";
-    var neck_transform = animation.?.getBoneTransform(neck_bone_name);
-    if (neck_transform) |_| {
-        neck_transform.?.translation.z += 0.25;
-        neck_transform.?.translation.x += std.math.sin(time * 0.1) * 0.25;
-        neck_transform.?.translation.y += std.math.cos(time * 0.1) * 0.25;
-        animation.?.setBoneTransform(neck_bone_name, neck_transform.?);
+    var neck_transform = animation.getBoneTransform(neck_bone_name);
+    if (neck_transform) |*nt| {
+        nt.translation.z += 0.25;
+        nt.translation.x += std.math.sin(time * 0.1) * 0.25;
+        nt.translation.y += std.math.cos(time * 0.1) * 0.25;
+        animation.setBoneTransform(neck_bone_name, nt.*);
     }
 
     if (input.isKeyJustPressed(.ESCAPE))
@@ -127,50 +134,44 @@ fn on_tick(delta: f32) void {
     // Cycle through animations with the space key
     if (input.isKeyJustPressed(.SPACE)) {
         if (input.isKeyPressed(.LEFT_SHIFT)) {
-            animation.?.anim_idx -= 1;
+            animation.anim_idx -= 1;
         } else {
-            animation.?.anim_idx += 1;
+            animation.anim_idx += 1;
         }
 
-        const anim_count = mesh_test.?.getAnimationsCount();
-        animation.?.anim_idx = @mod(anim_idx, anim_count);
+        const anim_count = mesh_test.getAnimationsCount();
+        animation.anim_idx = @mod(anim_idx, anim_count);
 
         // reset the animation lerp state
-        animation.?.reset(true);
-        animation.?.blendIn(1.0, false);
+        animation.reset(true);
+        animation.blendIn(1.0, false);
     }
 
     // blend into an animation with the E key
     if (input.isKeyJustPressed(.E)) {
-        animation.?.blendIn(1.0, true);
+        animation.blendIn(1.0, true);
     }
 
     // blend out of an animation with the R key
     if (input.isKeyJustPressed(.R)) {
-        animation.?.blendOut(1.0, true);
+        animation.blendOut(1.0, true);
     }
 }
 
 fn on_draw() void {
-    // Exit early if we have no mesh loaded
-    if (mesh_test == null)
-        return;
-
     const proj_view_matrix = camera.getProjView();
 
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
 
-    mesh_test.?.resetAnimation(); // reset back to the default pose
-    mesh_test.?.applyAnimation(&animation.?, 0.9); // apply an animation to the mesh, with 90% blend
-    mesh_test.?.draw(proj_view_matrix, model);
+    mesh_test.resetAnimation(); // reset back to the default pose
+    mesh_test.applyAnimation(&animation, 0.9); // apply an animation to the mesh, with 90% blend
+    mesh_test.draw(proj_view_matrix, model);
 }
 
 fn on_cleanup() !void {
     debug.log("Skinned mesh example module cleaning up", .{});
 
-    if (mesh_test == null)
-        return;
-
-    mesh_test.?.deinit();
+    animation.deinit();
+    mesh_test.deinit();
 }
