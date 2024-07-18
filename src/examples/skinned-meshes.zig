@@ -166,6 +166,7 @@ fn on_draw() void {
 
     mesh_test.resetAnimation(); // reset back to the default pose
     mesh_test.applyAnimation(&animation, 0.9); // apply an animation to the mesh, with 90% blend
+
     mesh_test.draw(proj_view_matrix, model);
 }
 

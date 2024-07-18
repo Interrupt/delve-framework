@@ -105,7 +105,7 @@ pub const PlayingAnimation = struct {
     }
 
     // Sets the transform of a bone, by name
-    pub fn setBoneTransform(self: *const PlayingAnimation, bone_name: []const u8, new_transform: AnimationTransform) void {
+    pub fn setBoneTransform(self: *PlayingAnimation, bone_name: []const u8, new_transform: AnimationTransform) void {
         const bone_idx = self.bone_indices.get(bone_name);
         if (bone_idx) |idx| {
             self.joint_transforms.?.items[idx] = new_transform;
@@ -118,7 +118,6 @@ pub const PlayingAnimation = struct {
 
         self.joint_transforms = std.ArrayList(AnimationTransform).init(allocator);
         self.joint_calced_matrices = std.ArrayList(math.Mat4).init(allocator);
-        self.bone_indices = std.StringHashMap(usize).init(allocator);
 
         for (0..num_joints) |_| {
             try self.joint_transforms.?.append(.{});
@@ -134,8 +133,6 @@ pub const PlayingAnimation = struct {
         if (self.joint_calced_matrices) |calced_mats| {
             calced_mats.deinit();
         }
-
-        self.bone_indices.clearAndFree();
 
         // do these actually need to be nullable?
         self.joint_transforms = null;
@@ -172,6 +169,9 @@ pub const SkinnedMesh = struct {
     // the world space joint locations, with the skeleton's heirarchy applied
     joint_locations: [max_joints]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** max_joints,
 
+    // the index at which a named joint lives
+    bone_indices: std.StringHashMap(usize) = undefined,
+
     /// Load a mesh with animation data from a gltf file
     pub fn initFromFile(allocator: std.mem.Allocator, filename: [:0]const u8, cfg: MeshConfig) ?SkinnedMesh {
         const loaded_mesh = Mesh.initFromFile(allocator, filename, cfg);
@@ -180,7 +180,27 @@ pub const SkinnedMesh = struct {
             for (0..max_joints) |_| {
                 transforms.append(.{}) catch {};
             }
-            return .{ .mesh = loaded, .joint_transforms = transforms };
+
+            var bone_indices = std.StringHashMap(usize).init(allocator);
+
+            // save the named bone locations in the skin
+            if (loaded.zmesh_data.?.skins) |skins| {
+                const skin = skins[0];
+
+                for (0..skin.joints_count) |i| {
+                    const joint_node = skin.joints[i];
+
+                    if (joint_node.name) |name| {
+                        const name_slice: []const u8 = std.mem.span(name);
+                        // debug.log("Found named bone in animation {s} at index {d}", .{ name_slice, i });
+                        bone_indices.put(name_slice, i) catch {
+                            return null;
+                        };
+                    }
+                }
+            }
+
+            return .{ .mesh = loaded, .joint_transforms = transforms, .bone_indices = bone_indices };
         }
         return null;
     }
@@ -191,6 +211,8 @@ pub const SkinnedMesh = struct {
         if (self.joint_transforms) |transforms| {
             transforms.deinit();
         }
+
+        self.bone_indices.clearAndFree();
     }
 
     /// Draw this mesh
@@ -218,7 +240,7 @@ pub const SkinnedMesh = struct {
 
     /// Creates a new animation that can be played and applied to this mesh
     pub fn createAnimation(self: *const SkinnedMesh, anim_idx: usize, speed: f32, loop: bool) !PlayingAnimation {
-        var new_anim: PlayingAnimation = .{ .anim_idx = anim_idx, .speed = speed, .looping = loop };
+        var new_anim: PlayingAnimation = .{ .anim_idx = anim_idx, .speed = speed, .looping = loop, .bone_indices = self.bone_indices };
 
         if (self.mesh.zmesh_data == null) {
             debug.log("warning: mesh skin data not found!", .{});
@@ -237,21 +259,6 @@ pub const SkinnedMesh = struct {
         // save the duration
         const animation = self.mesh.zmesh_data.?.animations.?[anim_idx];
         new_anim.duration = zmesh.io.computeAnimationDuration(&animation);
-
-        // save the named bone locations in the skin
-        if (self.mesh.zmesh_data.?.skins) |skins| {
-            const skin = skins[0];
-
-            for (0..skin.joints_count) |i| {
-                const joint_node = skin.joints[i];
-
-                if (joint_node.name) |name| {
-                    const name_slice: []const u8 = std.mem.span(name);
-                    // debug.log("Found named bone in animation {s} at index {d}", .{ name_slice, i });
-                    try new_anim.bone_indices.put(name_slice, i);
-                }
-            }
-        }
 
         return new_anim;
     }
@@ -451,6 +458,24 @@ pub const SkinnedMesh = struct {
         }
 
         self.applySkeletonTransforms();
+    }
+
+    // Returns the current local space transform of a named bone, if it exists in the animation
+    pub fn getBoneTransform(self: *const SkinnedMesh, bone_name: []const u8) ?AnimationTransform {
+        const bone_idx = self.bone_indices.get(bone_name);
+        if (bone_idx) |idx| {
+            return self.joint_transforms.?.items[idx];
+        }
+
+        return null;
+    }
+
+    // Sets the transform of a bone, by name
+    pub fn setBoneTransform(self: *SkinnedMesh, bone_name: []const u8, new_transform: AnimationTransform) void {
+        const bone_idx = self.bone_indices.get(bone_name);
+        if (bone_idx) |idx| {
+            self.joint_transforms.?.items[idx] = new_transform;
+        }
     }
 
     /// Use a gltf sampler to get animation data from a track
