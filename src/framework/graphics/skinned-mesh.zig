@@ -49,6 +49,9 @@ pub const PlayingAnimation = struct {
     // calced transform matrices of all joints (including skeleton)
     joint_calced_matrices: ?std.ArrayList(math.Mat4) = null,
 
+    // the index at which a named joint lives
+    bone_indices: std.StringHashMap(usize) = undefined,
+
     pub fn isDonePlaying(self: *PlayingAnimation) bool {
         return self.time >= self.duration;
     }
@@ -87,6 +90,36 @@ pub const PlayingAnimation = struct {
     pub fn getLerpAmount(self: *const PlayingAnimation) f32 {
         const lerp_alpha = if (self.lerp_time <= 0.0) 1.0 else self.lerp_timer / self.lerp_time;
         return interpolation.Lerp.applyIn(self.lerp_start_amount, self.lerp_end_amount, @min(lerp_alpha, 1.0));
+    }
+
+    // setup this animation with memory for N joints
+    pub fn init(self: *PlayingAnimation, num_joints: usize) !void {
+        const allocator = mem.getAllocator();
+
+        self.joint_transforms = std.ArrayList(AnimationTransform).init(allocator);
+        self.joint_calced_matrices = std.ArrayList(math.Mat4).init(allocator);
+        self.bone_indices = std.StringHashMap(usize).init(allocator);
+
+        for (0..num_joints) |_| {
+            try self.joint_transforms.?.append(.{});
+            try self.joint_calced_matrices.?.append(math.Mat4.identity);
+        }
+    }
+
+    pub fn deinit(self: *PlayingAnimation) void {
+        if (self.joint_transforms) |transforms| {
+            transforms.free();
+        }
+
+        if (self.joint_calced_matrices) |calced_mats| {
+            calced_mats.free();
+        }
+
+        self.bone_indices.clearAndFree();
+
+        // do these actually need to be nullable?
+        self.joint_transforms = null;
+        self.joint_calced_matrices = null;
     }
 };
 
@@ -178,14 +211,8 @@ pub const SkinnedMesh = struct {
             return new_anim;
         }
 
-        new_anim.joint_transforms = std.ArrayList(AnimationTransform).init(mem.getAllocator());
-        new_anim.joint_calced_matrices = std.ArrayList(math.Mat4).init(mem.getAllocator());
-
-        // assume 64 joints for now!
-        for (0..max_joints) |_| {
-            try new_anim.joint_transforms.?.append(.{});
-            try new_anim.joint_calced_matrices.?.append(math.Mat4.identity);
-        }
+        // just assume 64 joints for now
+        try new_anim.init(max_joints);
 
         // save the duration
         const animation = self.mesh.zmesh_data.?.animations.?[anim_idx];
