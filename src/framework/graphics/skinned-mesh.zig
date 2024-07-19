@@ -103,7 +103,7 @@ pub const PlayingAnimation = struct {
         return null;
     }
 
-    // Sets the transform of a bone, by name
+    // Sets the local space transform of a bone, by name
     pub fn setBoneTransform(self: *PlayingAnimation, bone_name: []const u8, new_transform: AnimationTransform) void {
         const bone_idx = self.parent_mesh.bone_indices.get(bone_name);
         if (bone_idx) |idx| {
@@ -469,6 +469,16 @@ pub const SkinnedMesh = struct {
         return null;
     }
 
+    // Returns the world space matrix of a named bone
+    pub fn getWorldSpaceBoneMatrix(self: *const SkinnedMesh, bone_name: []const u8) ?math.Mat4 {
+        const bone_idx = self.bone_indices.get(bone_name);
+        if (bone_idx) |idx| {
+            return self.joint_locations[idx];
+        }
+
+        return null;
+    }
+
     // Sets the transform of a bone, by name
     pub fn setBoneTransform(self: *SkinnedMesh, bone_name: []const u8, new_transform: AnimationTransform) void {
         const bone_idx = self.bone_indices.get(bone_name);
@@ -476,68 +486,68 @@ pub const SkinnedMesh = struct {
             self.joint_transforms.?.items[idx] = new_transform;
         }
     }
-
-    /// Use a gltf sampler to get animation data from a track
-    pub fn sampleAnimation(comptime T: type, sampler: zmesh.io.zcgltf.AnimationSampler, t: f32) T {
-        const samples = zmesh.io.getAnimationSamplerData(sampler.input);
-        const data = zmesh.io.getAnimationSamplerData(sampler.output);
-
-        switch (sampler.interpolation) {
-            .step => {
-                return access(T, data, stepInterpolation(samples, t));
-            },
-            .linear => {
-                const r = linearInterpolation(samples, t);
-                const v0 = access(T, data, r.prev_i);
-                const v1 = access(T, data, r.next_i);
-
-                if (T == math.Quaternion) {
-                    return T.slerp(v0, v1, r.alpha);
-                }
-
-                return T.lerp(v0, v1, r.alpha);
-            },
-            .cubic_spline => {
-                @panic("Cubicspline in animations not implemented!");
-            },
-        }
-    }
-
-    /// Returns the index of the last sample less than `t`.
-    fn stepInterpolation(samples: []const f32, t: f32) usize {
-        std.debug.assert(samples.len > 0);
-        const S = struct {
-            fn lessThan(_: void, lhs: f32, rhs: f32) bool {
-                return lhs < rhs;
-            }
-        };
-        const i = std.sort.lowerBound(f32, t, samples, {}, S.lessThan);
-        return if (i > 0) i - 1 else 0;
-    }
-
-    /// Returns the indices of the samples around `t` and `alpha` to interpolate between those.
-    fn linearInterpolation(samples: []const f32, t: f32) struct {
-        prev_i: usize,
-        next_i: usize,
-        alpha: f32,
-    } {
-        const i = stepInterpolation(samples, t);
-        if (i == samples.len - 1) return .{ .prev_i = i, .next_i = i, .alpha = 0 };
-
-        const d = samples[i + 1] - samples[i];
-        std.debug.assert(d > 0);
-        const alpha = std.math.clamp((t - samples[i]) / d, 0, 1);
-
-        return .{ .prev_i = i, .next_i = i + 1, .alpha = alpha };
-    }
-
-    /// Grab animation data from a slice
-    pub fn access(comptime T: type, data: []const f32, i: usize) T {
-        return switch (T) {
-            Vec3 => Vec3.new(data[3 * i + 0], data[3 * i + 1], data[3 * i + 2]),
-            math.Quaternion => math.Quaternion.new(data[4 * i + 0], data[4 * i + 1], data[4 * i + 2], data[4 * i + 3]),
-            math.Mat4 => math.Mat4.fromSlice(data[16 * i ..][0..16]),
-            else => @compileError("unexpected type"),
-        };
-    }
 };
+
+/// Use a gltf sampler to get animation data from a track
+pub fn sampleAnimation(comptime T: type, sampler: zmesh.io.zcgltf.AnimationSampler, t: f32) T {
+    const samples = zmesh.io.getAnimationSamplerData(sampler.input);
+    const data = zmesh.io.getAnimationSamplerData(sampler.output);
+
+    switch (sampler.interpolation) {
+        .step => {
+            return access(T, data, stepInterpolation(samples, t));
+        },
+        .linear => {
+            const r = linearInterpolation(samples, t);
+            const v0 = access(T, data, r.prev_i);
+            const v1 = access(T, data, r.next_i);
+
+            if (T == math.Quaternion) {
+                return T.slerp(v0, v1, r.alpha);
+            }
+
+            return T.lerp(v0, v1, r.alpha);
+        },
+        .cubic_spline => {
+            @panic("Cubicspline in animations not implemented!");
+        },
+    }
+}
+
+/// Returns the index of the last sample less than `t`.
+fn stepInterpolation(samples: []const f32, t: f32) usize {
+    std.debug.assert(samples.len > 0);
+    const S = struct {
+        fn lessThan(_: void, lhs: f32, rhs: f32) bool {
+            return lhs < rhs;
+        }
+    };
+    const i = std.sort.lowerBound(f32, t, samples, {}, S.lessThan);
+    return if (i > 0) i - 1 else 0;
+}
+
+/// Returns the indices of the samples around `t` and `alpha` to interpolate between those.
+fn linearInterpolation(samples: []const f32, t: f32) struct {
+    prev_i: usize,
+    next_i: usize,
+    alpha: f32,
+} {
+    const i = stepInterpolation(samples, t);
+    if (i == samples.len - 1) return .{ .prev_i = i, .next_i = i, .alpha = 0 };
+
+    const d = samples[i + 1] - samples[i];
+    std.debug.assert(d > 0);
+    const alpha = std.math.clamp((t - samples[i]) / d, 0, 1);
+
+    return .{ .prev_i = i, .next_i = i + 1, .alpha = alpha };
+}
+
+/// Grab animation data from a slice
+pub fn access(comptime T: type, data: []const f32, i: usize) T {
+    return switch (T) {
+        Vec3 => Vec3.new(data[3 * i + 0], data[3 * i + 1], data[3 * i + 2]),
+        math.Quaternion => math.Quaternion.new(data[4 * i + 0], data[4 * i + 1], data[4 * i + 2], data[4 * i + 3]),
+        math.Mat4 => math.Mat4.fromSlice(data[16 * i ..][0..16]),
+        else => @compileError("unexpected type"),
+    };
+}
