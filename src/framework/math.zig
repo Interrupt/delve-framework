@@ -556,6 +556,15 @@ pub const Quaternion = struct {
         return Quaternion.new(left.x - right.x, left.y - right.y, left.z - right.z, left.w - right.w);
     }
 
+    pub fn mul(left: Quaternion, right: Quaternion) Quaternion {
+        return Quaternion.new(
+            left.w * right.x + left.x * right.w + left.y * right.z - left.z * right.y, // i
+            left.w * right.y - left.x * right.z + left.y * right.w + left.z * right.x, // j
+            left.w * right.z + left.x * right.y - left.y * right.x + left.z * right.w, // k
+            left.w * right.w - left.x * right.x - left.y * right.y - left.z * right.z, // 1
+        );
+    }
+
     pub fn scale(left: Quaternion, right: f32) Quaternion {
         return Quaternion.new(left.x * right, left.y * right, left.z * right, left.w * right);
     }

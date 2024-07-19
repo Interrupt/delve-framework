@@ -119,15 +119,6 @@ fn on_tick(delta: f32) void {
 
     mesh_test.updateAnimation(&animation, delta);
 
-    const neck_bone_name = "Skeleton_neck_joint_1";
-    var neck_transform = animation.getBoneTransform(neck_bone_name);
-    if (neck_transform) |*nt| {
-        nt.translation.z += 0.25;
-        nt.translation.x += std.math.sin(time * 0.1) * 0.25;
-        nt.translation.y += std.math.cos(time * 0.1) * 0.25;
-        animation.setBoneTransform(neck_bone_name, nt.*);
-    }
-
     if (input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
 
@@ -166,6 +157,17 @@ fn on_draw() void {
 
     mesh_test.resetAnimation(); // reset back to the default pose
     mesh_test.applyAnimation(&animation, 0.9); // apply an animation to the mesh, with 90% blend
+
+    // show off programmatic animations by looking back and forth
+    const neck_bone_name = "Skeleton_neck_joint_1";
+    var neck_transform = mesh_test.getBoneTransform(neck_bone_name);
+    if (neck_transform) |*nt| {
+        const neck_rot_angle = std.math.sin(time * 0.005);
+        nt.rotation = nt.rotation.mul(math.Quaternion.fromAxisAngleRH(math.Vec3.new(1.0, 0.0, 0.0), neck_rot_angle));
+        mesh_test.setBoneTransform(neck_bone_name, nt.*);
+    }
+
+    mesh_test.applySkeletonTransforms();
 
     mesh_test.draw(proj_view_matrix, model);
 }
