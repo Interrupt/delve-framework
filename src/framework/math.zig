@@ -706,16 +706,18 @@ pub const Quaternion = struct {
     }
 
     pub fn fromAxisAndAngle(angle: f32, axis: Vec3) Quaternion {
+        const angle_rad = radians(angle);
+
         var result = Quaternion.zero;
         const axis_normalized: Vec3 = axis.norm();
-        const sin_of_rotation = std.math.sin(angle / 2.0);
+        const sin_of_rotation = std.math.sin(angle_rad / 2.0);
 
         const r = axis_normalized.scale(sin_of_rotation);
 
         result.x = r.x;
         result.y = r.y;
         result.z = r.z;
-        result.w = std.math.cos(angle / 2.0);
+        result.w = std.math.cos(angle_rad / 2.0);
 
         return result;
     }
