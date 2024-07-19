@@ -44,7 +44,7 @@ void main() {
 
     gl_Position = u_projViewMatrix * model * pos;
     color = vec4(0.0, 0.0, 0.0, 1.0);
-    normal = normals;
+    normal = normalize(model * vec4(normals, 0.0)).xyz;
     uv = texcoord0;
 
     // simple lighting!
@@ -54,8 +54,7 @@ void main() {
         vec3 lightColor = vec3(1.0, 1.0, 1.0) * 0.25;
 
         vec4 lightDir = normalize(lightPosEye - pos * model);
-        vec4 tnorm = normalize(u_modelMatrix * vec4(normals, 0.0));
-        float lightBrightness = max(dot( lightDir, tnorm ), 0.0);
+        float lightBrightness = max(dot( lightDir, vec4(normal, 0.0)), 0.0);
 
         color.rgb += baseDiffuse.rgb * lightBrightness * lightColor;
     }
@@ -63,10 +62,9 @@ void main() {
     {
         // directional light
         vec3 lightColor = vec3(0.0, 0.9, 0.2);
-        vec4 lightDir = vec4(0.0, 1.0, 0.0, 0.0);
+        vec4 lightDir = vec4(0.2, 0.8, 0.0, 0.0);
 
-        vec4 tnorm = normalize(u_modelMatrix * vec4(normals, 0.0));
-        float lightBrightness = max(dot( lightDir, tnorm ), 0.0);
+        float lightBrightness = max(dot( lightDir, vec4(normal, 0.0)), 0.0);
 
         color.rgb += baseDiffuse.rgb * lightBrightness * lightColor;
     }
