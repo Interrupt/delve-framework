@@ -50,13 +50,18 @@ void main() {
     // simple lighting!
     {
         // positioned light
-        vec4 lightPosEye = vec4(1.0, 1.0, -2.0, 0.0);
-        vec3 lightColor = vec3(1.0, 1.0, 1.0) * 0.25;
+        vec4 lightPosEye = vec4(0.0, 2.0, -1.0, 0.0);
+        vec3 lightColor = vec3(1.0, 1.0, 1.0);
 
-        vec4 lightDir = normalize(lightPosEye - pos * model);
+        vec4 lightMinusPos = (lightPosEye - pos * model);
+        vec4 lightDir = normalize(lightMinusPos);
         float lightBrightness = max(dot( lightDir, vec4(normal, 0.0)), 0.0);
 
-        color.rgb += baseDiffuse.rgb * lightBrightness * lightColor;
+        float dist = length(lightMinusPos);
+        float radius = 6.0;
+        float attenuation = clamp(1.0 - dist/radius, 0.0, 1.0);
+
+        color.rgb += baseDiffuse.rgb * lightBrightness * lightColor * attenuation;
     }
 
     {
