@@ -37,25 +37,39 @@ void main() {
                 weights.w * u_joints[int(joints.w)]);
 
     mat4 model = u_modelMatrix * skin;
-
-
-    // simple lighting!
-    vec4 lightPosEye = vec4(1.0, 1.0, -2.0, 0.0);
-    vec3 lightColor = vec3(1.0, 0.9, 0.9);
-
-    vec4 lightDir = normalize(lightPosEye - pos * model);
-    vec4 tnorm = normalize(u_modelMatrix * vec4(normals, 0.0));
-
-    float lightBrightness = dot( lightDir, tnorm );
+    vec4 baseDiffuse = color0 * u_color;
 
     // have to use these attributes to keep them from being stripped out
     tangent = tangents;
 
     gl_Position = u_projViewMatrix * model * pos;
-    color = color0 * u_color;
+    color = vec4(0.0, 0.0, 0.0, 1.0);
+    normal = normals;
     uv = texcoord0;
 
-    color.rgb *= lightBrightness * lightColor;
+    // simple lighting!
+    {
+        // positioned light
+        vec4 lightPosEye = vec4(1.0, 1.0, -2.0, 0.0);
+        vec3 lightColor = vec3(1.0, 1.0, 1.0) * 0.25;
+
+        vec4 lightDir = normalize(lightPosEye - pos * model);
+        vec4 tnorm = normalize(u_modelMatrix * vec4(normals, 0.0));
+        float lightBrightness = max(dot( lightDir, tnorm ), 0.0);
+
+        color.rgb += baseDiffuse.rgb * lightBrightness * lightColor;
+    }
+
+    {
+        // directional light
+        vec3 lightColor = vec3(0.0, 0.9, 0.2);
+        vec4 lightDir = vec4(0.0, 1.0, 0.0, 0.0);
+
+        vec4 tnorm = normalize(u_modelMatrix * vec4(normals, 0.0));
+        float lightBrightness = max(dot( lightDir, tnorm ), 0.0);
+
+        color.rgb += baseDiffuse.rgb * lightBrightness * lightColor;
+    }
 }
 #pragma sokol @end
 
