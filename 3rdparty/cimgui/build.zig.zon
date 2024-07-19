@@ -9,7 +9,7 @@
         },
         .imgui = .{
             .url = "git+https://github.com/ocornut/imgui.git#v1.90.7",
-            .hash = "12206ae8b6ae0d326326268db78dac6b685739c73d1efa60b70efc529e278b689b4a",
+            .hash = "122072b125179c7cbdbbee8fa81d22a1050a950ad61cfeefee8dc0dca5423b5d05b9",
         },
     },
     .paths = .{
