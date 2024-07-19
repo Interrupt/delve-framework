@@ -49,6 +49,9 @@ pub const PlayingAnimation = struct {
     // calced transform matrices of all joints (including skeleton)
     joint_calced_matrices: ?std.ArrayList(math.Mat4) = null,
 
+    // parent mesh
+    parent_mesh: *const SkinnedMesh = undefined,
+
     pub fn isDonePlaying(self: *PlayingAnimation) bool {
         return self.time >= self.duration;
     }
@@ -84,13 +87,59 @@ pub const PlayingAnimation = struct {
         self.playing = playing;
     }
 
+    // Gets the current lerp amount of the animation, based on the lerp time, and start and end amounts
     pub fn getLerpAmount(self: *const PlayingAnimation) f32 {
         const lerp_alpha = if (self.lerp_time <= 0.0) 1.0 else self.lerp_timer / self.lerp_time;
         return interpolation.Lerp.applyIn(self.lerp_start_amount, self.lerp_end_amount, @min(lerp_alpha, 1.0));
     }
+
+    // Returns the current local space transform of a named bone, if it exists in the animation
+    pub fn getBoneTransform(self: *const PlayingAnimation, bone_name: []const u8) ?AnimationTransform {
+        const bone_idx = self.parent_mesh.bone_indices.get(bone_name);
+        if (bone_idx) |idx| {
+            return self.joint_transforms.?.items[idx];
+        }
+
+        return null;
+    }
+
+    // Sets the local space transform of a bone, by name
+    pub fn setBoneTransform(self: *PlayingAnimation, bone_name: []const u8, new_transform: AnimationTransform) void {
+        const bone_idx = self.parent_mesh.bone_indices.get(bone_name);
+        if (bone_idx) |idx| {
+            self.joint_transforms.?.items[idx] = new_transform;
+        }
+    }
+
+    // setup this animation with memory for N joints
+    pub fn init(self: *PlayingAnimation, num_joints: usize) !void {
+        const allocator = mem.getAllocator();
+
+        self.joint_transforms = std.ArrayList(AnimationTransform).init(allocator);
+        self.joint_calced_matrices = std.ArrayList(math.Mat4).init(allocator);
+
+        for (0..num_joints) |_| {
+            try self.joint_transforms.?.append(.{});
+            try self.joint_calced_matrices.?.append(math.Mat4.identity);
+        }
+    }
+
+    pub fn deinit(self: *PlayingAnimation) void {
+        if (self.joint_transforms) |transforms| {
+            transforms.deinit();
+        }
+
+        if (self.joint_calced_matrices) |calced_mats| {
+            calced_mats.deinit();
+        }
+
+        // do these actually need to be nullable?
+        self.joint_transforms = null;
+        self.joint_calced_matrices = null;
+    }
 };
 
-const AnimationTransform = struct {
+pub const AnimationTransform = struct {
     translation: math.Vec3 = math.Vec3.zero,
     scale: math.Vec3 = math.Vec3.one,
     rotation: math.Quaternion = math.Quaternion.identity,
@@ -118,6 +167,10 @@ pub const SkinnedMesh = struct {
 
     // the world space joint locations, with the skeleton's heirarchy applied
     joint_locations: [max_joints]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** max_joints,
+    joint_locations_dirty: bool = true,
+
+    // the index at which a named joint lives
+    bone_indices: std.StringHashMap(usize) = undefined,
 
     /// Load a mesh with animation data from a gltf file
     pub fn initFromFile(allocator: std.mem.Allocator, filename: [:0]const u8, cfg: MeshConfig) ?SkinnedMesh {
@@ -127,7 +180,27 @@ pub const SkinnedMesh = struct {
             for (0..max_joints) |_| {
                 transforms.append(.{}) catch {};
             }
-            return .{ .mesh = loaded, .joint_transforms = transforms };
+
+            var bone_indices = std.StringHashMap(usize).init(allocator);
+
+            // save the named bone locations in the skin
+            if (loaded.zmesh_data.?.skins) |skins| {
+                const skin = skins[0];
+
+                for (0..skin.joints_count) |i| {
+                    const joint_node = skin.joints[i];
+
+                    if (joint_node.name) |name| {
+                        const name_slice: []const u8 = std.mem.span(name);
+                        // debug.log("Found named bone in animation {s} at index {d}", .{ name_slice, i });
+                        bone_indices.put(name_slice, i) catch {
+                            return null;
+                        };
+                    }
+                }
+            }
+
+            return .{ .mesh = loaded, .joint_transforms = transforms, .bone_indices = bone_indices };
         }
         return null;
     }
@@ -138,16 +211,24 @@ pub const SkinnedMesh = struct {
         if (self.joint_transforms) |transforms| {
             transforms.deinit();
         }
+
+        self.bone_indices.clearAndFree();
     }
 
     /// Draw this mesh
     pub fn draw(self: *SkinnedMesh, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
+        if (self.joint_locations_dirty)
+            self.applySkeletonTransforms();
+
         self.mesh.material.params.joints = &self.joint_locations;
         graphics.drawWithMaterial(&self.mesh.bindings, &self.mesh.material, proj_view_matrix, model_matrix);
     }
 
     /// Draw this mesh, using the specified material instead of the set one
     pub fn drawWithMaterial(self: *SkinnedMesh, material: *graphics.Material, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
+        if (self.joint_locations_dirty)
+            self.applySkeletonTransforms();
+
         self.mesh.material.params.joints = &self.joint_locations;
         graphics.drawWithMaterial(&self.mesh.bindings, material, proj_view_matrix, model_matrix);
     }
@@ -165,7 +246,7 @@ pub const SkinnedMesh = struct {
 
     /// Creates a new animation that can be played and applied to this mesh
     pub fn createAnimation(self: *const SkinnedMesh, anim_idx: usize, speed: f32, loop: bool) !PlayingAnimation {
-        var new_anim: PlayingAnimation = .{ .anim_idx = anim_idx, .speed = speed, .looping = loop };
+        var new_anim: PlayingAnimation = .{ .anim_idx = anim_idx, .speed = speed, .looping = loop, .parent_mesh = self };
 
         if (self.mesh.zmesh_data == null) {
             debug.log("warning: mesh skin data not found!", .{});
@@ -178,14 +259,8 @@ pub const SkinnedMesh = struct {
             return new_anim;
         }
 
-        new_anim.joint_transforms = std.ArrayList(AnimationTransform).init(mem.getAllocator());
-        new_anim.joint_calced_matrices = std.ArrayList(math.Mat4).init(mem.getAllocator());
-
-        // assume 64 joints for now!
-        for (0..max_joints) |_| {
-            try new_anim.joint_transforms.?.append(.{});
-            try new_anim.joint_calced_matrices.?.append(math.Mat4.identity);
-        }
+        // just assume 64 joints for now, since the shaders hold a static amount
+        try new_anim.init(max_joints);
 
         // save the duration
         const animation = self.mesh.zmesh_data.?.animations.?[anim_idx];
@@ -209,7 +284,7 @@ pub const SkinnedMesh = struct {
             }
         }
 
-        debug.log("Could not find skined mesh animation to play: '{s}'", .{anim_name});
+        debug.log("Could not find skinned mesh animation to play: '{s}'", .{anim_name});
         return self.createAnimation(0, speed, loop);
     }
 
@@ -322,7 +397,7 @@ pub const SkinnedMesh = struct {
             };
         }
 
-        self.applySkeletonTransforms();
+        self.joint_locations_dirty = true;
     }
 
     /// Turns the local joint transforms into the final world space transforms
@@ -362,6 +437,8 @@ pub const SkinnedMesh = struct {
             const inverse_mat = access(math.Mat4, inverse_bind_mat_data, i);
             self.joint_locations[i] = self.joint_transform_mats[i].mul(inverse_mat);
         }
+
+        self.joint_locations_dirty = false;
     }
 
     /// Apply an animation to our mesh, given a specified blend value
@@ -388,70 +465,102 @@ pub const SkinnedMesh = struct {
             }
         }
 
-        self.applySkeletonTransforms();
+        self.joint_locations_dirty = true;
     }
 
-    /// Use a gltf sampler to get animation data from a track
-    pub fn sampleAnimation(comptime T: type, sampler: zmesh.io.zcgltf.AnimationSampler, t: f32) T {
-        const samples = zmesh.io.getAnimationSamplerData(sampler.input);
-        const data = zmesh.io.getAnimationSamplerData(sampler.output);
+    // Returns the current local space transform of a named bone, if it exists in the animation
+    pub fn getBoneTransform(self: *const SkinnedMesh, bone_name: []const u8) ?AnimationTransform {
+        const bone_idx = self.bone_indices.get(bone_name);
+        if (bone_idx) |idx| {
+            return self.joint_transforms.?.items[idx];
+        }
 
-        switch (sampler.interpolation) {
-            .step => {
-                return access(T, data, stepInterpolation(samples, t));
-            },
-            .linear => {
-                const r = linearInterpolation(samples, t);
-                const v0 = access(T, data, r.prev_i);
-                const v1 = access(T, data, r.next_i);
+        return null;
+    }
 
-                if (T == math.Quaternion) {
-                    return T.slerp(v0, v1, r.alpha);
-                }
+    // Returns the world space matrix of a named bone
+    pub fn getWorldSpaceBoneMatrix(self: *const SkinnedMesh, bone_name: []const u8) ?math.Mat4 {
+        if (self.joint_locations_dirty)
+            self.applySkeletonTransforms();
 
-                return T.lerp(v0, v1, r.alpha);
-            },
-            .cubic_spline => {
-                @panic("Cubicspline in animations not implemented!");
-            },
+        const bone_idx = self.bone_indices.get(bone_name);
+        if (bone_idx) |idx| {
+            return self.joint_locations[idx];
+        }
+
+        return null;
+    }
+
+    // Sets the transform of a bone, by name
+    pub fn setBoneTransform(self: *SkinnedMesh, bone_name: []const u8, new_transform: AnimationTransform) void {
+        const bone_idx = self.bone_indices.get(bone_name);
+        if (bone_idx) |idx| {
+            self.joint_transforms.?.items[idx] = new_transform;
+            self.joint_locations_dirty = true;
         }
     }
-
-    /// Returns the index of the last sample less than `t`.
-    fn stepInterpolation(samples: []const f32, t: f32) usize {
-        std.debug.assert(samples.len > 0);
-        const S = struct {
-            fn lessThan(_: void, lhs: f32, rhs: f32) bool {
-                return lhs < rhs;
-            }
-        };
-        const i = std.sort.lowerBound(f32, t, samples, {}, S.lessThan);
-        return if (i > 0) i - 1 else 0;
-    }
-
-    /// Returns the indices of the samples around `t` and `alpha` to interpolate between those.
-    fn linearInterpolation(samples: []const f32, t: f32) struct {
-        prev_i: usize,
-        next_i: usize,
-        alpha: f32,
-    } {
-        const i = stepInterpolation(samples, t);
-        if (i == samples.len - 1) return .{ .prev_i = i, .next_i = i, .alpha = 0 };
-
-        const d = samples[i + 1] - samples[i];
-        std.debug.assert(d > 0);
-        const alpha = std.math.clamp((t - samples[i]) / d, 0, 1);
-
-        return .{ .prev_i = i, .next_i = i + 1, .alpha = alpha };
-    }
-
-    /// Grab animation data from a slice
-    pub fn access(comptime T: type, data: []const f32, i: usize) T {
-        return switch (T) {
-            Vec3 => Vec3.new(data[3 * i + 0], data[3 * i + 1], data[3 * i + 2]),
-            math.Quaternion => math.Quaternion.new(data[4 * i + 0], data[4 * i + 1], data[4 * i + 2], data[4 * i + 3]),
-            math.Mat4 => math.Mat4.fromSlice(data[16 * i ..][0..16]),
-            else => @compileError("unexpected type"),
-        };
-    }
 };
+
+/// Use a gltf sampler to get animation data from a track
+pub fn sampleAnimation(comptime T: type, sampler: zmesh.io.zcgltf.AnimationSampler, t: f32) T {
+    const samples = zmesh.io.getAnimationSamplerData(sampler.input);
+    const data = zmesh.io.getAnimationSamplerData(sampler.output);
+
+    switch (sampler.interpolation) {
+        .step => {
+            return access(T, data, stepInterpolation(samples, t));
+        },
+        .linear => {
+            const r = linearInterpolation(samples, t);
+            const v0 = access(T, data, r.prev_i);
+            const v1 = access(T, data, r.next_i);
+
+            if (T == math.Quaternion) {
+                return T.slerp(v0, v1, r.alpha);
+            }
+
+            return T.lerp(v0, v1, r.alpha);
+        },
+        .cubic_spline => {
+            @panic("Cubicspline in animations not implemented!");
+        },
+    }
+}
+
+/// Returns the index of the last sample less than `t`.
+fn stepInterpolation(samples: []const f32, t: f32) usize {
+    std.debug.assert(samples.len > 0);
+    const S = struct {
+        fn lessThan(_: void, lhs: f32, rhs: f32) bool {
+            return lhs < rhs;
+        }
+    };
+    const i = std.sort.lowerBound(f32, t, samples, {}, S.lessThan);
+    return if (i > 0) i - 1 else 0;
+}
+
+/// Returns the indices of the samples around `t` and `alpha` to interpolate between those.
+fn linearInterpolation(samples: []const f32, t: f32) struct {
+    prev_i: usize,
+    next_i: usize,
+    alpha: f32,
+} {
+    const i = stepInterpolation(samples, t);
+    if (i == samples.len - 1) return .{ .prev_i = i, .next_i = i, .alpha = 0 };
+
+    const d = samples[i + 1] - samples[i];
+    std.debug.assert(d > 0);
+    const alpha = std.math.clamp((t - samples[i]) / d, 0, 1);
+
+    return .{ .prev_i = i, .next_i = i + 1, .alpha = alpha };
+}
+
+/// Grab animation data from a slice
+pub fn access(comptime T: type, data: []const f32, i: usize) T {
+    return switch (T) {
+        Vec3 => Vec3.new(data[3 * i + 0], data[3 * i + 1], data[3 * i + 2]),
+        math.Quaternion => math.Quaternion.new(data[4 * i + 0], data[4 * i + 1], data[4 * i + 2], data[4 * i + 3]),
+        math.Mat4 => math.Mat4.fromSlice(data[16 * i ..][0..16]),
+        else => @compileError("unexpected type"),
+    };
+}
