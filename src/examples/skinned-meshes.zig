@@ -20,7 +20,7 @@ const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 const Color = colors.Color;
 
-const shader_builtin = delve.shaders.default_skinned;
+const shader_builtin = delve.shaders.default_skinned_basic_lighting;
 
 var mesh_test: skinned_mesh.SkinnedMesh = undefined;
 var animation: skinned_mesh.PlayingAnimation = undefined;
@@ -68,7 +68,7 @@ pub fn registerModule() !void {
 fn on_init() !void {
     debug.log("Skinned mesh example module initializing", .{});
 
-    graphics.setClearColor(colors.examples_bg_light);
+    graphics.setClearColor(colors.examples_bg_dark);
 
     // Make a perspective camera, with a 90 degree FOV
     camera = cam.Camera.initThirdPerson(90.0, 0.01, 150.0, 2.0, Vec3.up);
