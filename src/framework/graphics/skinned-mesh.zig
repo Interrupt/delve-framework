@@ -167,6 +167,7 @@ pub const SkinnedMesh = struct {
 
     // the world space joint locations, with the skeleton's heirarchy applied
     joint_locations: [max_joints]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** max_joints,
+    joint_locations_dirty: bool = true,
 
     // the index at which a named joint lives
     bone_indices: std.StringHashMap(usize) = undefined,
@@ -216,12 +217,18 @@ pub const SkinnedMesh = struct {
 
     /// Draw this mesh
     pub fn draw(self: *SkinnedMesh, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
+        if (self.joint_locations_dirty)
+            self.applySkeletonTransforms();
+
         self.mesh.material.params.joints = &self.joint_locations;
         graphics.drawWithMaterial(&self.mesh.bindings, &self.mesh.material, proj_view_matrix, model_matrix);
     }
 
     /// Draw this mesh, using the specified material instead of the set one
     pub fn drawWithMaterial(self: *SkinnedMesh, material: *graphics.Material, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
+        if (self.joint_locations_dirty)
+            self.applySkeletonTransforms();
+
         self.mesh.material.params.joints = &self.joint_locations;
         graphics.drawWithMaterial(&self.mesh.bindings, material, proj_view_matrix, model_matrix);
     }
@@ -390,7 +397,7 @@ pub const SkinnedMesh = struct {
             };
         }
 
-        self.applySkeletonTransforms();
+        self.joint_locations_dirty = true;
     }
 
     /// Turns the local joint transforms into the final world space transforms
@@ -430,6 +437,8 @@ pub const SkinnedMesh = struct {
             const inverse_mat = access(math.Mat4, inverse_bind_mat_data, i);
             self.joint_locations[i] = self.joint_transform_mats[i].mul(inverse_mat);
         }
+
+        self.joint_locations_dirty = false;
     }
 
     /// Apply an animation to our mesh, given a specified blend value
@@ -456,7 +465,7 @@ pub const SkinnedMesh = struct {
             }
         }
 
-        self.applySkeletonTransforms();
+        self.joint_locations_dirty = true;
     }
 
     // Returns the current local space transform of a named bone, if it exists in the animation
@@ -471,6 +480,9 @@ pub const SkinnedMesh = struct {
 
     // Returns the world space matrix of a named bone
     pub fn getWorldSpaceBoneMatrix(self: *const SkinnedMesh, bone_name: []const u8) ?math.Mat4 {
+        if (self.joint_locations_dirty)
+            self.applySkeletonTransforms();
+
         const bone_idx = self.bone_indices.get(bone_name);
         if (bone_idx) |idx| {
             return self.joint_locations[idx];
@@ -484,6 +496,7 @@ pub const SkinnedMesh = struct {
         const bone_idx = self.bone_indices.get(bone_name);
         if (bone_idx) |idx| {
             self.joint_transforms.?.items[idx] = new_transform;
+            self.joint_locations_dirty = true;
         }
     }
 };

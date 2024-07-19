@@ -168,9 +168,6 @@ fn on_draw() void {
         mesh_test.setBoneTransform(neck_bone_name, nt.*);
     }
 
-    // since we modified bone transforms manually, we need to re-apply the skeleton
-    mesh_test.applySkeletonTransforms();
-
     mesh_test.draw(proj_view_matrix, model);
 }
 
