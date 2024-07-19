@@ -49,9 +49,8 @@ pub const PlayingAnimation = struct {
     // calced transform matrices of all joints (including skeleton)
     joint_calced_matrices: ?std.ArrayList(math.Mat4) = null,
 
-    // the index at which a named joint lives
-    // should this live here, or in the mesh? the mesh could eventually have more than one skin
-    bone_indices: std.StringHashMap(usize) = undefined,
+    // parent mesh
+    parent_mesh: *const SkinnedMesh = undefined,
 
     pub fn isDonePlaying(self: *PlayingAnimation) bool {
         return self.time >= self.duration;
@@ -96,7 +95,7 @@ pub const PlayingAnimation = struct {
 
     // Returns the current local space transform of a named bone, if it exists in the animation
     pub fn getBoneTransform(self: *const PlayingAnimation, bone_name: []const u8) ?AnimationTransform {
-        const bone_idx = self.bone_indices.get(bone_name);
+        const bone_idx = self.parent_mesh.bone_indices.get(bone_name);
         if (bone_idx) |idx| {
             return self.joint_transforms.?.items[idx];
         }
@@ -106,7 +105,7 @@ pub const PlayingAnimation = struct {
 
     // Sets the transform of a bone, by name
     pub fn setBoneTransform(self: *PlayingAnimation, bone_name: []const u8, new_transform: AnimationTransform) void {
-        const bone_idx = self.bone_indices.get(bone_name);
+        const bone_idx = self.parent_mesh.bone_indices.get(bone_name);
         if (bone_idx) |idx| {
             self.joint_transforms.?.items[idx] = new_transform;
         }
@@ -240,7 +239,7 @@ pub const SkinnedMesh = struct {
 
     /// Creates a new animation that can be played and applied to this mesh
     pub fn createAnimation(self: *const SkinnedMesh, anim_idx: usize, speed: f32, loop: bool) !PlayingAnimation {
-        var new_anim: PlayingAnimation = .{ .anim_idx = anim_idx, .speed = speed, .looping = loop, .bone_indices = self.bone_indices };
+        var new_anim: PlayingAnimation = .{ .anim_idx = anim_idx, .speed = speed, .looping = loop, .parent_mesh = self };
 
         if (self.mesh.zmesh_data == null) {
             debug.log("warning: mesh skin data not found!", .{});

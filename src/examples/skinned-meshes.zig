@@ -162,8 +162,9 @@ fn on_draw() void {
     const neck_bone_name = "Skeleton_neck_joint_1";
     var neck_transform = mesh_test.getBoneTransform(neck_bone_name);
     if (neck_transform) |*nt| {
-        const neck_rot_angle = std.math.sin(time * 0.005);
-        nt.rotation = nt.rotation.mul(math.Quaternion.fromAxisAngleRH(math.Vec3.new(1.0, 0.0, 0.0), neck_rot_angle));
+        const neck_rot_angle = std.math.sin(time * 0.005) * 45;
+        const neck_rot_quat = math.Quaternion.fromMat4(math.Mat4.rotate(neck_rot_angle, math.Vec3.new(1.0, 0.0, 0.0)));
+        nt.rotation = nt.rotation.mul(neck_rot_quat);
         mesh_test.setBoneTransform(neck_bone_name, nt.*);
     }
 

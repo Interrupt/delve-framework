@@ -4,7 +4,7 @@
 //  minimal vector math helper functions, just the stuff needed for
 //  the sokol-samples
 //
-//  Ported from HandmadeMath.h
+//  Ported from HandmadeMath.h, and some Quaternion functions from kooparse/zalgebra
 //------------------------------------------------------------------------------
 const std = @import("std");
 const assert = std.debug.assert;
@@ -557,12 +557,11 @@ pub const Quaternion = struct {
     }
 
     pub fn mul(left: Quaternion, right: Quaternion) Quaternion {
-        return Quaternion.new(
-            left.w * right.x + left.x * right.w + left.y * right.z - left.z * right.y, // i
-            left.w * right.y - left.x * right.z + left.y * right.w + left.z * right.x, // j
-            left.w * right.z + left.x * right.y - left.y * right.x + left.z * right.w, // k
-            left.w * right.w - left.x * right.x - left.y * right.y - left.z * right.z, // 1
-        );
+        const x = (left.x * right.w) + (left.y * right.z) - (left.z * right.y) + (left.w * right.x);
+        const y = (-left.x * right.z) + (left.y * right.w) + (left.z * right.x) + (left.w * right.y);
+        const z = (left.x * right.y) - (left.y * right.x) + (left.z * right.w) + (left.w * right.z);
+        const w = (-left.x * right.x) - (left.y * right.y) - (left.z * right.z) + (left.w * right.w);
+        return Quaternion.new(x, y, z, w);
     }
 
     pub fn scale(left: Quaternion, right: f32) Quaternion {
@@ -661,7 +660,52 @@ pub const Quaternion = struct {
         return result;
     }
 
-    pub fn fromAxisAngleRH(axis: Vec3, angle: f32) Quaternion {
+    pub fn fromMat4(mat: Mat4) Quaternion {
+        var result: Quaternion = undefined;
+        var t: f32 = undefined;
+
+        if (mat.m[2][2] < 0) {
+            if (mat.m[0][0] > mat.m[1][1]) {
+                t = 1 + mat.m[0][0] - mat.m[1][1] - mat.m[2][2];
+                result = Quaternion.new(
+                    t,
+                    mat.m[0][1] + mat.m[1][0],
+                    mat.m[2][0] + mat.m[0][2],
+                    mat.m[1][2] - mat.m[2][1],
+                );
+            } else {
+                t = 1 - mat.m[0][0] + mat.m[1][1] - mat.m[2][2];
+                result = Quaternion.new(
+                    mat.m[0][1] + mat.m[1][0],
+                    t,
+                    mat.m[1][2] + mat.m[2][1],
+                    mat.m[2][0] - mat.m[0][2],
+                );
+            }
+        } else {
+            if (mat.m[0][0] < -mat.m[1][1]) {
+                t = 1 - mat.m[0][0] - mat.m[1][1] + mat.m[2][2];
+                result = Quaternion.new(
+                    mat.m[2][0] + mat.m[0][2],
+                    mat.m[1][2] + mat.m[2][1],
+                    t,
+                    mat.m[0][1] - mat.m[1][0],
+                );
+            } else {
+                t = 1 + mat.m[0][0] + mat.m[1][1] + mat.m[2][2];
+                result = Quaternion.new(
+                    mat.m[1][2] - mat.m[2][1],
+                    mat.m[2][0] - mat.m[0][2],
+                    mat.m[0][1] - mat.m[1][0],
+                    t,
+                );
+            }
+        }
+
+        return result.scale(0.5 / @sqrt(t));
+    }
+
+    pub fn fromAxisAndAngle(angle: f32, axis: Vec3) Quaternion {
         var result = Quaternion.zero;
         const axis_normalized: Vec3 = axis.norm();
         const sin_of_rotation = std.math.sin(angle / 2.0);
@@ -682,8 +726,8 @@ pub const Quaternion = struct {
         return right.add(t.scale(left.w).add(quat_vec.cross(t)));
     }
 
-    pub fn fromAxisAngleLH(axis: Vec3, angle: f32) Quaternion {
-        return Quaternion.fromAxisAngleRH(axis, -angle);
+    pub fn fromAxisAndAngleLH(angle: f32, axis: Vec3) Quaternion {
+        return Quaternion.fromAxisAngle(-angle, axis);
     }
 };
 
