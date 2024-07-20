@@ -21,6 +21,7 @@ const Mat4 = math.Mat4;
 const Color = colors.Color;
 
 const shader_builtin = delve.shaders.default_skinned_basic_lighting;
+const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF };
 
 var mesh_test: skinned_mesh.SkinnedMesh = undefined;
 var animation: skinned_mesh.PlayingAnimation = undefined;
@@ -97,6 +98,7 @@ fn on_init() !void {
 
         // use the VS layout that supports sending joints to the shader
         .default_vs_uniform_layout = delve.platform.graphics.DefaultSkinnedMeshVSUniforms,
+        .default_fs_uniform_layout = basic_lighting_fs_uniforms,
     });
 
     // Load our mesh!
@@ -167,6 +169,8 @@ fn on_draw() void {
         nt.rotation = nt.rotation.mul(neck_rot_quat);
         mesh_test.setBoneTransform(neck_bone_name, nt.*);
     }
+
+    mesh_test.mesh.material.params.camera_position = camera.getPosition();
 
     mesh_test.draw(proj_view_matrix, model);
 }

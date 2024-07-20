@@ -55,6 +55,7 @@ uniform texture2D tex;
 uniform texture2D tex_emissive;
 uniform sampler smp;
 uniform fs_params {
+    vec4 u_cameraPos;
     vec4 u_color_override;
     float u_alpha_cutoff;
 };
@@ -90,7 +91,13 @@ void main() {
         float radius = 1.25;
         float attenuation = clamp(1.0 - dist/radius, 0.0, 1.0);
 
-        lit_color.rgb += lightBrightness * lightColor * attenuation;
+        // testing out a specular term
+        vec3 cameraLocN = vec3(normalize(u_cameraPos));
+        vec3 reflectAmt = normalize(reflect(-vec3(lightPosEye), normal));
+        float specularAmt = max(0.0, dot(cameraLocN, reflectAmt));
+        specularAmt = pow(specularAmt, 50.0);
+
+        lit_color.rgb += (lightBrightness * lightColor * attenuation) + (specularAmt * normalize(lightColor));
     }
 
     {
@@ -100,7 +107,13 @@ void main() {
 
         float lightBrightness = max(dot( -lightDir, vec4(normal, 0.0)), 0.0);
 
-        lit_color.rgb += lightBrightness * lightColor;
+        // testing out a specular term
+        vec3 cameraLocN = vec3(normalize(u_cameraPos));
+        vec3 reflectAmt = normalize(reflect(vec3(lightDir), normal));
+        float specularAmt = max(0.0, dot(cameraLocN, reflectAmt));
+        specularAmt = pow(specularAmt, 30.0);
+
+        lit_color.rgb += (lightBrightness * lightColor) + (specularAmt * lightColor);
     }
 
     // apply lighting color on top of the base diffuse color

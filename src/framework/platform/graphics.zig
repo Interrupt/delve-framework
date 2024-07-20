@@ -87,6 +87,7 @@ pub const MaterialUniformDefaults = enum(i32) {
     ALPHA_CUTOFF,
     JOINTS_64,
     JOINTS_256,
+    CAMERA_POSITION,
 };
 
 // Default uniform block layout for meshes
@@ -538,6 +539,7 @@ pub const MaterialParams = struct {
     color_override: Color = colors.transparent,
     alpha_cutoff: f32 = 0.0,
     joints: []Mat4 = undefined,
+    camera_position: Vec3 = undefined,
 };
 
 /// Holds the data for and builds a uniform block that can be passed to a shader
@@ -605,7 +607,7 @@ pub const MaterialUniformBlock = struct {
     /// Adds a Vec3 to the uniform block
     pub fn addVec3(self: *MaterialUniformBlock, name: [:0]const u8, val: Vec3) void {
         _ = name;
-        self.addBytesFrom(&val);
+        self.addBytesFrom(&val.toArray());
     }
 
     /// Adds a color to the uniform block
@@ -763,6 +765,9 @@ pub const Material = struct {
                 },
                 .JOINTS_256 => {
                     u_block.addBytesFrom(self.params.joints[0..256]);
+                },
+                .CAMERA_POSITION => {
+                    u_block.addVec3("u_cameraPosition", self.params.camera_position);
                 },
             }
         }
