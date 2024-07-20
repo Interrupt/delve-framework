@@ -67,9 +67,9 @@ void main() {
     {
         // directional light
         vec3 lightColor = vec3(0.0, 0.9, 0.2);
-        vec4 lightDir = vec4(0.2, 0.8, 0.0, 0.0);
+        vec4 lightDir = vec4(-0.2, -0.8, 0.0, 0.0);
 
-        float lightBrightness = max(dot( lightDir, vec4(normal, 0.0)), 0.0);
+        float lightBrightness = max(dot( -lightDir, vec4(normal, 0.0)), 0.0);
 
         color.rgb += baseDiffuse.rgb * lightBrightness * lightColor;
     }
