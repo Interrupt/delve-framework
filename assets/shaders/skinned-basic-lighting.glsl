@@ -27,8 +27,8 @@ out vec4 color;
 out vec2 uv;
 out vec3 normal;
 out vec4 tangent;
-out vec4 joint;
-out vec4 weight;
+out vec4 position;
+out vec4 baseDiffuse;
 
 void main() {
     mat4 skin = (weights.x * u_joints[int(joints.x)] +
@@ -37,42 +37,16 @@ void main() {
                 weights.w * u_joints[int(joints.w)]);
 
     mat4 model = u_modelMatrix * skin;
-    vec4 baseDiffuse = color0 * u_color;
 
-    // have to use these attributes to keep them from being stripped out
-    tangent = tangents;
-
-    gl_Position = u_projViewMatrix * model * pos;
     color = vec4(0.0, 0.0, 0.0, 1.0);
-    normal = normalize(model * vec4(normals, 0.0)).xyz;
     uv = texcoord0;
+    normal = normalize(model * vec4(normals, 0.0)).xyz;
+    tangent = tangents;
+    position = model * pos;
+    baseDiffuse = color0 * u_color;
 
-    // simple lighting!
-    {
-        // positioned light
-        vec4 lightPosEye = vec4(0.0, 2.0, -1.0, 0.0);
-        vec3 lightColor = vec3(1.0, 1.0, 1.0);
+    gl_Position = u_projViewMatrix * position;
 
-        vec4 lightMinusPos = (lightPosEye - pos * model);
-        vec4 lightDir = normalize(lightMinusPos);
-        float lightBrightness = max(dot( lightDir, vec4(normal, 0.0)), 0.0);
-
-        float dist = length(lightMinusPos);
-        float radius = 6.0;
-        float attenuation = clamp(1.0 - dist/radius, 0.0, 1.0);
-
-        color.rgb += baseDiffuse.rgb * lightBrightness * lightColor * attenuation;
-    }
-
-    {
-        // directional light
-        vec3 lightColor = vec3(0.0, 0.9, 0.2);
-        vec4 lightDir = vec4(-0.2, -0.8, 0.0, 0.0);
-
-        float lightBrightness = max(dot( -lightDir, vec4(normal, 0.0)), 0.0);
-
-        color.rgb += baseDiffuse.rgb * lightBrightness * lightColor;
-    }
 }
 #pragma sokol @end
 
@@ -89,17 +63,48 @@ in vec4 color;
 in vec2 uv;
 in vec3 normal;
 in vec4 tangent;
-in vec4 joint;
-in vec4 weight;
+in vec4 position;
+in vec4 baseDiffuse;
 out vec4 frag_color;
 
 void main() {
-    vec4 c = texture(sampler2D(tex, smp), uv) * color;
+    vec4 c = texture(sampler2D(tex, smp), uv) * baseDiffuse;
+    vec4 lit_color = color;
 
     // to make sprite drawing easier, discard full alpha pixels
     if(c.a <= u_alpha_cutoff) {
         discard;
     }
+
+    // simple lighting!
+    {
+        // positioned light
+        vec4 lightPosEye = vec4(0.0, 0.5, -0.5, 0.0);
+        vec3 lightColor = vec3(0.0, 4.0, 0.5);
+
+        vec4 lightMinusPos = (lightPosEye - position);
+        vec4 lightDir = normalize(lightMinusPos);
+        float lightBrightness = max(dot( lightDir, vec4(normal, 0.0)), 0.0);
+
+        float dist = length(lightMinusPos);
+        float radius = 1.25;
+        float attenuation = clamp(1.0 - dist/radius, 0.0, 1.0);
+
+        lit_color.rgb += lightBrightness * lightColor * attenuation;
+    }
+
+    {
+        // directional light
+        vec3 lightColor = vec3(0.2, 0.2, 0.5);
+        vec4 lightDir = vec4(-0.2, -0.8, 0.0, 0.0);
+
+        float lightBrightness = max(dot( -lightDir, vec4(normal, 0.0)), 0.0);
+
+        lit_color.rgb += lightBrightness * lightColor;
+    }
+
+    // apply lighting color on top of the base diffuse color
+    c *= lit_color;
 
     // add the emissive term
     vec4 e = texture(sampler2D(tex_emissive, smp), uv);
