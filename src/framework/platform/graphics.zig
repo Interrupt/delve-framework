@@ -767,7 +767,9 @@ pub const Material = struct {
                     u_block.addBytesFrom(self.params.joints[0..256]);
                 },
                 .CAMERA_POSITION => {
-                    u_block.addVec3("u_cameraPosition", self.params.camera_position);
+                    // todo: why does this need to be a vec4? ordering gets off with a vec3
+                    const cam_array = [_]f32{ self.params.camera_position.x, self.params.camera_position.y, self.params.camera_position.z, 0.0 };
+                    u_block.addBytesFrom(&cam_array);
                 },
             }
         }

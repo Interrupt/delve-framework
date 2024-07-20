@@ -90,8 +90,8 @@ pub const Vec3 = extern struct {
         return Vec3{ .x = val[0], .y = val[1], .z = val[2] };
     }
 
-    pub fn toArray(self: Vec3) [4]f32 {
-        return [_]f32{ self.x, self.y, self.z, 0.0 };
+    pub fn toArray(self: Vec3) [3]f32 {
+        return [_]f32{ self.x, self.y, self.z };
     }
 
     pub fn new(x: f32, y: f32, z: f32) Vec3 {
