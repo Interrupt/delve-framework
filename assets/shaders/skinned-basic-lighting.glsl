@@ -57,8 +57,9 @@ uniform sampler smp;
 uniform fs_params {
     vec4 u_cameraPos;
     vec4 u_color_override;
+    vec4 u_dir_light_dir;
+    vec4 u_dir_light_color;
     float u_alpha_cutoff;
-    vec4 u_dir_light[2];
 };
 
 in vec4 color;
@@ -103,18 +104,18 @@ void main() {
 
     {
         // directional light
-        vec4 lightDir = vec4(u_dir_light[0].x, u_dir_light[0].y, u_dir_light[0].z, 0.0);
-        vec3 lightColor = vec3(u_dir_light[1].x, u_dir_light[1].y, u_dir_light[1].z);
+        vec4 lightDir = vec4(u_dir_light_dir.x, u_dir_light_dir.y, u_dir_light_dir.z, 0.0);
+        vec4 lightColor = u_dir_light_color;
 
-        float lightBrightness = max(dot( -lightDir, vec4(normal, 0.0)), 0.0);
+        float lightBrightness = max(dot( lightDir, vec4(normal, 0.0)), 0.0) * u_dir_light_dir.w;
 
         // testing out a specular term
         vec3 cameraLocN = vec3(normalize(u_cameraPos));
-        vec3 reflectAmt = normalize(reflect(vec3(lightDir), normal));
+        vec3 reflectAmt = normalize(reflect(vec3(-lightDir), normal));
         float specularAmt = max(0.0, dot(cameraLocN, reflectAmt));
         specularAmt = pow(specularAmt, 30.0);
 
-        lit_color.rgb += (lightBrightness * lightColor) + (specularAmt * lightColor);
+        lit_color.rgb += (lightBrightness * lightColor.rgb) + (specularAmt * lightColor.rgb);
     }
 
     // apply lighting color on top of the base diffuse color
