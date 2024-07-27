@@ -58,6 +58,7 @@ uniform fs_params {
     vec4 u_cameraPos;
     vec4 u_color_override;
     float u_alpha_cutoff;
+    vec4 u_dir_light[2];
 };
 
 in vec4 color;
@@ -102,8 +103,8 @@ void main() {
 
     {
         // directional light
-        vec3 lightColor = vec3(0.2, 0.2, 0.5);
-        vec4 lightDir = vec4(-0.2, -0.8, 0.0, 0.0);
+        vec4 lightDir = vec4(u_dir_light[0].x, u_dir_light[0].y, u_dir_light[0].z, 0.0);
+        vec3 lightColor = vec3(u_dir_light[1].x, u_dir_light[1].y, u_dir_light[1].z);
 
         float lightBrightness = max(dot( -lightDir, vec4(normal, 0.0)), 0.0);
 

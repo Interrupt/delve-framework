@@ -21,7 +21,7 @@ const Mat4 = math.Mat4;
 const Color = colors.Color;
 
 const shader_builtin = delve.shaders.default_skinned_basic_lighting;
-const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF };
+const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .DIRECTIONAL_LIGHT };
 
 var mesh_test: skinned_mesh.SkinnedMesh = undefined;
 var animation: skinned_mesh.PlayingAnimation = undefined;
@@ -170,7 +170,10 @@ fn on_draw() void {
         mesh_test.setBoneTransform(neck_bone_name, nt.*);
     }
 
+    const dir_light: delve.platform.graphics.DirectionalLight = .{ .dir = Vec3.y_axis, .color = colors.red, .brightness = 0.0 };
+
     mesh_test.mesh.material.params.camera_position = camera.getPosition();
+    mesh_test.mesh.material.params.directional_light = dir_light;
 
     mesh_test.draw(proj_view_matrix, model);
 }

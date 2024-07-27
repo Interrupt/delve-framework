@@ -88,6 +88,8 @@ pub const MaterialUniformDefaults = enum(i32) {
     JOINTS_64,
     JOINTS_256,
     CAMERA_POSITION,
+    DIRECTIONAL_LIGHT,
+    POINT_LIGHTS_8,
 };
 
 // Default uniform block layout for meshes
@@ -135,6 +137,24 @@ pub const Vertex = struct {
 
     pub fn getPosition(self: *const Vertex) Vec3 {
         return Vec3.new(self.x, self.y, self.z);
+    }
+};
+
+pub const PointLight = struct {
+    pos: Vec3 = Vec3.zero,
+    color: [4]f32 = colors.white.toArray(),
+    radius: f32 = 1.0,
+    faloff: f32 = 1.0,
+    brightness: f32 = 1.0,
+};
+
+pub const DirectionalLight = struct {
+    dir: Vec3 = Vec3.y_axis,
+    brightness: f32 = 1.0,
+    color: Color = colors.white,
+
+    pub fn toArray(self: *const DirectionalLight) [8]f32 {
+        return [_]f32{ self.dir.x, self.dir.y, self.dir.z, self.brightness, self.color.r, self.color.g, self.color.b, self.color.a };
     }
 };
 
@@ -540,6 +560,8 @@ pub const MaterialParams = struct {
     alpha_cutoff: f32 = 0.0,
     joints: []Mat4 = undefined,
     camera_position: Vec3 = undefined,
+    directional_light: DirectionalLight = undefined,
+    point_lights: []PointLight = undefined,
 };
 
 /// Holds the data for and builds a uniform block that can be passed to a shader
@@ -770,6 +792,12 @@ pub const Material = struct {
                     // todo: why does this need to be a vec4? ordering gets off with a vec3
                     const cam_array = [_]f32{ self.params.camera_position.x, self.params.camera_position.y, self.params.camera_position.z, 0.0 };
                     u_block.addBytesFrom(&cam_array);
+                },
+                .DIRECTIONAL_LIGHT => {
+                    u_block.addBytesFrom(&self.params.directional_light.toArray());
+                },
+                .POINT_LIGHTS_8 => {
+                    u_block.addBytesFrom(&self.params.point_lights[0..8]);
                 },
             }
         }
