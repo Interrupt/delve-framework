@@ -576,6 +576,12 @@ pub const MaterialUniformBlock = struct {
     }
 
     pub fn addBytesFrom(self: *MaterialUniformBlock, value: anytype) void {
+        // todo: to follow std140 packing for uniform buffers, add padding
+        // based on last added item!
+        //
+        // example: two floats can be packed, but will need 8 bytes of padding
+        // after when a different type like a vec4 is added after (16 bit alignment!)
+
         self.bytes.appendSlice(std.mem.asBytes(value)) catch {
             debug.log("Error adding material uniform!", .{});
             return;
