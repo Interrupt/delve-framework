@@ -170,10 +170,12 @@ fn on_draw() void {
         mesh_test.setBoneTransform(neck_bone_name, nt.*);
     }
 
-    const dir_light: delve.platform.graphics.DirectionalLight = .{ .dir = Vec3.y_axis, .color = delve.colors.green, .brightness = 1.0 };
+    // create a directional light that rotates around the mesh
+    const light_dir = Vec3.new(0.25, 0.75, 0.0).rotate(time, Vec3.y_axis);
+    const directional_light: delve.platform.graphics.DirectionalLight = .{ .dir = light_dir, .color = delve.colors.white, .brightness = 1.0 };
 
     mesh_test.mesh.material.params.camera_position = camera.getPosition();
-    mesh_test.mesh.material.params.directional_light = dir_light;
+    mesh_test.mesh.material.params.directional_light = directional_light;
 
     mesh_test.draw(proj_view_matrix, model);
 }

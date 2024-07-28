@@ -83,7 +83,7 @@ void main() {
     {
         // positioned light
         vec4 lightPosEye = vec4(0.0, 0.5, -0.5, 0.0);
-        vec3 lightColor = vec3(0.0, 4.0, 0.5);
+        vec3 lightColor = vec3(8.0, 0.0, 0.0);
 
         vec4 lightMinusPos = (lightPosEye - position);
         vec4 lightDir = normalize(lightMinusPos);
