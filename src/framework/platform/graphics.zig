@@ -23,6 +23,7 @@ pub const shader_default = @import("../graphics/shaders/default.glsl.zig");
 
 const Vec2 = math.Vec2;
 const Vec3 = math.Vec3;
+const Vec4 = math.Vec4;
 const Mat4 = math.Mat4;
 pub const Color = colors.Color;
 
@@ -142,9 +143,9 @@ pub const Vertex = struct {
 
 pub const PointLight = struct {
     pos: Vec3 = Vec3.zero,
-    color: [4]f32 = colors.white.toArray(),
+    color: Color = colors.white,
     radius: f32 = 1.0,
-    faloff: f32 = 1.0,
+    falloff: f32 = 1.0,
     brightness: f32 = 1.0,
 };
 
@@ -589,6 +590,7 @@ pub const MaterialUniformBlock = struct {
         if (self.size < commit_size) {
             const diff_bytes = commit_size - self.size;
             self.addPadding(diff_bytes);
+            // debug.log("Added {d} padding bytes", .{diff_bytes});
         }
     }
 
@@ -645,6 +647,12 @@ pub const MaterialUniformBlock = struct {
     pub fn addVec3(self: *MaterialUniformBlock, name: [:0]const u8, val: Vec3) void {
         _ = name;
         self.addBytesFrom(&val.toArray(), UniformBlockType.VEC3);
+    }
+
+    /// Adds a Vec4 to the uniform block
+    pub fn addVec4(self: *MaterialUniformBlock, name: [:0]const u8, val: Vec4) void {
+        _ = name;
+        self.addBytesFrom(&val.toArray(), UniformBlockType.VEC4);
     }
 
     /// Adds a color to the uniform block
@@ -812,7 +820,28 @@ pub const Material = struct {
                     u_block.addBytesFrom(&self.params.directional_light.toArray(), UniformBlockType.VEC4);
                 },
                 .POINT_LIGHTS_8 => {
-                    u_block.addBytesFrom(&self.params.point_lights[0..8], UniformBlockType.VEC4);
+                    const num_lights = self.params.point_lights.len;
+                    u_block.addFloat("u_num_point_lights", @floatFromInt(num_lights));
+
+                    // debug.log("Adding {d} point lights.", .{num_lights});
+
+                    // list of light positions
+                    for (0..8) |i| {
+                        if (i < num_lights) {
+                            u_block.addVec4("u_point_light_positions", self.params.point_lights[i].pos.toVec4());
+                        } else {
+                            u_block.addVec4("u_point_light_positions", Vec4.new(0, 0, 0, 0));
+                        }
+                    }
+
+                    // list of light colors
+                    for (0..8) |i| {
+                        if (i < num_lights) {
+                            u_block.addColor("u_point_light_colors", self.params.point_lights[i].color);
+                        } else {
+                            u_block.addColor("u_point_light_colors", colors.black);
+                        }
+                    }
                 },
             }
         }

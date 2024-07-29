@@ -21,7 +21,7 @@ const Mat4 = math.Mat4;
 const Color = colors.Color;
 
 const shader_builtin = delve.shaders.default_skinned_basic_lighting;
-const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .DIRECTIONAL_LIGHT };
+const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_8 };
 
 var mesh_test: skinned_mesh.SkinnedMesh = undefined;
 var animation: skinned_mesh.PlayingAnimation = undefined;
@@ -170,12 +170,20 @@ fn on_draw() void {
         mesh_test.setBoneTransform(neck_bone_name, nt.*);
     }
 
+    // set some parameters on the material
+    mesh_test.mesh.material.params.camera_position = camera.getPosition();
+
     // create a directional light that rotates around the mesh
     const light_dir = Vec3.new(0.25, 0.75, 0.0).rotate(time, Vec3.y_axis);
     const directional_light: delve.platform.graphics.DirectionalLight = .{ .dir = light_dir, .color = delve.colors.white, .brightness = 1.0 };
-
-    mesh_test.mesh.material.params.camera_position = camera.getPosition();
     mesh_test.mesh.material.params.directional_light = directional_light;
+
+    // add some point lights
+    const point_light_1: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(std.math.sin(time * 0.01), 0.8, -0.5), .color = delve.colors.green };
+    const point_light_2: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(std.math.sin(time * -0.0125), 0.25, 0.5), .color = delve.colors.red };
+    const point_lights: []const delve.platform.graphics.PointLight = &[_]delve.platform.graphics.PointLight{ point_light_1, point_light_2 };
+
+    mesh_test.mesh.material.params.point_lights = @constCast(point_lights);
 
     mesh_test.draw(proj_view_matrix, model);
 }

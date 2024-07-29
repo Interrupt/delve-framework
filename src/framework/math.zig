@@ -183,6 +183,10 @@ pub const Vec3 = extern struct {
         return Vec3.new(@max(left.x, right.x), @max(left.y, right.y), @max(left.z, right.z));
     }
 
+    pub fn toVec4(v: *const Vec3) Vec4 {
+        return Vec4.new(v.x, v.y, v.z, 0.0);
+    }
+
     pub const zero = Vec3.new(0.0, 0.0, 0.0);
     pub const one = Vec3.new(1.0, 1.0, 1.0);
     pub const x_axis = Vec3.new(1.0, 0.0, 0.0);
@@ -200,6 +204,10 @@ pub const Vec4 = extern struct {
 
     pub fn fromArray(val: [4]f32) Vec4 {
         return Vec4{ .x = val[0], .y = val[1], .z = val[2], .w = val[3] };
+    }
+
+    pub fn toArray(self: Vec4) [4]f32 {
+        return [_]f32{ self.x, self.y, self.z, self.w };
     }
 
     pub fn new(x: f32, y: f32, z: f32, w: f32) Vec4 {
