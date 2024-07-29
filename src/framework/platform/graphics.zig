@@ -572,6 +572,9 @@ pub const MaterialUniformBlock = struct {
     bytes: std.ArrayList(u8),
     last_type: UniformBlockType = undefined,
 
+    // TODO: Maybe the material uniform blocks should be mapped up front, data allocated, and then
+    // we can easily ask for offsets into the data block instead of piecing it together
+
     pub fn init() MaterialUniformBlock {
         return MaterialUniformBlock{
             .bytes = std.ArrayList(u8).init(allocator),
@@ -590,12 +593,7 @@ pub const MaterialUniformBlock = struct {
     }
 
     pub fn addBytesFrom(self: *MaterialUniformBlock, value: anytype, uniform_type: UniformBlockType) void {
-        // todo: to follow std140 packing for uniform buffers, add padding
-        // based on last added item!
-        //
-        // example: two floats can be packed, but will need 8 bytes of padding
-        // after when a different type like a vec4 is added after (16 bit alignment!)
-
+        // follow std140 packing
         if (uniform_type != self.last_type and self.size != 0) {
             self.addAlignmentPadding();
         }
