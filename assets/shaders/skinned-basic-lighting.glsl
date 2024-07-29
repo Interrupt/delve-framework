@@ -57,9 +57,9 @@ uniform sampler smp;
 uniform fs_params {
     vec4 u_cameraPos;
     vec4 u_color_override;
+    float u_alpha_cutoff;
     vec4 u_dir_light_dir;
     vec4 u_dir_light_color;
-    float u_alpha_cutoff;
 };
 
 in vec4 color;

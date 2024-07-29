@@ -564,10 +564,13 @@ pub const MaterialParams = struct {
     point_lights: []PointLight = undefined,
 };
 
+pub const UniformBlockType = enum(i32) { BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, VEC3, VEC4, MAT3, MAT4 };
+
 /// Holds the data for and builds a uniform block that can be passed to a shader
 pub const MaterialUniformBlock = struct {
     size: u64 = 0,
     bytes: std.ArrayList(u8),
+    last_type: UniformBlockType = undefined,
 
     pub fn init() MaterialUniformBlock {
         return MaterialUniformBlock{
@@ -575,29 +578,7 @@ pub const MaterialUniformBlock = struct {
         };
     }
 
-    pub fn addBytesFrom(self: *MaterialUniformBlock, value: anytype) void {
-        // todo: to follow std140 packing for uniform buffers, add padding
-        // based on last added item!
-        //
-        // example: two floats can be packed, but will need 8 bytes of padding
-        // after when a different type like a vec4 is added after (16 bit alignment!)
-
-        self.bytes.appendSlice(std.mem.asBytes(value)) catch {
-            debug.log("Error adding material uniform!", .{});
-            return;
-        };
-
-        self.size = self.bytes.items.len;
-    }
-
-    /// Reset state for this new frame
-    pub fn begin(self: *MaterialUniformBlock) void {
-        self.bytes.clearRetainingCapacity();
-    }
-
-    /// Commit data for this frame
-    pub fn end(self: *MaterialUniformBlock) void {
-        // might need to add padding! seems to be aligned to 16 byte chunks
+    pub fn addAlignmentPadding(self: *MaterialUniformBlock) void {
         const sizef: f64 = @floatFromInt(self.size);
         const commit_next: u64 = @intFromFloat(@ceil(sizef / 16));
         const commit_size = commit_next * 16;
@@ -608,40 +589,70 @@ pub const MaterialUniformBlock = struct {
         }
     }
 
+    pub fn addBytesFrom(self: *MaterialUniformBlock, value: anytype, uniform_type: UniformBlockType) void {
+        // todo: to follow std140 packing for uniform buffers, add padding
+        // based on last added item!
+        //
+        // example: two floats can be packed, but will need 8 bytes of padding
+        // after when a different type like a vec4 is added after (16 bit alignment!)
+
+        if (uniform_type != self.last_type and self.size != 0) {
+            self.addAlignmentPadding();
+        }
+
+        self.bytes.appendSlice(std.mem.asBytes(value)) catch {
+            debug.log("Error adding material uniform!", .{});
+            return;
+        };
+
+        self.size = self.bytes.items.len;
+        self.last_type = uniform_type;
+    }
+
+    /// Reset state for this new frame
+    pub fn begin(self: *MaterialUniformBlock) void {
+        self.bytes.clearRetainingCapacity();
+    }
+
+    /// Commit data for this frame
+    pub fn end(self: *MaterialUniformBlock) void {
+        self.addAlignmentPadding();
+    }
+
     /// Adds a float to the uniform block
     pub fn addFloat(self: *MaterialUniformBlock, name: [:0]const u8, val: f32) void {
         _ = name;
-        self.addBytesFrom(&val);
+        self.addBytesFrom(&val, UniformBlockType.FLOAT);
     }
 
     /// Adds a float array to the uniform block
     pub fn addFloats(self: *MaterialUniformBlock, name: [:0]const u8, val: []f32) void {
         _ = name;
-        self.addBytesFrom(&val);
+        self.addBytesFrom(&val, UniformBlockType.FLOAT);
     }
 
     /// Adds a matrix to the uniform block
     pub fn addMatrix(self: *MaterialUniformBlock, name: [:0]const u8, val: math.Mat4) void {
         _ = name;
-        self.addBytesFrom(&val);
+        self.addBytesFrom(&val, UniformBlockType.MAT4);
     }
 
     /// Adds a Vec2 to the uniform block
     pub fn addVec2(self: *MaterialUniformBlock, name: [:0]const u8, val: Vec2) void {
         _ = name;
-        self.addBytesFrom(&val);
+        self.addBytesFrom(&val, UniformBlockType.VEC2);
     }
 
     /// Adds a Vec3 to the uniform block
     pub fn addVec3(self: *MaterialUniformBlock, name: [:0]const u8, val: Vec3) void {
         _ = name;
-        self.addBytesFrom(&val.toArray());
+        self.addBytesFrom(&val.toArray(), UniformBlockType.VEC3);
     }
 
     /// Adds a color to the uniform block
     pub fn addColor(self: *MaterialUniformBlock, name: [:0]const u8, val: Color) void {
         _ = name;
-        self.addBytesFrom(&val.toArray());
+        self.addBytesFrom(&val.toArray(), UniformBlockType.VEC4);
     }
 
     /// Adds [num] bytes of padding
@@ -789,21 +800,21 @@ pub const Material = struct {
                     u_block.addFloat("u_alphaCutoff", self.params.alpha_cutoff);
                 },
                 .JOINTS_64 => {
-                    u_block.addBytesFrom(self.params.joints[0..64]);
+                    u_block.addBytesFrom(self.params.joints[0..64], UniformBlockType.MAT4);
                 },
                 .JOINTS_256 => {
-                    u_block.addBytesFrom(self.params.joints[0..256]);
+                    u_block.addBytesFrom(self.params.joints[0..256], UniformBlockType.MAT4);
                 },
                 .CAMERA_POSITION => {
                     // todo: why does this need to be a vec4? ordering gets off with a vec3
                     const cam_array = [_]f32{ self.params.camera_position.x, self.params.camera_position.y, self.params.camera_position.z, 0.0 };
-                    u_block.addBytesFrom(&cam_array);
+                    u_block.addBytesFrom(&cam_array, UniformBlockType.VEC4);
                 },
                 .DIRECTIONAL_LIGHT => {
-                    u_block.addBytesFrom(&self.params.directional_light.toArray());
+                    u_block.addBytesFrom(&self.params.directional_light.toArray(), UniformBlockType.VEC4);
                 },
                 .POINT_LIGHTS_8 => {
-                    u_block.addBytesFrom(&self.params.point_lights[0..8]);
+                    u_block.addBytesFrom(&self.params.point_lights[0..8], UniformBlockType.VEC4);
                 },
             }
         }
