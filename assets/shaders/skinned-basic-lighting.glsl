@@ -61,8 +61,7 @@ uniform fs_params {
     vec4 u_dir_light_dir;
     vec4 u_dir_light_color;
     float u_num_point_lights;
-    vec4 u_point_light_positions[8];
-    vec4 u_point_light_colors[8];
+    vec4 u_point_light_data[16]; // each light is packed as two vec4s
 };
 
 in vec4 color;
@@ -84,15 +83,18 @@ void main() {
 
     // simple lighting!
     for(int i = 0; i < int(u_num_point_lights); ++i) {
-        vec3 lightPosEye = u_point_light_positions[i].xyz;
-        vec3 lightColor = u_point_light_colors[i].xyz;
+        vec4 point_light_pos_data = u_point_light_data[i * 2];
+        vec4 point_light_color_data = u_point_light_data[(i * 2) + 1];
+
+        vec3 lightPosEye = point_light_pos_data.xyz;
+        vec3 lightColor = point_light_color_data.xyz;
 
         vec3 lightMinusPos = (lightPosEye - position.xyz);
         vec3 lightDir = normalize(lightMinusPos);
-        float lightBrightness = max(dot( lightDir, normal), 0.0) * u_point_light_colors[i].a;
+        float lightBrightness = max(dot( lightDir, normal), 0.0);
 
         float dist = length(lightMinusPos);
-        float radius = u_point_light_positions[i].w;
+        float radius = point_light_pos_data.w;
         float attenuation = clamp(1.0 - dist/radius, 0.0, 1.0);
 
         // testing out a specular term

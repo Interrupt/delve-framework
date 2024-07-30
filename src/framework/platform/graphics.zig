@@ -147,6 +147,11 @@ pub const PointLight = struct {
     radius: f32 = 1.0,
     falloff: f32 = 1.0,
     brightness: f32 = 1.0,
+
+    // Pack this light into eight floats so that it can be passed as two vec4s
+    pub fn toArray(self: *const PointLight) [8]f32 {
+        return [_]f32{ self.pos.x, self.pos.y, self.pos.z, self.radius, self.color.r * self.brightness, self.color.g * self.brightness, self.color.b * self.brightness, self.falloff };
+    }
 };
 
 pub const DirectionalLight = struct {
@@ -154,6 +159,7 @@ pub const DirectionalLight = struct {
     brightness: f32 = 1.0,
     color: Color = colors.white,
 
+    // Pack this light into eight floats so that it can be passed as two vec4s
     pub fn toArray(self: *const DirectionalLight) [8]f32 {
         return [_]f32{ self.dir.x, self.dir.y, self.dir.z, self.brightness, self.color.r, self.color.g, self.color.b, self.color.a };
     }
@@ -820,32 +826,16 @@ pub const Material = struct {
                     u_block.addBytesFrom(&self.params.directional_light.toArray(), UniformBlockType.VEC4);
                 },
                 .POINT_LIGHTS_8 => {
-                    // TODO: This is slow! Should we just keep the lists of light positions and colors as the shaders expect them?
-
                     const num_lights = self.params.point_lights.len;
                     u_block.addFloat("u_num_point_lights", @floatFromInt(num_lights));
 
-                    // debug.log("Adding {d} point lights.", .{num_lights});
-
-                    // list of light positions
+                    // each light is packed as two vec4s
                     for (0..8) |i| {
                         if (i < num_lights) {
-                            const light_pos = self.params.point_lights[i].pos;
-                            const light_radius = self.params.point_lights[i].radius;
-                            u_block.addVec4("u_point_light_positions", Vec4.new(light_pos.x, light_pos.y, light_pos.z, light_radius));
+                            u_block.addBytesFrom(&self.params.point_lights[i].toArray(), UniformBlockType.VEC4);
                         } else {
-                            u_block.addVec4("u_point_light_positions", Vec4.new(0, 0, 0, 0));
-                        }
-                    }
-
-                    // list of light colors
-                    for (0..8) |i| {
-                        if (i < num_lights) {
-                            const light_color = self.params.point_lights[i].color;
-                            const light_brightness = self.params.point_lights[i].brightness;
-                            u_block.addVec4("u_point_light_colors", Vec4.new(light_color.r, light_color.g, light_color.b, light_brightness));
-                        } else {
-                            u_block.addVec4("u_point_light_colors", Vec4.new(0, 0, 0, 0));
+                            u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
+                            u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
                         }
                     }
                 },
