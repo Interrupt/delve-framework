@@ -183,6 +183,76 @@ const MDLSkinGroup_ = struct {
     }
 };
 
+const MDLFrame_ = struct {
+    min: TriVertex_,
+    max: TriVertex_,
+    name: [16]u8,
+    vertexes: []TriVertex_,
+
+    pub fn read(allocator: Allocator, file: File, vertex_count: u32) !MDLFrame_ {
+        // Frame bounds
+        const min = try TriVertex_.read(file);
+        const max = try TriVertex_.read(file);
+
+        // Frame name
+        const name: []u8 = try allocator.alloc(u8, 16);
+        _ = try file.read(name);
+
+        // Frame vertices
+        const vertbuff = try allocator.alloc(u8, @sizeOf(TriVertex_) * vertex_count);
+        defer allocator.free(vertbuff);
+        _ = try file.read(vertbuff);
+        const trivertexes = try bytesToStructArray(TriVertex_, vertbuff);
+
+        return .{
+            .min = min,
+            .max = max,
+            .name = name[0..16].*,
+            .vertexes = trivertexes
+        };
+    }
+};
+
+const MDLFrameGroup_ = struct {
+    min: TriVertex_,
+    max: TriVertex_,
+    count: u32,
+    intervals: []f32,
+    frames: []MDLFrame_,
+
+    pub fn read(allocator: Allocator, file: File, vertex_count: u32) !MDLFrameGroup_ {
+        // Frame count
+        var bytes: [4]u8 = undefined;
+        _ = try file.read(&bytes);
+        const count: u32 = @bitCast(bytes);
+
+        // Frame bounds
+        const min = try TriVertex_.read(file);
+        const max = try TriVertex_.read(file);
+
+        debug.log("DEBUG: {}", .{min});
+
+        // Frame intervals
+        const intervals_buff = try allocator.alloc(u8, count * @sizeOf(f32));
+        _ = try file.read(intervals_buff);
+        const intervals: []f32 = try bytesToStructArray(f32, intervals_buff);
+
+        // Frames
+        const frames: []MDLFrame_ = try allocator.alloc(MDLFrame_, count);
+        for (0..count) |i| {
+            frames[i] = try MDLFrame_.read(allocator, file, vertex_count);
+        }
+
+        return .{
+            .min = min,
+            .max = max,
+            .count = count,
+            .intervals = intervals,
+            .frames = frames
+        };
+    }
+};
+
 const SkinType = enum(u32) {
     SINGLE,
     GROUP
@@ -201,7 +271,17 @@ const Triangle_ = extern struct {
 
 const TriVertex_ = struct {
     vertex: [3]u8,
-    light_index: u8
+    light_index: u8,
+
+    pub fn read(file: File) !TriVertex_ {
+        var bytes: [4]u8 = undefined;
+        _ = try file.read(&bytes);
+
+        return .{
+            .vertex = bytes[0..3].*,
+            .light_index = bytes[3]
+        };
+    }
 };
 
 pub const SingleFrameStruct = extern struct {
@@ -330,16 +410,11 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
     defer allocator.free(vertbuff);
 
     for (0..header.frame_count) |i| {
-        const buff: []u8 = try allocator.alloc(u8, @sizeOf(SingleFrameStruct));
-        _ = try file.read(buff);
-        const frame_struct = std.mem.bytesToValue(SingleFrameStruct, buff);
+        _ = try file.read(&work);
+        const frame_type: u32 = @bitCast(work);
 
-        if (frame_struct.type == 0) {
-            const name: []u8 = try allocator.alloc(u8, 16);
-            _ = try file.read(name);
-            _ = try file.read(vertbuff);
-
-            const trivertexes = try bytesToStructArray(TriVertex_, vertbuff);
+        if (frame_type == 0) {
+            const frame = try MDLFrame_.read(allocator, file, header.vertex_count);
 
             var builder = mesh.MeshBuilder.init(allocator);
             defer builder.deinit();
@@ -349,9 +424,9 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
                 const idx1 = triangle.indexes[1];
                 const idx2 = triangle.indexes[2];
 
-                const tv0 = trivertexes[idx0];
-                const tv1 = trivertexes[idx1];
-                const tv2 = trivertexes[idx2];
+                const tv0 = frame.vertexes[idx0];
+                const tv1 = frame.vertexes[idx1];
+                const tv2 = frame.vertexes[idx2];
 
                 const stv0 = stvertices[idx0];
                 const stv1 = stvertices[idx1];
@@ -368,26 +443,17 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
 
             frames[i] = .{
                 .single = .{
-                    .name = name[0..16].*,
+                    .name = frame.name[0..16].*,
                     .mesh = frame_mesh
                 }
             };
         }
         else {
-            _ = try file.read(&work);
-            const count: u32 = @bitCast(work);
+            const group = try MDLFrameGroup_.read(allocator, file, header.vertex_count);
 
-            const intervals_buff = try allocator.alloc(u8, count * @sizeOf(f32));
-            _ = try file.read(intervals_buff);
-            const intervals: []f32 = try bytesToStructArray(f32, intervals_buff);
+            var meshes: []mesh.Mesh = try allocator.alloc(mesh.Mesh, group.count);
 
-            var meshes: []mesh.Mesh = try allocator.alloc(mesh.Mesh, count);
-
-            for (0..count) |j| {
-                _ = try file.read(vertbuff);
-
-                const trivertexes = try bytesToStructArray(TriVertex_, vertbuff);
-
+            for (0..group.count) |j| {
                 var builder = mesh.MeshBuilder.init(allocator);
                 defer builder.deinit();
 
@@ -396,9 +462,9 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
                     const idx1 = triangle.indexes[1];
                     const idx2 = triangle.indexes[2];
 
-                    const tv0 = trivertexes[idx0];
-                    const tv1 = trivertexes[idx1];
-                    const tv2 = trivertexes[idx2];
+                    const tv0 = group.frames[j].vertexes[idx0];
+                    const tv1 = group.frames[j].vertexes[idx1];
+                    const tv2 = group.frames[j].vertexes[idx2];
 
                     const stv0 = stvertices[idx0];
                     const stv1 = stvertices[idx1];
@@ -416,7 +482,7 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
 
             frames[i] = .{
                 .group = .{
-                    .intervals = intervals,
+                    .intervals = group.intervals,
                     .meshes = meshes
                 }
             };
