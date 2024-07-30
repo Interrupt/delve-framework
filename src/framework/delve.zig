@@ -76,6 +76,7 @@ pub const shaders = struct {
     pub const default = @import("graphics/shaders/default.glsl.zig");
     pub const default_emissive = @import("graphics/shaders/emissive.glsl.zig");
     pub const default_skinned = @import("graphics/shaders/skinned.glsl.zig");
+    pub const default_basic_lighting = @import("graphics/shaders/basic-lighting.glsl.zig");
     pub const default_skinned_basic_lighting = @import("graphics/shaders/skinned-basic-lighting.glsl.zig");
 };
 
