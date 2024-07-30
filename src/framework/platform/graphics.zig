@@ -118,8 +118,8 @@ pub const Anything = struct {
     size: usize = 0,
 };
 
-/// A mesh vertex
-pub const Vertex = struct {
+/// A packed mesh vertex
+pub const PackedVertex = struct {
     x: f32,
     y: f32,
     z: f32,
@@ -127,7 +127,7 @@ pub const Vertex = struct {
     u: f32 = 0,
     v: f32 = 0,
 
-    pub fn mulMat4(left: Vertex, right: Mat4) Vertex {
+    pub fn mulMat4(left: PackedVertex, right: Mat4) PackedVertex {
         var ret = left;
         const vec = Vec3.new(left.x, left.y, left.z).mulMat4(right);
         ret.x = vec.x;
@@ -136,9 +136,18 @@ pub const Vertex = struct {
         return ret;
     }
 
-    pub fn getPosition(self: *const Vertex) Vec3 {
+    pub fn getPosition(self: *const PackedVertex) Vec3 {
         return Vec3.new(self.x, self.y, self.z);
     }
+};
+
+// An unpacked mesh vertex
+pub const Vertex = struct {
+    pos: Vec3 = Vec3.zero,
+    uv: Vec2 = Vec2.zero,
+    color: colors.Color = colors.white,
+    normal: Vec3 = Vec3.zero,
+    tangent: Vec4 = Vec4.zero,
 };
 
 pub const PointLight = struct {
@@ -249,7 +258,7 @@ pub const VertexLayout = struct {
 pub const VertexLayoutAttribute = struct {
     binding: VertexBinding = .VERT_PACKED,
     buffer_slot: u8 = 0,
-    item_size: usize = @sizeOf(Vertex),
+    item_size: usize = @sizeOf(PackedVertex),
 };
 
 /// A shader's view of the vertex attributes
@@ -908,7 +917,7 @@ pub fn init() !void {
     debugtext.setup(text_desc);
 
     // Create vertex buffer with debug quad vertices
-    const debug_vertices = &[_]Vertex{
+    const debug_vertices = &[_]PackedVertex{
         .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
         .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 1, .v = 0 },
         .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 1, .v = 1 },

@@ -280,7 +280,7 @@ pub const Vec4 = extern struct {
         return Vec3.new(v.x, v.y, v.z);
     }
 
-    pub const zero = Vec4.new(0.0, 0.0, 0.0, 0.0);
+    pub const zero = Vec4.new(0.0, 0.0, 0.0, 1.0);
 };
 
 pub const Mat4 = extern struct {
