@@ -820,6 +820,8 @@ pub const Material = struct {
                     u_block.addBytesFrom(&self.params.directional_light.toArray(), UniformBlockType.VEC4);
                 },
                 .POINT_LIGHTS_8 => {
+                    // TODO: This is slow! Should we just keep the lists of light positions and colors as the shaders expect them?
+
                     const num_lights = self.params.point_lights.len;
                     u_block.addFloat("u_num_point_lights", @floatFromInt(num_lights));
 
