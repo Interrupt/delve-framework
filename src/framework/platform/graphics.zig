@@ -141,13 +141,24 @@ pub const PackedVertex = struct {
     }
 };
 
-// An unpacked mesh vertex
+// An unpacked mesh vertex. Will need to be turned into a packed mesh vertex for rendering
 pub const Vertex = struct {
     pos: Vec3 = Vec3.zero,
     uv: Vec2 = Vec2.zero,
     color: colors.Color = colors.white,
     normal: Vec3 = Vec3.zero,
     tangent: Vec4 = Vec4.zero,
+
+    pub fn mulMat4(left: Vertex, right: Mat4) Vertex {
+        var ret = left;
+        ret.pos = left.pos.mulMat4(right);
+        return ret;
+    }
+
+    // returns the packed version of this vertex
+    pub fn pack(self: *const Vertex) PackedVertex {
+        return .{ .x = self.pos.x, .y = self.pos.y, .z = self.pos.z, .u = self.uv.x, .v = self.uv.y, .color = self.color.toInt() };
+    }
 };
 
 pub const PointLight = struct {
