@@ -84,15 +84,15 @@ void main() {
 
     // simple lighting!
     for(int i = 0; i < int(u_num_point_lights); ++i) {
-        vec4 lightPosEye = u_point_light_positions[i];
-        vec3 lightColor = u_point_light_colors[i].xyz * 10.0;
+        vec3 lightPosEye = u_point_light_positions[i].xyz;
+        vec3 lightColor = u_point_light_colors[i].xyz;
 
-        vec4 lightMinusPos = (lightPosEye - position);
-        vec4 lightDir = normalize(lightMinusPos);
-        float lightBrightness = max(dot( lightDir, vec4(normal, 0.0)), 0.0);
+        vec3 lightMinusPos = (lightPosEye - position.xyz);
+        vec3 lightDir = normalize(lightMinusPos);
+        float lightBrightness = max(dot( lightDir, normal), 0.0) * u_point_light_colors[i].a;
 
         float dist = length(lightMinusPos);
-        float radius = 1.25;
+        float radius = u_point_light_positions[i].w;
         float attenuation = clamp(1.0 - dist/radius, 0.0, 1.0);
 
         // testing out a specular term

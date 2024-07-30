@@ -828,7 +828,9 @@ pub const Material = struct {
                     // list of light positions
                     for (0..8) |i| {
                         if (i < num_lights) {
-                            u_block.addVec4("u_point_light_positions", self.params.point_lights[i].pos.toVec4());
+                            const light_pos = self.params.point_lights[i].pos;
+                            const light_radius = self.params.point_lights[i].radius;
+                            u_block.addVec4("u_point_light_positions", Vec4.new(light_pos.x, light_pos.y, light_pos.z, light_radius));
                         } else {
                             u_block.addVec4("u_point_light_positions", Vec4.new(0, 0, 0, 0));
                         }
@@ -837,9 +839,11 @@ pub const Material = struct {
                     // list of light colors
                     for (0..8) |i| {
                         if (i < num_lights) {
-                            u_block.addColor("u_point_light_colors", self.params.point_lights[i].color);
+                            const light_color = self.params.point_lights[i].color;
+                            const light_brightness = self.params.point_lights[i].brightness;
+                            u_block.addVec4("u_point_light_colors", Vec4.new(light_color.r, light_color.g, light_color.b, light_brightness));
                         } else {
-                            u_block.addColor("u_point_light_colors", colors.black);
+                            u_block.addVec4("u_point_light_colors", Vec4.new(0, 0, 0, 0));
                         }
                     }
                 },

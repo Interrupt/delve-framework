@@ -179,8 +179,8 @@ fn on_draw() void {
     mesh_test.mesh.material.params.directional_light = directional_light;
 
     // add some point lights
-    const point_light_1: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(std.math.sin(time * 0.01), 0.8, -0.5), .color = delve.colors.green };
-    const point_light_2: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(std.math.sin(time * -0.0125), 0.25, 0.5), .color = delve.colors.red };
+    const point_light_1: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(std.math.sin(time * 0.01), 0.8, -0.5), .radius = 5.0, .color = delve.colors.green };
+    const point_light_2: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(std.math.sin(time * -0.0125), 0.25, 0.5), .radius = 1.0, .color = delve.colors.red };
     const point_lights: []const delve.platform.graphics.PointLight = &[_]delve.platform.graphics.PointLight{ point_light_1, point_light_2 };
 
     mesh_test.mesh.material.params.point_lights = @constCast(point_lights);
