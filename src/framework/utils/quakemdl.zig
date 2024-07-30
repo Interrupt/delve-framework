@@ -7,6 +7,8 @@ const mem = @import("../mem.zig");
 const mesh = @import("../graphics/mesh.zig");
 const graphics = @import("../platform/graphics.zig");
 
+const File = std.fs.File;
+
 pub const MDL = struct {
     frames: []MDLFrameType,
     skins: []MDLSkinType
@@ -67,6 +69,14 @@ pub const MDLFileHeader = extern struct {
     sync_type: u32,
     flags: u32,
     size: u32,
+
+    pub fn read(file: File) !MDLFileHeader {
+        const size = @sizeOf(MDLFileHeader);
+        var bytes: [size]u8 = undefined;
+        _ = try file.read(&bytes);
+
+        return @bitCast(bytes);
+    }
 };
 
 pub const SkinType = enum(u32) {
@@ -134,12 +144,7 @@ pub fn get_mdl(path: []const u8) !MDL {
 
     defer file.close();
 
-    // Get binary data as unsigned bytes
-    const struct_size = @sizeOf(MDLFileHeader);
-    var bytes: [struct_size]u8 = undefined;
-    _ = try file.read(&bytes);
-
-    const header: MDLFileHeader = @bitCast(bytes);
+    const header = try MDLFileHeader.read(file);
 
     const allocator = mem.getAllocator();
 
