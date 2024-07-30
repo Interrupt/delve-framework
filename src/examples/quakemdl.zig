@@ -8,11 +8,7 @@ const math = delve.math;
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
 var camera: delve.graphics.camera.Camera = undefined;
-var material: graphics.Material = undefined;
 
-var cube1: delve.graphics.mesh.Mesh = undefined;
-var cube2: delve.graphics.mesh.Mesh = undefined;
-var cube3: delve.graphics.mesh.Mesh = undefined;
 var mdl: delve.utils.quakemdl.MDL = undefined;
 
 var time: f64 = 0.0;
@@ -45,24 +41,6 @@ pub fn on_init() !void {
     // create our camera
     camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 256.0, 64.0, math.Vec3.up);
 
-    // make a cube
-    cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2, 3, 1), delve.colors.white, material) catch {
-        delve.debug.log("Could not create cube!", .{});
-        return;
-    };
-
-    // and another
-    cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3, 0, -1), math.Vec3.new(1, 1, 2), delve.colors.green, material) catch {
-        delve.debug.log("Could not create cube!", .{});
-        return;
-    };
-
-    // and then a floor
-    cube3 = delve.graphics.mesh.createCube(math.Vec3.new(0, -8, 0), math.Vec3.new(64, 16, 64), delve.colors.white, material) catch {
-        delve.debug.log("Could not create cube!", .{});
-        return;
-    };
-
     mdl = try delve.utils.quakemdl.get_mdl("assets/meshes/player.mdl");
 
     // set a bg color
@@ -81,7 +59,7 @@ pub fn on_tick(delta: f32) void {
     camera.runSimpleCamera(8 * delta, 120 * delta, true);
 }
 
-var dd: f32 = 0;
+var mdl_frame_counter: f32 = 0;
 
 pub fn on_draw() void {
     const proj_view_matrix = camera.getProjView();
@@ -92,13 +70,9 @@ pub fn on_draw() void {
         return;
     }
 
-    //cube1.draw(proj_view_matrix, model.mul(math.Mat4.rotate(@floatCast(time * 40.0), math.Vec3.new(0, 1, 0))));
-    //cube2.draw(proj_view_matrix, model);
-    //cube3.draw(proj_view_matrix, model);
+    const mdl_frame_index = @as(u32, @intFromFloat(mdl_frame_counter)) % @as(u32, @intCast(mdl.frames.len));
 
-    const ddd = @as(u32, @intFromFloat(dd)) % @as(u32, @intCast(mdl.frames.len));
+    mdl.frames[mdl_frame_index].single.mesh.draw(proj_view_matrix, model);
 
-    mdl.frames[ddd].single.mesh.draw(proj_view_matrix, model);
-
-    dd += 0.1;
+    mdl_frame_counter += 0.1;
 }
