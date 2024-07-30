@@ -81,6 +81,15 @@ const MDLFileHeader_ = extern struct {
     }
 };
 
+const MDLMeshBuildConfig_ = struct {
+    stvertexes: []STVertex_,
+    triangles: []Triangle_,
+    skin_width: f32,
+    skin_height: f32,
+    transform: math.Mat4,
+    material: graphics.Material
+};
+
 const MDLSkin_ = struct {
     type: u32,
     width: u32,
@@ -284,12 +293,6 @@ const TriVertex_ = struct {
     }
 };
 
-pub const SingleFrameStruct = extern struct {
-    type: u32,
-    min: [4]u8,
-    max: [4]u8,
-};
-
 fn bytesToStructArray(comptime T: type, bytes: []u8) std.mem.Allocator.Error![]T {
     const allocator = mem.getAllocator();
     const size: u32 = @sizeOf(T);
@@ -326,6 +329,40 @@ fn make_vertex(triangle: Triangle_, trivertex: TriVertex_, stvertex: STVertex_, 
     }
 
     return vertex;
+}
+
+fn makeMesh(allocator: Allocator, frame: MDLFrame_, config: MDLMeshBuildConfig_) !mesh.Mesh {
+    var builder = mesh.MeshBuilder.init(allocator);
+    defer builder.deinit();
+
+    const triangles = config.triangles;
+    const stvertices = config.stvertexes;
+    const sw = config.skin_width;
+    const sh = config.skin_height;
+    const m = config.transform;
+    const material = config.material;
+
+    for (triangles) |triangle| {
+        const idx0 = triangle.indexes[0];
+        const idx1 = triangle.indexes[1];
+        const idx2 = triangle.indexes[2];
+
+        const tv0 = frame.vertexes[idx0];
+        const tv1 = frame.vertexes[idx1];
+        const tv2 = frame.vertexes[idx2];
+
+        const stv0 = stvertices[idx0];
+        const stv1 = stvertices[idx1];
+        const stv2 = stvertices[idx2];
+
+        const v0 = make_vertex(triangle, tv0, stv0, sw, sh);
+        const v1 = make_vertex(triangle, tv1, stv1, sw, sh);
+        const v2 = make_vertex(triangle, tv2, stv2, sw, sh);
+
+        _ = try builder.addTriangleFromVertices(v0, v1, v2, m);
+    }
+
+    return builder.buildMesh(material);
 }
 
 pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
@@ -391,8 +428,7 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
     const triangles = try bytesToStructArray(Triangle_, triangle_buff);
     defer allocator.free(triangles);
 
-    // Frames
-
+    // Transform
     var m = math.Mat4.identity;
     m = m.mul(math.Mat4.translate(math.vec3(header.origin[0], header.origin[2], header.origin[1])));
     m = m.mul(math.Mat4.scale(math.vec3(header.scale[0], header.scale[1], header.scale[2])));
@@ -403,43 +439,23 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
     m.m[2][1] = m.m[2][2];
     m.m[2][2] = 0;
 
-    const sw: f32 = @floatFromInt(header.skin_width);
-    const sh: f32 = @floatFromInt(header.skin_height);
+    const config: MDLMeshBuildConfig_ = .{
+        .skin_width = @floatFromInt(header.skin_width),
+        .skin_height =  @floatFromInt(header.skin_height),
+        .stvertexes = stvertices,
+        .triangles =  triangles,
+        .transform = m,
+        .material = default_material
+    };
 
-    const vertbuff = try allocator.alloc(u8, @sizeOf(TriVertex_) * header.vertex_count);
-    defer allocator.free(vertbuff);
-
+    // Frames
     for (0..header.frame_count) |i| {
         _ = try file.read(&work);
         const frame_type: u32 = @bitCast(work);
 
         if (frame_type == 0) {
             const frame = try MDLFrame_.read(allocator, file, header.vertex_count);
-
-            var builder = mesh.MeshBuilder.init(allocator);
-            defer builder.deinit();
-
-            for (triangles) |triangle| {
-                const idx0 = triangle.indexes[0];
-                const idx1 = triangle.indexes[1];
-                const idx2 = triangle.indexes[2];
-
-                const tv0 = frame.vertexes[idx0];
-                const tv1 = frame.vertexes[idx1];
-                const tv2 = frame.vertexes[idx2];
-
-                const stv0 = stvertices[idx0];
-                const stv1 = stvertices[idx1];
-                const stv2 = stvertices[idx2];
-
-                const v0 = make_vertex(triangle, tv0, stv0, sw, sh);
-                const v1 = make_vertex(triangle, tv1, stv1, sw, sh);
-                const v2 = make_vertex(triangle, tv2, stv2, sw, sh);
-
-                _ = try builder.addTriangleFromVertices(v0, v1, v2, m);
-            }
-
-            const frame_mesh = builder.buildMesh(default_material);
+            const frame_mesh = try makeMesh(allocator, frame, config);
 
             frames[i] = .{
                 .single = .{
@@ -452,32 +468,8 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
             const group = try MDLFrameGroup_.read(allocator, file, header.vertex_count);
 
             var meshes: []mesh.Mesh = try allocator.alloc(mesh.Mesh, group.count);
-
             for (0..group.count) |j| {
-                var builder = mesh.MeshBuilder.init(allocator);
-                defer builder.deinit();
-
-                for (triangles) |triangle| {
-                    const idx0 = triangle.indexes[0];
-                    const idx1 = triangle.indexes[1];
-                    const idx2 = triangle.indexes[2];
-
-                    const tv0 = group.frames[j].vertexes[idx0];
-                    const tv1 = group.frames[j].vertexes[idx1];
-                    const tv2 = group.frames[j].vertexes[idx2];
-
-                    const stv0 = stvertices[idx0];
-                    const stv1 = stvertices[idx1];
-                    const stv2 = stvertices[idx2];
-
-                    const v0 = make_vertex(triangle, tv0, stv0, sw, sh);
-                    const v1 = make_vertex(triangle, tv1, stv1, sw, sh);
-                    const v2 = make_vertex(triangle, tv2, stv2, sw, sh);
-
-                    _ = try builder.addTriangleFromVertices(v0, v1, v2, m);
-                }
-
-                meshes[j] = builder.buildMesh(default_material);
+                meshes[j] = try makeMesh(allocator, group.frames[j], config);
             }
 
             frames[i] = .{
