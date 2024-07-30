@@ -55,7 +55,7 @@ pub const MDLSkinGroup = struct {
     intervals: []f32
 };
 
-pub const MDLFileHeader = extern struct {
+const MDLFileHeader_ = extern struct {
     magic: [4]u8,
     version: u32,
     scale: [3]f32,
@@ -72,8 +72,8 @@ pub const MDLFileHeader = extern struct {
     flags: u32,
     size: u32,
 
-    pub fn read(file: File) !MDLFileHeader {
-        const size = @sizeOf(MDLFileHeader);
+    pub fn read(file: File) !MDLFileHeader_ {
+        const size = @sizeOf(MDLFileHeader_);
         var bytes: [size]u8 = undefined;
         _ = try file.read(&bytes);
 
@@ -81,7 +81,7 @@ pub const MDLFileHeader = extern struct {
     }
 };
 
-pub const MDLSkin_ = struct {
+const MDLSkin_ = struct {
     type: u32,
     width: u32,
     height: u32,
@@ -124,7 +124,7 @@ pub const MDLSkin_ = struct {
     }
 };
 
-pub const MDLSkinGroup_ = struct {
+const MDLSkinGroup_ = struct {
     type: u32,
     width: u32,
     height: u32,
@@ -183,23 +183,23 @@ pub const MDLSkinGroup_ = struct {
     }
 };
 
-pub const SkinType = enum(u32) {
+const SkinType = enum(u32) {
     SINGLE,
     GROUP
 };
 
-pub const STVertex = extern struct {
+const STVertex_ = extern struct {
     on_seam: u32,
     s: u32,
     t: u32
 };
 
-pub const Triangle = extern struct {
+const Triangle_ = extern struct {
     faces_front: u32,
     indexes: [3]u32
 };
 
-pub const TriVertex = struct {
+const TriVertex_ = struct {
     vertex: [3]u8,
     light_index: u8
 };
@@ -210,7 +210,7 @@ pub const SingleFrameStruct = extern struct {
     max: [4]u8,
 };
 
-pub fn bytesToStructArray(comptime T: type, bytes: []u8) std.mem.Allocator.Error![]T {
+fn bytesToStructArray(comptime T: type, bytes: []u8) std.mem.Allocator.Error![]T {
     const allocator = mem.getAllocator();
     const size: u32 = @sizeOf(T);
     const length: u32 = @as(u32, @intCast(bytes.len)) / size;
@@ -224,7 +224,7 @@ pub fn bytesToStructArray(comptime T: type, bytes: []u8) std.mem.Allocator.Error
     return result;
 }
 
-pub fn peek(file: File, buff: []u8) ![]u8 {
+fn peek(file: File, buff: []u8) ![]u8 {
     const offset = try file.getPos();
     _ = try file.read(buff);
     _ = try file.seekTo(offset);
@@ -232,7 +232,7 @@ pub fn peek(file: File, buff: []u8) ![]u8 {
     return buff;
 }
 
-fn make_vertex(triangle: Triangle, trivertex: TriVertex, stvertex: STVertex, skin_width: f32, skin_height: f32) graphics.Vertex {
+fn make_vertex(triangle: Triangle_, trivertex: TriVertex_, stvertex: STVertex_, skin_width: f32, skin_height: f32) graphics.Vertex {
     var vertex: graphics.Vertex = .{
         .x = @floatFromInt(trivertex.vertex[0]),
         .y = @floatFromInt(trivertex.vertex[1]),
@@ -256,7 +256,7 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
 
     defer file.close();
 
-    const header = try MDLFileHeader.read(file);
+    const header = try MDLFileHeader_.read(file);
 
     const frames = try allocator.alloc(MDLFrameType, header.frame_count);
     const skins = try allocator.alloc(MDLSkinType, header.skin_count);
@@ -272,7 +272,6 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
             const skin = try MDLSkin_.read(allocator, file, header.skin_width, header.skin_height);
             const texture = try skin.toTexture(allocator);
             skins[i] = .{ .single = .{ .texture = texture } };
-
         }
         else if (skin_type == SkinType.GROUP) {
             const group = try MDLSkinGroup_.read(allocator, file, header.skin_width, header.skin_height);
@@ -299,17 +298,17 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
     });
 
     // ST Vertexes
-    const stvert_buff: []u8 = try allocator.alloc(u8, @sizeOf(STVertex) * header.vertex_count);
+    const stvert_buff: []u8 = try allocator.alloc(u8, @sizeOf(STVertex_) * header.vertex_count);
     defer allocator.free(stvert_buff);
     _ = try file.read(stvert_buff);
-    const stvertices = try bytesToStructArray(STVertex, stvert_buff);
+    const stvertices = try bytesToStructArray(STVertex_, stvert_buff);
     defer allocator.free(stvertices);
 
     // Triangles
-    const triangle_buff: []u8 = try allocator.alloc(u8, @sizeOf(Triangle) * header.triangle_count);
+    const triangle_buff: []u8 = try allocator.alloc(u8, @sizeOf(Triangle_) * header.triangle_count);
     defer allocator.free(triangle_buff);
     _ = try file.read(triangle_buff);
-    const triangles = try bytesToStructArray(Triangle, triangle_buff);
+    const triangles = try bytesToStructArray(Triangle_, triangle_buff);
     defer allocator.free(triangles);
 
     // Frames
@@ -327,7 +326,7 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
     const sw: f32 = @floatFromInt(header.skin_width);
     const sh: f32 = @floatFromInt(header.skin_height);
 
-    const vertbuff = try allocator.alloc(u8, @sizeOf(TriVertex) * header.vertex_count);
+    const vertbuff = try allocator.alloc(u8, @sizeOf(TriVertex_) * header.vertex_count);
     defer allocator.free(vertbuff);
 
     for (0..header.frame_count) |i| {
@@ -340,7 +339,7 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
             _ = try file.read(name);
             _ = try file.read(vertbuff);
 
-            const trivertexes = try bytesToStructArray(TriVertex, vertbuff);
+            const trivertexes = try bytesToStructArray(TriVertex_, vertbuff);
 
             var builder = mesh.MeshBuilder.init(allocator);
             defer builder.deinit();
@@ -387,7 +386,7 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
             for (0..count) |j| {
                 _ = try file.read(vertbuff);
 
-                const trivertexes = try bytesToStructArray(TriVertex, vertbuff);
+                const trivertexes = try bytesToStructArray(TriVertex_, vertbuff);
 
                 var builder = mesh.MeshBuilder.init(allocator);
                 defer builder.deinit();
