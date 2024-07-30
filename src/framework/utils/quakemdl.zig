@@ -90,21 +90,6 @@ pub const TriVertex = struct {
     light_index: u8
 };
 
-pub const Frame = struct {
-    type: u32,
-    min: TriVertex,
-    max: TriVertex,
-    name: [16]u8,
-    vertexes: []TriVertex
-};
-
-pub const FrameStruct = extern struct {
-    type: u32,
-    min: [4]u8,
-    max: [4]u8,
-    name: [16]u8
-};
-
 pub const SingleFrameStruct = extern struct {
     type: u32,
     min: [4]u8,
