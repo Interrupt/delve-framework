@@ -241,6 +241,27 @@ pub const Vec4 = extern struct {
         return Vec4.new(x * inv_w, y * inv_w, z * inv_w, w);
     }
 
+    pub fn mulMat4(left: *const Vec4, right: Mat4) Vec4 {
+        var res = Vec4.zero;
+        res.x += left.x * right.m[0][0];
+        res.y += left.x * right.m[0][1];
+        res.z += left.x * right.m[0][2];
+        res.w += left.x * right.m[0][3];
+        res.x += left.y * right.m[1][0];
+        res.y += left.y * right.m[1][1];
+        res.z += left.y * right.m[1][2];
+        res.w += left.y * right.m[1][3];
+        res.x += left.z * right.m[2][0];
+        res.y += left.z * right.m[2][1];
+        res.z += left.z * right.m[2][2];
+        res.w += left.z * right.m[2][3];
+        res.x += left.w * right.m[3][0];
+        res.y += left.w * right.m[3][1];
+        res.z += left.w * right.m[3][2];
+        res.w += left.w * right.m[3][3];
+        return res;
+    }
+
     pub fn len(self: *const Vec4) f32 {
         const v = Vec3.new(self.x, self.y, self.z);
         return math.sqrt(v.dot(Vec3.new(v.x, v.y, v.z)));
@@ -258,6 +279,8 @@ pub const Vec4 = extern struct {
     pub fn toVec3(v: *const Vec4) Vec3 {
         return Vec3.new(v.x, v.y, v.z);
     }
+
+    pub const zero = Vec4.new(0.0, 0.0, 0.0, 0.0);
 };
 
 pub const Mat4 = extern struct {

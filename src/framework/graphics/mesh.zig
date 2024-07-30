@@ -305,15 +305,18 @@ pub const MeshBuilder = struct {
         const indices = &[_]u32{ 0, 1, 2, 0, 2, 3 };
 
         const v_pos = @as(u32, @intCast(self.vertices.items.len));
+        const normal = Vec3.z_axis.mulMat4(transform).norm().toArray();
+        const tangent = math.Vec4.new(1.0, 0.0, 0.0, 1.0).mulMat4(transform).toArray();
+
         for (verts) |vert| {
             try self.vertices.append(Vertex.mulMat4(vert, transform));
+            try self.normals.append(normal);
+            try self.tangents.append(tangent);
         }
 
         for (indices) |idx| {
             try self.indices.append(idx + v_pos);
         }
-
-        // todo: add normals and tangents
     }
 
     /// Adds a rectangle to the mesh builder
@@ -340,10 +343,17 @@ pub const MeshBuilder = struct {
             .{ .x = v2.x, .y = v2.y, .z = v2.z, .color = color_i, .u = u_2, .v = v },
         };
 
+        const normal = v0.cross(v1).mulMat4(transform).norm().toArray();
+
+        // todo: should the tangent get passed in?
+        const tangent = math.Vec4.new(1.0, 0.0, 0.0, 1.0).mulMat4(transform).toArray();
+
         const indices = &[_]u32{ 0, 1, 2 };
 
         for (verts) |vert| {
             try self.vertices.append(Vertex.mulMat4(vert, transform));
+            try self.normals.append(normal);
+            try self.tangents.append(tangent);
         }
 
         const v_pos = @as(u32, @intCast(self.indices.items.len));
@@ -358,11 +368,18 @@ pub const MeshBuilder = struct {
         try self.vertices.append(Vertex.mulMat4(v1, transform));
         try self.vertices.append(Vertex.mulMat4(v2, transform));
 
+        const normal = v0.getPosition().cross(v1.getPosition()).mulMat4(transform).norm().toArray();
+
+        // todo: should the tangent get passed in?
+        const tangent = math.Vec4.new(1.0, 0.0, 0.0, 1.0).mulMat4(transform).toArray();
+
         const indices = &[_]u32{ 0, 1, 2 };
 
         const v_pos = @as(u32, @intCast(self.indices.items.len));
         for (indices) |idx| {
             try self.indices.append(idx + v_pos);
+            try self.normals.append(normal);
+            try self.tangents.append(tangent);
         }
     }
 
