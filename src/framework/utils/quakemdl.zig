@@ -7,6 +7,7 @@ const mem = @import("../mem.zig");
 const mesh = @import("../graphics/mesh.zig");
 const graphics = @import("../platform/graphics.zig");
 
+const assert = std.debug.assert;
 const Allocator = std.mem.Allocator;
 const File = std.fs.File;
 
@@ -80,6 +81,108 @@ pub const MDLFileHeader = extern struct {
     }
 };
 
+pub const MDLSkin_ = struct {
+    type: u32,
+    width: u32,
+    height: u32,
+    pixels: []u8,
+
+    pub fn read(allocator: Allocator, file: File, width: u32, height: u32) !MDLSkin_ {
+        // Skin type
+        var bytes: [4]u8 = undefined;
+        _ = try file.read(&bytes);
+        const skin_type: u32 = @bitCast(bytes);
+        assert(skin_type == 0);
+
+        // Skin pixels
+        const size: u32 = width * height;
+        const pixels: []u8 = try allocator.alloc(u8, size);
+        _ = try file.read(pixels);
+        //defer allocator.free(indexes);
+
+        return .{
+            .type = skin_type,
+            .width = width,
+            .height = height,
+            .pixels = pixels
+        };
+    }
+
+    pub fn toTexture(self: *const MDLSkin_, allocator: Allocator) !graphics.Texture {
+        const size: u32 = self.width * self.height;
+        const bytes = try allocator.alloc(u8, size * 4);
+
+        for (0.., self.pixels) |j, index| {
+            const i = @as(u32, index);
+            bytes[(j * 4) + 0] = Palette[(i * 3) + 0];
+            bytes[(j * 4) + 1] = Palette[(i * 3) + 1];
+            bytes[(j * 4) + 2] = Palette[(i * 3) + 2];
+            bytes[(j * 4) + 3] = 255;
+        }
+
+        return graphics.Texture.initFromBytes(self.width, self.height, bytes);
+    }
+};
+
+pub const MDLSkinGroup_ = struct {
+    type: u32,
+    width: u32,
+    height: u32,
+    count: u32,
+    intervals: []f32,
+    pixels: []u8,
+
+    pub fn read(allocator: Allocator, file: File, width: u32, height: u32) !MDLSkinGroup_ {
+        // Skin type
+        var bytes: [4]u8 = undefined;
+        _ = try file.read(&bytes);
+        const skin_type: u32 = @bitCast(bytes);
+        assert(skin_type != 0);
+
+        // Skin count
+        _ = try file.read(&bytes);
+        const count: u32 = @bitCast(bytes);
+
+        // Skin intervals
+        const intervals_buff = try allocator.alloc(u8, count * @sizeOf(f32));
+        _ = try file.read(intervals_buff);
+        const intervals: []f32 = try bytesToStructArray(f32, intervals_buff);
+
+        // Skin pixels
+        const size: u32 = width * height * count;
+        const pixels: []u8 = try allocator.alloc(u8, size);
+        _ = try file.read(pixels);
+
+        return .{
+            .type = skin_type,
+            .width = width,
+            .height = height,
+            .count = count,
+            .intervals = intervals,
+            .pixels = pixels
+        };
+    }
+
+    pub fn toTexture(self: *const MDLSkinGroup_, allocator: Allocator, index: u32) !graphics.Texture {
+        const size: u32 = self.width * self.height;
+        const bytes = try allocator.alloc(u8, size * 4);
+
+        const start = index * size;
+        const end = start + size;
+        const pixels = self.pixels[start..end];
+
+        for (0.., pixels) |j, index_| {
+            const i = @as(u32, index_);
+            bytes[(j * 4) + 0] = Palette[(i * 3) + 0];
+            bytes[(j * 4) + 1] = Palette[(i * 3) + 1];
+            bytes[(j * 4) + 2] = Palette[(i * 3) + 2];
+            bytes[(j * 4) + 3] = 255;
+        }
+
+        return graphics.Texture.initFromBytes(self.width, self.height, bytes);
+    }
+};
+
 pub const SkinType = enum(u32) {
     SINGLE,
     GROUP
@@ -121,6 +224,14 @@ pub fn bytesToStructArray(comptime T: type, bytes: []u8) std.mem.Allocator.Error
     return result;
 }
 
+pub fn peek(file: File, buff: []u8) ![]u8 {
+    const offset = try file.getPos();
+    _ = try file.read(buff);
+    _ = try file.seekTo(offset);
+
+    return buff;
+}
+
 fn make_vertex(triangle: Triangle, trivertex: TriVertex, stvertex: STVertex, skin_width: f32, skin_height: f32) graphics.Vertex {
     var vertex: graphics.Vertex = .{
         .x = @floatFromInt(trivertex.vertex[0]),
@@ -153,58 +264,30 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
     var work: [4]u8 = undefined;
 
     // Skins
-
-    const indexes: []u8 = try allocator.alloc(u8, header.skin_height * header.skin_width);
-    defer allocator.free(indexes);
-
-    const pixel_size = header.skin_width * header.skin_height * 4;
-
     for (0..header.skin_count) |i| {
-        _ = try file.read(&work);
+        _ = try peek(file, &work);
         const skin_type: SkinType = @enumFromInt(@as(u32, @bitCast(work)));
 
         if (skin_type == SkinType.SINGLE) {
-            _ = try file.read(indexes);
-
-            // Convert indices to RGBA
-            const image_bytes = try allocator.alloc(u8, pixel_size);
-            for (0.., indexes) |j, index| {
-                image_bytes[(j * 4) + 0] = Palette[(@as(u32, index) * 3) + 0];
-                image_bytes[(j * 4) + 1] = Palette[(@as(u32, index) * 3) + 1];
-                image_bytes[(j * 4) + 2] = Palette[(@as(u32, index) * 3) + 2];
-                image_bytes[(j * 4) + 3] = 255;
-            }
-
-            const texture = graphics.Texture.initFromBytes(header.skin_width, header.skin_height, image_bytes);
+            const skin = try MDLSkin_.read(allocator, file, header.skin_width, header.skin_height);
+            const texture = try skin.toTexture(allocator);
             skins[i] = .{ .single = .{ .texture = texture } };
 
         }
         else if (skin_type == SkinType.GROUP) {
-            _ = try file.read(&work);
-            const count: u32 = @bitCast(work);
+            const group = try MDLSkinGroup_.read(allocator, file, header.skin_width, header.skin_height);
 
-            const intervals_buff = try allocator.alloc(u8, count * @sizeOf(f32));
-            _ = try file.read(intervals_buff);
-            const intervals: []f32 = try bytesToStructArray(f32, intervals_buff);
-
-            const textures: []graphics.Texture = try allocator.alloc(graphics.Texture, count);
-
-            for (0..count) |j| {
-                _ = try file.read(indexes);
-
-                // Convert indices to RGBA
-                const image_bytes = try allocator.alloc(u8, pixel_size);
-                for (0.., indexes) |k, index| {
-                    image_bytes[(k * 4) + 0] = Palette[(@as(u32, index) * 3) + 0];
-                    image_bytes[(k * 4) + 1] = Palette[(@as(u32, index) * 3) + 1];
-                    image_bytes[(k * 4) + 2] = Palette[(@as(u32, index) * 3) + 2];
-                    image_bytes[(k * 4) + 3] = 255;
-                }
-
-                textures[j] = graphics.Texture.initFromBytes(header.skin_width, header.skin_height, image_bytes);
+            const textures: []graphics.Texture = try allocator.alloc(graphics.Texture, group.count);
+            for (0..group.count) |j| {
+                textures[j] = try group.toTexture(allocator, @as(u32, @intCast(j)));
             }
 
-            skins[i] = .{ .group = .{ .intervals = intervals, .textures = textures } };
+            skins[i] = .{
+                .group = .{
+                    .intervals = group.intervals,
+                    .textures = textures
+                }
+            };
         }
     }
 
