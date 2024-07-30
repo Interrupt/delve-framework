@@ -41,7 +41,8 @@ pub fn on_init() !void {
     // create our camera
     camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 256.0, 64.0, math.Vec3.up);
 
-    mdl = try delve.utils.quakemdl.get_mdl("assets/meshes/player.mdl");
+    const allocator = delve.mem.getAllocator();
+    mdl = try delve.utils.quakemdl.get_mdl(allocator, "assets/meshes/player.mdl");
 
     // set a bg color
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_dark);

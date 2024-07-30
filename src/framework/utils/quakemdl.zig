@@ -7,6 +7,7 @@ const mem = @import("../mem.zig");
 const mesh = @import("../graphics/mesh.zig");
 const graphics = @import("../platform/graphics.zig");
 
+const Allocator = std.mem.Allocator;
 const File = std.fs.File;
 
 pub const MDL = struct {
@@ -136,7 +137,7 @@ fn make_vertex(triangle: Triangle, trivertex: TriVertex, stvertex: STVertex, ski
     return vertex;
 }
 
-pub fn get_mdl(path: []const u8) !MDL {
+pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
     var file = try std.fs.cwd().openFile(
         path,
         std.fs.File.OpenFlags{ .mode = .read_only }
@@ -145,8 +146,6 @@ pub fn get_mdl(path: []const u8) !MDL {
     defer file.close();
 
     const header = try MDLFileHeader.read(file);
-
-    const allocator = mem.getAllocator();
 
     const frames = try allocator.alloc(MDLFrameType, header.frame_count);
     const skins = try allocator.alloc(MDLSkinType, header.skin_count);
