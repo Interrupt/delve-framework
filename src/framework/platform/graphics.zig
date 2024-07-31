@@ -23,6 +23,7 @@ pub const shader_default = @import("../graphics/shaders/default.glsl.zig");
 
 const Vec2 = math.Vec2;
 const Vec3 = math.Vec3;
+const Vec4 = math.Vec4;
 const Mat4 = math.Mat4;
 pub const Color = colors.Color;
 
@@ -85,8 +86,19 @@ pub const MaterialUniformDefaults = enum(i32) {
     COLOR,
     COLOR_OVERRIDE,
     ALPHA_CUTOFF,
+    JOINTS_64,
+    JOINTS_256,
+    CAMERA_POSITION,
+    DIRECTIONAL_LIGHT,
+    POINT_LIGHTS_8,
 };
 
+// Default uniform block layout for meshes
+pub const DefaultVSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR };
+pub const DefaultFSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .COLOR_OVERRIDE, .ALPHA_CUTOFF };
+
+// Default uniform block layout for skinend meshes
+pub const DefaultSkinnedMeshVSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR, .JOINTS_64 };
 /// Default vertex shader uniform block layout
 pub const VSDefaultUniforms = struct {
     projViewMatrix: math.Mat4 align(16),
@@ -106,8 +118,8 @@ pub const Anything = struct {
     size: usize = 0,
 };
 
-/// A mesh vertex
-pub const Vertex = struct {
+/// A packed mesh vertex
+pub const PackedVertex = struct {
     x: f32,
     y: f32,
     z: f32,
@@ -115,7 +127,7 @@ pub const Vertex = struct {
     u: f32 = 0,
     v: f32 = 0,
 
-    pub fn mulMat4(left: Vertex, right: Mat4) Vertex {
+    pub fn mulMat4(left: PackedVertex, right: Mat4) PackedVertex {
         var ret = left;
         const vec = Vec3.new(left.x, left.y, left.z).mulMat4(right);
         ret.x = vec.x;
@@ -124,8 +136,54 @@ pub const Vertex = struct {
         return ret;
     }
 
-    pub fn getPosition(self: *const Vertex) Vec3 {
+    pub fn getPosition(self: *const PackedVertex) Vec3 {
         return Vec3.new(self.x, self.y, self.z);
+    }
+};
+
+// An unpacked mesh vertex. Will need to be turned into a packed mesh vertex for rendering
+pub const Vertex = struct {
+    pos: Vec3 = Vec3.zero,
+    uv: Vec2 = Vec2.zero,
+    color: colors.Color = colors.white,
+    normal: Vec3 = Vec3.zero,
+    tangent: Vec4 = Vec4.zero,
+
+    pub fn mulMat4(left: Vertex, right: Mat4) Vertex {
+        var ret = left;
+        ret.pos = left.pos.mulMat4(right);
+        ret.normal = left.normal.mulMat4(right);
+        ret.tangent = left.tangent.mulMat4(right);
+        return ret;
+    }
+
+    // returns the packed version of this vertex
+    pub fn pack(self: *const Vertex) PackedVertex {
+        return .{ .x = self.pos.x, .y = self.pos.y, .z = self.pos.z, .u = self.uv.x, .v = self.uv.y, .color = self.color.toInt() };
+    }
+};
+
+pub const PointLight = struct {
+    pos: Vec3 = Vec3.zero,
+    color: Color = colors.white,
+    radius: f32 = 1.0,
+    falloff: f32 = 1.0,
+    brightness: f32 = 1.0,
+
+    // Pack this light into eight floats so that it can be passed as two vec4s
+    pub fn toArray(self: *const PointLight) [8]f32 {
+        return [_]f32{ self.pos.x, self.pos.y, self.pos.z, self.radius, self.color.r * self.brightness, self.color.g * self.brightness, self.color.b * self.brightness, self.falloff };
+    }
+};
+
+pub const DirectionalLight = struct {
+    dir: Vec3 = Vec3.y_axis,
+    brightness: f32 = 1.0,
+    color: Color = colors.white,
+
+    // Pack this light into eight floats so that it can be passed as two vec4s
+    pub fn toArray(self: *const DirectionalLight) [8]f32 {
+        return [_]f32{ self.dir.x, self.dir.y, self.dir.z, self.brightness, self.color.r, self.color.g, self.color.b, self.color.a };
     }
 };
 
@@ -154,6 +212,11 @@ pub const Bindings = struct {
     /// Creates new buffers to hold these vertices and indices
     pub fn set(self: *Bindings, vertices: anytype, indices: anytype, normals: anytype, tangents: anytype, length: usize) void {
         BindingsImpl.set(self, vertices, indices, normals, tangents, length);
+    }
+
+    /// Creates new buffers to hold vertices, indices, and joints / weights
+    pub fn setWithJoints(self: *Bindings, vertices: anytype, indices: anytype, normals: anytype, tangents: anytype, joints: anytype, weights: anytype, length: usize) void {
+        BindingsImpl.setWithJoints(self, vertices, indices, normals, tangents, joints, weights, length);
     }
 
     /// Updates the existing buffers with new data
@@ -193,6 +256,8 @@ pub const VertexBinding = enum(i32) {
     VERT_PACKED,
     VERT_NORMALS,
     VERT_TANGENTS,
+    VERT_JOINTS,
+    VERT_WEIGHTS,
 };
 
 /// A vertex layout tells a shader how to use its attributes.
@@ -206,7 +271,7 @@ pub const VertexLayout = struct {
 pub const VertexLayoutAttribute = struct {
     binding: VertexBinding = .VERT_PACKED,
     buffer_slot: u8 = 0,
-    item_size: usize = @sizeOf(Vertex),
+    item_size: usize = @sizeOf(PackedVertex),
 };
 
 /// A shader's view of the vertex attributes
@@ -503,8 +568,8 @@ pub const MaterialConfig = struct {
     shader: ?Shader = null,
 
     // The layouts of the default (0th) vertex and fragment shaders
-    default_vs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR },
-    default_fs_uniform_layout: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .COLOR_OVERRIDE, .ALPHA_CUTOFF },
+    default_vs_uniform_layout: []const MaterialUniformDefaults = DefaultVSUniforms,
+    default_fs_uniform_layout: []const MaterialUniformDefaults = DefaultFSUniforms,
 
     // Samplers to create. Defaults to making one linearly filtered sampler
     samplers: []const FilterMode = &[_]FilterMode{.LINEAR},
@@ -512,6 +577,9 @@ pub const MaterialConfig = struct {
     // Number of uniform blocks to create. Default to 1 to always make the default block
     num_uniform_vs_blocks: u8 = 1,
     num_uniform_fs_blocks: u8 = 1,
+
+    // whether to automatically bind the 0 slot for a material using MaterialParams
+    use_default_params: bool = true,
 };
 
 /// Material params can get binded automatically to the default uniform block (0)
@@ -519,12 +587,22 @@ pub const MaterialParams = struct {
     draw_color: Color = colors.white,
     color_override: Color = colors.transparent,
     alpha_cutoff: f32 = 0.0,
+    joints: []Mat4 = undefined,
+    camera_position: Vec3 = undefined,
+    directional_light: DirectionalLight = undefined,
+    point_lights: []PointLight = undefined,
 };
+
+pub const UniformBlockType = enum(i32) { BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, VEC3, VEC4, MAT3, MAT4 };
 
 /// Holds the data for and builds a uniform block that can be passed to a shader
 pub const MaterialUniformBlock = struct {
     size: u64 = 0,
     bytes: std.ArrayList(u8),
+    last_type: UniformBlockType = undefined,
+
+    // TODO: Maybe the material uniform blocks should be mapped up front, data allocated, and then
+    // we can easily ask for offsets into the data block instead of piecing it together
 
     pub fn init() MaterialUniformBlock {
         return MaterialUniformBlock{
@@ -532,12 +610,31 @@ pub const MaterialUniformBlock = struct {
         };
     }
 
-    fn addBytesFrom(self: *MaterialUniformBlock, value: anytype) void {
+    pub fn addAlignmentPadding(self: *MaterialUniformBlock) void {
+        const sizef: f64 = @floatFromInt(self.size);
+        const commit_next: u64 = @intFromFloat(@ceil(sizef / 16));
+        const commit_size = commit_next * 16;
+
+        if (self.size < commit_size) {
+            const diff_bytes = commit_size - self.size;
+            self.addPadding(diff_bytes);
+            // debug.log("Added {d} padding bytes", .{diff_bytes});
+        }
+    }
+
+    pub fn addBytesFrom(self: *MaterialUniformBlock, value: anytype, uniform_type: UniformBlockType) void {
+        // follow std140 packing
+        if (uniform_type != self.last_type and self.size != 0) {
+            self.addAlignmentPadding();
+        }
+
         self.bytes.appendSlice(std.mem.asBytes(value)) catch {
             debug.log("Error adding material uniform!", .{});
             return;
         };
+
         self.size = self.bytes.items.len;
+        self.last_type = uniform_type;
     }
 
     /// Reset state for this new frame
@@ -547,51 +644,49 @@ pub const MaterialUniformBlock = struct {
 
     /// Commit data for this frame
     pub fn end(self: *MaterialUniformBlock) void {
-        // might need to add padding! seems to be aligned to 16 byte chunks
-        const sizef: f64 = @floatFromInt(self.size);
-        const commit_next: u64 = @intFromFloat(@ceil(sizef / 16));
-        const commit_size = commit_next * 16;
-
-        if (self.size < commit_size) {
-            const diff_bytes = commit_size - self.size;
-            self.addPadding(diff_bytes);
-        }
+        self.addAlignmentPadding();
     }
 
     /// Adds a float to the uniform block
     pub fn addFloat(self: *MaterialUniformBlock, name: [:0]const u8, val: f32) void {
         _ = name;
-        self.addBytesFrom(&val);
+        self.addBytesFrom(&val, UniformBlockType.FLOAT);
     }
 
     /// Adds a float array to the uniform block
     pub fn addFloats(self: *MaterialUniformBlock, name: [:0]const u8, val: []f32) void {
         _ = name;
-        self.addBytesFrom(&val);
+        self.addBytesFrom(&val, UniformBlockType.FLOAT);
     }
 
     /// Adds a matrix to the uniform block
     pub fn addMatrix(self: *MaterialUniformBlock, name: [:0]const u8, val: math.Mat4) void {
         _ = name;
-        self.addBytesFrom(&val);
+        self.addBytesFrom(&val, UniformBlockType.MAT4);
     }
 
     /// Adds a Vec2 to the uniform block
     pub fn addVec2(self: *MaterialUniformBlock, name: [:0]const u8, val: Vec2) void {
         _ = name;
-        self.addBytesFrom(&val);
+        self.addBytesFrom(&val, UniformBlockType.VEC2);
     }
 
     /// Adds a Vec3 to the uniform block
     pub fn addVec3(self: *MaterialUniformBlock, name: [:0]const u8, val: Vec3) void {
         _ = name;
-        self.addBytesFrom(&val);
+        self.addBytesFrom(&val.toArray(), UniformBlockType.VEC3);
+    }
+
+    /// Adds a Vec4 to the uniform block
+    pub fn addVec4(self: *MaterialUniformBlock, name: [:0]const u8, val: Vec4) void {
+        _ = name;
+        self.addBytesFrom(&val.toArray(), UniformBlockType.VEC4);
     }
 
     /// Adds a color to the uniform block
     pub fn addColor(self: *MaterialUniformBlock, name: [:0]const u8, val: Color) void {
         _ = name;
-        self.addBytesFrom(&val.toArray());
+        self.addBytesFrom(&val.toArray(), UniformBlockType.VEC4);
     }
 
     /// Adds [num] bytes of padding
@@ -640,6 +735,7 @@ pub const Material = struct {
     depth_write_enabled: bool,
     depth_compare: CompareFunc,
     cull_mode: CullMode,
+    use_default_params: bool = true,
 
     // Material params are used for automatic binding
     params: MaterialParams = MaterialParams{},
@@ -662,6 +758,7 @@ pub const Material = struct {
             .cull_mode = cfg.cull_mode,
             .default_vs_uniform_layout = cfg.default_vs_uniform_layout,
             .default_fs_uniform_layout = cfg.default_fs_uniform_layout,
+            .use_default_params = cfg.use_default_params,
         };
 
         // Make samplers from filter modes
@@ -736,6 +833,34 @@ pub const Material = struct {
                 .ALPHA_CUTOFF => {
                     u_block.addFloat("u_alphaCutoff", self.params.alpha_cutoff);
                 },
+                .JOINTS_64 => {
+                    u_block.addBytesFrom(self.params.joints[0..64], UniformBlockType.MAT4);
+                },
+                .JOINTS_256 => {
+                    u_block.addBytesFrom(self.params.joints[0..256], UniformBlockType.MAT4);
+                },
+                .CAMERA_POSITION => {
+                    // todo: why does this need to be a vec4? ordering gets off with a vec3
+                    const cam_array = [_]f32{ self.params.camera_position.x, self.params.camera_position.y, self.params.camera_position.z, 0.0 };
+                    u_block.addBytesFrom(&cam_array, UniformBlockType.VEC4);
+                },
+                .DIRECTIONAL_LIGHT => {
+                    u_block.addBytesFrom(&self.params.directional_light.toArray(), UniformBlockType.VEC4);
+                },
+                .POINT_LIGHTS_8 => {
+                    const num_lights = self.params.point_lights.len;
+                    u_block.addFloat("u_num_point_lights", @floatFromInt(num_lights));
+
+                    // each light is packed as two vec4s
+                    for (0..8) |i| {
+                        if (i < num_lights) {
+                            u_block.addBytesFrom(&self.params.point_lights[i].toArray(), UniformBlockType.VEC4);
+                        } else {
+                            u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
+                            u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
+                        }
+                    }
+                },
             }
         }
         u_block.end();
@@ -749,11 +874,11 @@ pub const Material = struct {
         const has_default_fs: bool = self.default_fs_uniform_layout.len > 0;
 
         // Set our default uniform vars first
-        if (has_default_vs) {
+        if (has_default_vs and self.use_default_params) {
             if (self.vs_uniforms[0] != null)
                 self.setDefaultUniformVars(self.default_vs_uniform_layout, &self.vs_uniforms[0].?, proj_view_matrix, model_matrix);
         }
-        if (has_default_fs) {
+        if (has_default_fs and self.use_default_params) {
             if (self.fs_uniforms[0] != null)
                 self.setDefaultUniformVars(self.default_fs_uniform_layout, &self.fs_uniforms[0].?, proj_view_matrix, model_matrix);
         }
@@ -805,7 +930,7 @@ pub fn init() !void {
     debugtext.setup(text_desc);
 
     // Create vertex buffer with debug quad vertices
-    const debug_vertices = &[_]Vertex{
+    const debug_vertices = &[_]PackedVertex{
         .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
         .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 1, .v = 0 },
         .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 1, .v = 1 },

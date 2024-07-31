@@ -1,6 +1,7 @@
 const std = @import("std");
 const debug = @import("debug.zig");
 const images = @import("images.zig");
+const meshes = @import("graphics/mesh.zig");
 const colors = @import("colors.zig");
 const fonts = @import("fonts.zig");
 const scripting = @import("scripting/manager.zig");
@@ -66,6 +67,7 @@ pub fn startSubsystems() !void {
     try colors.init();
     try input.init();
     try fonts.init();
+    try meshes.init();
 
     if (app_config.enable_audio)
         try audio.init();
@@ -75,6 +77,7 @@ pub fn stopSubsystems() void {
     colors.deinit();
     input.deinit();
     fonts.deinit();
+    meshes.deinit();
 
     if (app_config.enable_audio)
         audio.deinit();

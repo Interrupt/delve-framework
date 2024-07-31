@@ -76,6 +76,34 @@ pub const BindingsImpl = struct {
                     .VERT_PACKED => sg.asRange(vertices),
                     .VERT_NORMALS => sg.asRange(opt_normals),
                     .VERT_TANGENTS => sg.asRange(opt_tangents),
+                    else => sg.asRange(vertices),
+                },
+            });
+        }
+
+        if (self.config.vertex_layout.has_index_buffer) {
+            self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
+                .type = .INDEXBUFFER,
+                .data = sg.asRange(indices),
+            });
+        }
+    }
+
+    pub fn setWithJoints(self: *Bindings, vertices: anytype, indices: anytype, opt_normals: anytype, opt_tangents: anytype, opt_joints: anytype, opt_weights: anytype, length: usize) void {
+        if (self.impl.sokol_bindings == null) {
+            return;
+        }
+
+        self.length = length;
+
+        for (self.config.vertex_layout.attributes, 0..) |attr, idx| {
+            self.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
+                .data = switch (attr.binding) {
+                    .VERT_PACKED => sg.asRange(vertices),
+                    .VERT_NORMALS => sg.asRange(opt_normals),
+                    .VERT_TANGENTS => sg.asRange(opt_tangents),
+                    .VERT_JOINTS => sg.asRange(opt_joints),
+                    .VERT_WEIGHTS => sg.asRange(opt_weights),
                 },
             });
         }

@@ -50,7 +50,7 @@ pub fn on_init() !void {
 
     // Create a material out of the texture
     material = graphics.Material.init(.{
-        .shader = graphics.Shader.initDefault(.{}),
+        .shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }),
         .texture_0 = tex,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });

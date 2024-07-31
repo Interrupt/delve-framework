@@ -45,7 +45,7 @@ pub const BoundingBox = struct {
     }
 
     /// Creates a new bounding box that fits some verts
-    pub fn initFromVerts(verts: []const graphics.Vertex) BoundingBox {
+    pub fn initFromVerts(verts: []const graphics.PackedVertex) BoundingBox {
         if (verts.len == 0)
             return BoundingBox{ .center = Vec3.zero, .min = Vec3.zero, .max = Vec3.zero };
 
