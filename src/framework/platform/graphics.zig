@@ -152,6 +152,8 @@ pub const Vertex = struct {
     pub fn mulMat4(left: Vertex, right: Mat4) Vertex {
         var ret = left;
         ret.pos = left.pos.mulMat4(right);
+        ret.normal = left.normal.mulMat4(right);
+        ret.tangent = left.tangent.mulMat4(right);
         return ret;
     }
 
