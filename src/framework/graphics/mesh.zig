@@ -391,19 +391,26 @@ pub const MeshBuilder = struct {
         try self.vertices.append(v1.pack());
         try self.vertices.append(v2.pack());
 
-        try self.normals.append(v0.normal);
-        try self.normals.append(v1.normal);
-        try self.normals.append(v2.normal);
+        try self.normals.append(v0.normal.toArray());
+        try self.normals.append(v1.normal.toArray());
+        try self.normals.append(v2.normal.toArray());
 
-        try self.tangents.append(v0.tangent);
-        try self.tangents.append(v1.tangent);
-        try self.tangents.append(v2.tangent);
+        try self.tangents.append(v0.tangent.toArray());
+        try self.tangents.append(v1.tangent.toArray());
+        try self.tangents.append(v2.tangent.toArray());
 
         const indices = &[_]u32{ 0, 1, 2 };
         const v_pos = @as(u32, @intCast(self.indices.items.len));
         for (indices) |idx| {
             try self.indices.append(idx + v_pos);
         }
+    }
+
+    pub fn addTriangleFromVerticesWithTransform(self: *MeshBuilder, v0: Vertex, v1: Vertex, v2: Vertex, transform: math.Mat4) !void {
+        const v0_t = v0.mulMat4(transform);
+        const v1_t = v1.mulMat4(transform);
+        const v2_t = v2.mulMat4(transform);
+        try self.addTriangleFromVertices(v0_t, v1_t, v2_t);
     }
 
     pub fn addCube(self: *MeshBuilder, pos: Vec3, size: Vec3, transform: math.Mat4, color: Color) !void {
