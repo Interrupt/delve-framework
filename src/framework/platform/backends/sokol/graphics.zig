@@ -94,8 +94,6 @@ pub const BindingsImpl = struct {
             return;
         }
 
-        debug.log("Setting with joints!", .{});
-
         self.length = length;
 
         for (self.config.vertex_layout.attributes, 0..) |attr, idx| {
