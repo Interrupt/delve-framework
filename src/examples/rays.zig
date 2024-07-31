@@ -43,9 +43,11 @@ pub fn main() !void {
 }
 
 pub fn on_init() !void {
-    // Create a material out of the texture
+    const shader = delve.platform.graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
+
+    // Create some materials
     material_frustum = delve.platform.graphics.Material.init(.{
-        .shader = delve.platform.graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = delve.platform.graphics.createSolidTexture(0x66FFFFFF),
         .cull_mode = .NONE,
         .depth_write_enabled = false,
@@ -53,17 +55,17 @@ pub fn on_init() !void {
     });
 
     material_cube = delve.platform.graphics.Material.init(.{
-        .shader = delve.platform.graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = delve.platform.graphics.tex_white,
     });
 
     material_highlight = delve.platform.graphics.Material.init(.{
-        .shader = delve.platform.graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = delve.platform.graphics.createSolidTexture(0xFF0000CC),
     });
 
     material_hitpoint = delve.platform.graphics.Material.init(.{
-        .shader = delve.platform.graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = delve.platform.graphics.createSolidTexture(0xFFFF0000),
     });
 
@@ -74,17 +76,17 @@ pub fn on_init() !void {
     camera.position = delve.math.Vec3.new(0, 30, 32);
     camera.pitch_angle = -50.0;
 
-    cube_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(1, 1, 1), delve.colors.white, material_cube) catch {
+    cube_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(1, 1, 1), delve.colors.white, &material_cube) catch {
         delve.debug.fatal("Could not create cube mesh!", .{});
         return;
     };
 
-    hit_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(0.5, 0.5, 0.5), delve.colors.white, material_cube) catch {
+    hit_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(0.5, 0.5, 0.5), delve.colors.white, &material_cube) catch {
         delve.debug.fatal("Could not create cube mesh!", .{});
         return;
     };
 
-    ray_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(50, 0, 0), delve.math.Vec3.new(100, 0.1, 0.1), delve.colors.red, material_cube) catch {
+    ray_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(50, 0, 0), delve.math.Vec3.new(100, 0.1, 0.1), delve.colors.red, &material_cube) catch {
         delve.debug.fatal("Could not create cube mesh!", .{});
         return;
     };

@@ -41,9 +41,11 @@ pub fn main() !void {
 }
 
 pub fn on_init() !void {
-    // Create a material out of the texture
+    const shader = delve.platform.graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
+
+    // Create some materials
     material_frustum = delve.platform.graphics.Material.init(.{
-        .shader = delve.platform.graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = delve.platform.graphics.createSolidTexture(0x66FFFFFF),
         .cull_mode = .NONE,
         .depth_write_enabled = false,
@@ -51,12 +53,12 @@ pub fn on_init() !void {
     });
 
     material_cube = delve.platform.graphics.Material.init(.{
-        .shader = delve.platform.graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = delve.platform.graphics.tex_white,
     });
 
     material_highlight = delve.platform.graphics.Material.init(.{
-        .shader = delve.platform.graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = delve.platform.graphics.createSolidTexture(0xFF0000CC),
     });
 
@@ -74,7 +76,7 @@ pub fn on_init() !void {
         return;
     };
 
-    cube_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(1, 1, 1), delve.colors.white, material_cube) catch {
+    cube_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(1, 1, 1), delve.colors.white, &material_cube) catch {
         delve.debug.fatal("Could not create cube mesh!", .{});
         return;
     };
@@ -125,5 +127,5 @@ pub fn createFrustumMesh() !delve.graphics.mesh.Mesh {
 
     try builder.addFrustum(secondary_camera.getViewFrustum(), delve.math.Mat4.identity, delve.colors.cyan);
 
-    return builder.buildMesh(material_frustum);
+    return builder.buildMesh(&material_frustum);
 }
