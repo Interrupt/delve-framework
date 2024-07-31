@@ -43,9 +43,11 @@ pub fn main() !void {
 }
 
 pub fn on_init() !void {
-    // Create a material out of the texture
+    const shader = delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
+
+    // Create some materials
     material_frustum = delve.platform.graphics.Material.init(.{
-        .shader = delve.platform.graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = delve.platform.graphics.createSolidTexture(0x66FFFFFF),
         .cull_mode = .NONE,
         .depth_write_enabled = false,
@@ -53,17 +55,17 @@ pub fn on_init() !void {
     });
 
     material_cube = delve.platform.graphics.Material.init(.{
-        .shader = delve.platform.graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = delve.platform.graphics.tex_white,
     });
 
     material_highlight = delve.platform.graphics.Material.init(.{
-        .shader = delve.platform.graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = delve.platform.graphics.createSolidTexture(0xFF0000CC),
     });
 
     material_hitpoint = delve.platform.graphics.Material.init(.{
-        .shader = delve.platform.graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = delve.platform.graphics.createSolidTexture(0xFFFF0000),
     });
 

@@ -65,23 +65,25 @@ pub fn on_init() !void {
     offscreen_pass = graphics.RenderPass.init(.{ .width = 1024, .height = 768 });
     offscreen_pass_2 = graphics.RenderPass.init(.{ .width = 640, .height = 480 });
 
+    const shader = delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
+
     // Create a material out of the texture
     material1 = graphics.Material.init(.{
-        .shader = graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = tex,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
 
     // Create a material that uses our main offscreen render texture
     material2 = graphics.Material.init(.{
-        .shader = graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = offscreen_pass.render_texture_color,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
 
     // Create a material that uses our secondary offscreen render texture
     material3 = graphics.Material.init(.{
-        .shader = graphics.Shader.initDefault(.{}),
+        .shader = shader,
         .texture_0 = offscreen_pass_2.render_texture_color,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
