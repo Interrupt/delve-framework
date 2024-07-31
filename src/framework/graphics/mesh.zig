@@ -7,11 +7,12 @@ const mem = @import("../mem.zig");
 const colors = @import("../colors.zig");
 const boundingbox = @import("../spatial/boundingbox.zig");
 
-const Vertex = graphics.Vertex;
+const PackedVertex = graphics.PackedVertex;
 const Color = colors.Color;
 const Rect = @import("../spatial/rect.zig").Rect;
 const Frustum = @import("../spatial/frustum.zig").Frustum;
 const Vec3 = math.Vec3;
+const Vec4 = math.Vec4;
 const Vec2 = math.Vec2;
 
 // Default vertex and fragment shader params
@@ -85,7 +86,7 @@ pub const Mesh = struct {
 
         debug.log("Loaded mesh file {s} with {d} indices", .{ filename, mesh_indices.items.len });
 
-        var vertices = allocator.alloc(Vertex, mesh_positions.items.len) catch {
+        var vertices = allocator.alloc(PackedVertex, mesh_positions.items.len) catch {
             debug.log("Could not process mesh file!", .{});
             return null;
         };
@@ -165,12 +166,12 @@ pub const Mesh = struct {
 };
 
 /// Create a mesh out of some vertex data
-pub fn createMesh(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: graphics.Material) Mesh {
+pub fn createMesh(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: graphics.Material) Mesh {
     // create a mesh with the default vertex layout
     return createMeshWithLayout(vertices, indices, normals, tangents, material, vertex_layout);
 }
 
-pub fn createSkinnedMesh(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, joints: [][4]f32, weights: [][4]f32, material: graphics.Material, data: *zmesh.io.zcgltf.Data) Mesh {
+pub fn createSkinnedMesh(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, joints: [][4]f32, weights: [][4]f32, material: graphics.Material, data: *zmesh.io.zcgltf.Data) Mesh {
     // create a mesh with the default vertex layout
     // debug.log("Creating skinned mesh: {d} indices, {d} normals, {d}tangents, {d} joints, {d} weights", .{ indices.len, normals.len, tangents.len, joints.len, weights.len });
 
@@ -196,7 +197,7 @@ pub fn createSkinnedMesh(vertices: []graphics.Vertex, indices: []u32, normals: [
 }
 
 /// Create a mesh out of some vertex data with a given vertex layout
-pub fn createMeshWithLayout(vertices: []graphics.Vertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: graphics.Material, layout: graphics.VertexLayout) Mesh {
+pub fn createMeshWithLayout(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: graphics.Material, layout: graphics.VertexLayout) Mesh {
     debug.log("Creating mesh: {d} indices", .{indices.len});
 
     var bindings = graphics.Bindings.init(.{
@@ -229,7 +230,7 @@ pub fn createCube(pos: Vec3, size: Vec3, color: Color, material: graphics.Materi
 pub fn getVertexLayout() graphics.VertexLayout {
     return graphics.VertexLayout{
         .attributes = &[_]graphics.VertexLayoutAttribute{
-            .{ .binding = .VERT_PACKED, .buffer_slot = 0, .item_size = @sizeOf(Vertex) },
+            .{ .binding = .VERT_PACKED, .buffer_slot = 0, .item_size = @sizeOf(PackedVertex) },
             .{ .binding = .VERT_NORMALS, .buffer_slot = 1, .item_size = @sizeOf([3]f32) },
             .{ .binding = .VERT_TANGENTS, .buffer_slot = 2, .item_size = @sizeOf([4]f32) },
         },
@@ -239,7 +240,7 @@ pub fn getVertexLayout() graphics.VertexLayout {
 pub fn getSkinnedVertexLayout() graphics.VertexLayout {
     return graphics.VertexLayout{
         .attributes = &[_]graphics.VertexLayoutAttribute{
-            .{ .binding = .VERT_PACKED, .buffer_slot = 0, .item_size = @sizeOf(Vertex) },
+            .{ .binding = .VERT_PACKED, .buffer_slot = 0, .item_size = @sizeOf(PackedVertex) },
             .{ .binding = .VERT_NORMALS, .buffer_slot = 1, .item_size = @sizeOf([3]f32) },
             .{ .binding = .VERT_TANGENTS, .buffer_slot = 2, .item_size = @sizeOf([4]f32) },
             .{ .binding = .VERT_JOINTS, .buffer_slot = 3, .item_size = @sizeOf([4]f32) },
@@ -273,14 +274,14 @@ pub fn getSkinnedShaderAttributes() []const graphics.ShaderAttribute {
 
 /// MeshBuildler is a helper for making runtime meshes
 pub const MeshBuilder = struct {
-    vertices: std.ArrayList(Vertex) = undefined,
+    vertices: std.ArrayList(PackedVertex) = undefined,
     indices: std.ArrayList(u32) = undefined,
     normals: std.ArrayList([3]f32) = undefined,
     tangents: std.ArrayList([4]f32) = undefined,
 
     pub fn init(allocator: std.mem.Allocator) MeshBuilder {
         return MeshBuilder{
-            .vertices = std.ArrayList(Vertex).init(allocator),
+            .vertices = std.ArrayList(PackedVertex).init(allocator),
             .indices = std.ArrayList(u32).init(allocator),
             .normals = std.ArrayList([3]f32).init(allocator),
             .tangents = std.ArrayList([4]f32).init(allocator),
@@ -295,7 +296,7 @@ pub const MeshBuilder = struct {
         const v_2 = 1.0;
         const color_i = color.toInt();
 
-        const verts = &[_]Vertex{
+        const verts = &[_]PackedVertex{
             .{ .x = v0.x, .y = v0.y, .z = 0, .color = color_i, .u = u, .v = v_2 },
             .{ .x = v1.x, .y = v1.y, .z = 0, .color = color_i, .u = u_2, .v = v_2 },
             .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_i, .u = u_2, .v = v },
@@ -305,15 +306,18 @@ pub const MeshBuilder = struct {
         const indices = &[_]u32{ 0, 1, 2, 0, 2, 3 };
 
         const v_pos = @as(u32, @intCast(self.vertices.items.len));
+        const normal = Vec3.z_axis.mulMat4(transform).norm().toArray();
+        const tangent = math.Vec4.new(1.0, 0.0, 0.0, 1.0).mulMat4(transform).toArray();
+
         for (verts) |vert| {
-            try self.vertices.append(Vertex.mulMat4(vert, transform));
+            try self.vertices.append(PackedVertex.mulMat4(vert, transform));
+            try self.normals.append(normal);
+            try self.tangents.append(tangent);
         }
 
         for (indices) |idx| {
             try self.indices.append(idx + v_pos);
         }
-
-        // todo: add normals and tangents
     }
 
     /// Adds a rectangle to the mesh builder
@@ -334,16 +338,23 @@ pub const MeshBuilder = struct {
         const v_2 = 1.0;
         const color_i = color.toInt();
 
-        const verts = &[_]Vertex{
+        const verts = &[_]PackedVertex{
             .{ .x = v0.x, .y = v0.y, .z = v0.z, .color = color_i, .u = u, .v = v_2 },
             .{ .x = v1.x, .y = v1.y, .z = v1.z, .color = color_i, .u = u_2, .v = v_2 },
             .{ .x = v2.x, .y = v2.y, .z = v2.z, .color = color_i, .u = u_2, .v = v },
         };
 
+        const normal = v0.cross(v1).mulMat4(transform).norm().toArray();
+
+        // todo: should the tangent get passed in?
+        const tangent = math.Vec4.new(1.0, 0.0, 0.0, 1.0).mulMat4(transform).toArray();
+
         const indices = &[_]u32{ 0, 1, 2 };
 
         for (verts) |vert| {
-            try self.vertices.append(Vertex.mulMat4(vert, transform));
+            try self.vertices.append(PackedVertex.mulMat4(vert, transform));
+            try self.normals.append(normal);
+            try self.tangents.append(tangent);
         }
 
         const v_pos = @as(u32, @intCast(self.indices.items.len));
@@ -353,16 +364,23 @@ pub const MeshBuilder = struct {
     }
 
     /// Adds a triangle to the mesh builder, from vertices
-    pub fn addTriangleFromVertices(self: *MeshBuilder, v0: Vertex, v1: Vertex, v2: Vertex, transform: math.Mat4) !void {
-        try self.vertices.append(Vertex.mulMat4(v0, transform));
-        try self.vertices.append(Vertex.mulMat4(v1, transform));
-        try self.vertices.append(Vertex.mulMat4(v2, transform));
+    pub fn addTriangleFromVertices(self: *MeshBuilder, v0: PackedVertex, v1: PackedVertex, v2: PackedVertex, transform: math.Mat4) !void {
+        try self.vertices.append(PackedVertex.mulMat4(v0, transform));
+        try self.vertices.append(PackedVertex.mulMat4(v1, transform));
+        try self.vertices.append(PackedVertex.mulMat4(v2, transform));
+
+        const normal = v0.getPosition().cross(v1.getPosition()).mulMat4(transform).norm().toArray();
+
+        // todo: should the tangent get passed in?
+        const tangent = math.Vec4.new(1.0, 0.0, 0.0, 1.0).mulMat4(transform).toArray();
 
         const indices = &[_]u32{ 0, 1, 2 };
 
         const v_pos = @as(u32, @intCast(self.indices.items.len));
         for (indices) |idx| {
             try self.indices.append(idx + v_pos);
+            try self.normals.append(normal);
+            try self.tangents.append(tangent);
         }
     }
 
@@ -419,12 +437,13 @@ pub const MeshBuilder = struct {
 
     /// Bakes a mesh out of the mesh builder from the current state
     pub fn buildMesh(self: *const MeshBuilder, material: graphics.Material) Mesh {
-        const layout = graphics.VertexLayout{
-            .attributes = &[_]graphics.VertexLayoutAttribute{
-                .{ .binding = .VERT_PACKED, .buffer_slot = 0, .item_size = @sizeOf(Vertex) },
-            },
-        };
+        // const layout = graphics.VertexLayout{
+        //     .attributes = &[_]graphics.VertexLayoutAttribute{
+        //         .{ .binding = .VERT_PACKED, .buffer_slot = 0, .item_size = @sizeOf(PackedVertex) },
+        //     },
+        // };
 
+        const layout = getVertexLayout();
         return createMeshWithLayout(self.vertices.items, self.indices.items, self.normals.items, self.tangents.items, material, layout);
     }
 

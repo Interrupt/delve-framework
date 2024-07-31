@@ -155,6 +155,7 @@ pub fn build(b: *std.Build) !void {
         "framepacing",
         "frustums",
         "imgui",
+        "lighting",
         "lua",
         "meshbuilder",
         "meshes",

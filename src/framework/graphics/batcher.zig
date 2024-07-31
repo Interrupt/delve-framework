@@ -12,7 +12,7 @@ const spatial_rect = @import("../spatial/rect.zig");
 const autoHash = std.hash.autoHash;
 const Wyhash = std.hash.Wyhash;
 
-const Vertex = graphics.Vertex;
+const Vertex = graphics.PackedVertex;
 const Vec2 = math.Vec2;
 const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;

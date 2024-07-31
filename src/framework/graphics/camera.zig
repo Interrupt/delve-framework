@@ -211,4 +211,9 @@ pub const Camera = struct {
     pub fn getViewFrustum(self: *Camera) frustum.Frustum {
         return frustum.Frustum.init(self.getProjView());
     }
+
+    pub fn getPosition(self: *Camera) Vec3 {
+        // returns the end position, including the boom arm
+        return self.position.add(self.direction.scale(self.boom_arm_length));
+    }
 };
