@@ -39,6 +39,9 @@ const mesh_texture_file = "assets/meshes/CesiumMan.png";
 var cube1: delve.graphics.mesh.Mesh = undefined;
 var cube2: delve.graphics.mesh.Mesh = undefined;
 
+var skinned_mesh_material: delve.platform.graphics.Material = undefined;
+var static_mesh_material: delve.platform.graphics.Material = undefined;
+
 // This example shows an example of some simple lighting in a shader
 
 // Web build note: this does not seem to work when built in --release=fast or --release=small
@@ -81,19 +84,15 @@ fn on_init() !void {
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
     // make shaders for skinned and unskinned meshes
-    const skinned_shader = graphics.Shader.initFromBuiltin(
-        .{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() },
-        skinned_lit_shader);
+    const skinned_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() }, skinned_lit_shader);
 
-    const static_shader = graphics.Shader.initFromBuiltin(
-        .{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() },
-        lit_shader);
+    const static_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
 
     var base_img: images.Image = try images.loadFile(mesh_texture_file);
     const tex_base = graphics.Texture.init(&base_img);
 
     // Create a material out of our shader and textures
-    const skinned_mesh_material = delve.platform.graphics.Material.init(.{
+    skinned_mesh_material = delve.platform.graphics.Material.init(.{
         .shader = skinned_shader.?,
         .texture_0 = tex_base,
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
@@ -106,7 +105,7 @@ fn on_init() !void {
     });
 
     // Create a material out of the texture
-    const static_mesh_material = graphics.Material.init(.{
+    static_mesh_material = graphics.Material.init(.{
         .shader = static_shader.?,
         .texture_0 = delve.platform.graphics.createSolidTexture(0xFFFFFFFF),
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
@@ -116,7 +115,7 @@ fn on_init() !void {
     });
 
     // Load an animated mesh
-    const loaded_mesh = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = skinned_mesh_material});
+    const loaded_mesh = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = &skinned_mesh_material });
 
     if (loaded_mesh == null) {
         debug.fatal("Could not load skinned mesh!", .{});
@@ -124,8 +123,8 @@ fn on_init() !void {
     }
 
     // make some cubes
-    cube1 = try delve.graphics.mesh.createCube(math.Vec3.new(0, -1.0, 0), math.Vec3.new(10.0, 0.25, 10.0), delve.colors.white, static_mesh_material);
-    cube2 = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2.0, 1.25, 1.0), delve.colors.white, static_mesh_material);
+    cube1 = try delve.graphics.mesh.createCube(math.Vec3.new(0, -1.0, 0), math.Vec3.new(10.0, 0.25, 10.0), delve.colors.white, &static_mesh_material);
+    cube2 = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2.0, 1.25, 1.0), delve.colors.white, &static_mesh_material);
 
     animated_mesh = loaded_mesh.?;
     animation = try animated_mesh.createAnimation(0, 1.0, true);
@@ -161,18 +160,15 @@ fn on_draw() void {
 
     const point_light_1: delve.platform.graphics.PointLight = .{ .pos = light_pos_1, .radius = 5.0, .color = delve.colors.green };
     const point_light_2: delve.platform.graphics.PointLight = .{ .pos = light_pos_2, .radius = 2.0, .color = delve.colors.red };
-    const point_light_3: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(-2, 1.2, -2 ), .radius = 3.0, .color = delve.colors.blue };
+    const point_light_3: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(-2, 1.2, -2), .radius = 3.0, .color = delve.colors.blue };
 
     const point_lights = &[_]delve.platform.graphics.PointLight{ point_light_1, point_light_2, point_light_3 };
 
     // add the lights and camera to the materials
-    animated_mesh.mesh.material.params.camera_position = camera.getPosition();
-    animated_mesh.mesh.material.params.point_lights = @constCast(point_lights);
-    animated_mesh.mesh.material.params.directional_light = directional_light;
-
-    // copy over the material params to the cube mesh too
-    cube1.material.params = animated_mesh.mesh.material.params;
-    cube2.material.params = animated_mesh.mesh.material.params;
+    static_mesh_material.params.camera_position = camera.getPosition();
+    static_mesh_material.params.point_lights = @constCast(point_lights);
+    static_mesh_material.params.directional_light = directional_light;
+    skinned_mesh_material.params = static_mesh_material.params;
 
     animated_mesh.draw(proj_view_matrix, model);
     cube1.draw(proj_view_matrix, Mat4.identity);
