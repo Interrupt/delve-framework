@@ -35,6 +35,7 @@ const mesh_file = "assets/meshes/CesiumMan.gltf";
 const mesh_texture_file = "assets/meshes/CesiumMan.png";
 
 var cube1: delve.graphics.mesh.Mesh = undefined;
+var cube2: delve.graphics.mesh.Mesh = undefined;
 
 // This example shows an example of some simple lighting in a shader
 
@@ -120,10 +121,8 @@ fn on_init() !void {
     }
 
     // make a cube
-    cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0, -1.0, 0), math.Vec3.new(10.0, 0.25, 10.0), delve.colors.white, box_material) catch {
-        delve.debug.log("Could not create cube!", .{});
-        return;
-    };
+    cube1 = try delve.graphics.mesh.createCube(math.Vec3.new(0, -1.0, 0), math.Vec3.new(10.0, 0.25, 10.0), delve.colors.white, box_material);
+    cube2 = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2.0, 1.25, 1.0), delve.colors.white, box_material);
 
     mesh_test = loaded.?;
     animation = try mesh_test.createAnimation(0, 1.0, true);
@@ -150,26 +149,31 @@ fn on_draw() void {
     mesh_test.resetAnimation(); // reset back to the default pose
     mesh_test.applyAnimation(&animation, 0.9); // apply an animation to the mesh, with 90% blend
 
-    // set some parameters on the material
-    mesh_test.mesh.material.params.camera_position = camera.getPosition();
-
     // create a directional light that rotates around the mesh
-    const light_dir = Vec3.new(0.25, 0.75, 0.0).rotate(time, Vec3.y_axis);
+    const light_dir = Vec3.new(0.3, 0.7, 0.0).rotate(time, Vec3.y_axis);
     const directional_light: delve.platform.graphics.DirectionalLight = .{ .dir = light_dir, .color = delve.colors.white, .brightness = 0.25 };
-    mesh_test.mesh.material.params.directional_light = directional_light;
 
     // add some point lights
-    const point_light_1: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(std.math.sin(time * 0.01), 0.8, -2.5), .radius = 5.0, .color = delve.colors.green };
-    const point_light_2: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(std.math.sin(time * -0.0125) * 2.0, 0.25, 1.5), .radius = 2.0, .color = delve.colors.red };
-    const point_lights: []const delve.platform.graphics.PointLight = &[_]delve.platform.graphics.PointLight{ point_light_1, point_light_2 };
+    const light_pos_1 = Vec3.new(std.math.sin(time * 0.002) * 2, std.math.sin(time * 0.003) + 0.5, std.math.sin(time * 0.0041) * -2.5);
+    const light_pos_2 = Vec3.new(std.math.sin(time * -0.012), 0.4, std.math.sin(time * -0.013));
 
+    const point_light_1: delve.platform.graphics.PointLight = .{ .pos = light_pos_1, .radius = 5.0, .color = delve.colors.green };
+    const point_light_2: delve.platform.graphics.PointLight = .{ .pos = light_pos_2, .radius = 2.0, .color = delve.colors.red };
+
+    const point_lights = &[_]delve.platform.graphics.PointLight{ point_light_1, point_light_2 };
+
+    // add the lights and camera to the materials
+    mesh_test.mesh.material.params.camera_position = camera.getPosition();
     mesh_test.mesh.material.params.point_lights = @constCast(point_lights);
-    cube1.material.params.point_lights = @constCast(point_lights);
-    cube1.material.params.directional_light = directional_light;
-    cube1.material.params.camera_position = camera.getPosition();
+    mesh_test.mesh.material.params.directional_light = directional_light;
+
+    // copy over the material params to the cube mesh too
+    cube1.material.params = mesh_test.mesh.material.params;
+    cube2.material.params = mesh_test.mesh.material.params;
 
     mesh_test.draw(proj_view_matrix, model);
     cube1.draw(proj_view_matrix, Mat4.identity);
+    cube2.draw(proj_view_matrix, Mat4.translate(Vec3.new(-2, 0, 0)).mul(Mat4.rotate(time * 0.1, Vec3.y_axis)));
 }
 
 fn on_cleanup() !void {

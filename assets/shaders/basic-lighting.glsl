@@ -30,8 +30,7 @@ void main() {
     color = color0 * u_color;
     uv = texcoord0;
 
-    // have to use these attributes to keep them from being stripped out
-    normal = normals;
+    normal = normalize(u_modelMatrix * vec4(normals, 0.0)).xyz;
     tangent = tangents;
 
     position = u_modelMatrix * pos;
@@ -86,31 +85,15 @@ void main() {
         float radius = point_light_pos_data.w;
         float attenuation = clamp(1.0 - dist/radius, 0.0, 1.0);
 
-        // testing out a specular term
-        vec3 cameraLocN = vec3(normalize(u_cameraPos));
-        vec3 reflectAmt = normalize(reflect(-vec3(lightPosEye), normal));
-        float specularAmt = max(0.0, dot(cameraLocN, reflectAmt));
-        specularAmt = pow(specularAmt, 50.0);
-        specularAmt = 0.0;
-
-        lit_color.rgb += (lightBrightness * lightColor * attenuation) + (specularAmt * normalize(lightColor));
+        lit_color.rgb += (lightBrightness * lightColor * attenuation);
     }
 
     {
         // directional light
         vec4 lightDir = vec4(u_dir_light_dir.x, u_dir_light_dir.y, u_dir_light_dir.z, 0.0);
         vec4 lightColor = u_dir_light_color;
-
         float lightBrightness = max(dot( lightDir, vec4(normal, 0.0)), 0.0) * u_dir_light_dir.w;
-
-        // testing out a specular term
-        vec3 cameraLocN = vec3(normalize(u_cameraPos));
-        vec3 reflectAmt = normalize(reflect(vec3(-lightDir), normal));
-        float specularAmt = max(0.0, dot(cameraLocN, reflectAmt));
-        specularAmt = pow(specularAmt, 30.0);
-        specularAmt = 0.0;
-
-        lit_color.rgb += (lightBrightness * lightColor.rgb) + (specularAmt * lightColor.rgb);
+        lit_color.rgb += (lightBrightness * lightColor.rgb);
     }
 
     // apply lighting color on top of the base diffuse color
