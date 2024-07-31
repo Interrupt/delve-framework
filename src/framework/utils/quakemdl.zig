@@ -123,9 +123,9 @@ const MDLSkin_ = struct {
 
         for (0.., self.pixels) |j, index| {
             const i = @as(u32, index);
-            bytes[(j * 4) + 0] = Palette[(i * 3) + 0];
-            bytes[(j * 4) + 1] = Palette[(i * 3) + 1];
-            bytes[(j * 4) + 2] = Palette[(i * 3) + 2];
+            bytes[(j * 4) + 0] = palette[(i * 3) + 0];
+            bytes[(j * 4) + 1] = palette[(i * 3) + 1];
+            bytes[(j * 4) + 2] = palette[(i * 3) + 2];
             bytes[(j * 4) + 3] = 255;
         }
 
@@ -182,9 +182,9 @@ const MDLSkinGroup_ = struct {
 
         for (0.., pixels) |j, index_| {
             const i = @as(u32, index_);
-            bytes[(j * 4) + 0] = Palette[(i * 3) + 0];
-            bytes[(j * 4) + 1] = Palette[(i * 3) + 1];
-            bytes[(j * 4) + 2] = Palette[(i * 3) + 2];
+            bytes[(j * 4) + 0] = palette[(i * 3) + 0];
+            bytes[(j * 4) + 1] = palette[(i * 3) + 1];
+            bytes[(j * 4) + 2] = palette[(i * 3) + 2];
             bytes[(j * 4) + 3] = 255;
         }
 
@@ -315,7 +315,7 @@ fn peek(file: File, buff: []u8) ![]u8 {
     return buff;
 }
 
-fn make_vertex(triangle: Triangle_, trivertex: TriVertex_, stvertex: STVertex_, skin_width: f32, skin_height: f32) graphics.Vertex {
+fn makeVertex(triangle: Triangle_, trivertex: TriVertex_, stvertex: STVertex_, skin_width: f32, skin_height: f32) graphics.Vertex {
     var vertex: graphics.Vertex = .{
         .x = @floatFromInt(trivertex.vertex[0]),
         .y = @floatFromInt(trivertex.vertex[1]),
@@ -355,9 +355,9 @@ fn makeMesh(allocator: Allocator, frame: MDLFrame_, config: MDLMeshBuildConfig_)
         const stv1 = stvertices[idx1];
         const stv2 = stvertices[idx2];
 
-        const v0 = make_vertex(triangle, tv0, stv0, sw, sh);
-        const v1 = make_vertex(triangle, tv1, stv1, sw, sh);
-        const v2 = make_vertex(triangle, tv2, stv2, sw, sh);
+        const v0 = makeVertex(triangle, tv0, stv0, sw, sh);
+        const v1 = makeVertex(triangle, tv1, stv1, sw, sh);
+        const v2 = makeVertex(triangle, tv2, stv2, sw, sh);
 
         _ = try builder.addTriangleFromVertices(v0, v1, v2, m);
     }
@@ -365,7 +365,7 @@ fn makeMesh(allocator: Allocator, frame: MDLFrame_, config: MDLMeshBuildConfig_)
     return builder.buildMesh(material);
 }
 
-pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
+pub fn open(allocator: Allocator, path: []const u8) !MDL {
     var file = try std.fs.cwd().openFile(
         path,
         std.fs.File.OpenFlags{ .mode = .read_only }
@@ -489,7 +489,7 @@ pub fn get_mdl(allocator: Allocator, path: []const u8) !MDL {
     return mdl;
 }
 
-const Palette: [768]u8 = .{
+const palette: [768]u8 = .{
     0x00,0x00,0x00,0x0f,0x0f,0x0f,0x1f,0x1f,0x1f,0x2f,0x2f,0x2f,
     0x3f,0x3f,0x3f,0x4b,0x4b,0x4b,0x5b,0x5b,0x5b,0x6b,0x6b,0x6b,
     0x7b,0x7b,0x7b,0x8b,0x8b,0x8b,0x9b,0x9b,0x9b,0xab,0xab,0xab,
@@ -556,7 +556,7 @@ const Palette: [768]u8 = .{
     0xff,0xf3,0x93,0xff,0xf7,0xc7,0xff,0xff,0xff,0x9f,0x5b,0x53,
 };
 
-const ANorms: [162][3]f32 = .{
+const anorms: [162][3]f32 = .{
     .{-0.525731, 0.000000, 0.850651},
     .{-0.442863, 0.238856, 0.864188},
     .{-0.295242, 0.000000, 0.955423},
