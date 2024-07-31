@@ -199,7 +199,7 @@ pub fn createSkinnedMesh(vertices: []PackedVertex, indices: []u32, normals: [][3
 
 /// Create a mesh out of some vertex data with a given vertex layout
 pub fn createMeshWithLayout(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: graphics.Material, layout: graphics.VertexLayout) Mesh {
-    debug.log("Creating mesh: {d} indices", .{indices.len});
+    // debug.log("Creating mesh: {d} indices", .{indices.len});
 
     var bindings = graphics.Bindings.init(.{
         .index_len = indices.len,

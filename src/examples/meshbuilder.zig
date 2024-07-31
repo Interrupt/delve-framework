@@ -48,9 +48,11 @@ pub fn on_init() !void {
     };
     const tex = graphics.Texture.init(&img);
 
+    const shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
+
     // Create a material out of the texture
     material = graphics.Material.init(.{
-        .shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }),
+        .shader = shader,
         .texture_0 = tex,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
