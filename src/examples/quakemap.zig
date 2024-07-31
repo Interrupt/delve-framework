@@ -9,10 +9,13 @@ const math = delve.math;
 
 var camera: delve.graphics.camera.Camera = undefined;
 var fallback_material: graphics.Material = undefined;
+var fallback_quake_material: delve.utils.quakemap.QuakeMaterial = undefined;
+var materials: std.StringHashMap(delve.utils.quakemap.QuakeMaterial) = undefined;
 
 var quake_map: delve.utils.quakemap.QuakeMap = undefined;
 var map_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined;
 var entity_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined;
+
 var cube_mesh: delve.graphics.mesh.Mesh = undefined;
 
 var map_transform: math.Mat4 = undefined;
@@ -144,6 +147,8 @@ pub fn on_init() !void {
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
 
+    fallback_quake_material = .{ .material = fallback_material };
+
     // create our camera
     camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 512, 16.0, math.Vec3.up);
     camera.position.y = 10.0;
@@ -151,7 +156,7 @@ pub fn on_init() !void {
     // set our player position too
     player_pos = camera.position;
 
-    var materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
+    materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
     const shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
 
     for (quake_map.worldspawn.solids.items) |solid| {
@@ -191,11 +196,11 @@ pub fn on_init() !void {
     }
 
     // make meshes out of the quake map, one per material
-    map_meshes = try quake_map.buildWorldMeshes(allocator, math.Mat4.identity, materials, .{ .material = fallback_material });
-    entity_meshes = try quake_map.buildEntityMeshes(allocator, math.Mat4.identity, materials, .{ .material = fallback_material });
+    map_meshes = try quake_map.buildWorldMeshes(allocator, math.Mat4.identity, &materials, &fallback_quake_material);
+    entity_meshes = try quake_map.buildEntityMeshes(allocator, math.Mat4.identity, &materials, &fallback_quake_material);
 
     // make a bounding box cube
-    cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), bounding_box_size, delve.colors.red, fallback_material);
+    cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), bounding_box_size, delve.colors.red, &fallback_material);
 
     // set a bg color
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_light);

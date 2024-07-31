@@ -582,7 +582,7 @@ pub const QuakeMap = struct {
     }
 
     /// Builds meshes for the map, bucketed by materials
-    pub fn buildWorldMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: std.StringHashMap(QuakeMaterial), fallback_material: ?QuakeMaterial) !std.ArrayList(Mesh) {
+    pub fn buildWorldMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
 
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
@@ -594,12 +594,12 @@ pub const QuakeMap = struct {
 
         // We're ready to build all of our mesh builders now!
         var meshes = std.ArrayList(mesh.Mesh).init(allocator);
-        try buildMeshes(&mesh_builders, &materials, fallback_material, &meshes);
+        try buildMeshes(&mesh_builders, materials, fallback_material, &meshes);
         return meshes;
     }
 
     /// Builds meshes for all entity solids - in a real scenario, you'll want to do this yourself
-    pub fn buildEntityMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: std.StringHashMap(QuakeMaterial), fallback_material: ?QuakeMaterial) !std.ArrayList(Mesh) {
+    pub fn buildEntityMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
 
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
@@ -613,30 +613,29 @@ pub const QuakeMap = struct {
 
         // We're ready to build all of our mesh builders now!
         var meshes = std.ArrayList(mesh.Mesh).init(allocator);
-        try buildMeshes(&mesh_builders, &materials, fallback_material, &meshes);
+        try buildMeshes(&mesh_builders, materials, fallback_material, &meshes);
         return meshes;
     }
 
     /// builds meshes out of a map of MeshBuilders, and adds them to an ArrayList
-    pub fn buildMeshes(builders: *const std.StringHashMap(mesh.MeshBuilder), materials: *const std.StringHashMap(QuakeMaterial), fallback_material: ?QuakeMaterial, out_meshes: *std.ArrayList(mesh.Mesh)) !void {
+    pub fn buildMeshes(builders: *const std.StringHashMap(mesh.MeshBuilder), materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial, out_meshes: *std.ArrayList(mesh.Mesh)) !void {
         var it = builders.iterator();
         while (it.next()) |builder| {
             const b = builder.value_ptr;
             if (b.indices.items.len == 0)
                 continue;
 
-            var found_material = materials.get(builder.key_ptr.*);
-            if (found_material == null)
-                found_material = fallback_material;
-
-            if (found_material) |m| {
-                try out_meshes.append(b.buildMesh(m.material));
+            var found_material = materials.getPtr(builder.key_ptr.*);
+            if (found_material == null) {
+                try out_meshes.append(b.buildMesh(&fallback_material.?.material));
+            } else {
+                try out_meshes.append(b.buildMesh(&found_material.?.material));
             }
         }
     }
 
     /// Adds all of the faces of a solid to a list of MeshBuilders, based on the face's texture name
-    pub fn addSolidToMeshBuilders(allocator: std.mem.Allocator, builders: *std.StringHashMap(mesh.MeshBuilder), solid: Solid, materials: std.StringHashMap(QuakeMaterial), transform: math.Mat4) !void {
+    pub fn addSolidToMeshBuilders(allocator: std.mem.Allocator, builders: *std.StringHashMap(mesh.MeshBuilder), solid: Solid, materials: *std.StringHashMap(QuakeMaterial), transform: math.Mat4) !void {
         for (solid.faces.items) |face| {
             const found_builder = builders.getPtr(face.texture_name);
             var builder: *mesh.MeshBuilder = undefined;

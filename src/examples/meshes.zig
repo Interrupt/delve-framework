@@ -24,6 +24,7 @@ const emissive_shader_builtin = delve.shaders.default_emissive;
 
 var time: f32 = 0.0;
 var mesh_test: ?mesh.Mesh = null;
+var material: graphics.Material = undefined;
 var camera: cam.Camera = undefined;
 
 // This example shows loading and drawing meshes
@@ -92,14 +93,14 @@ fn on_init() !void {
     }
 
     // Create a material out of our shader and textures
-    const material = graphics.Material.init(.{
+    material = graphics.Material.init(.{
         .shader = shader.?,
         .texture_0 = tex_base,
         .texture_1 = tex_emissive,
     });
 
     // Load our mesh!
-    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), "assets/meshes/SciFiHelmet.gltf", .{ .material = material });
+    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), "assets/meshes/SciFiHelmet.gltf", .{ .material = &material });
 }
 
 fn on_tick(delta: f32) void {
