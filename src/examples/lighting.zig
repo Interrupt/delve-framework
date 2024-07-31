@@ -20,12 +20,14 @@ const Vec3 = math.Vec3;
 const Mat4 = math.Mat4;
 const Color = colors.Color;
 
-const lighting_shader_builtin = delve.shaders.default_basic_lighting;
+// use the basic lit shaders
+const lit_shader = delve.shaders.default_basic_lighting;
+const skinned_lit_shader = delve.shaders.default_skinned_basic_lighting;
 
-const shader_builtin = delve.shaders.default_skinned_basic_lighting;
+// layout that will tell our materials how to pass params to the shader
 const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_8 };
 
-var mesh_test: skinned_mesh.SkinnedMesh = undefined;
+var animated_mesh: skinned_mesh.SkinnedMesh = undefined;
 var animation: skinned_mesh.PlayingAnimation = undefined;
 
 var time: f32 = 0.0;
@@ -78,54 +80,55 @@ fn on_init() !void {
     camera.position = Vec3.new(0.0, 0.0, 0.0);
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
-    // Make our emissive shader from one that is pre-compiled
-    const shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() }, shader_builtin);
+    // make shaders for skinned and unskinned meshes
+    const skinned_shader = graphics.Shader.initFromBuiltin(
+        .{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() },
+        skinned_lit_shader);
 
-    if (shader == null) {
-        debug.log("Could not get shader", .{});
-        return;
-    }
+    const static_shader = graphics.Shader.initFromBuiltin(
+        .{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() },
+        lit_shader);
 
-    var base_img: images.Image = images.loadFile(mesh_texture_file) catch {
-        debug.log("Assets: Error loading image asset: {s}", .{mesh_texture_file});
-        return;
-    };
+    var base_img: images.Image = try images.loadFile(mesh_texture_file);
     const tex_base = graphics.Texture.init(&base_img);
 
     // Create a material out of our shader and textures
-    const material = delve.platform.graphics.Material.init(.{
-        .shader = shader.?,
+    const skinned_mesh_material = delve.platform.graphics.Material.init(.{
+        .shader = skinned_shader.?,
         .texture_0 = tex_base,
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
 
         // use the VS layout that supports sending joints to the shader
         .default_vs_uniform_layout = delve.platform.graphics.DefaultSkinnedMeshVSUniforms,
+
+        // use the FS layout that supports lighting
         .default_fs_uniform_layout = basic_lighting_fs_uniforms,
     });
 
     // Create a material out of the texture
-    const box_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lighting_shader_builtin);
-    const box_material = graphics.Material.init(.{
-        .shader = box_shader.?,
+    const static_mesh_material = graphics.Material.init(.{
+        .shader = static_shader.?,
         .texture_0 = delve.platform.graphics.createSolidTexture(0xFFFFFFFF),
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
+
+        // use the FS layout that supports lighting
         .default_fs_uniform_layout = basic_lighting_fs_uniforms,
     });
 
-    // Load our mesh!
-    const loaded = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = material });
+    // Load an animated mesh
+    const loaded_mesh = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = skinned_mesh_material});
 
-    if (loaded == null) {
+    if (loaded_mesh == null) {
         debug.fatal("Could not load skinned mesh!", .{});
         return;
     }
 
-    // make a cube
-    cube1 = try delve.graphics.mesh.createCube(math.Vec3.new(0, -1.0, 0), math.Vec3.new(10.0, 0.25, 10.0), delve.colors.white, box_material);
-    cube2 = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2.0, 1.25, 1.0), delve.colors.white, box_material);
+    // make some cubes
+    cube1 = try delve.graphics.mesh.createCube(math.Vec3.new(0, -1.0, 0), math.Vec3.new(10.0, 0.25, 10.0), delve.colors.white, static_mesh_material);
+    cube2 = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2.0, 1.25, 1.0), delve.colors.white, static_mesh_material);
 
-    mesh_test = loaded.?;
-    animation = try mesh_test.createAnimation(0, 1.0, true);
+    animated_mesh = loaded_mesh.?;
+    animation = try animated_mesh.createAnimation(0, 1.0, true);
 }
 
 fn on_tick(delta: f32) void {
@@ -134,7 +137,7 @@ fn on_tick(delta: f32) void {
 
     time += delta * 100;
 
-    mesh_test.updateAnimation(&animation, delta);
+    animated_mesh.updateAnimation(&animation, delta);
 
     if (input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
@@ -146,32 +149,32 @@ fn on_draw() void {
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
 
-    mesh_test.resetAnimation(); // reset back to the default pose
-    mesh_test.applyAnimation(&animation, 0.9); // apply an animation to the mesh, with 90% blend
+    animated_mesh.applyAnimation(&animation, 0.9); // apply an animation to the mesh, with 90% blend
 
     // create a directional light that rotates around the mesh
     const light_dir = Vec3.new(0.3, 0.7, 0.0).rotate(time, Vec3.y_axis);
-    const directional_light: delve.platform.graphics.DirectionalLight = .{ .dir = light_dir, .color = delve.colors.white, .brightness = 0.25 };
+    const directional_light: delve.platform.graphics.DirectionalLight = .{ .dir = light_dir, .color = delve.colors.white, .brightness = 0.15 };
 
-    // add some point lights
+    // make some point lights
     const light_pos_1 = Vec3.new(std.math.sin(time * 0.002) * 2, std.math.sin(time * 0.003) + 0.5, std.math.sin(time * 0.0041) * -2.5);
     const light_pos_2 = Vec3.new(std.math.sin(time * -0.012), 0.4, std.math.sin(time * -0.013));
 
     const point_light_1: delve.platform.graphics.PointLight = .{ .pos = light_pos_1, .radius = 5.0, .color = delve.colors.green };
     const point_light_2: delve.platform.graphics.PointLight = .{ .pos = light_pos_2, .radius = 2.0, .color = delve.colors.red };
+    const point_light_3: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(-2, 1.2, -2 ), .radius = 3.0, .color = delve.colors.blue };
 
-    const point_lights = &[_]delve.platform.graphics.PointLight{ point_light_1, point_light_2 };
+    const point_lights = &[_]delve.platform.graphics.PointLight{ point_light_1, point_light_2, point_light_3 };
 
     // add the lights and camera to the materials
-    mesh_test.mesh.material.params.camera_position = camera.getPosition();
-    mesh_test.mesh.material.params.point_lights = @constCast(point_lights);
-    mesh_test.mesh.material.params.directional_light = directional_light;
+    animated_mesh.mesh.material.params.camera_position = camera.getPosition();
+    animated_mesh.mesh.material.params.point_lights = @constCast(point_lights);
+    animated_mesh.mesh.material.params.directional_light = directional_light;
 
     // copy over the material params to the cube mesh too
-    cube1.material.params = mesh_test.mesh.material.params;
-    cube2.material.params = mesh_test.mesh.material.params;
+    cube1.material.params = animated_mesh.mesh.material.params;
+    cube2.material.params = animated_mesh.mesh.material.params;
 
-    mesh_test.draw(proj_view_matrix, model);
+    animated_mesh.draw(proj_view_matrix, model);
     cube1.draw(proj_view_matrix, Mat4.identity);
     cube2.draw(proj_view_matrix, Mat4.translate(Vec3.new(-2, 0, 0)).mul(Mat4.rotate(time * 0.1, Vec3.y_axis)));
 }
@@ -180,5 +183,5 @@ fn on_cleanup() !void {
     debug.log("Lighting example module cleaning up", .{});
 
     animation.deinit();
-    mesh_test.deinit();
+    animated_mesh.deinit();
 }
