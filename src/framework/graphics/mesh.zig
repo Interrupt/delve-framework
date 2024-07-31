@@ -8,6 +8,7 @@ const colors = @import("../colors.zig");
 const boundingbox = @import("../spatial/boundingbox.zig");
 
 const PackedVertex = graphics.PackedVertex;
+const Vertex = graphics.Vertex;
 const Color = colors.Color;
 const Rect = @import("../spatial/rect.zig").Rect;
 const Frustum = @import("../spatial/frustum.zig").Frustum;
@@ -272,7 +273,7 @@ pub fn getSkinnedShaderAttributes() []const graphics.ShaderAttribute {
     };
 }
 
-/// MeshBuildler is a helper for making runtime meshes
+/// MeshBuilder is a helper for making runtime meshes
 pub const MeshBuilder = struct {
     vertices: std.ArrayList(PackedVertex) = undefined,
     indices: std.ArrayList(u32) = undefined,
@@ -364,7 +365,7 @@ pub const MeshBuilder = struct {
     }
 
     /// Adds a triangle to the mesh builder, from vertices
-    pub fn addTriangleFromVertices(self: *MeshBuilder, v0: PackedVertex, v1: PackedVertex, v2: PackedVertex, transform: math.Mat4) !void {
+    pub fn addTriangleFromPackedVertices(self: *MeshBuilder, v0: PackedVertex, v1: PackedVertex, v2: PackedVertex, transform: math.Mat4) !void {
         try self.vertices.append(PackedVertex.mulMat4(v0, transform));
         try self.vertices.append(PackedVertex.mulMat4(v1, transform));
         try self.vertices.append(PackedVertex.mulMat4(v2, transform));
@@ -381,6 +382,27 @@ pub const MeshBuilder = struct {
             try self.indices.append(idx + v_pos);
             try self.normals.append(normal);
             try self.tangents.append(tangent);
+        }
+    }
+
+    /// Adds a triangle to the mesh builder, from unpacked vertices
+    pub fn addTriangleFromVertices(self: *MeshBuilder, v0: Vertex, v1: Vertex, v2: Vertex) !void {
+        try self.vertices.append(v0.pack());
+        try self.vertices.append(v1.pack());
+        try self.vertices.append(v2.pack());
+
+        try self.normals.append(v0.normal);
+        try self.normals.append(v1.normal);
+        try self.normals.append(v2.normal);
+
+        try self.tangents.append(v0.tangent);
+        try self.tangents.append(v1.tangent);
+        try self.tangents.append(v2.tangent);
+
+        const indices = &[_]u32{ 0, 1, 2 };
+        const v_pos = @as(u32, @intCast(self.indices.items.len));
+        for (indices) |idx| {
+            try self.indices.append(idx + v_pos);
         }
     }
 

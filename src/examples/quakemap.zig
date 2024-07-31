@@ -139,7 +139,7 @@ pub fn on_init() !void {
 
     // Create a material out of the texture
     fallback_material = graphics.Material.init(.{
-        .shader = graphics.Shader.initDefault(.{}),
+        .shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }),
         .texture_0 = fallback_tex,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
@@ -152,7 +152,7 @@ pub fn on_init() !void {
     player_pos = camera.position;
 
     var materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
-    const shader = graphics.Shader.initDefault(.{});
+    const shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
 
     for (quake_map.worldspawn.solids.items) |solid| {
         for (solid.faces.items) |face| {
