@@ -338,7 +338,7 @@ fn makeVertex(triangle: Triangle_, trivertex: TriVertex_, stvertex: STVertex_, s
         .tangent = math.Vec4.zero
     };
     if (triangle.faces_front == 0 and stvertex.on_seam != 0) {
-        vertex.pos.x += 0.5;
+        vertex.uv.x += 0.5;
     }
 
     return vertex;
