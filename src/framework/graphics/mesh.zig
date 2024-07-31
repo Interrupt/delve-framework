@@ -437,12 +437,6 @@ pub const MeshBuilder = struct {
 
     /// Bakes a mesh out of the mesh builder from the current state
     pub fn buildMesh(self: *const MeshBuilder, material: graphics.Material) Mesh {
-        // const layout = graphics.VertexLayout{
-        //     .attributes = &[_]graphics.VertexLayoutAttribute{
-        //         .{ .binding = .VERT_PACKED, .buffer_slot = 0, .item_size = @sizeOf(PackedVertex) },
-        //     },
-        // };
-
         const layout = getVertexLayout();
         return createMeshWithLayout(self.vertices.items, self.indices.items, self.normals.items, self.tangents.items, material, layout);
     }
