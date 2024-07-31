@@ -1,6 +1,8 @@
 const std = @import("std");
 
+const colors = @import("../colors.zig");
 const debug = @import("../debug.zig");
+const default_mesh = @import("../graphics/shaders/default-mesh.glsl.zig");
 const images = @import("../images.zig");
 const math = @import("../math.zig");
 const mem = @import("../mem.zig");
@@ -315,54 +317,67 @@ fn peek(file: File, buff: []u8) ![]u8 {
     return buff;
 }
 
+fn getNormal(index: u8) math.Vec3 {
+    const n = anorms[index];
+    return math.Vec3.new(n[0], n[1], n[2]);
+}
+
 fn makeVertex(triangle: Triangle_, trivertex: TriVertex_, stvertex: STVertex_, skin_width: f32, skin_height: f32) graphics.Vertex {
     var vertex: graphics.Vertex = .{
-        .x = @floatFromInt(trivertex.vertex[0]),
-        .y = @floatFromInt(trivertex.vertex[1]),
-        .z = @floatFromInt(trivertex.vertex[2]),
-        .u = @as(f32, @floatFromInt(stvertex.s)) / skin_width,
-        .v = @as(f32, @floatFromInt(stvertex.t)) / skin_height,
+        .pos = .{
+            .x = @floatFromInt(trivertex.vertex[0]),
+            .y = @floatFromInt(trivertex.vertex[1]),
+            .z = @floatFromInt(trivertex.vertex[2])
+        },
+        .uv = .{
+            .x = @as(f32, @floatFromInt(stvertex.s)) / skin_width,
+            .y = @as(f32, @floatFromInt(stvertex.t)) / skin_height
+        },
+        .normal = getNormal(trivertex.light_index),
+        .color = colors.white,
+        .tangent = math.Vec4.zero
     };
-
     if (triangle.faces_front == 0 and stvertex.on_seam != 0) {
-        vertex.u += 0.5;
+        vertex.pos.x += 0.5;
     }
 
     return vertex;
+}
+
+fn makeTriangle(triangle: Triangle_, frame: MDLFrame_, config: MDLMeshBuildConfig_) [3]graphics.Vertex {
+    const stvertices = config.stvertexes;
+    const sw = config.skin_width;
+    const sh = config.skin_height;
+
+    const idx0 = triangle.indexes[0];
+    const idx1 = triangle.indexes[1];
+    const idx2 = triangle.indexes[2];
+
+    const tv0 = frame.vertexes[idx0];
+    const tv1 = frame.vertexes[idx1];
+    const tv2 = frame.vertexes[idx2];
+
+    const stv0 = stvertices[idx0];
+    const stv1 = stvertices[idx1];
+    const stv2 = stvertices[idx2];
+
+    const v0 = makeVertex(triangle, tv0, stv0, sw, sh);
+    const v1 = makeVertex(triangle, tv1, stv1, sw, sh);
+    const v2 = makeVertex(triangle, tv2, stv2, sw, sh);
+
+    return .{ v0, v1, v2 };
 }
 
 fn makeMesh(allocator: Allocator, frame: MDLFrame_, config: MDLMeshBuildConfig_) !mesh.Mesh {
     var builder = mesh.MeshBuilder.init(allocator);
     defer builder.deinit();
 
-    const triangles = config.triangles;
-    const stvertices = config.stvertexes;
-    const sw = config.skin_width;
-    const sh = config.skin_height;
-    const m = config.transform;
-    const material = config.material;
-
-    for (triangles) |triangle| {
-        const idx0 = triangle.indexes[0];
-        const idx1 = triangle.indexes[1];
-        const idx2 = triangle.indexes[2];
-
-        const tv0 = frame.vertexes[idx0];
-        const tv1 = frame.vertexes[idx1];
-        const tv2 = frame.vertexes[idx2];
-
-        const stv0 = stvertices[idx0];
-        const stv1 = stvertices[idx1];
-        const stv2 = stvertices[idx2];
-
-        const v0 = makeVertex(triangle, tv0, stv0, sw, sh);
-        const v1 = makeVertex(triangle, tv1, stv1, sw, sh);
-        const v2 = makeVertex(triangle, tv2, stv2, sw, sh);
-
-        _ = try builder.addTriangleFromVertices(v0, v1, v2, m);
+    for (config.triangles) |triangle| {
+        const v = makeTriangle(triangle, frame, config);
+        _ = try builder.addTriangleFromVerticesWithTransform(v[0], v[1], v[2], config.transform);
     }
 
-    return builder.buildMesh(material);
+    return builder.buildMesh(config.material);
 }
 
 pub fn open(allocator: Allocator, path: []const u8) !MDL {
@@ -409,7 +424,7 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
 
     // Material
     const default_material = graphics.Material.init(.{
-        .shader = graphics.Shader.initDefault(.{}),
+        .shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = mesh.getShaderAttributes() }, default_mesh),
         .texture_0 = skins[0].single.texture,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
