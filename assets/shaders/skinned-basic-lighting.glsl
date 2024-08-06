@@ -72,6 +72,24 @@ in vec4 position;
 in vec4 baseDiffuse;
 out vec4 frag_color;
 
+float sqr(float x)
+{
+    return x * x;
+}
+
+// light attenuation function from https://lisyarus.github.io/blog/posts/point-light-attenuation.html
+float attenuate_light(float distance, float radius, float max_intensity, float falloff)
+{
+    float s = distance / radius;
+
+    if (s >= 1.0)
+        return 0.0;
+
+    float s2 = sqr(s);
+
+    return max_intensity * sqr(1 - s2) / (1 + falloff * s);
+}
+
 void main() {
     vec4 c = texture(sampler2D(tex, smp), uv) * baseDiffuse;
     vec4 lit_color = color;
@@ -95,7 +113,7 @@ void main() {
 
         float dist = length(lightMinusPos);
         float radius = point_light_pos_data.w;
-        float attenuation = clamp(1.0 - dist/radius, 0.0, 1.0);
+        float attenuation = attenuate_light(dist, radius, 1.0, 1.0);
         lit_color.rgb += (lightBrightness * lightColor * attenuation);
     }
 
