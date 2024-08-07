@@ -116,6 +116,7 @@ zig build run-fonts
 zig build run-forest
 zig build run-framepacing
 zig build run-imgui
+zig build run-lighting
 zig build run-lua
 zig build run-meshbuilder
 zig build run-meshes
