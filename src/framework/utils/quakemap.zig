@@ -685,13 +685,11 @@ pub const QuakeMap = struct {
                 (v_axis.dot(pos_2) + face.shift_y) / tex_size_y,
             );
 
-            const v0: graphics.PackedVertex = .{ .x = pos_0.x, .y = pos_0.y, .z = pos_0.z, .u = uv_0.x, .v = uv_0.y };
-            const v1: graphics.PackedVertex = .{ .x = pos_1.x, .y = pos_1.y, .z = pos_1.z, .u = uv_1.x, .v = uv_1.y };
-            const v2: graphics.PackedVertex = .{ .x = pos_2.x, .y = pos_2.y, .z = pos_2.z, .u = uv_2.x, .v = uv_2.y };
+            const v0: graphics.Vertex = .{ .pos = pos_0, .uv = uv_0, .normal = face.plane.normal };
+            const v1: graphics.Vertex = .{ .pos = pos_1, .uv = uv_1, .normal = face.plane.normal };
+            const v2: graphics.Vertex = .{ .pos = pos_2, .uv = uv_2, .normal = face.plane.normal };
 
-            // TODO: Add normals to vertices!
-
-            try builder.addTriangleFromPackedVertices(v0, v1, v2, transform);
+            try builder.addTriangleFromVertices(v0.mulMat4(transform), v1.mulMat4(transform), v2.mulMat4(transform));
         }
     }
 };

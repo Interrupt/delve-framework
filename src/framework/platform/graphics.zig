@@ -146,8 +146,8 @@ pub const Vertex = struct {
     pos: Vec3 = Vec3.zero,
     uv: Vec2 = Vec2.zero,
     color: colors.Color = colors.white,
-    normal: Vec3 = Vec3.zero,
-    tangent: Vec4 = Vec4.zero,
+    normal: Vec3 = Vec3.y_axis,
+    tangent: Vec4 = Vec4.new(1.0, 0.0, 0.0, 1.0),
 
     pub fn mulMat4(left: Vertex, right: Mat4) Vertex {
         var ret = left;
