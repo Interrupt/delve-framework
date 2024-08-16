@@ -25,7 +25,7 @@ const lit_shader = delve.shaders.default_basic_lighting;
 const skinned_lit_shader = delve.shaders.default_skinned_basic_lighting;
 
 // layout that will tell our materials how to pass params to the shader
-const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_8 };
+const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16 };
 
 var animated_mesh: skinned_mesh.SkinnedMesh = undefined;
 var animation: skinned_mesh.PlayingAnimation = undefined;
@@ -81,13 +81,9 @@ fn on_init() !void {
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
     // make shaders for skinned and unskinned meshes
-    const skinned_shader = graphics.Shader.initFromBuiltin(
-        .{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() },
-        skinned_lit_shader);
+    const skinned_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() }, skinned_lit_shader);
 
-    const static_shader = graphics.Shader.initFromBuiltin(
-        .{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() },
-        lit_shader);
+    const static_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
 
     var base_img: images.Image = try images.loadFile(mesh_texture_file);
     const tex_base = graphics.Texture.init(&base_img);
@@ -116,7 +112,7 @@ fn on_init() !void {
     });
 
     // Load an animated mesh
-    const loaded_mesh = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = skinned_mesh_material});
+    const loaded_mesh = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = skinned_mesh_material });
 
     if (loaded_mesh == null) {
         debug.fatal("Could not load skinned mesh!", .{});
@@ -161,7 +157,7 @@ fn on_draw() void {
 
     const point_light_1: delve.platform.graphics.PointLight = .{ .pos = light_pos_1, .radius = 5.0, .color = delve.colors.green };
     const point_light_2: delve.platform.graphics.PointLight = .{ .pos = light_pos_2, .radius = 2.0, .color = delve.colors.red };
-    const point_light_3: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(-2, 1.2, -2 ), .radius = 3.0, .color = delve.colors.blue };
+    const point_light_3: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(-2, 1.2, -2), .radius = 3.0, .color = delve.colors.blue };
 
     const point_lights = &[_]delve.platform.graphics.PointLight{ point_light_1, point_light_2, point_light_3 };
 
@@ -169,6 +165,7 @@ fn on_draw() void {
     animated_mesh.mesh.material.params.camera_position = camera.getPosition();
     animated_mesh.mesh.material.params.point_lights = @constCast(point_lights);
     animated_mesh.mesh.material.params.directional_light = directional_light;
+    animated_mesh.mesh.material.params.ambient_light = colors.Color.new(0.02, 0.02, 0.05, 1.0);
 
     // copy over the material params to the cube mesh too
     cube1.material.params = animated_mesh.mesh.material.params;

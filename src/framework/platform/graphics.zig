@@ -89,16 +89,23 @@ pub const MaterialUniformDefaults = enum(i32) {
     JOINTS_64,
     JOINTS_256,
     CAMERA_POSITION,
+    AMBIENT_LIGHT,
     DIRECTIONAL_LIGHT,
     POINT_LIGHTS_8,
+    POINT_LIGHTS_16,
+    POINT_LIGHTS_32,
 };
 
 // Default uniform block layout for meshes
 pub const DefaultVSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR };
 pub const DefaultFSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .COLOR_OVERRIDE, .ALPHA_CUTOFF };
 
-// Default uniform block layout for skinend meshes
+// Default VS uniform block layout for skinned meshes
 pub const DefaultSkinnedMeshVSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR, .JOINTS_64 };
+
+// Default FS uniform block layout for the basic lighting shader
+pub const DefaultLitFSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16 };
+
 /// Default vertex shader uniform block layout
 pub const VSDefaultUniforms = struct {
     projViewMatrix: math.Mat4 align(16),
@@ -589,6 +596,7 @@ pub const MaterialParams = struct {
     alpha_cutoff: f32 = 0.0,
     joints: []Mat4 = undefined,
     camera_position: Vec3 = undefined,
+    ambient_light: Color = colors.black,
     directional_light: DirectionalLight = undefined,
     point_lights: []PointLight = undefined,
 };
@@ -844,26 +852,39 @@ pub const Material = struct {
                     const cam_array = [_]f32{ self.params.camera_position.x, self.params.camera_position.y, self.params.camera_position.z, 0.0 };
                     u_block.addBytesFrom(&cam_array, UniformBlockType.VEC4);
                 },
+                .AMBIENT_LIGHT => {
+                    u_block.addColor("u_ambientLight", self.params.ambient_light);
+                },
                 .DIRECTIONAL_LIGHT => {
                     u_block.addBytesFrom(&self.params.directional_light.toArray(), UniformBlockType.VEC4);
                 },
                 .POINT_LIGHTS_8 => {
-                    const num_lights = self.params.point_lights.len;
-                    u_block.addFloat("u_num_point_lights", @floatFromInt(num_lights));
-
-                    // each light is packed as two vec4s
-                    for (0..8) |i| {
-                        if (i < num_lights) {
-                            u_block.addBytesFrom(&self.params.point_lights[i].toArray(), UniformBlockType.VEC4);
-                        } else {
-                            u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
-                            u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
-                        }
-                    }
+                    self.addPointLightsToUniformBlock(u_block, 8);
+                },
+                .POINT_LIGHTS_16 => {
+                    self.addPointLightsToUniformBlock(u_block, 16);
+                },
+                .POINT_LIGHTS_32 => {
+                    self.addPointLightsToUniformBlock(u_block, 32);
                 },
             }
         }
         u_block.end();
+    }
+
+    pub fn addPointLightsToUniformBlock(self: *Material, u_block: *MaterialUniformBlock, comptime max_lights: usize) void {
+        const num_lights = self.params.point_lights.len;
+        u_block.addFloat("u_num_point_lights", @floatFromInt(num_lights));
+
+        // each light is packed as two vec4s
+        for (0..max_lights) |i| {
+            if (i < num_lights) {
+                u_block.addBytesFrom(&self.params.point_lights[i].toArray(), UniformBlockType.VEC4);
+            } else {
+                u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
+                u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
+            }
+        }
     }
 
     /// Applys shader uniform variables for this Material

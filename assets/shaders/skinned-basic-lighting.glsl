@@ -58,10 +58,11 @@ uniform fs_params {
     vec4 u_cameraPos;
     vec4 u_color_override;
     float u_alpha_cutoff;
+    vec4 u_ambient_light;
     vec4 u_dir_light_dir;
     vec4 u_dir_light_color;
     float u_num_point_lights;
-    vec4 u_point_light_data[16]; // each light is packed as two vec4s
+    vec4 u_point_light_data[32]; // each light is packed as two vec4s
 };
 
 in vec4 color;
@@ -92,7 +93,7 @@ float attenuate_light(float distance, float radius, float max_intensity, float f
 
 void main() {
     vec4 c = texture(sampler2D(tex, smp), uv) * baseDiffuse;
-    vec4 lit_color = color;
+    vec4 lit_color = u_ambient_light;
 
     // to make sprite drawing easier, discard full alpha pixels
     if(c.a <= u_alpha_cutoff) {
