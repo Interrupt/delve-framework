@@ -97,14 +97,14 @@ pub const MaterialUniformDefaults = enum(i32) {
 };
 
 // Default uniform block layout for meshes
-pub const DefaultVSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR };
-pub const DefaultFSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .COLOR_OVERRIDE, .ALPHA_CUTOFF };
+pub const default_vs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR };
+pub const default_fs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .COLOR_OVERRIDE, .ALPHA_CUTOFF };
 
 // Default VS uniform block layout for skinned meshes
-pub const DefaultSkinnedMeshVSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR, .JOINTS_64 };
+pub const default_skinned_mesh_vs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR, .JOINTS_64 };
 
 // Default FS uniform block layout for the basic lighting shader
-pub const DefaultLitFSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16 };
+pub const default_lit_fs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16 };
 
 /// Default vertex shader uniform block layout
 pub const VSDefaultUniforms = struct {
@@ -575,8 +575,8 @@ pub const MaterialConfig = struct {
     shader: ?Shader = null,
 
     // The layouts of the default (0th) vertex and fragment shaders
-    default_vs_uniform_layout: []const MaterialUniformDefaults = DefaultVSUniforms,
-    default_fs_uniform_layout: []const MaterialUniformDefaults = DefaultFSUniforms,
+    default_vs_uniform_layout: []const MaterialUniformDefaults = default_vs_uniforms,
+    default_fs_uniform_layout: []const MaterialUniformDefaults = default_fs_uniforms,
 
     // Samplers to create. Defaults to making one linearly filtered sampler
     samplers: []const FilterMode = &[_]FilterMode{.LINEAR},
