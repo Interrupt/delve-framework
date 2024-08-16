@@ -588,7 +588,6 @@ pub const MaterialParams = struct {
     color_override: Color = colors.transparent,
     alpha_cutoff: f32 = 0.0,
     joints: []Mat4 = undefined,
-    camera_position: Vec3 = undefined,
     directional_light: DirectionalLight = undefined,
     point_lights: []PointLight = undefined,
 };
@@ -840,8 +839,8 @@ pub const Material = struct {
                     u_block.addBytesFrom(self.params.joints[0..256], UniformBlockType.MAT4);
                 },
                 .CAMERA_POSITION => {
-                    // todo: why does this need to be a vec4? ordering gets off with a vec3
-                    const cam_array = [_]f32{ self.params.camera_position.x, self.params.camera_position.y, self.params.camera_position.z, 0.0 };
+                    const inv_view = view_matrix.invert();
+                    const cam_array = [_]f32{ inv_view.m[3][0], inv_view.m[3][1], inv_view.m[3][2], 0.0 };
                     u_block.addBytesFrom(&cam_array, UniformBlockType.VEC4);
                 },
                 .DIRECTIONAL_LIGHT => {

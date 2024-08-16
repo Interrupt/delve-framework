@@ -162,7 +162,6 @@ fn on_draw() void {
     const point_lights = &[_]delve.platform.graphics.PointLight{ point_light_1, point_light_2, point_light_3 };
 
     // add the lights and camera to the materials
-    animated_mesh.mesh.material.params.camera_position = camera.getPosition();
     animated_mesh.mesh.material.params.point_lights = @constCast(point_lights);
     animated_mesh.mesh.material.params.directional_light = directional_light;
 
