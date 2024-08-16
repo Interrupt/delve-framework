@@ -215,17 +215,17 @@ pub fn on_tick(delta: f32) void {
 }
 
 pub fn on_draw() void {
-    const proj_view_matrix = camera.getProjView();
+    camera.update();
     const model = math.Mat4.identity;
 
     for (0..map_meshes.items.len) |idx| {
-        map_meshes.items[idx].draw(proj_view_matrix, model);
+        map_meshes.items[idx].draw(camera.view, camera.projection, model);
     }
     for (0..entity_meshes.items.len) |idx| {
-        entity_meshes.items[idx].draw(proj_view_matrix, model);
+        entity_meshes.items[idx].draw(camera.view, camera.projection, model);
     }
 
-    cube_mesh.draw(proj_view_matrix, math.Mat4.translate(camera.position));
+    cube_mesh.draw(camera.view, camera.projection, math.Mat4.translate(camera.position));
 }
 
 pub fn do_player_move(delta: f32) void {

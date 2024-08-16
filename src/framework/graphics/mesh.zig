@@ -156,13 +156,13 @@ pub const Mesh = struct {
     }
 
     /// Draw this mesh
-    pub fn draw(self: *Mesh, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
-        graphics.drawWithMaterial(&self.bindings, &self.material, proj_view_matrix, model_matrix);
+    pub fn draw(self: *Mesh, view_matrix: math.Mat4, proj_matrix: math.Mat4, model_matrix: math.Mat4) void {
+        graphics.drawWithMaterial(&self.bindings, &self.material, view_matrix, proj_matrix, model_matrix);
     }
 
     /// Draw this mesh, using the specified material instead of the set one
-    pub fn drawWithMaterial(self: *Mesh, material: *graphics.Material, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
-        graphics.drawWithMaterial(&self.bindings, material, proj_view_matrix, model_matrix);
+    pub fn drawWithMaterial(self: *Mesh, material: *graphics.Material, view_matrix: math.Mat4, proj_matrix: math.Mat4, model_matrix: math.Mat4) void {
+        graphics.drawWithMaterial(&self.bindings, material, view_matrix, proj_matrix, model_matrix);
     }
 };
 

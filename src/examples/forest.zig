@@ -396,14 +396,14 @@ fn addGrass(pos: math.Vec3, grass_area: u32, grass_size: f32, density: f32) void
 }
 
 fn on_draw() void {
-    const proj_view_mat = camera.getProjView();
+    camera.update();
 
     // draw grass and trees
-    grass_batch.draw(proj_view_mat, math.Mat4.identity);
-    sprite_batch.draw(proj_view_mat, math.Mat4.identity);
+    grass_batch.draw(camera.view, camera.projection, math.Mat4.identity);
+    sprite_batch.draw(camera.view, camera.projection, math.Mat4.identity);
 
     // make clouds follow the camera
-    cloud_batch.draw(proj_view_mat, math.Mat4.translate(camera.position));
+    cloud_batch.draw(camera.view, camera.projection, math.Mat4.translate(camera.position));
 }
 
 fn on_cleanup() !void {

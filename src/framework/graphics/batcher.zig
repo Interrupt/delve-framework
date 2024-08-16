@@ -171,10 +171,10 @@ pub const SpriteBatcher = struct {
     }
 
     /// Draws all the batches
-    pub fn draw(self: *SpriteBatcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+    pub fn draw(self: *SpriteBatcher, view_matrix: Mat4, proj_matrix: Mat4, model_matrix: Mat4) void {
         var it = self.batches.iterator();
         while (it.next()) |batcher| {
-            batcher.value_ptr.draw(proj_view_matrix, model_matrix);
+            batcher.value_ptr.draw(view_matrix, proj_matrix, model_matrix);
         }
     }
 
@@ -450,22 +450,22 @@ pub const Batcher = struct {
     }
 
     /// Submit a draw call to draw all shapes for this batch
-    pub fn draw(self: *Batcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+    pub fn draw(self: *Batcher, view_matrix: Mat4, proj_matrix: Mat4, model_matrix: Mat4) void {
         if (self.material == null) {
-            self.drawWithoutMaterial(proj_view_matrix, model_matrix);
+            self.drawWithoutMaterial(view_matrix, proj_matrix, model_matrix);
         } else {
-            self.drawWithMaterial(proj_view_matrix, model_matrix);
+            self.drawWithMaterial(view_matrix, proj_matrix, model_matrix);
         }
     }
 
     /// Submit a draw call to draw all shapes for this batch
-    pub fn drawWithoutMaterial(self: *Batcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+    pub fn drawWithoutMaterial(self: *Batcher, view_matrix: Mat4, proj_matrix: Mat4, model_matrix: Mat4) void {
         if (self.index_pos == 0)
             return;
 
         // Make our default uniform blocks
         const vs_params = VSParams{
-            .projViewMatrix = proj_view_matrix,
+            .projViewMatrix = proj_matrix.mul(view_matrix),
             .modelMatrix = model_matrix,
             .in_color = .{ 1.0, 1.0, 1.0, 1.0 },
         };
@@ -482,14 +482,14 @@ pub const Batcher = struct {
     }
 
     /// Submit a draw call to draw all shapes for this batch
-    pub fn drawWithMaterial(self: *Batcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+    pub fn drawWithMaterial(self: *Batcher, view_matrix: Mat4, proj_matrix: Mat4, model_matrix: Mat4) void {
         if (self.index_pos == 0)
             return;
 
         if (self.material == null)
             return;
 
-        graphics.drawWithMaterial(&self.bindings, self.material.?, proj_view_matrix, model_matrix);
+        graphics.drawWithMaterial(&self.bindings, self.material.?, view_matrix, proj_matrix, model_matrix);
     }
 
     /// Expand the buffers for this batch if needed to fit the new size

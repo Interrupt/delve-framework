@@ -187,7 +187,7 @@ pub const Camera = struct {
         self.pitch(mouse_delta.y * mouse_mod * turn_speed);
     }
 
-    fn update(self: *Camera) void {
+    pub fn update(self: *Camera) void {
         self.projection = Mat4.persp(self.fov, self.aspect, self.near, self.far);
 
         // third person camera

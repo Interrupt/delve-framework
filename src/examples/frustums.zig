@@ -99,7 +99,7 @@ pub fn on_tick(delta: f32) void {
 }
 
 pub fn on_draw() void {
-    const proj_view_matrix = primary_camera.getProjView();
+    primary_camera.update();
     const frustum_model_matrix = delve.math.Mat4.rotate(secondary_camera.yaw_angle, delve.math.Vec3.up);
 
     for (0..10) |x| {
@@ -111,14 +111,14 @@ pub fn on_draw() void {
             const bounds = cube_mesh.bounds.translate(cube_pos);
 
             if (frustum.containsBoundingBox(bounds)) {
-                cube_mesh.drawWithMaterial(&material_highlight, proj_view_matrix, cube_model_matrix);
+                cube_mesh.drawWithMaterial(&material_highlight, primary_camera.view, primary_camera.projection, cube_model_matrix);
             } else {
-                cube_mesh.draw(proj_view_matrix, cube_model_matrix);
+                cube_mesh.draw(primary_camera.view, primary_camera.projection, cube_model_matrix);
             }
         }
     }
 
-    frustum_mesh.draw(proj_view_matrix, frustum_model_matrix);
+    frustum_mesh.draw(primary_camera.view, primary_camera.projection, frustum_model_matrix);
 }
 
 pub fn createFrustumMesh() !delve.graphics.mesh.Mesh {

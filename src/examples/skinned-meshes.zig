@@ -150,7 +150,7 @@ fn on_tick(delta: f32) void {
 }
 
 fn on_draw() void {
-    const proj_view_matrix = camera.getProjView();
+    camera.update();
 
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
@@ -168,7 +168,7 @@ fn on_draw() void {
         mesh_test.setBoneTransform(neck_bone_name, nt.*);
     }
 
-    mesh_test.draw(proj_view_matrix, model);
+    mesh_test.draw(camera.view, camera.projection, model);
 }
 
 fn on_cleanup() !void {

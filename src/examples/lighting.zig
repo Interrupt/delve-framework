@@ -137,7 +137,7 @@ fn on_tick(delta: f32) void {
 }
 
 fn on_draw() void {
-    const proj_view_matrix = camera.getProjView();
+    camera.update();
 
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
@@ -159,7 +159,6 @@ fn on_draw() void {
     const point_lights = &[_]delve.platform.graphics.PointLight{ point_light_1, point_light_2, point_light_3 };
 
     // add the lights and camera to the materials
-    animated_mesh.mesh.material.params.camera_position = camera.getPosition();
     animated_mesh.mesh.material.params.point_lights = @constCast(point_lights);
     animated_mesh.mesh.material.params.directional_light = directional_light;
     animated_mesh.mesh.material.params.ambient_light = colors.Color.new(0.02, 0.02, 0.05, 1.0);
@@ -168,9 +167,9 @@ fn on_draw() void {
     cube1.material.params = animated_mesh.mesh.material.params;
     cube2.material.params = animated_mesh.mesh.material.params;
 
-    animated_mesh.draw(proj_view_matrix, model);
-    cube1.draw(proj_view_matrix, Mat4.identity);
-    cube2.draw(proj_view_matrix, Mat4.translate(Vec3.new(-2, 0, 0)).mul(Mat4.rotate(time * 0.1, Vec3.y_axis)));
+    animated_mesh.draw(camera.view, camera.projection, model);
+    cube1.draw(camera.view, camera.projection, Mat4.identity);
+    cube2.draw(camera.view, camera.projection, Mat4.translate(Vec3.new(-2, 0, 0)).mul(Mat4.rotate(time * 0.1, Vec3.y_axis)));
 }
 
 fn on_cleanup() !void {
