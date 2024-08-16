@@ -81,13 +81,9 @@ fn on_init() !void {
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
     // make shaders for skinned and unskinned meshes
-    const skinned_shader = graphics.Shader.initFromBuiltin(
-        .{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() },
-        skinned_lit_shader);
+    const skinned_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() }, skinned_lit_shader);
 
-    const static_shader = graphics.Shader.initFromBuiltin(
-        .{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() },
-        lit_shader);
+    const static_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
 
     var base_img: images.Image = try images.loadFile(mesh_texture_file);
     const tex_base = graphics.Texture.init(&base_img);
@@ -116,7 +112,7 @@ fn on_init() !void {
     });
 
     // Load an animated mesh
-    const loaded_mesh = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = skinned_mesh_material});
+    const loaded_mesh = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = skinned_mesh_material });
 
     if (loaded_mesh == null) {
         debug.fatal("Could not load skinned mesh!", .{});
@@ -144,7 +140,7 @@ fn on_tick(delta: f32) void {
 }
 
 fn on_draw() void {
-    const proj_view_matrix = camera.getProjView();
+    camera.update();
 
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
@@ -161,7 +157,7 @@ fn on_draw() void {
 
     const point_light_1: delve.platform.graphics.PointLight = .{ .pos = light_pos_1, .radius = 5.0, .color = delve.colors.green };
     const point_light_2: delve.platform.graphics.PointLight = .{ .pos = light_pos_2, .radius = 2.0, .color = delve.colors.red };
-    const point_light_3: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(-2, 1.2, -2 ), .radius = 3.0, .color = delve.colors.blue };
+    const point_light_3: delve.platform.graphics.PointLight = .{ .pos = Vec3.new(-2, 1.2, -2), .radius = 3.0, .color = delve.colors.blue };
 
     const point_lights = &[_]delve.platform.graphics.PointLight{ point_light_1, point_light_2, point_light_3 };
 
@@ -174,9 +170,9 @@ fn on_draw() void {
     cube1.material.params = animated_mesh.mesh.material.params;
     cube2.material.params = animated_mesh.mesh.material.params;
 
-    animated_mesh.draw(proj_view_matrix, model);
-    cube1.draw(proj_view_matrix, Mat4.identity);
-    cube2.draw(proj_view_matrix, Mat4.translate(Vec3.new(-2, 0, 0)).mul(Mat4.rotate(time * 0.1, Vec3.y_axis)));
+    animated_mesh.draw(camera.view, camera.projection, model);
+    cube1.draw(camera.view, camera.projection, Mat4.identity);
+    cube2.draw(camera.view, camera.projection, Mat4.translate(Vec3.new(-2, 0, 0)).mul(Mat4.rotate(time * 0.1, Vec3.y_axis)));
 }
 
 fn on_cleanup() !void {
