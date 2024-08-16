@@ -24,9 +24,6 @@ const Color = colors.Color;
 const lit_shader = delve.shaders.default_basic_lighting;
 const skinned_lit_shader = delve.shaders.default_skinned_basic_lighting;
 
-// layout that will tell our materials how to pass params to the shader
-const basic_lighting_fs_uniforms: []const delve.platform.graphics.MaterialUniformDefaults = &[_]delve.platform.graphics.MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_8 };
-
 var animated_mesh: skinned_mesh.SkinnedMesh = undefined;
 var animation: skinned_mesh.PlayingAnimation = undefined;
 
@@ -95,10 +92,10 @@ fn on_init() !void {
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
 
         // use the VS layout that supports sending joints to the shader
-        .default_vs_uniform_layout = delve.platform.graphics.DefaultSkinnedMeshVSUniforms,
+        .default_vs_uniform_layout = delve.platform.graphics.default_skinned_mesh_vs_uniforms,
 
         // use the FS layout that supports lighting
-        .default_fs_uniform_layout = basic_lighting_fs_uniforms,
+        .default_fs_uniform_layout = delve.platform.graphics.default_lit_fs_uniforms,
     });
 
     // Create a material out of the texture
@@ -108,7 +105,7 @@ fn on_init() !void {
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
 
         // use the FS layout that supports lighting
-        .default_fs_uniform_layout = basic_lighting_fs_uniforms,
+        .default_fs_uniform_layout = delve.platform.graphics.default_lit_fs_uniforms,
     });
 
     // Load an animated mesh
@@ -164,6 +161,7 @@ fn on_draw() void {
     // add the lights and camera to the materials
     animated_mesh.mesh.material.params.point_lights = @constCast(point_lights);
     animated_mesh.mesh.material.params.directional_light = directional_light;
+    animated_mesh.mesh.material.params.ambient_light = colors.Color.new(0.02, 0.02, 0.05, 1.0);
 
     // copy over the material params to the cube mesh too
     cube1.material.params = animated_mesh.mesh.material.params;
