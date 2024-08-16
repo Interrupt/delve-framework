@@ -96,7 +96,7 @@ fn on_init() !void {
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
 
         // use the VS layout that supports sending joints to the shader
-        .default_vs_uniform_layout = delve.platform.graphics.DefaultSkinnedMeshVSUniforms,
+        .default_vs_uniform_layout = delve.platform.graphics.default_skinned_mesh_vs_uniforms,
     });
 
     // Load our mesh!
