@@ -10,6 +10,7 @@ const mesh = @import("mesh.zig");
 const interpolation = @import("../utils/interpolation.zig");
 
 const Vertex = graphics.Vertex;
+const CameraMatrices = graphics.CameraMatrices;
 const Color = colors.Color;
 const Rect = @import("../spatial/rect.zig").Rect;
 const Frustum = @import("../spatial/frustum.zig").Frustum;
@@ -216,21 +217,21 @@ pub const SkinnedMesh = struct {
     }
 
     /// Draw this mesh
-    pub fn draw(self: *SkinnedMesh, view_matrix: math.Mat4, proj_matrix: math.Mat4, model_matrix: math.Mat4) void {
+    pub fn draw(self: *SkinnedMesh, cam_matrices: CameraMatrices, model_matrix: math.Mat4) void {
         if (self.joint_locations_dirty)
             self.applySkeletonTransforms();
 
         self.mesh.material.params.joints = &self.joint_locations;
-        graphics.drawWithMaterial(&self.mesh.bindings, &self.mesh.material, view_matrix, proj_matrix, model_matrix);
+        graphics.drawWithMaterial(&self.mesh.bindings, &self.mesh.material, cam_matrices, model_matrix);
     }
 
     /// Draw this mesh, using the specified material instead of the set one
-    pub fn drawWithMaterial(self: *SkinnedMesh, material: *graphics.Material, view_matrix: math.Mat4, proj_matrix: math.Mat4, model_matrix: math.Mat4) void {
+    pub fn drawWithMaterial(self: *SkinnedMesh, material: *graphics.Material, cam_matrices: CameraMatrices, model_matrix: math.Mat4) void {
         if (self.joint_locations_dirty)
             self.applySkeletonTransforms();
 
         self.mesh.material.params.joints = &self.joint_locations;
-        graphics.drawWithMaterial(&self.mesh.bindings, material, view_matrix, proj_matrix, model_matrix);
+        graphics.drawWithMaterial(&self.mesh.bindings, material, cam_matrices, model_matrix);
     }
 
     /// Resets all joints back to their identity matrix
