@@ -187,24 +187,32 @@ pub const Camera = struct {
         self.pitch(mouse_delta.y * mouse_mod * turn_speed);
     }
 
-    pub fn update(self: *Camera) void {
+    /// Sets our view matrices from the current camera state, returns the current matrices
+    pub fn update(self: *Camera) graphics.CameraMatrices {
         self.projection = Mat4.persp(self.fov, self.aspect, self.near, self.far);
 
         // third person camera
         if (self.view_mode == .THIRD_PERSON) {
             self.view = Mat4.lookat(self.position.add(self.direction.scale(self.boom_arm_length)), self.position, self.up);
-            return;
+            return self.getViewMatrices();
         }
 
         // first person camera
         self.view = Mat4.lookat(Vec3.zero, Vec3.zero.sub(self.direction), self.up);
         self.view = self.view.mul(Mat4.rotate(self.roll_angle, self.direction));
         self.view = self.view.mul(Mat4.translate(self.position.scale(-1)));
+
+        return self.getViewMatrices();
+    }
+
+    /// Returns the current view matrices
+    pub fn getViewMatrices(self: *Camera) graphics.CameraMatrices {
+        return .{ .view = self.view, .proj = self.projection };
     }
 
     /// Applies projection and view, returns a projection * view matrix
     pub fn getProjView(self: *Camera) Mat4 {
-        self.update();
+        _ = self.update();
         return self.projection.mul(self.view);
     }
 

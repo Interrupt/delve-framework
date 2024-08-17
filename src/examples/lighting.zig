@@ -137,7 +137,7 @@ fn on_tick(delta: f32) void {
 }
 
 fn on_draw() void {
-    camera.update();
+    const view_mats = camera.update();
 
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
@@ -167,9 +167,9 @@ fn on_draw() void {
     cube1.material.params = animated_mesh.mesh.material.params;
     cube2.material.params = animated_mesh.mesh.material.params;
 
-    animated_mesh.draw(camera.view, camera.projection, model);
-    cube1.draw(camera.view, camera.projection, Mat4.identity);
-    cube2.draw(camera.view, camera.projection, Mat4.translate(Vec3.new(-2, 0, 0)).mul(Mat4.rotate(time * 0.1, Vec3.y_axis)));
+    animated_mesh.draw(view_mats, model);
+    cube1.draw(view_mats, Mat4.identity);
+    cube2.draw(view_mats, Mat4.translate(Vec3.new(-2, 0, 0)).mul(Mat4.rotate(time * 0.1, Vec3.y_axis)));
 }
 
 fn on_cleanup() !void {

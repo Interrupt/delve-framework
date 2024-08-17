@@ -9,6 +9,7 @@ const boundingbox = @import("../spatial/boundingbox.zig");
 
 const PackedVertex = graphics.PackedVertex;
 const Vertex = graphics.Vertex;
+const CameraMatrices = graphics.CameraMatrices;
 const Color = colors.Color;
 const Rect = @import("../spatial/rect.zig").Rect;
 const Frustum = @import("../spatial/frustum.zig").Frustum;
@@ -156,13 +157,13 @@ pub const Mesh = struct {
     }
 
     /// Draw this mesh
-    pub fn draw(self: *Mesh, view_matrix: math.Mat4, proj_matrix: math.Mat4, model_matrix: math.Mat4) void {
-        graphics.drawWithMaterial(&self.bindings, &self.material, view_matrix, proj_matrix, model_matrix);
+    pub fn draw(self: *Mesh, cam_matrices: CameraMatrices, model_matrix: math.Mat4) void {
+        graphics.drawWithMaterial(&self.bindings, &self.material, cam_matrices, model_matrix);
     }
 
     /// Draw this mesh, using the specified material instead of the set one
-    pub fn drawWithMaterial(self: *Mesh, material: *graphics.Material, view_matrix: math.Mat4, proj_matrix: math.Mat4, model_matrix: math.Mat4) void {
-        graphics.drawWithMaterial(&self.bindings, material, view_matrix, proj_matrix, model_matrix);
+    pub fn drawWithMaterial(self: *Mesh, material: *graphics.Material, cam_matrices: CameraMatrices, model_matrix: math.Mat4) void {
+        graphics.drawWithMaterial(&self.bindings, material, cam_matrices, model_matrix);
     }
 };
 

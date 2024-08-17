@@ -125,6 +125,12 @@ pub const Anything = struct {
     size: usize = 0,
 };
 
+// The camera view matrices that will be passed to draw calls
+pub const CameraMatrices = struct {
+    view: Mat4,
+    proj: Mat4,
+};
+
 /// A packed mesh vertex
 pub const PackedVertex = struct {
     x: f32,
@@ -887,11 +893,14 @@ pub const Material = struct {
     }
 
     /// Applys shader uniform variables for this Material
-    pub fn applyUniforms(self: *Material, view_matrix: Mat4, proj_matrix: Mat4, model_matrix: Mat4) void {
+    pub fn applyUniforms(self: *Material, cam_matrices: CameraMatrices, model_matrix: Mat4) void {
         // If no default layout is set, we'll treat the first uniform block like any other
         // otherwise, we start custom blocks at index 1.
         const has_default_vs: bool = self.default_vs_uniform_layout.len > 0;
         const has_default_fs: bool = self.default_fs_uniform_layout.len > 0;
+
+        const view_matrix = cam_matrices.view;
+        const proj_matrix = cam_matrices.proj;
 
         // Set our default uniform vars first
         if (has_default_vs and self.use_default_params) {
@@ -1144,15 +1153,15 @@ pub fn draw(bindings: *Bindings, shader: *Shader) void {
 }
 
 /// Draw a part of a binding, using a material
-pub fn drawSubsetWithMaterial(bindings: *Bindings, start: u32, end: u32, material: *Material, view_matrix: Mat4, proj_matrix: Mat4, model_matrix: Mat4) void {
+pub fn drawSubsetWithMaterial(bindings: *Bindings, start: u32, end: u32, material: *Material, cam_matrices: CameraMatrices, model_matrix: Mat4) void {
     bindings.updateFromMaterial(material);
-    material.applyUniforms(view_matrix, proj_matrix, model_matrix);
+    material.applyUniforms(cam_matrices, model_matrix);
     drawSubset(bindings, start, end, &material.shader);
 }
 
 /// Draw a whole binding, using a material
-pub fn drawWithMaterial(bindings: *Bindings, material: *Material, view_matrix: Mat4, proj_matrix: Mat4, model_matrix: Mat4) void {
-    drawSubsetWithMaterial(bindings, 0, @intCast(bindings.length), material, view_matrix, proj_matrix, model_matrix);
+pub fn drawWithMaterial(bindings: *Bindings, material: *Material, cam_matrices: CameraMatrices, model_matrix: Mat4) void {
+    drawSubsetWithMaterial(bindings, 0, @intCast(bindings.length), material, cam_matrices, model_matrix);
 }
 
 /// Returns a small 2x2 solid color texture

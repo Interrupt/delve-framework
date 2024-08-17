@@ -108,7 +108,7 @@ pub fn on_tick(delta: f32) void {
 }
 
 pub fn on_draw() void {
-    camera.update();
+    const view_mats = camera.update();
 
     const ray_start = delve.math.Vec3.new(0, 0, 0);
     var ray_dir = delve.math.Vec3.new(1.0, 0.0, 0.0);
@@ -129,15 +129,15 @@ pub fn on_draw() void {
             const rayhit = ray.intersectOrientedBoundingBox(bounds);
 
             if (rayhit != null) {
-                cube_mesh.drawWithMaterial(&material_highlight, camera.view, camera.projection, cube_model_matrix);
+                cube_mesh.drawWithMaterial(&material_highlight, view_mats, cube_model_matrix);
 
                 const hit_model_matrix = delve.math.Mat4.translate(rayhit.?.hit_pos);
-                hit_mesh.drawWithMaterial(&material_hitpoint, camera.view, camera.projection, hit_model_matrix);
+                hit_mesh.drawWithMaterial(&material_hitpoint, view_mats, hit_model_matrix);
             } else {
-                cube_mesh.draw(camera.view, camera.projection, cube_model_matrix);
+                cube_mesh.draw(view_mats, cube_model_matrix);
             }
         }
     }
 
-    ray_mesh.draw(camera.view, camera.projection, delve.math.Mat4.rotate(time * 10.0, delve.math.Vec3.up));
+    ray_mesh.draw(view_mats, delve.math.Mat4.rotate(time * 10.0, delve.math.Vec3.up));
 }

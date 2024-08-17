@@ -95,7 +95,7 @@ pub fn on_tick(delta: f32) void {
 }
 
 pub fn on_draw() void {
-    camera.update();
+    const view_mats = camera.update();
     var model = math.Mat4.identity;
 
     const frustum = camera.getViewFrustum();
@@ -103,7 +103,7 @@ pub fn on_draw() void {
         return;
     }
 
-    cube1.draw(camera.view, camera.projection, model.mul(math.Mat4.rotate(@floatCast(time * 40.0), math.Vec3.new(0, 1, 0))));
-    cube2.draw(camera.view, camera.projection, model);
-    cube3.draw(camera.view, camera.projection, model);
+    cube1.draw(view_mats, model.mul(math.Mat4.rotate(@floatCast(time * 40.0), math.Vec3.new(0, 1, 0))));
+    cube2.draw(view_mats, model);
+    cube3.draw(view_mats, model);
 }
