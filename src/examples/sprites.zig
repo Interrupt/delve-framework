@@ -202,7 +202,7 @@ fn on_draw() void {
     view = view.mul(math.Mat4.translate(view_translate));
     view = view.mul(math.Mat4.rotate(25.0, .{ .x = 0.0, .y = 1.0, .z = 0.0 }));
 
-    test_batch.draw(view, projection, math.Mat4.identity);
+    test_batch.draw(.{ .view = view, .proj = projection }, math.Mat4.identity);
 }
 
 fn on_cleanup() !void {

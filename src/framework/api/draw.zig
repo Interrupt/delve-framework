@@ -38,7 +38,7 @@ pub fn libDraw() void {
     const model = math.Mat4.translate(.{ .x = 0.0, .y = 0.0, .z = -2.5 });
 
     shape_batch.apply();
-    shape_batch.draw(view, proj, model);
+    shape_batch.draw(.{ .view = view, .proj = proj }, model);
 }
 
 /// Called when things are shutting down

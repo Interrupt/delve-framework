@@ -40,7 +40,7 @@ pub fn libDraw() void {
     const model = math.Mat4.translate(.{ .x = 0.0, .y = 0.0, .z = -2.5 });
 
     sprite_batch.apply();
-    sprite_batch.draw(view, proj, model);
+    sprite_batch.draw(.{ .view = view, .proj = proj }, model);
 }
 
 /// Called when things are shutting down
