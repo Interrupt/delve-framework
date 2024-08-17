@@ -12,7 +12,11 @@ Some examples compiled for web can be seen at https://interrupt.github.io/delve-
 
 ## Design Philosphy
 
-Delve uses Zig to make writing cross platform games easy, and because it is easy to interop with the vast library of existing C/C++ game development libraries. Its main goal is to be as cross platform and unopinionated as much as possible, making it easy to switch out implementations as needed.
+Delve uses Zig to make writing cross platform games easy, and because it is easy to interop with the vast library of existing C/C++ game development libraries. Its main goal is to be as cross platform and unopinionated as much as possible, making it easy to switch out implementations as needed. Being simple and understandable is better than being clever!
+
+* Built in console support - bring up with the '~' key!
+* Prototyping should be quick - included utilities to load Quake .map files!
+* Lots of examples!
 
 ## Libraries Used
 
