@@ -3,8 +3,23 @@ const yaml = @import("zigyaml");
 const mem = @import("../mem.zig");
 const debug = @import("../debug.zig");
 
-pub fn loadShaderFromYaml(filename: []const u8) !void {
-    _ = filename;
+pub fn loadFromYaml(file_path: []const u8) !void {
+    const file = try std.fs.cwd().openFile(file_path, .{});
+    defer file.close();
+
+    const allocator = mem.getAllocator();
+
+    const source = try file.readToEndAlloc(allocator, std.math.maxInt(u32));
+    defer allocator.free(source);
+
+    debug.log("{s}", .{source});
+
+    var untyped_yaml = yaml.Yaml.load(allocator, source) catch |e| {
+        debug.log("Yaml loading error! {any}", .{e});
+        return;
+    };
+    defer untyped_yaml.deinit();
+
     try testYaml();
 }
 

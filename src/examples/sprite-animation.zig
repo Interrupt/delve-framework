@@ -57,6 +57,9 @@ fn on_init() !void {
     };
     defer spritesheet_image.deinit();
 
+    const test_shader = try delve.graphics.shaders.loadFromYaml("assets/shaders/default/out/default_reflection.yaml");
+    _ = test_shader;
+
     // make the texture to draw and a default shader
     sprite_texture = graphics.Texture.init(&spritesheet_image);
     shader_default = graphics.Shader.initDefault(.{});
