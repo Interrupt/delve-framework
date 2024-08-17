@@ -1,8 +1,10 @@
 const std = @import("std");
 const yaml = @import("zigyaml");
-const mem = @import("mem.zig");
+const mem = @import("../mem.zig");
+const debug = @import("../debug.zig");
 
 pub fn loadShaderFromYaml(filename: []const u8) !void {
+    _ = filename;
     try testYaml();
 }
 
