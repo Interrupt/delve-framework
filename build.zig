@@ -58,6 +58,11 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
+    const dep_zigyaml = b.dependency("zigyaml", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     // inject the cimgui header search path into the sokol C library compile step
     const cimgui_root = dep_cimgui.namedWriteFiles("cimgui").getDirectory();
     dep_sokol.artifact("sokol_clib").addIncludePath(cimgui_root);
@@ -71,6 +76,7 @@ pub fn build(b: *std.Build) !void {
     const zaudio_item = .{ .module = dep_zaudio.module("root"), .name = "zaudio" };
     const cimgui_item = .{ .module = dep_cimgui.module("cimgui"), .name = "cimgui" };
     const stb_truetype_item = .{ .module = dep_stb_truetype.module("root"), .name = "stb_truetype" };
+    const zigyaml_item = .{ .module = dep_zigyaml.module("yaml"), .name = "zigyaml" };
 
     const delve_module_imports = [_]ModuleImport{
         sokol_item,
@@ -80,6 +86,7 @@ pub fn build(b: *std.Build) !void {
         ziglua_item,
         cimgui_item,
         stb_truetype_item,
+        zigyaml_item,
     };
 
     const link_libraries = [_]*Build.Step.Compile{

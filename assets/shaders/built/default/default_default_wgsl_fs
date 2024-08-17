@@ -1,0 +1,61 @@
+diagnostic(off, derivative_uniformity);
+
+struct fs_params {
+  /* @offset(0) */
+  u_color_override : vec4f,
+  /* @offset(16) */
+  u_alpha_cutoff : f32,
+}
+
+@group(1) @binding(48) var tex : texture_2d<f32>;
+
+@group(1) @binding(64) var smp : sampler;
+
+var<private> uv : vec2f;
+
+var<private> color : vec4f;
+
+@group(0) @binding(4) var<uniform> x_36 : fs_params;
+
+var<private> frag_color : vec4f;
+
+fn main_1() {
+  var c : vec4f;
+  var override_mod : f32;
+  let x_23 : vec2f = uv;
+  let x_24 : vec4f = textureSample(tex, smp, x_23);
+  let x_27 : vec4f = color;
+  c = (x_24 * x_27);
+  let x_33 : f32 = c.w;
+  let x_41 : f32 = x_36.u_alpha_cutoff;
+  if ((x_33 <= x_41)) {
+    discard;
+  }
+  let x_51 : f32 = x_36.u_color_override.w;
+  override_mod = (1.0f - x_51);
+  let x_54 : vec4f = c;
+  let x_56 : f32 = override_mod;
+  let x_60 : vec4f = x_36.u_color_override;
+  let x_63 : f32 = x_36.u_color_override.w;
+  let x_65 : vec3f = ((vec3f(x_54.x, x_54.y, x_54.z) * x_56) + (vec3f(x_60.x, x_60.y, x_60.z) * x_63));
+  c.x = x_65.x;
+  c.y = x_65.y;
+  c.z = x_65.z;
+  let x_77 : vec4f = c;
+  frag_color = x_77;
+  return;
+}
+
+struct main_out {
+  @location(0)
+  frag_color_1 : vec4f,
+}
+
+@fragment
+fn main(@location(1) uv_param : vec2f, @location(0) color_param : vec4f) -> main_out {
+  uv = uv_param;
+  color = color_param;
+  main_1();
+  return main_out(frag_color);
+}
+

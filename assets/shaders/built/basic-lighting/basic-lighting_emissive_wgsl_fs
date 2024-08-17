@@ -1,0 +1,226 @@
+diagnostic(off, derivative_uniformity);
+
+alias Arr = array<vec4f, 32u>;
+
+struct fs_params {
+  /* @offset(0) */
+  u_cameraPos : vec4f,
+  /* @offset(16) */
+  u_color_override : vec4f,
+  /* @offset(32) */
+  u_alpha_cutoff : f32,
+  /* @offset(48) */
+  u_ambient_light : vec4f,
+  /* @offset(64) */
+  u_dir_light_dir : vec4f,
+  /* @offset(80) */
+  u_dir_light_color : vec4f,
+  /* @offset(96) */
+  u_num_point_lights : f32,
+  /* @offset(112) */
+  u_point_light_data : Arr,
+}
+
+@group(1) @binding(48) var tex : texture_2d<f32>;
+
+@group(1) @binding(64) var smp : sampler;
+
+var<private> uv : vec2f;
+
+var<private> color : vec4f;
+
+@group(0) @binding(4) var<uniform> x_81 : fs_params;
+
+var<private> position_1 : vec4f;
+
+var<private> normal : vec3f;
+
+@group(1) @binding(49) var tex_emissive : texture_2d<f32>;
+
+var<private> frag_color : vec4f;
+
+var<private> tangent : vec4f;
+
+fn sqr_f1_(x : ptr<function, f32>) -> f32 {
+  let x_19 : f32 = *(x);
+  let x_20 : f32 = *(x);
+  return (x_19 * x_20);
+}
+
+fn attenuate_light_f1_f1_f1_f1_(distance_1 : ptr<function, f32>, radius : ptr<function, f32>, max_intensity : ptr<function, f32>, falloff : ptr<function, f32>) -> f32 {
+  var s : f32;
+  var s2 : f32;
+  var param : f32;
+  var param_1 : f32;
+  let x_25 : f32 = *(distance_1);
+  let x_26 : f32 = *(radius);
+  s = (x_25 / x_26);
+  let x_28 : f32 = s;
+  if ((x_28 >= 1.0f)) {
+    return 0.0f;
+  }
+  let x_38 : f32 = s;
+  param = x_38;
+  let x_39 : f32 = sqr_f1_(&(param));
+  s2 = x_39;
+  let x_40 : f32 = *(max_intensity);
+  let x_41 : f32 = s2;
+  param_1 = (1.0f - x_41);
+  let x_44 : f32 = sqr_f1_(&(param_1));
+  let x_46 : f32 = *(falloff);
+  let x_47 : f32 = s;
+  return ((x_40 * x_44) / (1.0f + (x_46 * x_47)));
+}
+
+fn main_1() {
+  var c : vec4f;
+  var lit_color : vec4f;
+  var i : i32;
+  var point_light_pos_data : vec4f;
+  var point_light_color_data : vec4f;
+  var lightPosEye : vec3f;
+  var lightColor : vec3f;
+  var lightMinusPos : vec3f;
+  var lightDir : vec3f;
+  var lightBrightness : f32;
+  var dist : f32;
+  var radius_1 : f32;
+  var attenuation : f32;
+  var param_2 : f32;
+  var param_3 : f32;
+  var param_4 : f32;
+  var param_5 : f32;
+  var lightDir_1 : vec4f;
+  var lightColor_1 : vec4f;
+  var lightBrightness_1 : f32;
+  var e : vec4f;
+  var e_amt : f32;
+  var override_mod : f32;
+  let x_69 : vec2f = uv;
+  let x_70 : vec4f = textureSample(tex, smp, x_69);
+  let x_73 : vec4f = color;
+  c = (x_70 * x_73);
+  let x_86 : vec4f = x_81.u_ambient_light;
+  lit_color = x_86;
+  let x_89 : f32 = c.w;
+  let x_93 : f32 = x_81.u_alpha_cutoff;
+  if ((x_89 <= x_93)) {
+    discard;
+  }
+  i = 0i;
+  loop {
+    let x_106 : i32 = i;
+    let x_109 : f32 = x_81.u_num_point_lights;
+    if ((x_106 < i32(x_109))) {
+    } else {
+      break;
+    }
+    let x_114 : i32 = i;
+    let x_117 : vec4f = x_81.u_point_light_data[(x_114 * 2i)];
+    point_light_pos_data = x_117;
+    let x_119 : i32 = i;
+    let x_124 : vec4f = x_81.u_point_light_data[((x_119 * 2i) + 1i)];
+    point_light_color_data = x_124;
+    let x_128 : vec4f = point_light_pos_data;
+    lightPosEye = vec3f(x_128.x, x_128.y, x_128.z);
+    let x_131 : vec4f = point_light_color_data;
+    lightColor = vec3f(x_131.x, x_131.y, x_131.z);
+    let x_134 : vec3f = lightPosEye;
+    let x_136 : vec4f = position_1;
+    lightMinusPos = (x_134 - vec3f(x_136.x, x_136.y, x_136.z));
+    let x_140 : vec3f = lightMinusPos;
+    lightDir = normalize(x_140);
+    let x_143 : vec3f = lightDir;
+    let x_146 : vec3f = normal;
+    lightBrightness = max(dot(x_143, x_146), 0.0f);
+    let x_150 : vec3f = lightMinusPos;
+    dist = length(x_150);
+    let x_154 : f32 = point_light_pos_data.w;
+    radius_1 = x_154;
+    let x_157 : f32 = dist;
+    param_2 = x_157;
+    let x_159 : f32 = radius_1;
+    param_3 = x_159;
+    param_4 = 1.0f;
+    param_5 = 1.0f;
+    let x_162 : f32 = attenuate_light_f1_f1_f1_f1_(&(param_2), &(param_3), &(param_4), &(param_5));
+    attenuation = x_162;
+    let x_163 : f32 = lightBrightness;
+    let x_164 : vec3f = lightColor;
+    let x_166 : f32 = attenuation;
+    let x_168 : vec4f = lit_color;
+    let x_170 : vec3f = (vec3f(x_168.x, x_168.y, x_168.z) + ((x_164 * x_163) * x_166));
+    lit_color.x = x_170.x;
+    lit_color.y = x_170.y;
+    lit_color.z = x_170.z;
+
+    continuing {
+      let x_180 : i32 = i;
+      i = (x_180 + 1i);
+    }
+  }
+  let x_185 : f32 = x_81.u_dir_light_dir.x;
+  let x_187 : f32 = x_81.u_dir_light_dir.y;
+  let x_189 : f32 = x_81.u_dir_light_dir.z;
+  lightDir_1 = vec4f(x_185, x_187, x_189, 0.0f);
+  let x_194 : vec4f = x_81.u_dir_light_color;
+  lightColor_1 = x_194;
+  let x_196 : vec4f = lightDir_1;
+  let x_197 : vec3f = normal;
+  let x_205 : f32 = x_81.u_dir_light_dir.w;
+  lightBrightness_1 = (max(dot(x_196, vec4f(x_197.x, x_197.y, x_197.z, 0.0f)), 0.0f) * x_205);
+  let x_207 : f32 = lightBrightness_1;
+  let x_208 : vec4f = lightColor_1;
+  let x_211 : vec4f = lit_color;
+  let x_213 : vec3f = (vec3f(x_211.x, x_211.y, x_211.z) + (vec3f(x_208.x, x_208.y, x_208.z) * x_207));
+  lit_color.x = x_213.x;
+  lit_color.y = x_213.y;
+  lit_color.z = x_213.z;
+  let x_220 : vec4f = lit_color;
+  let x_221 : vec4f = c;
+  c = (x_221 * x_220);
+  let x_228 : vec2f = uv;
+  let x_229 : vec4f = textureSample(tex_emissive, smp, x_228);
+  e = x_229;
+  let x_232 : f32 = e.x;
+  let x_234 : f32 = e.y;
+  let x_237 : f32 = e.z;
+  e_amt = min(((x_232 + x_234) + x_237), 1.0f);
+  let x_240 : vec4f = c;
+  let x_242 : f32 = e_amt;
+  let x_245 : vec4f = e;
+  let x_247 : vec3f = ((vec3f(x_240.x, x_240.y, x_240.z) * (1.0f - x_242)) + vec3f(x_245.x, x_245.y, x_245.z));
+  c.x = x_247.x;
+  c.y = x_247.y;
+  c.z = x_247.z;
+  let x_256 : f32 = x_81.u_color_override.w;
+  override_mod = (1.0f - x_256);
+  let x_258 : vec4f = c;
+  let x_260 : f32 = override_mod;
+  let x_263 : vec4f = x_81.u_color_override;
+  let x_266 : f32 = x_81.u_color_override.w;
+  let x_268 : vec3f = ((vec3f(x_258.x, x_258.y, x_258.z) * x_260) + (vec3f(x_263.x, x_263.y, x_263.z) * x_266));
+  c.x = x_268.x;
+  c.y = x_268.y;
+  c.z = x_268.z;
+  let x_277 : vec4f = c;
+  frag_color = x_277;
+  return;
+}
+
+struct main_out {
+  @location(0)
+  frag_color_1 : vec4f,
+}
+
+@fragment
+fn main(@location(1) uv_param : vec2f, @location(0) color_param : vec4f, @location(4) position_1_param : vec4f, @location(2) normal_param : vec3f, @location(3) tangent_param : vec4f) -> main_out {
+  uv = uv_param;
+  color = color_param;
+  position_1 = position_1_param;
+  normal = normal_param;
+  tangent = tangent_param;
+  main_1();
+  return main_out(frag_color);
+}
+
