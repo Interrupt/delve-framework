@@ -7,6 +7,12 @@ const papp = @import("platform/app.zig");
 const text_module = @import("api/text.zig");
 const draw_module = @import("api/draw.zig");
 
+pub const ConsoleCommand = struct {
+    command: []const u8,
+    help: []const u8,
+    func: *const fn ([]const u8) void,
+};
+
 pub var use_scripting_integration: bool = false;
 
 const console_num_to_show: u32 = 8;
@@ -33,6 +39,9 @@ var cmd_history_last_direction: i32 = 0;
 var pending_cmd: std.ArrayList(u8) = undefined;
 
 var last_text_height: i32 = 0;
+
+// Keep track of any registered console commands
+var console_commands: std.StringHashMap(ConsoleCommand) = undefined;
 
 // Other systems could init the debug system before the app does
 var needs_init: bool = true;
@@ -131,6 +140,8 @@ pub fn init() void {
     log_history_list = LogList.init(allocator);
     cmd_history_list = LogList.init(allocator);
     pending_cmd = char_array.init(allocator);
+
+    console_commands = std.StringHashMap(ConsoleCommand).init(allocator);
 }
 
 pub fn deinit() void {
@@ -145,6 +156,8 @@ pub fn deinit() void {
     log_history_list.deinit();
     cmd_history_list.deinit();
     pending_cmd.deinit();
+
+    console_commands.deinit();
 
     // arena_allocator.deinit();
     // _ = gpa.deinit();
@@ -418,9 +431,7 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
         };
     }
 
-    // This is where we should go check a list of pre-registered console commands, with callbacks
-    // For now, demonstrate some built in commands
-
+    // First, check some built-ins
     if (std.mem.eql(u8, command, "exit")) {
         // console command to exit the app
         const app = @import("platform/app.zig");
@@ -444,11 +455,36 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
         return true;
     } else if (std.mem.eql(u8, command, "help")) {
         // console command to print the list of all commands
+
+        // print built-ins
         log("commands:\nexit\necho\nlua", .{});
+
+        // now print any registered
+        var cmd_it = console_commands.valueIterator();
+        while (cmd_it.next()) |cmd| {
+            log("{s}: {s}", .{ cmd.command, cmd.help });
+        }
+
+        return true;
+    }
+
+    // check if we have any registered console commands
+    if (console_commands.getPtr(command)) |c| {
+        if (command_with_args.len > command.len + 1) {
+            const args = command_with_args[command.len + 1 .. command_with_args.len :0];
+            c.func(args);
+        } else {
+            c.func("");
+        }
+
         return true;
     }
 
     return false;
+}
+
+pub fn registerConsoleCommand(command: ConsoleCommand) !void {
+    try console_commands.put(command.command, command);
 }
 
 pub fn showErrorScreen(error_header: [:0]const u8) void {
