@@ -22,6 +22,8 @@ var player_pos: math.Vec3 = math.Vec3.zero;
 var player_vel: math.Vec3 = math.Vec3.zero;
 var on_ground = true;
 
+var gravity: f32 = -0.5;
+
 pub fn main() !void {
     const example = delve.modules.Module{
         .name = "quakemap_example",
@@ -42,6 +44,9 @@ pub fn main() !void {
 
     try delve.modules.registerModule(example);
     try delve.module.fps_counter.registerModule();
+
+    // register a console command to change gravity!
+    try delve.debug.registerConsoleCommand(.{ .command = "gravity", .func = changeGravityCmd, .help = "Change gravity" });
 
     try app.start(app.AppConfig{ .title = "Delve Framework - Quake Map Example" });
 }
@@ -230,7 +235,7 @@ pub fn on_draw() void {
 
 pub fn do_player_move(delta: f32) void {
     // gravity!
-    player_vel.y -= 0.5 * delta;
+    player_vel.y += gravity * delta;
 
     // get our forward input direction
     var move_dir: math.Vec3 = math.Vec3.zero;
@@ -306,4 +311,13 @@ pub fn do_player_move(delta: f32) void {
     // dumb friction!
     player_vel.x = 0.0;
     player_vel.z = 0.0;
+}
+
+pub fn changeGravityCmd(args: []const u8) void {
+    gravity = std.fmt.parseFloat(f32, args) catch {
+        delve.debug.log("Could not change gravity to '{s}'", .{args});
+        return;
+    };
+
+    delve.debug.log("Changed gravity to {d}", .{gravity});
 }
