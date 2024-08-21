@@ -547,6 +547,9 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) CommandResult {
 }
 
 pub fn registerConsoleCommand(command: []const u8, comptime func: anytype, help: []const u8) !void {
+    if (needs_init)
+        init();
+
     switch (@TypeOf(func)) {
         fn ([]const u8) void => {
             try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_string = func } });
