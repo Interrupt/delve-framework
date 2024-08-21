@@ -7,10 +7,18 @@ const papp = @import("platform/app.zig");
 const text_module = @import("api/text.zig");
 const draw_module = @import("api/draw.zig");
 
+pub const ConsoleCommandFunc = union(enum) {
+    fn_float: *const fn (f32) void,
+    fn_int: *const fn (i32) void,
+    fn_bool: *const fn (bool) void,
+    fn_string: *const fn ([]const u8) void,
+    fn_void: *const fn () void,
+};
+
 pub const ConsoleCommand = struct {
     command: []const u8,
     help: []const u8,
-    func: *const fn ([]const u8) void,
+    func: ConsoleCommandFunc,
 };
 
 pub var use_scripting_integration: bool = false;
@@ -403,14 +411,30 @@ pub fn runPendingCommand() void {
     const final_command = pending_cmd.items[0 .. pending_cmd.items.len - 1 :0];
     defer trackCommand(final_command);
 
-    // Try any registered commands first
-    if (tryRegisteredCommands(final_command))
-        return;
-
-    log("Unknown command: {s}", .{final_command});
+    // Try to run commands
+    const result = tryRegisteredCommands(final_command);
+    switch (result) {
+        .not_found => {
+            log("Unknown command: {s}", .{final_command});
+        },
+        .invalid_args => {
+            log("Invalid args: {s}", .{final_command});
+        },
+        .err => {
+            log("Error during command: {s}", .{final_command});
+        },
+        .ok => {},
+    }
 }
 
-pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
+pub const CommandResult = enum {
+    ok,
+    not_found,
+    invalid_args,
+    err,
+};
+
+pub fn tryRegisteredCommands(command_with_args: [:0]u8) CommandResult {
     var it = std.mem.splitAny(u8, command_with_args, " ");
 
     var command: []const u8 = undefined;
@@ -418,7 +442,7 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
         command = cmd;
     } else {
         // ignore empty commands
-        return false;
+        return .not_found;
     }
 
     // collect all of the arguments into a list of arguments for commands to use
@@ -427,7 +451,7 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
 
     while (it.next()) |arg| {
         arg_list.append(arg) catch {
-            return false;
+            return .err;
         };
     }
 
@@ -436,12 +460,12 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
         // console command to exit the app
         const app = @import("platform/app.zig");
         app.exit();
-        return true;
+        return .ok;
     } else if (std.mem.eql(u8, command, "echo")) {
         // console command to do a simple echo
         const string_to_echo = command_with_args[5..command_with_args.len :0];
         log("{s}", .{string_to_echo});
-        return true;
+        return .ok;
     } else if (std.mem.eql(u8, command, "lua")) {
         // console command to run a lua string
         if (use_scripting_integration) {
@@ -452,7 +476,7 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
         } else {
             log("Lua is not initialized.", .{});
         }
-        return true;
+        return .ok;
     } else if (std.mem.eql(u8, command, "help")) {
         // console command to print the list of all commands
 
@@ -465,26 +489,84 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
             log("{s}: {s}", .{ cmd.command, cmd.help });
         }
 
-        return true;
+        return .ok;
     }
 
     // check if we have any registered console commands
     if (console_commands.getPtr(command)) |c| {
         if (command_with_args.len > command.len + 1) {
             const args = command_with_args[command.len + 1 .. command_with_args.len :0];
-            c.func(args);
+            switch (c.func) {
+                .fn_float => {
+                    const val: f32 = std.fmt.parseFloat(f32, args) catch {
+                        return .invalid_args;
+                    };
+                    c.func.fn_float(val);
+                },
+                .fn_int => {
+                    const val: i32 = std.fmt.parseInt(i32, args, 10) catch {
+                        return .invalid_args;
+                    };
+                    c.func.fn_int(val);
+                },
+                .fn_bool => {
+                    if (std.mem.eql(u8, "true", args)) {
+                        c.func.fn_bool(true);
+                    } else if (std.mem.eql(u8, "false", args)) {
+                        c.func.fn_bool(false);
+                    } else if (std.mem.eql(u8, "1", args)) {
+                        c.func.fn_bool(true);
+                    } else if (std.mem.eql(u8, "0", args)) {
+                        c.func.fn_bool(false);
+                    } else {
+                        return .invalid_args;
+                    }
+                },
+                .fn_string => {
+                    c.func.fn_string(args);
+                },
+                .fn_void => {
+                    c.func.fn_void();
+                },
+            }
         } else {
-            c.func("");
+            switch (c.func) {
+                .fn_void => {
+                    c.func.fn_void();
+                },
+                else => {
+                    return .invalid_args;
+                },
+            }
         }
 
-        return true;
+        return .ok;
     }
 
-    return false;
+    return .not_found;
 }
 
-pub fn registerConsoleCommand(command: ConsoleCommand) !void {
-    try console_commands.put(command.command, command);
+pub fn registerConsoleCommand(command: []const u8, comptime func: anytype, help: []const u8) !void {
+    switch (@TypeOf(func)) {
+        fn ([]const u8) void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_string = func } });
+        },
+        fn (i32) void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_int = func } });
+        },
+        fn (f32) void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_float = func } });
+        },
+        fn (bool) void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_bool = func } });
+        },
+        fn () void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_void = func } });
+        },
+        else => {
+            @compileError("Unknown console command type!");
+        },
+    }
 }
 
 pub fn showErrorScreen(error_header: [:0]const u8) void {
