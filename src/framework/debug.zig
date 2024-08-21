@@ -21,6 +21,18 @@ pub const ConsoleCommand = struct {
     func: ConsoleCommandFunc,
 };
 
+pub const ConsoleVariableType = union(enum) {
+    addr_float: *f32,
+    addr_int: *i32,
+    addr_bool: *bool,
+};
+
+pub const ConsoleVariable = struct {
+    variable: []const u8,
+    help: []const u8,
+    address: ConsoleVariableType,
+};
+
 pub var use_scripting_integration: bool = false;
 
 const console_num_to_show: u32 = 8;
@@ -48,8 +60,9 @@ var pending_cmd: std.ArrayList(u8) = undefined;
 
 var last_text_height: i32 = 0;
 
-// Keep track of any registered console commands
+// Keep track of any registered console commands and variables
 var console_commands: std.StringHashMap(ConsoleCommand) = undefined;
+var console_variables: std.StringHashMap(ConsoleVariable) = undefined;
 
 // Other systems could init the debug system before the app does
 var needs_init: bool = true;
@@ -150,6 +163,7 @@ pub fn init() void {
     pending_cmd = char_array.init(allocator);
 
     console_commands = std.StringHashMap(ConsoleCommand).init(allocator);
+    console_variables = std.StringHashMap(ConsoleVariable).init(allocator);
 }
 
 pub fn deinit() void {
@@ -166,6 +180,7 @@ pub fn deinit() void {
     pending_cmd.deinit();
 
     console_commands.deinit();
+    console_variables.deinit();
 
     // arena_allocator.deinit();
     // _ = gpa.deinit();
@@ -481,12 +496,20 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) CommandResult {
         // console command to print the list of all commands
 
         // print built-ins
-        log("commands:\nexit\necho\nlua", .{});
+        log("Console Commands:\nexit\necho\nlua", .{});
 
-        // now print any registered
+        // print any registered commands
         var cmd_it = console_commands.valueIterator();
         while (cmd_it.next()) |cmd| {
             log("{s}: {s}", .{ cmd.command, cmd.help });
+        }
+
+        log("Console Variables:", .{});
+
+        // print any registered variables
+        var var_it = console_variables.valueIterator();
+        while (var_it.next()) |variable| {
+            log("{s}: {s}", .{ variable.variable, variable.help });
         }
 
         return .ok;
@@ -543,6 +566,44 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) CommandResult {
         return .ok;
     }
 
+    // check if we have any registered console variables
+    if (console_variables.getPtr(command)) |c| {
+        if (command_with_args.len > command.len + 1) {
+            const args = command_with_args[command.len + 1 .. command_with_args.len :0];
+            switch (c.address) {
+                .addr_float => {
+                    const val: f32 = std.fmt.parseFloat(f32, args) catch {
+                        return .invalid_args;
+                    };
+                    c.address.addr_float.* = val;
+                },
+                .addr_int => {
+                    const val: i32 = std.fmt.parseInt(i32, args, 10) catch {
+                        return .invalid_args;
+                    };
+                    c.address.addr_int.* = val;
+                },
+                .addr_bool => {
+                    if (std.mem.eql(u8, "true", args)) {
+                        c.address.addr_bool.* = true;
+                    } else if (std.mem.eql(u8, "false", args)) {
+                        c.address.addr_bool.* = false;
+                    } else if (std.mem.eql(u8, "1", args)) {
+                        c.address.addr_bool.* = true;
+                    } else if (std.mem.eql(u8, "0", args)) {
+                        c.address.addr_bool.* = false;
+                    } else {
+                        return .invalid_args;
+                    }
+                },
+            }
+        } else {
+            log("{s}: {d:3}", .{ command, c.address.addr_float.* });
+        }
+
+        return .ok;
+    }
+
     return .not_found;
 }
 
@@ -568,6 +629,26 @@ pub fn registerConsoleCommand(command: []const u8, comptime func: anytype, help:
         },
         else => {
             @compileError("Unknown console command type!");
+        },
+    }
+}
+
+pub fn registerConsoleVariable(variable: []const u8, comptime address: anytype, help: []const u8) !void {
+    if (needs_init)
+        init();
+
+    switch (@TypeOf(address)) {
+        *f32 => {
+            try console_variables.put(variable, .{ .variable = variable, .help = help, .address = .{ .addr_float = address } });
+        },
+        *i32 => {
+            try console_variables.put(variable, .{ .variable = variable, .help = help, .address = .{ .addr_int = address } });
+        },
+        *bool => {
+            try console_variables.put(variable, .{ .variable = variable, .help = help, .address = .{ .addr_bool = address } });
+        },
+        else => {
+            @compileError("Unknown console variable type!");
         },
     }
 }

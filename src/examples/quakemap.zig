@@ -45,8 +45,9 @@ pub fn main() !void {
     try delve.modules.registerModule(example);
     try delve.module.fps_counter.registerModule();
 
-    // register a console command to change gravity!
-    try delve.debug.registerConsoleCommand("gravity", changeGravityCmd, "Changes gravity");
+    // test out registering a console command and a console variable
+    try delve.debug.registerConsoleCommand("setGravity", setGravityCmd, "Changes gravity");
+    try delve.debug.registerConsoleVariable("gravity", &gravity, "Amount of gravity");
 
     try app.start(app.AppConfig{ .title = "Delve Framework - Quake Map Example" });
 }
@@ -313,7 +314,7 @@ pub fn do_player_move(delta: f32) void {
     player_vel.z = 0.0;
 }
 
-pub fn changeGravityCmd(new_gravity: f32) void {
+pub fn setGravityCmd(new_gravity: f32) void {
     gravity = new_gravity;
     delve.debug.log("Changed gravity to {d}", .{gravity});
 }
