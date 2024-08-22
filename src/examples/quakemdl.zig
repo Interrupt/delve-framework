@@ -42,7 +42,7 @@ pub fn on_init() !void {
     camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 256.0, 64.0, math.Vec3.up);
 
     const allocator = delve.mem.getAllocator();
-    mdl = try delve.utils.quakemdl.get_mdl(allocator, "assets/meshes/player.mdl");
+    mdl = try delve.utils.quakemdl.open(allocator, "assets/meshes/pumpkin.mdl");
 
     // set a bg color
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_dark);
@@ -61,6 +61,7 @@ pub fn on_tick(delta: f32) void {
 }
 
 var mdl_frame_counter: f32 = 0;
+var mdl_frame_group_counter: f32 = 0;
 
 pub fn on_draw() void {
     const proj_view_matrix = camera.getProjView();
@@ -73,7 +74,7 @@ pub fn on_draw() void {
 
     const mdl_frame_index = @as(u32, @intFromFloat(mdl_frame_counter)) % @as(u32, @intCast(mdl.frames.len));
 
-    mdl.frames[mdl_frame_index].single.mesh.draw(proj_view_matrix, model);
+    mdl.frames[mdl_frame_index].single.mesh.draw(proj_view_matrix, model.mul(math.Mat4.translate(math.Vec3.new(0, -32, 0))));
 
     mdl_frame_counter += 0.1;
 }
