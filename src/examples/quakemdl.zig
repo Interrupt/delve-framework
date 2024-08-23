@@ -64,7 +64,7 @@ var mdl_frame_counter: f32 = 0;
 var mdl_frame_group_counter: f32 = 0;
 
 pub fn on_draw() void {
-    const proj_view_matrix = camera.getProjView();
+    const view_mats = camera.update();
     const model = math.Mat4.identity;
 
     const frustum = camera.getViewFrustum();
@@ -74,7 +74,7 @@ pub fn on_draw() void {
 
     const mdl_frame_index = @as(u32, @intFromFloat(mdl_frame_counter)) % @as(u32, @intCast(mdl.frames.len));
 
-    mdl.frames[mdl_frame_index].single.mesh.draw(proj_view_matrix, model.mul(math.Mat4.translate(math.Vec3.new(0, -32, 0))));
+    mdl.frames[mdl_frame_index].single.mesh.draw(view_mats, model.mul(math.Mat4.translate(math.Vec3.new(0, -32, 0))));
 
     mdl_frame_counter += 0.1;
 }
