@@ -389,6 +389,7 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
     defer file.close();
 
     const header = try MDLFileHeader_.read(file);
+    assert(header.version == 6);
 
     const frames = try allocator.alloc(MDLFrameType, header.frame_count);
     const skins = try allocator.alloc(MDLSkinType, header.skin_count);
