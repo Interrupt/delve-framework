@@ -91,7 +91,8 @@ pub const App = struct {
         } else if (ev.type == .MOUSE_MOVE) {
             input.onMouseMoved(ev.mouse_x, ev.mouse_y, ev.mouse_dx, ev.mouse_dy);
         } else if (ev.type == .KEY_DOWN) {
-            input.onKeyDown(@intFromEnum(ev.key_code));
+            if (!ev.key_repeat)
+                input.onKeyDown(@intFromEnum(ev.key_code));
         } else if (ev.type == .KEY_UP) {
             input.onKeyUp(@intFromEnum(ev.key_code));
         } else if (ev.type == .CHAR) {

@@ -7,6 +7,32 @@ const papp = @import("platform/app.zig");
 const text_module = @import("api/text.zig");
 const draw_module = @import("api/draw.zig");
 
+pub const ConsoleCommandFunc = union(enum) {
+    fn_float: *const fn (f32) void,
+    fn_int: *const fn (i32) void,
+    fn_bool: *const fn (bool) void,
+    fn_string: *const fn ([]const u8) void,
+    fn_void: *const fn () void,
+};
+
+pub const ConsoleCommand = struct {
+    command: []const u8,
+    help: []const u8,
+    func: ConsoleCommandFunc,
+};
+
+pub const ConsoleVariableType = union(enum) {
+    addr_float: *f32,
+    addr_int: *i32,
+    addr_bool: *bool,
+};
+
+pub const ConsoleVariable = struct {
+    variable: []const u8,
+    help: []const u8,
+    address: ConsoleVariableType,
+};
+
 pub var use_scripting_integration: bool = false;
 
 const console_num_to_show: u32 = 8;
@@ -33,6 +59,10 @@ var cmd_history_last_direction: i32 = 0;
 var pending_cmd: std.ArrayList(u8) = undefined;
 
 var last_text_height: i32 = 0;
+
+// Keep track of any registered console commands and variables
+var console_commands: std.StringHashMap(ConsoleCommand) = undefined;
+var console_variables: std.StringHashMap(ConsoleVariable) = undefined;
 
 // Other systems could init the debug system before the app does
 var needs_init: bool = true;
@@ -131,6 +161,9 @@ pub fn init() void {
     log_history_list = LogList.init(allocator);
     cmd_history_list = LogList.init(allocator);
     pending_cmd = char_array.init(allocator);
+
+    console_commands = std.StringHashMap(ConsoleCommand).init(allocator);
+    console_variables = std.StringHashMap(ConsoleVariable).init(allocator);
 }
 
 pub fn deinit() void {
@@ -145,6 +178,9 @@ pub fn deinit() void {
     log_history_list.deinit();
     cmd_history_list.deinit();
     pending_cmd.deinit();
+
+    console_commands.deinit();
+    console_variables.deinit();
 
     // arena_allocator.deinit();
     // _ = gpa.deinit();
@@ -390,14 +426,30 @@ pub fn runPendingCommand() void {
     const final_command = pending_cmd.items[0 .. pending_cmd.items.len - 1 :0];
     defer trackCommand(final_command);
 
-    // Try any registered commands first
-    if (tryRegisteredCommands(final_command))
-        return;
-
-    log("Unknown command: {s}", .{final_command});
+    // Try to run commands
+    const result = tryRegisteredCommands(final_command);
+    switch (result) {
+        .not_found => {
+            log("Unknown command: {s}", .{final_command});
+        },
+        .invalid_args => {
+            log("Invalid args: {s}", .{final_command});
+        },
+        .err => {
+            log("Error during command: {s}", .{final_command});
+        },
+        .ok => {},
+    }
 }
 
-pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
+pub const CommandResult = enum {
+    ok,
+    not_found,
+    invalid_args,
+    err,
+};
+
+pub fn tryRegisteredCommands(command_with_args: [:0]u8) CommandResult {
     var it = std.mem.splitAny(u8, command_with_args, " ");
 
     var command: []const u8 = undefined;
@@ -405,7 +457,7 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
         command = cmd;
     } else {
         // ignore empty commands
-        return false;
+        return .not_found;
     }
 
     // collect all of the arguments into a list of arguments for commands to use
@@ -414,23 +466,21 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
 
     while (it.next()) |arg| {
         arg_list.append(arg) catch {
-            return false;
+            return .err;
         };
     }
 
-    // This is where we should go check a list of pre-registered console commands, with callbacks
-    // For now, demonstrate some built in commands
-
+    // First, check some built-ins
     if (std.mem.eql(u8, command, "exit")) {
         // console command to exit the app
         const app = @import("platform/app.zig");
         app.exit();
-        return true;
+        return .ok;
     } else if (std.mem.eql(u8, command, "echo")) {
         // console command to do a simple echo
         const string_to_echo = command_with_args[5..command_with_args.len :0];
         log("{s}", .{string_to_echo});
-        return true;
+        return .ok;
     } else if (std.mem.eql(u8, command, "lua")) {
         // console command to run a lua string
         if (use_scripting_integration) {
@@ -441,14 +491,166 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
         } else {
             log("Lua is not initialized.", .{});
         }
-        return true;
+        return .ok;
     } else if (std.mem.eql(u8, command, "help")) {
         // console command to print the list of all commands
-        log("commands:\nexit\necho\nlua", .{});
-        return true;
+
+        // print built-ins
+        log("Console Commands:\nexit\necho\nlua", .{});
+
+        // print any registered commands
+        var cmd_it = console_commands.valueIterator();
+        while (cmd_it.next()) |cmd| {
+            log("{s}: {s}", .{ cmd.command, cmd.help });
+        }
+
+        log("Console Variables:", .{});
+
+        // print any registered variables
+        var var_it = console_variables.valueIterator();
+        while (var_it.next()) |variable| {
+            log("{s}: {s}", .{ variable.variable, variable.help });
+        }
+
+        return .ok;
     }
 
-    return false;
+    // check if we have any registered console commands
+    if (console_commands.getPtr(command)) |c| {
+        if (command_with_args.len > command.len + 1) {
+            const args = command_with_args[command.len + 1 .. command_with_args.len :0];
+            switch (c.func) {
+                .fn_float => {
+                    const val: f32 = std.fmt.parseFloat(f32, args) catch {
+                        return .invalid_args;
+                    };
+                    c.func.fn_float(val);
+                },
+                .fn_int => {
+                    const val: i32 = std.fmt.parseInt(i32, args, 10) catch {
+                        return .invalid_args;
+                    };
+                    c.func.fn_int(val);
+                },
+                .fn_bool => {
+                    if (std.mem.eql(u8, "true", args)) {
+                        c.func.fn_bool(true);
+                    } else if (std.mem.eql(u8, "false", args)) {
+                        c.func.fn_bool(false);
+                    } else if (std.mem.eql(u8, "1", args)) {
+                        c.func.fn_bool(true);
+                    } else if (std.mem.eql(u8, "0", args)) {
+                        c.func.fn_bool(false);
+                    } else {
+                        return .invalid_args;
+                    }
+                },
+                .fn_string => {
+                    c.func.fn_string(args);
+                },
+                .fn_void => {
+                    c.func.fn_void();
+                },
+            }
+        } else {
+            switch (c.func) {
+                .fn_void => {
+                    c.func.fn_void();
+                },
+                else => {
+                    return .invalid_args;
+                },
+            }
+        }
+
+        return .ok;
+    }
+
+    // check if we have any registered console variables
+    if (console_variables.getPtr(command)) |c| {
+        if (command_with_args.len > command.len + 1) {
+            const args = command_with_args[command.len + 1 .. command_with_args.len :0];
+            switch (c.address) {
+                .addr_float => {
+                    const val: f32 = std.fmt.parseFloat(f32, args) catch {
+                        return .invalid_args;
+                    };
+                    c.address.addr_float.* = val;
+                },
+                .addr_int => {
+                    const val: i32 = std.fmt.parseInt(i32, args, 10) catch {
+                        return .invalid_args;
+                    };
+                    c.address.addr_int.* = val;
+                },
+                .addr_bool => {
+                    if (std.mem.eql(u8, "true", args)) {
+                        c.address.addr_bool.* = true;
+                    } else if (std.mem.eql(u8, "false", args)) {
+                        c.address.addr_bool.* = false;
+                    } else if (std.mem.eql(u8, "1", args)) {
+                        c.address.addr_bool.* = true;
+                    } else if (std.mem.eql(u8, "0", args)) {
+                        c.address.addr_bool.* = false;
+                    } else {
+                        return .invalid_args;
+                    }
+                },
+            }
+        } else {
+            log("{s}: {d:3}", .{ command, c.address.addr_float.* });
+        }
+
+        return .ok;
+    }
+
+    return .not_found;
+}
+
+pub fn registerConsoleCommand(command: []const u8, comptime func: anytype, help: []const u8) !void {
+    if (needs_init)
+        init();
+
+    switch (@TypeOf(func)) {
+        fn ([]const u8) void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_string = func } });
+        },
+        fn (i32) void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_int = func } });
+        },
+        fn (f32) void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_float = func } });
+        },
+        fn (bool) void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_bool = func } });
+        },
+        fn () void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_void = func } });
+        },
+        else => {
+            @compileError("Unknown console command type!");
+        },
+    }
+}
+
+pub fn registerConsoleVariable(variable: []const u8, comptime address: anytype, help: []const u8) !void {
+    if (needs_init)
+        init();
+
+    switch (@TypeOf(address)) {
+        *f32 => {
+            try console_variables.put(variable, .{ .variable = variable, .help = help, .address = .{ .addr_float = address } });
+        },
+        *i32 => {
+            try console_variables.put(variable, .{ .variable = variable, .help = help, .address = .{ .addr_int = address } });
+        },
+        *bool => {
+            try console_variables.put(variable, .{ .variable = variable, .help = help, .address = .{ .addr_bool = address } });
+        },
+        else => {
+            @compileError("Unknown console variable type!");
+        },
+    }
 }
 
 pub fn showErrorScreen(error_header: [:0]const u8) void {

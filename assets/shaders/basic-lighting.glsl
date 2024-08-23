@@ -47,10 +47,11 @@ uniform fs_params {
     vec4 u_cameraPos;
     vec4 u_color_override;
     float u_alpha_cutoff;
+    vec4 u_ambient_light;
     vec4 u_dir_light_dir;
     vec4 u_dir_light_color;
     float u_num_point_lights;
-    vec4 u_point_light_data[16]; // each light is packed as two vec4s
+    vec4 u_point_light_data[32]; // each light is packed as two vec4s
 };
 
 in vec4 color;
@@ -60,9 +61,27 @@ in vec4 tangent;
 in vec4 position;
 out vec4 frag_color;
 
+float sqr(float x)
+{
+    return x * x;
+}
+
+// light attenuation function from https://lisyarus.github.io/blog/posts/point-light-attenuation.html
+float attenuate_light(float distance, float radius, float max_intensity, float falloff)
+{
+    float s = distance / radius;
+
+    if (s >= 1.0)
+        return 0.0;
+
+    float s2 = sqr(s);
+
+    return max_intensity * sqr(1 - s2) / (1 + falloff * s);
+}
+
 void main() {
     vec4 c = texture(sampler2D(tex, smp), uv) * color;
-    vec4 lit_color = vec4(0.0, 0.0, 0.0, 1.0);
+    vec4 lit_color = u_ambient_light;
 
     // to make sprite drawing easier, discard full alpha pixels
     if(c.a <= u_alpha_cutoff) {
@@ -83,7 +102,7 @@ void main() {
 
         float dist = length(lightMinusPos);
         float radius = point_light_pos_data.w;
-        float attenuation = clamp(1.0 - dist/radius, 0.0, 1.0);
+        float attenuation = attenuate_light(dist, radius, 1.0, 1.0);
 
         lit_color.rgb += (lightBrightness * lightColor * attenuation);
     }
@@ -111,6 +130,7 @@ void main() {
 
     frag_color = c;
 }
+
 #pragma sokol @end
 
 #pragma sokol @program emissive vs fs

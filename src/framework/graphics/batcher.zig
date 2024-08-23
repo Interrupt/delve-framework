@@ -19,6 +19,7 @@ const Mat4 = math.Mat4;
 const Color = colors.Color;
 const TextureRegion = sprites.TextureRegion;
 const Rect = spatial_rect.Rect;
+const CameraMatrices = graphics.CameraMatrices;
 
 const max_indices = 64000;
 const max_vertices = max_indices;
@@ -171,10 +172,10 @@ pub const SpriteBatcher = struct {
     }
 
     /// Draws all the batches
-    pub fn draw(self: *SpriteBatcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+    pub fn draw(self: *SpriteBatcher, cam_matrices: CameraMatrices, model_matrix: Mat4) void {
         var it = self.batches.iterator();
         while (it.next()) |batcher| {
-            batcher.value_ptr.draw(proj_view_matrix, model_matrix);
+            batcher.value_ptr.draw(cam_matrices, model_matrix);
         }
     }
 
@@ -450,22 +451,22 @@ pub const Batcher = struct {
     }
 
     /// Submit a draw call to draw all shapes for this batch
-    pub fn draw(self: *Batcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+    pub fn draw(self: *Batcher, cam_matrices: CameraMatrices, model_matrix: Mat4) void {
         if (self.material == null) {
-            self.drawWithoutMaterial(proj_view_matrix, model_matrix);
+            self.drawWithoutMaterial(cam_matrices, model_matrix);
         } else {
-            self.drawWithMaterial(proj_view_matrix, model_matrix);
+            self.drawWithMaterial(cam_matrices, model_matrix);
         }
     }
 
     /// Submit a draw call to draw all shapes for this batch
-    pub fn drawWithoutMaterial(self: *Batcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+    pub fn drawWithoutMaterial(self: *Batcher, cam_matrices: CameraMatrices, model_matrix: Mat4) void {
         if (self.index_pos == 0)
             return;
 
         // Make our default uniform blocks
         const vs_params = VSParams{
-            .projViewMatrix = proj_view_matrix,
+            .projViewMatrix = cam_matrices.proj.mul(cam_matrices.view),
             .modelMatrix = model_matrix,
             .in_color = .{ 1.0, 1.0, 1.0, 1.0 },
         };
@@ -482,14 +483,14 @@ pub const Batcher = struct {
     }
 
     /// Submit a draw call to draw all shapes for this batch
-    pub fn drawWithMaterial(self: *Batcher, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+    pub fn drawWithMaterial(self: *Batcher, cam_matrices: CameraMatrices, model_matrix: Mat4) void {
         if (self.index_pos == 0)
             return;
 
         if (self.material == null)
             return;
 
-        graphics.drawWithMaterial(&self.bindings, self.material.?, proj_view_matrix, model_matrix);
+        graphics.drawWithMaterial(&self.bindings, self.material.?, cam_matrices, model_matrix);
     }
 
     /// Expand the buffers for this batch if needed to fit the new size

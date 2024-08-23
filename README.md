@@ -12,7 +12,11 @@ Some examples compiled for web can be seen at https://interrupt.github.io/delve-
 
 ## Design Philosphy
 
-Delve uses Zig to make writing cross platform games easy, and because it is easy to interop with the vast library of existing C/C++ game development libraries. Its main goal is to be as cross platform and unopinionated as much as possible, making it easy to switch out implementations as needed.
+Delve uses Zig to make writing cross platform games easy, and because it is easy to interop with the vast library of existing C/C++ game development libraries. Its main goal is to be as cross platform and unopinionated as much as possible, making it easy to switch out implementations as needed. Being simple and understandable is better than being clever!
+
+* Built in console support - bring up with the '~' key!
+* Prototyping should be quick - included utilities to load Quake .map files!
+* Lots of examples!
 
 ## Libraries Used
 
@@ -38,16 +42,7 @@ Delve will use the `assets/main.lua` Lua file for scripting unless given a new p
 
 Rendering uses the Sokol framework to use modern, cross platform graphics APIs. Supports DirectX 11/12, OpenGL 3/ES, Metal, and [WebGPU](WebGPU).
 
-Batched 2d shape rendering:
-
-![delve-framework-2](https://github.com/Interrupt/delve-framework/assets/1374/48665a57-ba2b-44c2-a520-39b885c42de1)
-
-GLTF mesh rendering:
-
-![delve-framework-8](https://github.com/Interrupt/delve-framework/assets/1374/215754b4-f186-419a-842e-cb38a4e2c88f)
-
-
-
+https://github.com/user-attachments/assets/ea26efe1-d9b9-4714-bc18-30fe5bc850da
 
 ## Modules, all the way down
 
@@ -116,6 +111,7 @@ zig build run-fonts
 zig build run-forest
 zig build run-framepacing
 zig build run-imgui
+zig build run-lighting
 zig build run-lua
 zig build run-meshbuilder
 zig build run-meshes

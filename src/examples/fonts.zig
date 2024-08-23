@@ -127,7 +127,7 @@ fn on_draw() void {
     const projection = graphics.getProjectionPerspective(60.0, 0.01, 50.0);
     const view = math.Mat4.lookat(.{ .x = x_wave, .y = y_wave, .z = 6.0 }, math.Vec3.zero, math.Vec3.up);
 
-    font_batch.draw(projection.mul(view), math.Mat4.translate(.{ .x = -3.1, .y = 1.1, .z = 0.0 }));
+    font_batch.draw(.{ .view = view, .proj = projection }, math.Mat4.translate(.{ .x = -3.1, .y = 1.1, .z = 0.0 }));
 }
 
 fn on_cleanup() !void {
