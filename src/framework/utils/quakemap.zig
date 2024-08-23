@@ -106,6 +106,7 @@ pub const Entity = struct {
 pub const Solid = struct {
     faces: std.ArrayList(Face),
     bounds: BoundingBox = undefined,
+    custom_flags: u32 = 0, // eg: water, lava, etc
 
     fn init(allocator: Allocator) Solid {
         return .{ .faces = std.ArrayList(Face).init(allocator) };
