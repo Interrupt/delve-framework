@@ -34,7 +34,7 @@ pub const MDLFrame = struct {
 };
 
 pub const MDLFrameGroup = struct {
-    meshes: []mesh.Mesh,
+    frames: []MDLFrame,
     intervals: []f32
 };
 
@@ -483,15 +483,20 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
         else {
             const group = try MDLFrameGroup_.read(allocator, file, header.vertex_count);
 
-            var meshes: []mesh.Mesh = try allocator.alloc(mesh.Mesh, group.count);
-            for (0..group.count) |j| {
-                meshes[j] = try makeMesh(allocator, group.frames[j], config);
+            const group_frames: []MDLFrame = try allocator.alloc(MDLFrame, group.count);
+            for (0.., group.frames) |j, frame| {
+                const group_mesh = try makeMesh(allocator, frame, config);
+
+                group_frames[j] = .{
+                    .name = frame.name[0..16].*,
+                    .mesh = group_mesh
+                };
             }
 
             frames[i] = .{
                 .group = .{
                     .intervals = group.intervals,
-                    .meshes = meshes
+                    .frames = group_frames
                 }
             };
         }

@@ -78,7 +78,7 @@ pub fn on_draw() void {
     const frame = mdl.frames[index];
     switch (frame) {
         .single => mesh = frame.single.mesh,
-        .group => mesh = frame.group.meshes[0],
+        .group => mesh = frame.group.frames[0].mesh
     }
 
     mesh.draw(view_mats, model.mul(math.Mat4.translate(math.Vec3.new(0, -32, 0))));
