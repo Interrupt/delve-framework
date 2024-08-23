@@ -10,6 +10,7 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var camera: delve.graphics.camera.Camera = undefined;
 
 var mdl: delve.utils.quakemdl.MDL = undefined;
+var mesh: delve.graphics.mesh.Mesh = undefined;
 
 var time: f64 = 0.0;
 
@@ -60,8 +61,8 @@ pub fn on_tick(delta: f32) void {
     camera.runSimpleCamera(8 * delta, 120 * delta, true);
 }
 
-var mdl_frame_counter: f32 = 0;
-var mdl_frame_group_counter: f32 = 0;
+var counter: f32 = 0;
+var index: u32 = 0;
 
 pub fn on_draw() void {
     const view_mats = camera.update();
@@ -72,9 +73,15 @@ pub fn on_draw() void {
         return;
     }
 
-    const mdl_frame_index = @as(u32, @intFromFloat(mdl_frame_counter)) % @as(u32, @intCast(mdl.frames.len));
+    index = @as(u32, @intFromFloat(counter)) % @as(u32, @intCast(mdl.frames.len));
 
-    mdl.frames[mdl_frame_index].single.mesh.draw(view_mats, model.mul(math.Mat4.translate(math.Vec3.new(0, -32, 0))));
+    const frame = mdl.frames[index];
+    switch (frame) {
+        .single => mesh = frame.single.mesh,
+        .group => mesh = frame.group.meshes[0],
+    }
 
-    mdl_frame_counter += 0.1;
+    mesh.draw(view_mats, model.mul(math.Mat4.translate(math.Vec3.new(0, -32, 0))));
+
+    counter += 0.1;
 }
