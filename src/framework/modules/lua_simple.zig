@@ -24,6 +24,7 @@ pub fn registerModule() !void {
 
 pub fn on_init() !void {
     // start up the scripting manager!
+    try debug.registerConsoleCommand("lua", doLuaCommand, "Runs Lua string");
     try scripting_manager.init();
 }
 
@@ -67,4 +68,13 @@ pub fn on_draw() void {
     lua.callFunction("_draw") catch {
         debug.showErrorScreen("Fatal error!");
     };
+}
+
+// console command to run a lua string
+pub fn doLuaCommand(lua_command: [:0]const u8) void {
+    if (lua.did_init) {
+        lua.runLine(lua_command) catch {};
+    } else {
+        debug.log("Lua is not yet initialized.", .{});
+    }
 }
