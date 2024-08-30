@@ -2,6 +2,7 @@ const std = @import("std");
 const debug = @import("../../../debug.zig");
 const graphics = @import("../../graphics.zig");
 const images = @import("../../../images.zig");
+const shaders = @import("../../../graphics/shaders.zig");
 const sokol = @import("sokol");
 const shader_default = @import("../../../graphics/shaders/default.glsl.zig");
 
@@ -248,6 +249,38 @@ pub const ShaderImpl = struct {
         return initSokolShader(cfg, shader_desc_fn.?(sg.queryBackend()));
     }
 
+    /// Creates a shader from a ShaderDefinition struct
+    pub fn initFromShaderInfo(shader_info: shaders.ShaderInfo) ?Shader {
+
+        // default config for now!
+        const cfg: graphics.ShaderConfig = .{};
+
+        // debug.log("VS_Source: {s}", .{shader_info.vs_source});
+        // debug.log("FS_Source: {s}", .{shader_info.fs_source});
+
+        var desc: sg.ShaderDesc = .{};
+        desc.label = "default_shader";
+        desc.vs.source = shader_info.vs_source.ptr;
+        desc.vs.entry = "main0";
+        desc.vs.uniform_blocks[0].size = 144;
+        desc.vs.uniform_blocks[0].layout = .STD140;
+        desc.fs.source = shader_info.fs_source.ptr;
+        desc.fs.entry = "main0";
+        desc.fs.uniform_blocks[0].size = 32;
+        desc.fs.uniform_blocks[0].layout = .STD140;
+        desc.fs.images[0].used = true;
+        desc.fs.images[0].multisampled = false;
+        desc.fs.images[0].image_type = ._2D;
+        desc.fs.images[0].sample_type = .FLOAT;
+        desc.fs.samplers[0].used = true;
+        desc.fs.samplers[0].sampler_type = .FILTERING;
+        desc.fs.image_sampler_pairs[0].used = true;
+        desc.fs.image_sampler_pairs[0].image_slot = 0;
+        desc.fs.image_sampler_pairs[0].sampler_slot = 0;
+
+        return initSokolShader(cfg, desc);
+    }
+
     pub fn cloneFromShader(cfg: graphics.ShaderConfig, shader: ?Shader) Shader {
         if (shader == null)
             return initDefault(cfg);
@@ -319,7 +352,9 @@ pub const ShaderImpl = struct {
     /// Create a shader from a Sokol Shader Description - useful for loading built-in shaders
     pub fn initSokolShader(cfg: graphics.ShaderConfig, shader_desc: sg.ShaderDesc) Shader {
         // var pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator);
+        debug.log("Making shader", .{});
         const shader = sg.makeShader(shader_desc);
+        debug.log("Making shader: done!", .{});
 
         var num_fs_images: u8 = 0;
         for (0..5) |i| {

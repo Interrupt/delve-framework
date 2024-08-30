@@ -7,6 +7,7 @@ const mem = @import("../mem.zig");
 const mesh = @import("../graphics/mesh.zig");
 const papp = @import("app.zig");
 const sokol_gfx_backend = @import("backends/sokol/graphics.zig");
+const shaders = @import("../graphics/shaders.zig");
 
 const sokol = @import("sokol");
 const slog = sokol.log;
@@ -346,6 +347,10 @@ pub const Shader = struct {
     /// Creates a shader from a shader built in as a zig file
     pub fn initFromBuiltin(cfg: ShaderConfig, comptime builtin: anytype) ?Shader {
         return ShaderImpl.initFromBuiltin(cfg, builtin);
+    }
+
+    pub fn initFromShaderInfo(shader_info: shaders.ShaderInfo) ?Shader {
+        return ShaderImpl.initFromShaderInfo(shader_info);
     }
 
     /// Returns a copy of this shader

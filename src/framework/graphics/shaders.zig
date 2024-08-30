@@ -2,6 +2,7 @@ const std = @import("std");
 const yaml = @import("zigyaml");
 const mem = @import("../mem.zig");
 const debug = @import("../debug.zig");
+const graphics = @import("../platform/graphics.zig");
 
 const ShaderYamlError = error{
     Parse,
@@ -42,6 +43,7 @@ pub fn loadFromYaml(file_path: []const u8) !ShaderInfo {
     }
 
     // debug.log("{s}", .{shader_info.vs_source});
+    _ = graphics.Shader.initFromShaderInfo(shader_info);
 
     return shader_info;
 }
