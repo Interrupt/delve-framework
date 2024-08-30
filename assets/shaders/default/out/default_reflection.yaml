@@ -302,7 +302,7 @@ shaders:
       -
         name: default
         vs:
-          path: out/default_default_metal_macos_vs.metal
+          path: assets/shaders/default/out/default_default_metal_macos_vs.metal
           is_binary: false
           entry_point: main0
           inputs:
@@ -345,7 +345,7 @@ shaders:
                   array_count: 4
                   offset: 0
         fs:
-          path: out/default_default_metal_macos_fs.metal
+          path: assets/shaders/default/out/default_default_metal_macos_fs.metal
           is_binary: false
           entry_point: main0
           inputs:
