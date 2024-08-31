@@ -75,9 +75,9 @@ pub fn parseYamlShader(allocator: std.mem.Allocator, file_path: []const u8) !Sha
     };
 
     // find the shader that matches our graphics backend
+    const shader_type = getShaderTypeFromBackend();
     for (result.shaders) |shader| {
-        // HACK: just look for Metal shaders for now!
-        if (std.mem.eql(u8, shader.slang, "metal_macos"))
+        if (std.mem.eql(u8, shader.slang, shader_type))
             return shader;
     }
 
@@ -167,3 +167,18 @@ pub const ShaderSamplerPairs = struct {
 //
 //     debug.log("Yaml: {s}", .{untyped.docs.items[0].map.get("testentry").?.string});
 // }
+
+// Returns a string version of the backend that we should be looking for
+pub fn getShaderTypeFromBackend() []const u8 {
+    const backend = graphics.getBackend();
+    return switch (backend) {
+        .GLCORE => "glsl430",
+        .GLES3 => "glsl300es",
+        .D3D11 => "hlsl4",
+        .METAL_IOS => "metal_ios",
+        .METAL_MACOS => "metal_macos",
+        .METAL_SIMULATOR => "metal_sim",
+        .WGPU => "wgpu",
+        .DUMMY => "dummy",
+    };
+}

@@ -758,3 +758,8 @@ fn vertexLayoutsAreEql(a: graphics.VertexLayout, b: graphics.VertexLayout) bool 
 
     return true;
 }
+
+pub fn getBackend() graphics.Backend {
+    const backend = sg.queryBackend();
+    return @enumFromInt(@intFromEnum(backend));
+}

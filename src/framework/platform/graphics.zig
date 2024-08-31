@@ -38,6 +38,17 @@ pub var tex_grey: Texture = undefined;
 // A vertex struct with position, color and uv-coords
 // TODO: Stop using packed color and uvs!
 
+pub const Backend = enum(i32) {
+    GLCORE,
+    GLES3,
+    D3D11,
+    METAL_IOS,
+    METAL_MACOS,
+    METAL_SIMULATOR,
+    WGPU,
+    DUMMY,
+};
+
 pub const BlendMode = enum {
     NONE, // opaque!
     BLEND,
@@ -1235,4 +1246,9 @@ pub fn getCommonVertexLayouts() []const VertexLayout {
     return &[_]VertexLayout{
         getDefaultVertexLayout(),
     };
+}
+
+/// Returns the backend currently in use
+pub fn getBackend() Backend {
+    return sokol_gfx_backend.getBackend();
 }
