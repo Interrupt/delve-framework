@@ -261,6 +261,7 @@ pub const ShaderImpl = struct {
         desc.label = "default_shader";
         desc.vs.source = shader_info.vs_source.ptr;
         desc.vs.entry = "main0";
+        // desc.vs.entry = shader_info.shader_def.programs[0].vs.entry_point.ptr;
         desc.vs.uniform_blocks[0].size = 144;
         desc.vs.uniform_blocks[0].layout = .STD140;
         desc.fs.source = shader_info.fs_source.ptr;

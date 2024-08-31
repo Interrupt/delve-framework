@@ -16,12 +16,16 @@ pub const ShaderInfo = struct {
 };
 
 pub fn loadFromYaml(file_path: []const u8) !?graphics.Shader {
-    const result = try parseYamlShader(file_path);
+    var arena = std.heap.ArenaAllocator.init(mem.getAllocator());
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const result = try parseYamlShader(allocator, file_path);
     var shader_info: ShaderInfo = .{ .shader_def = result };
 
     // debug output!
     for (result.programs) |program| {
-        debug.log("{s}: {s}", .{ result.slang, program.name });
+        debug.log("Found shader def: {s}: {s}", .{ result.slang, program.name });
 
         // debug.log("  vs: {s}", .{program.vs.path});
         // for (program.vs.uniform_blocks) |block| {
@@ -38,16 +42,15 @@ pub fn loadFromYaml(file_path: []const u8) !?graphics.Shader {
         //     }
         // }
 
-        shader_info.vs_source = try loadShaderSource(program.vs.path);
-        shader_info.fs_source = try loadShaderSource(program.fs.path);
+        shader_info.vs_source = try loadShaderSource(allocator, program.vs.path);
+        shader_info.fs_source = try loadShaderSource(allocator, program.fs.path);
+        break;
     }
 
     return graphics.Shader.initFromShaderInfo(shader_info);
 }
 
-fn loadShaderSource(shader_path: []const u8) ![:0]const u8 {
-    const allocator = mem.getAllocator();
-
+fn loadShaderSource(allocator: std.mem.Allocator, shader_path: []const u8) ![:0]const u8 {
     const file = try std.fs.cwd().openFile(shader_path, .{});
     defer file.close();
 
@@ -55,22 +58,16 @@ fn loadShaderSource(shader_path: []const u8) ![:0]const u8 {
     return source;
 }
 
-pub fn parseYamlShader(file_path: []const u8) !ShaderDefinition {
+pub fn parseYamlShader(allocator: std.mem.Allocator, file_path: []const u8) !ShaderDefinition {
     const file = try std.fs.cwd().openFile(file_path, .{});
     defer file.close();
 
-    const allocator = mem.getAllocator();
-
     const source = try file.readToEndAlloc(allocator, std.math.maxInt(u32));
-    defer allocator.free(source);
 
     var untyped_yaml = yaml.Yaml.load(allocator, source) catch |e| {
         debug.log("Yaml loading error! {any}", .{e});
         return e;
     };
-
-    // HACK: how do we deinit this properly?
-    // defer untyped_yaml.deinit();
 
     const result = untyped_yaml.parse(ShaderYaml) catch |e| {
         debug.log("Yaml parsing error! {any}", .{e});
