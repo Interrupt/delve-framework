@@ -1,6 +1,7 @@
 const std = @import("std");
 const debug = @import("../../../debug.zig");
 const graphics = @import("../../graphics.zig");
+const mem = @import("../../../mem.zig");
 const images = @import("../../../images.zig");
 const shaders = @import("../../../graphics/shaders.zig");
 const sokol = @import("sokol");
@@ -249,59 +250,236 @@ pub const ShaderImpl = struct {
         return initSokolShader(cfg, shader_desc_fn.?(sg.queryBackend()));
     }
 
+    fn terminateString(allocator: std.mem.Allocator, in_string: []const u8) ![:0]const u8 {
+        var terminated_value = try allocator.alloc(u8, in_string.len + 1);
+        terminated_value[in_string.len] = 0;
+        std.mem.copyForwards(u8, terminated_value, in_string);
+        return terminated_value[0..in_string.len :0];
+    }
+
+    fn stringUniformTypeToSokolType(string: []const u8) sg.UniformType {
+        if (std.mem.eql(u8, string, "float"))
+            return .FLOAT;
+        if (std.mem.eql(u8, string, "vec2"))
+            return .FLOAT2;
+        if (std.mem.eql(u8, string, "vec3"))
+            return .FLOAT3;
+        if (std.mem.eql(u8, string, "vec4"))
+            return .FLOAT4;
+        if (std.mem.eql(u8, string, "int"))
+            return .INT;
+        if (std.mem.eql(u8, string, "ivec2"))
+            return .INT2;
+        if (std.mem.eql(u8, string, "ivec3"))
+            return .INT3;
+        if (std.mem.eql(u8, string, "ivec4"))
+            return .INT4;
+        if (std.mem.eql(u8, string, "mat4"))
+            return .MAT4;
+
+        return .INVALID;
+    }
+
+    fn stringImageSampleTypeToSokolType(string: []const u8) sg.ImageSampleType {
+        if (std.mem.eql(u8, string, "float"))
+            return .FLOAT;
+        if (std.mem.eql(u8, string, "depth"))
+            return .DEPTH;
+        if (std.mem.eql(u8, string, "sint"))
+            return .SINT;
+        if (std.mem.eql(u8, string, "uint"))
+            return .UINT;
+        if (std.mem.eql(u8, string, "unfilterable-float"))
+            return .UNFILTERABLE_FLOAT;
+
+        return .FLOAT;
+    }
+
+    fn stringImageTypeToSokolType(string: []const u8) sg.ImageType {
+        if (std.mem.eql(u8, string, "2d"))
+            return ._2D;
+        if (std.mem.eql(u8, string, "cube"))
+            return .CUBE;
+        if (std.mem.eql(u8, string, "3d"))
+            return ._3D;
+        if (std.mem.eql(u8, string, "array"))
+            return .ARRAY;
+
+        return ._2D;
+    }
+
+    fn stringSampleTypeToSokolType(string: []const u8) sg.SamplerType {
+        if (std.mem.eql(u8, string, "filtering"))
+            return .FILTERING;
+        if (std.mem.eql(u8, string, "nonfiltering"))
+            return .NONFILTERING;
+        if (std.mem.eql(u8, string, "comparison"))
+            return .COMPARISON;
+
+        return .FILTERING;
+    }
+
+    fn stringBool(string: []const u8) bool {
+        if (std.mem.eql(u8, string, "true"))
+            return true;
+        return false;
+    }
+
     /// Creates a shader from a ShaderDefinition struct
     pub fn initFromShaderInfo(shader_info: shaders.ShaderInfo) ?Shader {
+        var arena = std.heap.ArenaAllocator.init(mem.getAllocator());
+        defer arena.deinit();
+        const allocator = arena.allocator();
+
         // default config for now!
         const cfg: graphics.ShaderConfig = .{};
 
-        const backend = sg.queryBackend();
-        debug.log("Graphics backend: {any}", .{backend});
+        // const backend = sg.queryBackend();
+        // debug.log("Graphics backend: {any}", .{backend});
+
+        var vs_images_hashmap: std.StringHashMap(u32) = std.StringHashMap(u32).init(allocator);
+        var vs_samplers_hashmap: std.StringHashMap(u32) = std.StringHashMap(u32).init(allocator);
+        var fs_images_hashmap: std.StringHashMap(u32) = std.StringHashMap(u32).init(allocator);
+        var fs_samplers_hashmap: std.StringHashMap(u32) = std.StringHashMap(u32).init(allocator);
+
+        // Assume there is only one shader program for now, that appears to be true.
+        const shader_program = shader_info.shader_def.programs[0];
+
+        const vs_entry = terminateString(allocator, shader_program.vs.entry_point) catch {
+            return null;
+        };
+
+        const fs_entry = terminateString(allocator, shader_program.fs.entry_point) catch {
+            return null;
+        };
 
         var desc: sg.ShaderDesc = .{};
-        desc.label = "default_shader";
-        desc.vs.source = shader_info.vs_source.ptr;
-        desc.vs.entry = "main0";
-        // desc.vs.entry = shader_info.shader_def.programs[0].vs.entry_point.ptr;
-        desc.vs.uniform_blocks[0].size = 144;
-        desc.vs.uniform_blocks[0].layout = .STD140;
-        desc.fs.source = shader_info.fs_source.ptr;
-        desc.fs.entry = "main0";
-        desc.fs.uniform_blocks[0].size = 32;
-        desc.fs.uniform_blocks[0].layout = .STD140;
-        desc.fs.images[0].used = true;
-        desc.fs.images[0].multisampled = false;
-        desc.fs.images[0].image_type = ._2D;
-        desc.fs.images[0].sample_type = .FLOAT;
-        desc.fs.samplers[0].used = true;
-        desc.fs.samplers[0].sampler_type = .FILTERING;
-        desc.fs.image_sampler_pairs[0].used = true;
-        desc.fs.image_sampler_pairs[0].image_slot = 0;
-        desc.fs.image_sampler_pairs[0].sampler_slot = 0;
+        desc.label = "shader"; // does this matter?
 
-        // desc.vs.source = shader_info.vs_source.ptr;
-        // desc.vs.entry = "main0";
-        // desc.vs.uniform_blocks[0].size = 144;
-        // desc.vs.uniform_blocks[0].layout = .STD140;
-        // desc.fs.source = shader_info.fs_source.ptr;
-        // desc.fs.entry = "main0";
-        // desc.fs.uniform_blocks[0].size = 32;
-        // desc.fs.uniform_blocks[0].layout = .STD140;
-        // desc.fs.images[0].used = true;
-        // desc.fs.images[0].multisampled = false;
-        // desc.fs.images[0].image_type = ._2D;
-        // desc.fs.images[0].sample_type = .FLOAT;
-        // desc.fs.images[1].used = true;
-        // desc.fs.images[1].multisampled = false;
-        // desc.fs.images[1].image_type = ._2D;
-        // desc.fs.images[1].sample_type = .FLOAT;
-        // desc.fs.samplers[0].used = true;
-        // desc.fs.samplers[0].sampler_type = .FILTERING;
-        // desc.fs.image_sampler_pairs[0].used = true;
-        // desc.fs.image_sampler_pairs[0].image_slot = 0;
-        // desc.fs.image_sampler_pairs[0].sampler_slot = 0;
-        // desc.fs.image_sampler_pairs[1].used = true;
-        // desc.fs.image_sampler_pairs[1].image_slot = 1;
-        // desc.fs.image_sampler_pairs[1].sampler_slot = 0;
+        // vertex shader defs
+        desc.vs.source = shader_info.vs_source.ptr;
+        desc.vs.entry = vs_entry.ptr;
+
+        // vs uniforms
+        if (shader_program.vs.uniform_blocks) |uniform_blocks| {
+            for (uniform_blocks) |block| {
+                desc.vs.uniform_blocks[block.slot].size = block.size;
+                desc.vs.uniform_blocks[block.slot].layout = .STD140;
+
+                for (block.uniforms, 0..) |uniform, i| {
+                    const uniform_name = terminateString(allocator, uniform.name) catch {
+                        return null;
+                    };
+
+                    desc.vs.uniform_blocks[block.slot].uniforms[i].name = uniform_name.ptr;
+                    desc.vs.uniform_blocks[block.slot].uniforms[i].type = stringUniformTypeToSokolType(uniform.type);
+                    desc.vs.uniform_blocks[block.slot].uniforms[i].array_count = uniform.array_count;
+                }
+            }
+        }
+
+        // vs images
+        if (shader_program.vs.images) |imgs| {
+            for (imgs) |img| {
+                desc.vs.images[img.slot].used = true;
+                desc.vs.images[img.slot].multisampled = stringBool(img.multisampled);
+                desc.vs.images[img.slot].image_type = stringImageTypeToSokolType(img.type);
+                desc.vs.images[img.slot].sample_type = stringImageSampleTypeToSokolType(img.sample_type);
+
+                vs_images_hashmap.put(img.name, img.slot) catch {
+                    return null;
+                };
+            }
+        }
+
+        // vs samplers
+        if (shader_program.vs.samplers) |samplers| {
+            for (samplers) |sample| {
+                desc.vs.samplers[sample.slot].used = true;
+                desc.vs.samplers[sample.slot].sampler_type = stringSampleTypeToSokolType(sample.sampler_type);
+
+                vs_samplers_hashmap.put(sample.name, sample.slot) catch {
+                    return null;
+                };
+            }
+        }
+
+        // vs sampler pairs
+        if (shader_program.vs.image_sampler_pairs) |pairs| {
+            for (pairs) |pair| {
+                desc.vs.image_sampler_pairs[pair.slot].used = true;
+                desc.vs.image_sampler_pairs[pair.slot].image_slot = @intCast(vs_images_hashmap.get(pair.image_name).?);
+                desc.vs.image_sampler_pairs[pair.slot].sampler_slot = @intCast(vs_samplers_hashmap.get(pair.sampler_name).?);
+                debug.log("pair: {any}", .{desc.vs.image_sampler_pairs[pair.slot]});
+            }
+        }
+
+        // fragment shader defs
+        desc.fs.source = shader_info.fs_source.ptr;
+        desc.fs.entry = fs_entry.ptr;
+
+        // fs uniforms
+        if (shader_program.fs.uniform_blocks) |uniform_blocks| {
+            for (uniform_blocks) |block| {
+                desc.fs.uniform_blocks[block.slot].size = block.size;
+                desc.fs.uniform_blocks[block.slot].layout = .STD140;
+
+                for (block.uniforms, 0..) |uniform, i| {
+                    const uniform_name = terminateString(allocator, uniform.name) catch {
+                        return null;
+                    };
+
+                    desc.fs.uniform_blocks[block.slot].uniforms[i].name = uniform_name.ptr;
+                    desc.fs.uniform_blocks[block.slot].uniforms[i].type = stringUniformTypeToSokolType(uniform.type);
+                    desc.fs.uniform_blocks[block.slot].uniforms[i].array_count = uniform.array_count;
+                }
+            }
+        }
+
+        // fs images
+        if (shader_program.fs.images) |imgs| {
+            for (imgs) |img| {
+                // TODO: Convert!
+                desc.fs.images[img.slot].used = true;
+                desc.fs.images[img.slot].multisampled = stringBool(img.multisampled);
+                desc.fs.images[img.slot].image_type = stringImageTypeToSokolType(img.type);
+                desc.fs.images[img.slot].sample_type = stringImageSampleTypeToSokolType(img.sample_type);
+
+                fs_images_hashmap.put(img.name, img.slot) catch {
+                    return null;
+                };
+            }
+        }
+
+        // fs samplers
+        if (shader_program.fs.samplers) |samplers| {
+            for (samplers) |sample| {
+                desc.fs.samplers[sample.slot].used = true;
+                desc.fs.samplers[sample.slot].sampler_type = stringSampleTypeToSokolType(sample.sampler_type);
+
+                fs_samplers_hashmap.put(sample.name, sample.slot) catch {
+                    return null;
+                };
+            }
+        }
+
+        // fs sampler pairs
+        if (shader_program.fs.image_sampler_pairs) |pairs| {
+            for (pairs) |pair| {
+                desc.fs.image_sampler_pairs[pair.slot].used = true;
+                desc.fs.image_sampler_pairs[pair.slot].image_slot = @intCast(pair.slot);
+                desc.fs.image_sampler_pairs[pair.slot].sampler_slot = @intCast(pair.slot);
+            }
+        }
+
+        // vs sampler pairs
+        if (shader_program.fs.image_sampler_pairs) |pairs| {
+            for (pairs) |pair| {
+                desc.fs.image_sampler_pairs[pair.slot].used = true;
+                desc.fs.image_sampler_pairs[pair.slot].image_slot = @intCast(fs_images_hashmap.get(pair.image_name).?);
+                desc.fs.image_sampler_pairs[pair.slot].sampler_slot = @intCast(fs_samplers_hashmap.get(pair.sampler_name).?);
+            }
+        }
 
         return initSokolShader(cfg, desc);
     }

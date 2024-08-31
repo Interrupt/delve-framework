@@ -103,12 +103,12 @@ pub const ShaderProgramDefinition = struct {
     path: []const u8,
     is_binary: []const u8, // bool crashes?
     entry_point: []const u8,
-    inputs: []ShaderSlot,
-    outputs: []ShaderSlot,
-    uniform_blocks: []UniformBlocks,
-    // images: []ShaderImage,
-    // samplers: []ShaderSampler,
-    // image_sampler_pairs: []ShaderSamplerPairs,
+    inputs: ?[]ShaderSlot,
+    outputs: ?[]ShaderSlot,
+    uniform_blocks: ?[]UniformBlocks,
+    images: ?[]ShaderImage,
+    samplers: ?[]ShaderSampler,
+    image_sampler_pairs: ?[]ShaderSamplerPairs,
 };
 
 pub const ShaderSlot = struct {
@@ -129,14 +129,31 @@ pub const UniformBlocks = struct {
 pub const ShaderUniform = struct {
     name: []const u8,
     type: []const u8,
-    array_count: u32,
-    offset: u32,
+    array_count: i32,
+    offset: i32,
 };
 
 // todo
-pub const ShaderImage = struct {};
-pub const ShaderSampler = struct {};
-pub const ShaderSamplerPairs = struct {};
+pub const ShaderImage = struct {
+    slot: u32,
+    name: []const u8,
+    multisampled: []const u8,
+    type: []const u8,
+    sample_type: []const u8,
+};
+
+pub const ShaderSampler = struct {
+    slot: u32,
+    name: []const u8,
+    sampler_type: []const u8,
+};
+
+pub const ShaderSamplerPairs = struct {
+    slot: u32,
+    name: []const u8,
+    image_name: []const u8,
+    sampler_name: []const u8,
+};
 
 // pub fn testYaml() !void {
 //     var untyped = yaml.Yaml.load(mem.getAllocator(), "testentry: chad 2") catch |e| {
