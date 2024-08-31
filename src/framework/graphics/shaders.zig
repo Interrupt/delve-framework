@@ -11,11 +11,11 @@ const ShaderYamlError = error{
 
 pub const ShaderInfo = struct {
     shader_def: ShaderDefinition,
-    vs_source: []const u8 = undefined,
-    fs_source: []const u8 = undefined,
+    vs_source: [:0]const u8 = undefined,
+    fs_source: [:0]const u8 = undefined,
 };
 
-pub fn loadFromYaml(file_path: []const u8) !ShaderInfo {
+pub fn loadFromYaml(file_path: []const u8) !?graphics.Shader {
     const result = try parseYamlShader(file_path);
     var shader_info: ShaderInfo = .{ .shader_def = result };
 
@@ -23,60 +23,36 @@ pub fn loadFromYaml(file_path: []const u8) !ShaderInfo {
     for (result.programs) |program| {
         debug.log("{s}: {s}", .{ result.slang, program.name });
 
-        debug.log("  vs: {s}", .{program.vs.path});
-        for (program.vs.uniform_blocks) |block| {
-            debug.log("    uniform: {s} - {d}", .{ block.struct_name, block.size });
-            for (block.uniforms) |*uniform| {
-                debug.log("      var: {s}: {s} x {d}", .{ uniform.name, uniform.type, uniform.array_count });
-            }
-        }
-        debug.log("  fs: {s}", .{program.fs.path});
-        for (program.fs.uniform_blocks) |block| {
-            debug.log("    uniform: {s} - {d}", .{ block.struct_name, block.size });
-            for (block.uniforms) |*uniform| {
-                debug.log("      var: {s}: {s} x {d}", .{ uniform.name, uniform.type, uniform.array_count });
-            }
-        }
+        // debug.log("  vs: {s}", .{program.vs.path});
+        // for (program.vs.uniform_blocks) |block| {
+        //     debug.log("    uniform: {s} - {d}", .{ block.struct_name, block.size });
+        //     for (block.uniforms) |*uniform| {
+        //         debug.log("      var: {s}: {s} x {d}", .{ uniform.name, uniform.type, uniform.array_count });
+        //     }
+        // }
+        // debug.log("  fs: {s}", .{program.fs.path});
+        // for (program.fs.uniform_blocks) |block| {
+        //     debug.log("    uniform: {s} - {d}", .{ block.struct_name, block.size });
+        //     for (block.uniforms) |*uniform| {
+        //         debug.log("      var: {s}: {s} x {d}", .{ uniform.name, uniform.type, uniform.array_count });
+        //     }
+        // }
 
         shader_info.vs_source = try loadShaderSource(program.vs.path);
         shader_info.fs_source = try loadShaderSource(program.fs.path);
     }
 
-    // debug.log("{s}", .{shader_info.vs_source});
-    _ = graphics.Shader.initFromShaderInfo(shader_info);
-
-    return shader_info;
+    return graphics.Shader.initFromShaderInfo(shader_info);
 }
 
-pub fn loadShaderSource(shader_path: []const u8) ![]const u8 {
+fn loadShaderSource(shader_path: []const u8) ![:0]const u8 {
     const allocator = mem.getAllocator();
 
     const file = try std.fs.cwd().openFile(shader_path, .{});
     defer file.close();
 
-    const source = try file.readToEndAlloc(allocator, std.math.maxInt(u32));
-    // defer allocator.free(source);
+    const source: [:0]const u8 = try file.readToEndAllocOptions(allocator, std.math.maxInt(u32), null, @alignOf(u8), 0);
     return source;
-}
-
-pub fn convertToSokolShaderDesc() void {
-    // desc.vs.source = &vs_source_metal_macos;
-    // desc.vs.entry = "main0";
-    // desc.vs.uniform_blocks[0].size = 144;
-    // desc.vs.uniform_blocks[0].layout = .STD140;
-    // desc.fs.source = &fs_source_metal_macos;
-    // desc.fs.entry = "main0";
-    // desc.fs.uniform_blocks[0].size = 32;
-    // desc.fs.uniform_blocks[0].layout = .STD140;
-    // desc.fs.images[0].used = true;
-    // desc.fs.images[0].multisampled = false;
-    // desc.fs.images[0].image_type = ._2D;
-    // desc.fs.images[0].sample_type = .FLOAT;
-    // desc.fs.samplers[0].used = true;
-    // desc.fs.samplers[0].sampler_type = .FILTERING;
-    // desc.fs.image_sampler_pairs[0].used = true;
-    // desc.fs.image_sampler_pairs[0].image_slot = 0;
-    // desc.fs.image_sampler_pairs[0].sampler_slot = 0;
 }
 
 pub fn parseYamlShader(file_path: []const u8) !ShaderDefinition {

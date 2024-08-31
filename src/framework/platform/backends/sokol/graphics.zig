@@ -251,12 +251,11 @@ pub const ShaderImpl = struct {
 
     /// Creates a shader from a ShaderDefinition struct
     pub fn initFromShaderInfo(shader_info: shaders.ShaderInfo) ?Shader {
-
         // default config for now!
         const cfg: graphics.ShaderConfig = .{};
 
-        // debug.log("VS_Source: {s}", .{shader_info.vs_source});
-        // debug.log("FS_Source: {s}", .{shader_info.fs_source});
+        const backend = sg.queryBackend();
+        debug.log("Graphics backend: {any}", .{backend});
 
         var desc: sg.ShaderDesc = .{};
         desc.label = "default_shader";
@@ -277,6 +276,31 @@ pub const ShaderImpl = struct {
         desc.fs.image_sampler_pairs[0].used = true;
         desc.fs.image_sampler_pairs[0].image_slot = 0;
         desc.fs.image_sampler_pairs[0].sampler_slot = 0;
+
+        // desc.vs.source = shader_info.vs_source.ptr;
+        // desc.vs.entry = "main0";
+        // desc.vs.uniform_blocks[0].size = 144;
+        // desc.vs.uniform_blocks[0].layout = .STD140;
+        // desc.fs.source = shader_info.fs_source.ptr;
+        // desc.fs.entry = "main0";
+        // desc.fs.uniform_blocks[0].size = 32;
+        // desc.fs.uniform_blocks[0].layout = .STD140;
+        // desc.fs.images[0].used = true;
+        // desc.fs.images[0].multisampled = false;
+        // desc.fs.images[0].image_type = ._2D;
+        // desc.fs.images[0].sample_type = .FLOAT;
+        // desc.fs.images[1].used = true;
+        // desc.fs.images[1].multisampled = false;
+        // desc.fs.images[1].image_type = ._2D;
+        // desc.fs.images[1].sample_type = .FLOAT;
+        // desc.fs.samplers[0].used = true;
+        // desc.fs.samplers[0].sampler_type = .FILTERING;
+        // desc.fs.image_sampler_pairs[0].used = true;
+        // desc.fs.image_sampler_pairs[0].image_slot = 0;
+        // desc.fs.image_sampler_pairs[0].sampler_slot = 0;
+        // desc.fs.image_sampler_pairs[1].used = true;
+        // desc.fs.image_sampler_pairs[1].image_slot = 1;
+        // desc.fs.image_sampler_pairs[1].sampler_slot = 0;
 
         return initSokolShader(cfg, desc);
     }
@@ -351,10 +375,8 @@ pub const ShaderImpl = struct {
 
     /// Create a shader from a Sokol Shader Description - useful for loading built-in shaders
     pub fn initSokolShader(cfg: graphics.ShaderConfig, shader_desc: sg.ShaderDesc) Shader {
-        // var pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator);
-        debug.log("Making shader", .{});
+        debug.info("Creating shader", .{});
         const shader = sg.makeShader(shader_desc);
-        debug.log("Making shader: done!", .{});
 
         var num_fs_images: u8 = 0;
         for (0..5) |i| {
@@ -364,8 +386,6 @@ pub const ShaderImpl = struct {
                 break;
             }
         }
-
-        debug.info("Creating shader", .{});
 
         defer graphics.next_shader_handle += 1;
         var built_shader = Shader{
