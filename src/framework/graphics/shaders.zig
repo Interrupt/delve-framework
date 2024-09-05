@@ -15,7 +15,7 @@ pub const ShaderInfo = struct {
     fs_source: [:0]const u8 = undefined,
 };
 
-pub fn loadFromYaml(file_path: []const u8) !?graphics.Shader {
+pub fn loadFromYaml(cfg: graphics.ShaderConfig, file_path: []const u8) !?graphics.Shader {
     var arena = std.heap.ArenaAllocator.init(mem.getAllocator());
     defer arena.deinit();
     const allocator = arena.allocator();
@@ -47,7 +47,7 @@ pub fn loadFromYaml(file_path: []const u8) !?graphics.Shader {
         break;
     }
 
-    return graphics.Shader.initFromShaderInfo(shader_info);
+    return graphics.Shader.initFromShaderInfo(cfg, shader_info);
 }
 
 fn loadShaderSource(allocator: std.mem.Allocator, shader_path: []const u8) ![:0]const u8 {

@@ -318,6 +318,9 @@ pub const ShaderConfig = struct {
         .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_PACKED },
     },
     is_depth_pixel_format: bool = false,
+
+    // optionally, take a shader_def
+    shader_program_def: ?shaders.ShaderProgram = null,
 };
 
 /// The actual backend implementation for shaders
@@ -344,6 +347,8 @@ pub const Shader = struct {
     vs_sampler_slots: u8 = 0,
     vs_uniform_slots: u8 = 1,
 
+    shader_program_def: ?shaders.ShaderProgram = null,
+
     impl: ShaderImpl,
 
     /// Create a new shader using the default
@@ -351,17 +356,13 @@ pub const Shader = struct {
         return ShaderImpl.initDefault(cfg);
     }
 
-    // TODO: Add support for loading shaders from built files as well!
-    // Sokol supports exporting to multiple shader formats alongside a YAML definition file,
-    // we could load that definition and the correct file based on the current backend.
-
     /// Creates a shader from a shader built in as a zig file
     pub fn initFromBuiltin(cfg: ShaderConfig, comptime builtin: anytype) ?Shader {
         return ShaderImpl.initFromBuiltin(cfg, builtin);
     }
 
-    pub fn initFromShaderInfo(shader_info: shaders.ShaderInfo) ?Shader {
-        return ShaderImpl.initFromShaderInfo(shader_info);
+    pub fn initFromShaderInfo(cfg: ShaderConfig, shader_info: shaders.ShaderInfo) ?Shader {
+        return ShaderImpl.initFromShaderInfo(cfg, shader_info);
     }
 
     /// Returns a copy of this shader
@@ -381,6 +382,20 @@ pub const Shader = struct {
                 self.vs_uniform_blocks[slot] = data;
             },
             .FS => {
+                self.fs_uniform_blocks[slot] = data;
+            },
+        }
+    }
+
+    pub fn applyUniformBlockByName(self: *Shader, stage: ShaderStage, name: []const u8, data: Anything) void {
+        _ = name;
+        switch (stage) {
+            .VS => {
+                const slot: u32 = 0;
+                self.vs_uniform_blocks[slot] = data;
+            },
+            .FS => {
+                const slot: u32 = 0;
                 self.fs_uniform_blocks[slot] = data;
             },
         }

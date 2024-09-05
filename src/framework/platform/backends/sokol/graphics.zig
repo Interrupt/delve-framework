@@ -326,13 +326,10 @@ pub const ShaderImpl = struct {
     }
 
     /// Creates a shader from a ShaderDefinition struct
-    pub fn initFromShaderInfo(shader_info: shaders.ShaderInfo) ?Shader {
+    pub fn initFromShaderInfo(cfg: graphics.ShaderConfig, shader_info: shaders.ShaderInfo) ?Shader {
         var arena = std.heap.ArenaAllocator.init(mem.getAllocator());
         defer arena.deinit();
         const allocator = arena.allocator();
-
-        // default config for now!
-        const cfg: graphics.ShaderConfig = .{};
 
         // const backend = sg.queryBackend();
         // debug.log("Graphics backend: {any}", .{backend});
@@ -410,7 +407,6 @@ pub const ShaderImpl = struct {
                 desc.vs.image_sampler_pairs[pair.slot].used = true;
                 desc.vs.image_sampler_pairs[pair.slot].image_slot = @intCast(vs_images_hashmap.get(pair.image_name).?);
                 desc.vs.image_sampler_pairs[pair.slot].sampler_slot = @intCast(vs_samplers_hashmap.get(pair.sampler_name).?);
-                debug.log("pair: {any}", .{desc.vs.image_sampler_pairs[pair.slot]});
             }
         }
 
@@ -439,7 +435,6 @@ pub const ShaderImpl = struct {
         // fs images
         if (shader_program.fs.images) |imgs| {
             for (imgs) |img| {
-                // TODO: Convert!
                 desc.fs.images[img.slot].used = true;
                 desc.fs.images[img.slot].multisampled = stringBool(img.multisampled);
                 desc.fs.images[img.slot].image_type = stringImageTypeToSokolType(img.type);
@@ -481,7 +476,11 @@ pub const ShaderImpl = struct {
             }
         }
 
-        return initSokolShader(cfg, desc);
+        // put the shader definition that we are using into our config
+        var updated_cfg = cfg;
+        updated_cfg.shader_program_def = shader_program;
+
+        return initSokolShader(updated_cfg, desc);
     }
 
     pub fn cloneFromShader(cfg: graphics.ShaderConfig, shader: ?Shader) Shader {
@@ -578,6 +577,7 @@ pub const ShaderImpl = struct {
             .cfg = cfg,
             .fs_texture_slots = num_fs_images,
             .vertex_attributes = cfg.vertex_attributes,
+            .shader_program_def = cfg.shader_program_def,
         };
 
         // Cache some common pipelines

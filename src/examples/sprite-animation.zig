@@ -58,7 +58,7 @@ fn on_init() !void {
     defer spritesheet_image.deinit();
 
     // Load the default shader, but from a Yaml description file!
-    const loaded_shader = try delve.graphics.shaders.loadFromYaml("assets/shaders/default/out/default_reflection.yaml");
+    const loaded_shader = try delve.graphics.shaders.loadFromYaml(.{}, "assets/shaders/default/out/default_reflection.yaml");
     shader_default = loaded_shader.?;
 
     // make the texture to draw
