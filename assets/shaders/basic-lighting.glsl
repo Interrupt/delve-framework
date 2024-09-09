@@ -52,6 +52,8 @@ uniform fs_params {
     vec4 u_dir_light_color;
     float u_num_point_lights;
     vec4 u_point_light_data[32]; // each light is packed as two vec4s
+    vec4 u_fog_data; // x is start, y is end, z and w is unused for now
+    vec4 u_fog_color; // fog color rgb, and a is fog amount
 };
 
 in vec4 color;
@@ -77,6 +79,15 @@ float attenuate_light(float distance, float radius, float max_intensity, float f
     float s2 = sqr(s);
 
     return max_intensity * sqr(1 - s2) / (1 + falloff * s);
+}
+
+float calcFogFactor(float distance_to_eye)
+{
+    float fog_start = u_fog_data.x;
+    float fog_end = u_fog_data.y;
+    float fog_amount = u_fog_color.a;
+    float fog_factor = (distance_to_eye - fog_start) / (fog_end - fog_start);
+	return clamp(fog_factor * fog_amount, 0.0, 1.0);
 }
 
 void main() {
@@ -128,7 +139,10 @@ void main() {
     float override_mod = 1.0 - u_color_override.a;
     c.rgb = (c.rgb * override_mod) + (u_color_override.rgb * u_color_override.a);
 
-    frag_color = c;
+    // finally, add fog
+    float fog_factor = calcFogFactor(length(u_cameraPos - position));
+
+    frag_color = vec4(mix(c.rgb, u_fog_color.rgb, fog_factor), 1.0);
 }
 
 #pragma sokol @end
