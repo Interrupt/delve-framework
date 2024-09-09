@@ -29,8 +29,8 @@
             // .hash = "1220841471bd4891cbb199d27cc5e7e0fb0a5b7c5388a70bd24fa3eb7285755c396c",
         },
         .ymlz = .{
-            .url = "git+https://github.com/pwbh/ymlz#7b0fcc4c85772f9d63c22ecb337ea62a675cc1b5",
-            .hash = "12205e8c331e3e2ba8b1acedf98b7bc8f6250e0efc513ac3d7c1c0df9cdb534583a8",
+            .url = "git+https://github.com/pwbh/ymlz#8ac6a6a8fef75984fcbfc9a72f8e72c57849f691",
+            .hash = "12208f67e404b253e91f12ec8b9b9645ff3669b00b3ffc67b5ab66b705408c64115c",
         },
         .zstbi = .{
             .path = "3rdparty/zstbi",

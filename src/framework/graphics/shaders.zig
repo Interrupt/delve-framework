@@ -3,6 +3,7 @@ const yaml = @import("zigyaml");
 const mem = @import("../mem.zig");
 const debug = @import("../debug.zig");
 const graphics = @import("../platform/graphics.zig");
+const Ymlz = @import("ymlz").Ymlz;
 
 const ShaderYamlError = error{
     Parse,
@@ -64,15 +65,21 @@ pub fn parseYamlShader(allocator: std.mem.Allocator, file_path: []const u8) !Sha
 
     const source = try file.readToEndAlloc(allocator, std.math.maxInt(u32));
 
-    var untyped_yaml = yaml.Yaml.load(allocator, source) catch |e| {
-        debug.log("Yaml loading error! {any}", .{e});
-        return e;
-    };
-
-    const result = untyped_yaml.parse(ShaderYaml) catch |e| {
+    var ymlz = try Ymlz(ShaderYaml).init(allocator);
+    const result = ymlz.loadRaw(source) catch |e| {
         debug.log("Yaml parsing error! {any}", .{e});
         return e;
     };
+
+    // var untyped_yaml = yaml.Yaml.load(allocator, source) catch |e| {
+    //     debug.log("Yaml loading error! {any}", .{e});
+    //     return e;
+    // };
+    //
+    // const result = untyped_yaml.parse(ShaderYaml) catch |e| {
+    //     debug.log("Yaml parsing error! {any}", .{e});
+    //     return e;
+    // };
 
     // find the shader that matches our graphics backend
     const shader_type = getShaderTypeFromBackend();
