@@ -99,7 +99,7 @@ float calcFogFactor(float distance_to_eye)
     float fog_end = u_fog_data.y;
     float fog_amount = u_fog_color.a;
     float fog_factor = (distance_to_eye - fog_start) / (fog_end - fog_start);
-	return clamp(fog_factor * fog_amount, 0.0, 1.0);
+    return clamp(fog_factor * fog_amount, 0.0, 1.0);
 }
 
 void main() {
