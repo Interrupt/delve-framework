@@ -89,16 +89,24 @@ pub const MaterialUniformDefaults = enum(i32) {
     JOINTS_64,
     JOINTS_256,
     CAMERA_POSITION,
+    AMBIENT_LIGHT,
     DIRECTIONAL_LIGHT,
     POINT_LIGHTS_8,
+    POINT_LIGHTS_16,
+    POINT_LIGHTS_32,
+    FOG_DATA,
 };
 
 // Default uniform block layout for meshes
-pub const DefaultVSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR };
-pub const DefaultFSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .COLOR_OVERRIDE, .ALPHA_CUTOFF };
+pub const default_vs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR };
+pub const default_fs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .COLOR_OVERRIDE, .ALPHA_CUTOFF };
 
-// Default uniform block layout for skinend meshes
-pub const DefaultSkinnedMeshVSUniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR, .JOINTS_64 };
+// Default VS uniform block layout for skinned meshes
+pub const default_skinned_mesh_vs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR, .JOINTS_64 };
+
+// Default FS uniform block layout for the basic lighting shader
+pub const default_lit_fs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16, .FOG_DATA };
+
 /// Default vertex shader uniform block layout
 pub const VSDefaultUniforms = struct {
     projViewMatrix: math.Mat4 align(16),
@@ -116,6 +124,12 @@ pub const FSDefaultUniforms = struct {
 pub const Anything = struct {
     ptr: ?*const anyopaque = null,
     size: usize = 0,
+};
+
+// The camera view matrices that will be passed to draw calls
+pub const CameraMatrices = struct {
+    view: Mat4,
+    proj: Mat4,
 };
 
 /// A packed mesh vertex
@@ -146,8 +160,8 @@ pub const Vertex = struct {
     pos: Vec3 = Vec3.zero,
     uv: Vec2 = Vec2.zero,
     color: colors.Color = colors.white,
-    normal: Vec3 = Vec3.zero,
-    tangent: Vec4 = Vec4.zero,
+    normal: Vec3 = Vec3.y_axis,
+    tangent: Vec4 = Vec4.new(1.0, 0.0, 0.0, 1.0),
 
     pub fn mulMat4(left: Vertex, right: Mat4) Vertex {
         var ret = left;
@@ -568,8 +582,8 @@ pub const MaterialConfig = struct {
     shader: ?Shader = null,
 
     // The layouts of the default (0th) vertex and fragment shaders
-    default_vs_uniform_layout: []const MaterialUniformDefaults = DefaultVSUniforms,
-    default_fs_uniform_layout: []const MaterialUniformDefaults = DefaultFSUniforms,
+    default_vs_uniform_layout: []const MaterialUniformDefaults = default_vs_uniforms,
+    default_fs_uniform_layout: []const MaterialUniformDefaults = default_fs_uniforms,
 
     // Samplers to create. Defaults to making one linearly filtered sampler
     samplers: []const FilterMode = &[_]FilterMode{.LINEAR},
@@ -588,9 +602,17 @@ pub const MaterialParams = struct {
     color_override: Color = colors.transparent,
     alpha_cutoff: f32 = 0.0,
     joints: []Mat4 = undefined,
-    camera_position: Vec3 = undefined,
+    ambient_light: Color = colors.black,
     directional_light: DirectionalLight = undefined,
     point_lights: []PointLight = undefined,
+    fog: FogParams = .{},
+};
+
+pub const FogParams = struct {
+    color: Color = colors.red,
+    amount: f32 = 0.0,
+    start: f32 = 1.0,
+    end: f32 = 100.0,
 };
 
 pub const UniformBlockType = enum(i32) { BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, VEC3, VEC4, MAT3, MAT4 };
@@ -810,7 +832,7 @@ pub const Material = struct {
     }
 
     /// Builds and applys a uniform block from a layout
-    pub fn setDefaultUniformVars(self: *Material, layout: []const MaterialUniformDefaults, u_block: *MaterialUniformBlock, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+    pub fn setDefaultUniformVars(self: *Material, layout: []const MaterialUniformDefaults, u_block: *MaterialUniformBlock, view_matrix: Mat4, proj_matrix: Mat4, model_matrix: Mat4) void {
         // Don't do anything if we have no layout for the default block
         if (layout.len == 0)
             return;
@@ -819,7 +841,7 @@ pub const Material = struct {
         for (layout) |item| {
             switch (item) {
                 .PROJECTION_VIEW_MATRIX => {
-                    u_block.addMatrix("u_projViewMatrix", proj_view_matrix);
+                    u_block.addMatrix("u_projViewMatrix", proj_matrix.mul(view_matrix));
                 },
                 .MODEL_MATRIX => {
                     u_block.addMatrix("u_modelMatrix", model_matrix);
@@ -840,47 +862,70 @@ pub const Material = struct {
                     u_block.addBytesFrom(self.params.joints[0..256], UniformBlockType.MAT4);
                 },
                 .CAMERA_POSITION => {
-                    // todo: why does this need to be a vec4? ordering gets off with a vec3
-                    const cam_array = [_]f32{ self.params.camera_position.x, self.params.camera_position.y, self.params.camera_position.z, 0.0 };
+                    const inv_view = view_matrix.invert();
+                    const cam_array = [_]f32{ inv_view.m[3][0], inv_view.m[3][1], inv_view.m[3][2], 0.0 };
                     u_block.addBytesFrom(&cam_array, UniformBlockType.VEC4);
+                },
+                .AMBIENT_LIGHT => {
+                    u_block.addColor("u_ambientLight", self.params.ambient_light);
                 },
                 .DIRECTIONAL_LIGHT => {
                     u_block.addBytesFrom(&self.params.directional_light.toArray(), UniformBlockType.VEC4);
                 },
                 .POINT_LIGHTS_8 => {
-                    const num_lights = self.params.point_lights.len;
-                    u_block.addFloat("u_num_point_lights", @floatFromInt(num_lights));
+                    self.addPointLightsToUniformBlock(u_block, 8);
+                },
+                .POINT_LIGHTS_16 => {
+                    self.addPointLightsToUniformBlock(u_block, 16);
+                },
+                .POINT_LIGHTS_32 => {
+                    self.addPointLightsToUniformBlock(u_block, 32);
+                },
+                .FOG_DATA => {
+                    var fog_color = self.params.fog.color;
+                    fog_color.a = self.params.fog.amount;
 
-                    // each light is packed as two vec4s
-                    for (0..8) |i| {
-                        if (i < num_lights) {
-                            u_block.addBytesFrom(&self.params.point_lights[i].toArray(), UniformBlockType.VEC4);
-                        } else {
-                            u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
-                            u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
-                        }
-                    }
+                    u_block.addColor("u_fog_data", colors.Color.new(self.params.fog.start, self.params.fog.end, 0.0, 0.0)); // fog start and end
+                    u_block.addColor("u_fog_color", fog_color);
                 },
             }
         }
         u_block.end();
     }
 
+    pub fn addPointLightsToUniformBlock(self: *Material, u_block: *MaterialUniformBlock, comptime max_lights: usize) void {
+        const num_lights = self.params.point_lights.len;
+        u_block.addFloat("u_num_point_lights", @floatFromInt(num_lights));
+
+        // each light is packed as two vec4s
+        for (0..max_lights) |i| {
+            if (i < num_lights) {
+                u_block.addBytesFrom(&self.params.point_lights[i].toArray(), UniformBlockType.VEC4);
+            } else {
+                u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
+                u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
+            }
+        }
+    }
+
     /// Applys shader uniform variables for this Material
-    pub fn applyUniforms(self: *Material, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+    pub fn applyUniforms(self: *Material, cam_matrices: CameraMatrices, model_matrix: Mat4) void {
         // If no default layout is set, we'll treat the first uniform block like any other
         // otherwise, we start custom blocks at index 1.
         const has_default_vs: bool = self.default_vs_uniform_layout.len > 0;
         const has_default_fs: bool = self.default_fs_uniform_layout.len > 0;
 
+        const view_matrix = cam_matrices.view;
+        const proj_matrix = cam_matrices.proj;
+
         // Set our default uniform vars first
         if (has_default_vs and self.use_default_params) {
             if (self.vs_uniforms[0] != null)
-                self.setDefaultUniformVars(self.default_vs_uniform_layout, &self.vs_uniforms[0].?, proj_view_matrix, model_matrix);
+                self.setDefaultUniformVars(self.default_vs_uniform_layout, &self.vs_uniforms[0].?, view_matrix, proj_matrix, model_matrix);
         }
         if (has_default_fs and self.use_default_params) {
             if (self.fs_uniforms[0] != null)
-                self.setDefaultUniformVars(self.default_fs_uniform_layout, &self.fs_uniforms[0].?, proj_view_matrix, model_matrix);
+                self.setDefaultUniformVars(self.default_fs_uniform_layout, &self.fs_uniforms[0].?, view_matrix, proj_matrix, model_matrix);
         }
 
         // Now apply all uniform var blocks
@@ -1124,15 +1169,15 @@ pub fn draw(bindings: *Bindings, shader: *Shader) void {
 }
 
 /// Draw a part of a binding, using a material
-pub fn drawSubsetWithMaterial(bindings: *Bindings, start: u32, end: u32, material: *Material, proj_view_matrix: Mat4, model_matrix: Mat4) void {
+pub fn drawSubsetWithMaterial(bindings: *Bindings, start: u32, end: u32, material: *Material, cam_matrices: CameraMatrices, model_matrix: Mat4) void {
     bindings.updateFromMaterial(material);
-    material.applyUniforms(proj_view_matrix, model_matrix);
+    material.applyUniforms(cam_matrices, model_matrix);
     drawSubset(bindings, start, end, &material.shader);
 }
 
 /// Draw a whole binding, using a material
-pub fn drawWithMaterial(bindings: *Bindings, material: *Material, proj_view_matrix: Mat4, model_matrix: Mat4) void {
-    drawSubsetWithMaterial(bindings, 0, @intCast(bindings.length), material, proj_view_matrix, model_matrix);
+pub fn drawWithMaterial(bindings: *Bindings, material: *Material, cam_matrices: CameraMatrices, model_matrix: Mat4) void {
+    drawSubsetWithMaterial(bindings, 0, @intCast(bindings.length), material, cam_matrices, model_matrix);
 }
 
 /// Returns a small 2x2 solid color texture

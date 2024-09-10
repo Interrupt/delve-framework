@@ -25,6 +25,8 @@ var player_pos: math.Vec3 = math.Vec3.zero;
 var player_vel: math.Vec3 = math.Vec3.zero;
 var on_ground = true;
 
+var gravity: f32 = -0.5;
+
 pub fn main() !void {
     const example = delve.modules.Module{
         .name = "quakemap_example",
@@ -45,6 +47,10 @@ pub fn main() !void {
 
     try delve.modules.registerModule(example);
     try delve.module.fps_counter.registerModule();
+
+    // test out registering a console command and a console variable
+    try delve.debug.registerConsoleCommand("setGravity", setGravityCmd, "Changes gravity");
+    try delve.debug.registerConsoleVariable("gravity", &gravity, "Amount of gravity");
 
     try app.start(app.AppConfig{ .title = "Delve Framework - Quake Map Example" });
 }
@@ -220,22 +226,22 @@ pub fn on_tick(delta: f32) void {
 }
 
 pub fn on_draw() void {
-    const proj_view_matrix = camera.getProjView();
+    const view_mats = camera.update();
     const model = math.Mat4.identity;
 
     for (0..map_meshes.items.len) |idx| {
-        map_meshes.items[idx].draw(proj_view_matrix, model);
+        map_meshes.items[idx].draw(view_mats, model);
     }
     for (0..entity_meshes.items.len) |idx| {
-        entity_meshes.items[idx].draw(proj_view_matrix, model);
+        entity_meshes.items[idx].draw(view_mats, model);
     }
 
-    cube_mesh.draw(proj_view_matrix, math.Mat4.translate(camera.position));
+    cube_mesh.draw(view_mats, math.Mat4.translate(camera.position));
 }
 
 pub fn do_player_move(delta: f32) void {
     // gravity!
-    player_vel.y -= 0.5 * delta;
+    player_vel.y += gravity * delta;
 
     // get our forward input direction
     var move_dir: math.Vec3 = math.Vec3.zero;
@@ -263,7 +269,7 @@ pub fn do_player_move(delta: f32) void {
     }
 
     // jumnp and fly
-    if (delve.platform.input.isKeyPressed(.SPACE) and on_ground) player_vel.y = 0.3;
+    if (delve.platform.input.isKeyJustPressed(.SPACE) and on_ground) player_vel.y = 0.3;
     if (delve.platform.input.isKeyPressed(.F)) player_vel.y = 0.1;
 
     move_dir = move_dir.norm();
@@ -311,4 +317,9 @@ pub fn do_player_move(delta: f32) void {
     // dumb friction!
     player_vel.x = 0.0;
     player_vel.z = 0.0;
+}
+
+pub fn setGravityCmd(new_gravity: f32) void {
+    gravity = new_gravity;
+    delve.debug.log("Changed gravity to {d}", .{gravity});
 }

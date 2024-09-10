@@ -41,7 +41,7 @@ pub fn main() !void {
 }
 
 pub fn on_init() !void {
-    const shader = delve.platform.graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
+    const shader = delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
 
     // Create some materials
     material_frustum = delve.platform.graphics.Material.init(.{
@@ -99,7 +99,7 @@ pub fn on_tick(delta: f32) void {
 }
 
 pub fn on_draw() void {
-    const proj_view_matrix = primary_camera.getProjView();
+    const view_mats = primary_camera.update();
     const frustum_model_matrix = delve.math.Mat4.rotate(secondary_camera.yaw_angle, delve.math.Vec3.up);
 
     for (0..10) |x| {
@@ -111,14 +111,14 @@ pub fn on_draw() void {
             const bounds = cube_mesh.bounds.translate(cube_pos);
 
             if (frustum.containsBoundingBox(bounds)) {
-                cube_mesh.drawWithMaterial(&material_highlight, proj_view_matrix, cube_model_matrix);
+                cube_mesh.drawWithMaterial(&material_highlight, view_mats, cube_model_matrix);
             } else {
-                cube_mesh.draw(proj_view_matrix, cube_model_matrix);
+                cube_mesh.draw(view_mats, cube_model_matrix);
             }
         }
     }
 
-    frustum_mesh.draw(proj_view_matrix, frustum_model_matrix);
+    frustum_mesh.draw(view_mats, frustum_model_matrix);
 }
 
 pub fn createFrustumMesh() !delve.graphics.mesh.Mesh {

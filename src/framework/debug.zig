@@ -1,11 +1,37 @@
 const std = @import("std");
 const colors = @import("colors.zig");
 const gfx = @import("platform/graphics.zig");
-const lua = @import("scripting/lua.zig");
 const mem = @import("mem.zig");
 const papp = @import("platform/app.zig");
 const text_module = @import("api/text.zig");
 const draw_module = @import("api/draw.zig");
+
+pub const ConsoleCommandFunc = union(enum) {
+    fn_float: *const fn (f32) void,
+    fn_int: *const fn (i32) void,
+    fn_bool: *const fn (bool) void,
+    fn_string: *const fn ([]const u8) void,
+    fn_string_z: *const fn ([:0]const u8) void,
+    fn_void: *const fn () void,
+};
+
+pub const ConsoleCommand = struct {
+    command: []const u8,
+    help: []const u8,
+    func: ConsoleCommandFunc,
+};
+
+pub const ConsoleVariableType = union(enum) {
+    addr_float: *f32,
+    addr_int: *i32,
+    addr_bool: *bool,
+};
+
+pub const ConsoleVariable = struct {
+    variable: []const u8,
+    help: []const u8,
+    address: ConsoleVariableType,
+};
 
 pub var use_scripting_integration: bool = false;
 
@@ -33,6 +59,10 @@ var cmd_history_last_direction: i32 = 0;
 var pending_cmd: std.ArrayList(u8) = undefined;
 
 var last_text_height: i32 = 0;
+
+// Keep track of any registered console commands and variables
+var console_commands: std.StringHashMap(ConsoleCommand) = undefined;
+var console_variables: std.StringHashMap(ConsoleVariable) = undefined;
 
 // Other systems could init the debug system before the app does
 var needs_init: bool = true;
@@ -131,6 +161,13 @@ pub fn init() void {
     log_history_list = LogList.init(allocator);
     cmd_history_list = LogList.init(allocator);
     pending_cmd = char_array.init(allocator);
+
+    console_commands = std.StringHashMap(ConsoleCommand).init(allocator);
+    console_variables = std.StringHashMap(ConsoleVariable).init(allocator);
+
+    registerConsoleCommand("help", doHelpCommand, "Lists all commands") catch {};
+    registerConsoleCommand("exit", doExitCommand, "Quits app") catch {};
+    registerConsoleCommand("echo", doEchoCommand, "Echoes input") catch {};
 }
 
 pub fn deinit() void {
@@ -145,6 +182,9 @@ pub fn deinit() void {
     log_history_list.deinit();
     cmd_history_list.deinit();
     pending_cmd.deinit();
+
+    console_commands.deinit();
+    console_variables.deinit();
 
     // arena_allocator.deinit();
     // _ = gpa.deinit();
@@ -380,7 +420,7 @@ pub fn handleKeyboardBackspace() void {
 }
 
 pub fn runPendingCommand() void {
-    // Run the lua command!
+    // Run the entered command!
     log(">{s}", .{pending_cmd.items});
     defer pending_cmd.clearAndFree();
 
@@ -390,14 +430,31 @@ pub fn runPendingCommand() void {
     const final_command = pending_cmd.items[0 .. pending_cmd.items.len - 1 :0];
     defer trackCommand(final_command);
 
-    // Try any registered commands first
-    if (tryRegisteredCommands(final_command))
-        return;
-
-    log("Unknown command: {s}", .{final_command});
+    // Try to run commands
+    const result = tryRegisteredCommands(final_command);
+    switch (result) {
+        .not_found => {
+            log("Unknown command: \'{s}\'", .{final_command});
+            log("Use \'help\' to see a list of commands", .{});
+        },
+        .invalid_args => {
+            log("Invalid args: {s}", .{final_command});
+        },
+        .err => {
+            log("Error during command: \'{s}\'", .{final_command});
+        },
+        .ok => {},
+    }
 }
 
-pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
+pub const CommandResult = enum {
+    ok,
+    not_found,
+    invalid_args,
+    err,
+};
+
+pub fn tryRegisteredCommands(command_with_args: [:0]u8) CommandResult {
     var it = std.mem.splitAny(u8, command_with_args, " ");
 
     var command: []const u8 = undefined;
@@ -405,7 +462,7 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
         command = cmd;
     } else {
         // ignore empty commands
-        return false;
+        return .not_found;
     }
 
     // collect all of the arguments into a list of arguments for commands to use
@@ -414,55 +471,156 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) bool {
 
     while (it.next()) |arg| {
         arg_list.append(arg) catch {
-            return false;
+            return .err;
         };
     }
 
-    // This is where we should go check a list of pre-registered console commands, with callbacks
-    // For now, demonstrate some built in commands
-
-    if (std.mem.eql(u8, command, "exit")) {
-        // console command to exit the app
-        const app = @import("platform/app.zig");
-        app.exit();
-        return true;
-    } else if (std.mem.eql(u8, command, "echo")) {
-        // console command to do a simple echo
-        const string_to_echo = command_with_args[5..command_with_args.len :0];
-        log("{s}", .{string_to_echo});
-        return true;
-    } else if (std.mem.eql(u8, command, "lua")) {
-        // console command to run a lua string
-        if (use_scripting_integration) {
-            if (lua.did_init) {
-                const lua_command = command_with_args[4..command_with_args.len :0];
-                lua.runLine(lua_command) catch {};
+    // check if we have any registered console commands
+    if (console_commands.getPtr(command)) |c| {
+        if (command_with_args.len > command.len + 1) {
+            const args = command_with_args[command.len + 1 .. command_with_args.len :0];
+            switch (c.func) {
+                .fn_float => {
+                    const val: f32 = std.fmt.parseFloat(f32, args) catch {
+                        return .invalid_args;
+                    };
+                    c.func.fn_float(val);
+                },
+                .fn_int => {
+                    const val: i32 = std.fmt.parseInt(i32, args, 10) catch {
+                        return .invalid_args;
+                    };
+                    c.func.fn_int(val);
+                },
+                .fn_bool => {
+                    if (std.mem.eql(u8, "true", args)) {
+                        c.func.fn_bool(true);
+                    } else if (std.mem.eql(u8, "false", args)) {
+                        c.func.fn_bool(false);
+                    } else if (std.mem.eql(u8, "1", args)) {
+                        c.func.fn_bool(true);
+                    } else if (std.mem.eql(u8, "0", args)) {
+                        c.func.fn_bool(false);
+                    } else {
+                        return .invalid_args;
+                    }
+                },
+                .fn_string => {
+                    c.func.fn_string(args);
+                },
+                .fn_string_z => {
+                    c.func.fn_string_z(args);
+                },
+                .fn_void => {
+                    c.func.fn_void();
+                },
             }
         } else {
-            log("Lua is not initialized.", .{});
+            switch (c.func) {
+                .fn_void => {
+                    c.func.fn_void();
+                },
+                else => {
+                    return .invalid_args;
+                },
+            }
         }
-        return true;
-    } else if (std.mem.eql(u8, command, "help")) {
-        // console command to print the list of all commands
-        log("commands:\nexit\necho\nlua", .{});
-        return true;
+
+        return .ok;
     }
 
-    return false;
+    // check if we have any registered console variables
+    if (console_variables.getPtr(command)) |c| {
+        if (command_with_args.len > command.len + 1) {
+            const args = command_with_args[command.len + 1 .. command_with_args.len :0];
+            switch (c.address) {
+                .addr_float => {
+                    const val: f32 = std.fmt.parseFloat(f32, args) catch {
+                        return .invalid_args;
+                    };
+                    c.address.addr_float.* = val;
+                },
+                .addr_int => {
+                    const val: i32 = std.fmt.parseInt(i32, args, 10) catch {
+                        return .invalid_args;
+                    };
+                    c.address.addr_int.* = val;
+                },
+                .addr_bool => {
+                    if (std.mem.eql(u8, "true", args)) {
+                        c.address.addr_bool.* = true;
+                    } else if (std.mem.eql(u8, "false", args)) {
+                        c.address.addr_bool.* = false;
+                    } else if (std.mem.eql(u8, "1", args)) {
+                        c.address.addr_bool.* = true;
+                    } else if (std.mem.eql(u8, "0", args)) {
+                        c.address.addr_bool.* = false;
+                    } else {
+                        return .invalid_args;
+                    }
+                },
+            }
+        } else {
+            log("{s}: {d:3}", .{ command, c.address.addr_float.* });
+        }
+
+        return .ok;
+    }
+
+    return .not_found;
 }
 
-pub fn showErrorScreen(error_header: [:0]const u8) void {
-    // Simple lua function to make the draw function draw an error screen
-    const error_screen_lua =
-        \\ _draw = function()
-        \\ require('draw').clear(1)
-        \\ require('text').draw("{s}", 32, 32, 0)
-        \\ require('text').draw_wrapped([[{s}]], 32, 32+16, 800, 0)
-        \\ end
-        \\
-        \\ _update = function() end
-    ;
+pub fn registerConsoleCommand(command: []const u8, comptime func: anytype, help: []const u8) !void {
+    if (needs_init)
+        init();
 
+    switch (@TypeOf(func)) {
+        fn ([]const u8) void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_string = func } });
+        },
+        fn ([:0]const u8) void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_string_z = func } });
+        },
+        fn (i32) void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_int = func } });
+        },
+        fn (f32) void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_float = func } });
+        },
+        fn (bool) void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_bool = func } });
+        },
+        fn () void => {
+            try console_commands.put(command, .{ .command = command, .help = help, .func = .{ .fn_void = func } });
+        },
+        else => {
+            @compileError("Unknown console command type!");
+        },
+    }
+}
+
+pub fn registerConsoleVariable(variable: []const u8, comptime address: anytype, help: []const u8) !void {
+    if (needs_init)
+        init();
+
+    switch (@TypeOf(address)) {
+        *f32 => {
+            try console_variables.put(variable, .{ .variable = variable, .help = help, .address = .{ .addr_float = address } });
+        },
+        *i32 => {
+            try console_variables.put(variable, .{ .variable = variable, .help = help, .address = .{ .addr_int = address } });
+        },
+        *bool => {
+            try console_variables.put(variable, .{ .variable = variable, .help = help, .address = .{ .addr_bool = address } });
+        },
+        else => {
+            @compileError("Unknown console variable type!");
+        },
+    }
+}
+
+// Shows an error screen
+pub fn showErrorScreen(error_header: [:0]const u8) void {
     // Assume that the last log line is what exploded!
     const log_history = getLogHistory();
     var error_desc: [:0]const u8 = undefined;
@@ -476,21 +634,45 @@ pub fn showErrorScreen(error_header: [:0]const u8) void {
     var error_desc_splits = std.mem.split(u8, error_desc, "\n");
     const first_split = error_desc_splits.first();
 
-    const written = std.fmt.allocPrintZ(allocator, error_screen_lua, .{ error_header, first_split }) catch {
-        std.debug.print("Error allocating to show error screen?\n", .{});
-        return;
-    };
-    defer allocator.free(written);
+    // todo: show an error screen! until then, just print the error and exit
+    std.debug.print("--- Fatal Error: {s}\n{s}\n", .{ error_header, first_split });
 
-    // run the new lua statement
-    std.debug.print("Showing error screen: {s}\n", .{error_header});
+    const app = @import("platform/app.zig");
+    app.exit();
+}
 
-    if (use_scripting_integration) {
-        if (!lua.did_init)
-            return;
+// Console command to print the list of all commands
+pub fn doHelpCommand() void {
+    // print any registered commands
+    if (console_commands.count() > 0) {
+        log("-- Console Commands --", .{});
 
-        lua.runLine(written) catch {
-            std.debug.print("Error running lua to show error screen?\n", .{});
-        };
+        var cmd_it = console_commands.valueIterator();
+        while (cmd_it.next()) |cmd| {
+            log("{s}: {s}", .{ cmd.command, cmd.help });
+        }
     }
+
+    // print any registered variables
+    if (console_variables.count() > 0) {
+        log("-- Console Variables --", .{});
+
+        var var_it = console_variables.valueIterator();
+        while (var_it.next()) |variable| {
+            log("{s}: {s}", .{ variable.variable, variable.help });
+        }
+    }
+}
+
+// console command to exit the app
+pub fn doExitCommand() void {
+    log("Shutting down.", .{});
+
+    const app = @import("platform/app.zig");
+    app.exit();
+}
+
+// console command to echo input
+pub fn doEchoCommand(args: []const u8) void {
+    log("{s}", .{args});
 }

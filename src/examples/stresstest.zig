@@ -6,6 +6,7 @@ const fps_module = delve.module.fps_counter;
 const audio_example = @import("audio.zig");
 const debugdraw_example = @import("debugdraw.zig");
 const meshes_example = @import("meshes.zig");
+const skinnedmeshes_example = @import("skinned-meshes.zig");
 const sprites_example = @import("sprites.zig");
 const forest_example = @import("forest.zig");
 const fonts_example = @import("fonts.zig");
@@ -39,6 +40,7 @@ pub fn main() !void {
     try imgui_example.registerModule();
     try fonts_example.registerModule();
     try animation_example.registerModule();
+    try skinnedmeshes_example.registerModule();
     // try forest_example.registerModule();
 
     try app.start(app.AppConfig{ .title = "Delve Framework - Stress Test", .enable_audio = true });

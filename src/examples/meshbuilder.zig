@@ -48,9 +48,11 @@ pub fn on_init() !void {
     };
     const tex = graphics.Texture.init(&img);
 
+    const shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
+
     // Create a material out of the texture
     material = graphics.Material.init(.{
-        .shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }),
+        .shader = shader,
         .texture_0 = tex,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
@@ -93,7 +95,7 @@ pub fn on_tick(delta: f32) void {
 }
 
 pub fn on_draw() void {
-    const proj_view_matrix = camera.getProjView();
+    const view_mats = camera.update();
     var model = math.Mat4.identity;
 
     const frustum = camera.getViewFrustum();
@@ -101,7 +103,7 @@ pub fn on_draw() void {
         return;
     }
 
-    cube1.draw(proj_view_matrix, model.mul(math.Mat4.rotate(@floatCast(time * 40.0), math.Vec3.new(0, 1, 0))));
-    cube2.draw(proj_view_matrix, model);
-    cube3.draw(proj_view_matrix, model);
+    cube1.draw(view_mats, model.mul(math.Mat4.rotate(@floatCast(time * 40.0), math.Vec3.new(0, 1, 0))));
+    cube2.draw(view_mats, model);
+    cube3.draw(view_mats, model);
 }

@@ -97,7 +97,7 @@ fn on_init() !void {
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
 
         // use the VS layout that supports sending joints to the shader
-        .default_vs_uniform_layout = delve.platform.graphics.DefaultSkinnedMeshVSUniforms,
+        .default_vs_uniform_layout = delve.platform.graphics.default_skinned_mesh_vs_uniforms,
     });
 
     // Load our mesh!
@@ -151,7 +151,7 @@ fn on_tick(delta: f32) void {
 }
 
 fn on_draw() void {
-    const proj_view_matrix = camera.getProjView();
+    const view_mats = camera.update();
 
     var model = Mat4.translate(Vec3.new(0.0, -0.75, 0.0));
     model = model.mul(Mat4.rotate(-90, Vec3.new(1.0, 0.0, 0.0)));
@@ -169,7 +169,7 @@ fn on_draw() void {
         mesh_test.setBoneTransform(neck_bone_name, nt.*);
     }
 
-    mesh_test.draw(proj_view_matrix, model);
+    mesh_test.draw(view_mats, model);
 }
 
 fn on_cleanup() !void {

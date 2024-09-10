@@ -65,7 +65,7 @@ pub fn on_init() !void {
     offscreen_pass = graphics.RenderPass.init(.{ .width = 1024, .height = 768 });
     offscreen_pass_2 = graphics.RenderPass.init(.{ .width = 640, .height = 480 });
 
-    const shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
+    const shader = delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
 
     // Create a material out of the texture
     material1 = graphics.Material.init(.{
@@ -151,13 +151,13 @@ pub fn pre_draw() void {
     graphics.beginPass(offscreen_pass, sky_color);
 
     // draw using the offscreen camera
-    const proj_view_matrix = camera_offscreen.getProjView();
+    const offscreen_view_mats = camera_offscreen.update();
 
     // draw a few cubes inside the offscreen pass
     const translate = math.Mat4.translate(math.Vec3.new(-3, 0, 0));
     const rotate = math.Mat4.rotate(@floatCast(time * 160.0), math.Vec3.y_axis);
-    cube1.draw(proj_view_matrix, translate.mul(rotate));
-    cube2.draw(proj_view_matrix, math.Mat4.identity);
+    cube1.draw(offscreen_view_mats, translate.mul(rotate));
+    cube2.draw(offscreen_view_mats, math.Mat4.identity);
 
     // render pass for the primary nested module
     nested_example_1.runFullRenderLifecycle();
@@ -168,10 +168,10 @@ pub fn pre_draw() void {
 
 pub fn on_draw() void {
     // use the fps camera
-    const proj_view_matrix = camera.getProjView();
+    const view_mats = camera.update();
 
     // draw the screen cube
-    cube3.draw(proj_view_matrix, math.Mat4.translate(math.Vec3.new(0, 0, -20)).mul(math.Mat4.rotate(@floatCast(time * 10.0), math.Vec3.new(0, 1, 0))));
+    cube3.draw(view_mats, math.Mat4.translate(math.Vec3.new(0, 0, -20)).mul(math.Mat4.rotate(@floatCast(time * 10.0), math.Vec3.new(0, 1, 0))));
 
     // reset the clear color back to ours
     graphics.setClearColor(delve.colors.examples_bg_dark);

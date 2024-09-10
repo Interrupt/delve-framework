@@ -9,6 +9,7 @@ const boundingbox = @import("../spatial/boundingbox.zig");
 
 const PackedVertex = graphics.PackedVertex;
 const Vertex = graphics.Vertex;
+const CameraMatrices = graphics.CameraMatrices;
 const Color = colors.Color;
 const Rect = @import("../spatial/rect.zig").Rect;
 const Frustum = @import("../spatial/frustum.zig").Frustum;
@@ -158,13 +159,13 @@ pub const Mesh = struct {
     }
 
     /// Draw this mesh
-    pub fn draw(self: *Mesh, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
-        graphics.drawWithMaterial(&self.bindings, self.material, proj_view_matrix, model_matrix);
+    pub fn draw(self: *Mesh, cam_matrices: CameraMatrices, model_matrix: math.Mat4) void {
+        graphics.drawWithMaterial(&self.bindings, self.material, cam_matrices, model_matrix);
     }
 
     /// Draw this mesh, using the specified material instead of the set one
-    pub fn drawWithMaterial(self: *Mesh, material: *graphics.Material, proj_view_matrix: math.Mat4, model_matrix: math.Mat4) void {
-        graphics.drawWithMaterial(&self.bindings, material, proj_view_matrix, model_matrix);
+    pub fn drawWithMaterial(self: *Mesh, material: *graphics.Material, cam_matrices: CameraMatrices, model_matrix: math.Mat4) void {
+        graphics.drawWithMaterial(&self.bindings, material, cam_matrices, model_matrix);
     }
 };
 
@@ -201,7 +202,7 @@ pub fn createSkinnedMesh(vertices: []PackedVertex, indices: []u32, normals: [][3
 
 /// Create a mesh out of some vertex data with a given vertex layout
 pub fn createMeshWithLayout(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: *graphics.Material, layout: graphics.VertexLayout) Mesh {
-    debug.log("Creating mesh: {d} indices", .{indices.len});
+    // debug.log("Creating mesh: {d} indices", .{indices.len});
 
     var bindings = graphics.Bindings.init(.{
         .index_len = indices.len,
@@ -393,19 +394,26 @@ pub const MeshBuilder = struct {
         try self.vertices.append(v1.pack());
         try self.vertices.append(v2.pack());
 
-        try self.normals.append(v0.normal);
-        try self.normals.append(v1.normal);
-        try self.normals.append(v2.normal);
+        try self.normals.append(v0.normal.toArray());
+        try self.normals.append(v1.normal.toArray());
+        try self.normals.append(v2.normal.toArray());
 
-        try self.tangents.append(v0.tangent);
-        try self.tangents.append(v1.tangent);
-        try self.tangents.append(v2.tangent);
+        try self.tangents.append(v0.tangent.toArray());
+        try self.tangents.append(v1.tangent.toArray());
+        try self.tangents.append(v2.tangent.toArray());
 
         const indices = &[_]u32{ 0, 1, 2 };
         const v_pos = @as(u32, @intCast(self.indices.items.len));
         for (indices) |idx| {
             try self.indices.append(idx + v_pos);
         }
+    }
+
+    pub fn addTriangleFromVerticesWithTransform(self: *MeshBuilder, v0: Vertex, v1: Vertex, v2: Vertex, transform: math.Mat4) !void {
+        const v0_t = v0.mulMat4(transform);
+        const v1_t = v1.mulMat4(transform);
+        const v2_t = v2.mulMat4(transform);
+        try self.addTriangleFromVertices(v0_t, v1_t, v2_t);
     }
 
     pub fn addCube(self: *MeshBuilder, pos: Vec3, size: Vec3, transform: math.Mat4, color: Color) !void {

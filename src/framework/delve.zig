@@ -68,12 +68,14 @@ pub const spatial = struct {
 pub const utils = struct {
     pub const interpolation = @import("utils/interpolation.zig");
     pub const quakemap = @import("utils/quakemap.zig");
+    pub const quakemdl = @import("utils/quakemdl.zig");
 };
 
 // builtin shaders
 
 pub const shaders = struct {
     pub const default = @import("graphics/shaders/default.glsl.zig");
+    pub const default_mesh = @import("graphics/shaders/default-mesh.glsl.zig");
     pub const default_emissive = @import("graphics/shaders/emissive.glsl.zig");
     pub const default_skinned = @import("graphics/shaders/skinned.glsl.zig");
     pub const default_basic_lighting = @import("graphics/shaders/basic-lighting.glsl.zig");
