@@ -63,7 +63,7 @@ pub fn on_tick(delta: f32) void {
 
     time += delta;
 
-    camera.runSimpleCamera(8 * delta, 120 * delta, true);
+    camera.runSimpleCamera(48 * delta, 120 * delta, true);
 }
 
 var counter: f32 = 0;
@@ -71,13 +71,9 @@ var index: u32 = 0;
 
 pub fn on_draw() void {
     const view_mats = camera.update();
-    const model = math.Mat4.identity;
+    const model = math.Mat4.identity.mul(math.Mat4.translate(math.Vec3.new(0, -32, 0)));
 
-    const frustum = camera.getViewFrustum();
-    if (!frustum.containsPoint(math.Vec3.new(0, 0, 0))) {
-        return;
-    }
-
+    defer counter += 0.1;
     index = @as(u32, @intFromFloat(counter)) % @as(u32, @intCast(mdl.frames.len));
 
     var frame = &mdl.frames[index];
@@ -86,7 +82,10 @@ pub fn on_draw() void {
         .group => &frame.group.frames[0].mesh,
     };
 
-    mesh.draw(view_mats, model.mul(math.Mat4.translate(math.Vec3.new(0, -32, 0))));
+    const frustum = camera.getViewFrustum();
+    if (!frustum.containsBoundingBox(mesh.bounds.transform(model))) {
+        return;
+    }
 
-    counter += 0.1;
+    mesh.draw(view_mats, model);
 }
