@@ -1,12 +1,16 @@
 # Roadmap
 
 Todo:
-[ ] GUI (Dear imgui?)
-[ ] Font loading
+[ ] Shaders - loading using shader reflection YAML files
 [ ] Lua - bind types
-[ ] Animated Meshes
 
 Done:
+[x] Quake .mdl support
+[x] Quake .map support
+[x] Basic lighting
+[x] Animated meshes
+[x] Font loading
+[x] GUI using Dear imgui
 [x] Basic Graphics
 [x] Input
 [x] Audio
