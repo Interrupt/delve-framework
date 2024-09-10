@@ -10,7 +10,6 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var camera: delve.graphics.camera.Camera = undefined;
 
 var mdl: delve.utils.quakemdl.MDL = undefined;
-var mesh: delve.graphics.mesh.Mesh = undefined;
 
 var time: f64 = 0.0;
 
@@ -75,11 +74,11 @@ pub fn on_draw() void {
 
     index = @as(u32, @intFromFloat(counter)) % @as(u32, @intCast(mdl.frames.len));
 
-    const frame = mdl.frames[index];
-    switch (frame) {
-        .single => mesh = frame.single.mesh,
-        .group => mesh = frame.group.frames[0].mesh
-    }
+    var frame = &mdl.frames[index];
+    var mesh = switch (frame.*) {
+        .single => &frame.single.mesh,
+        .group => &frame.group.frames[0].mesh,
+    };
 
     mesh.draw(view_mats, model.mul(math.Mat4.translate(math.Vec3.new(0, -32, 0))));
 
