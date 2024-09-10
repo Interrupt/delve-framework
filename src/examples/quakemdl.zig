@@ -27,6 +27,7 @@ pub fn main() !void {
     const example = delve.modules.Module{
         .name = "quakemdl_example",
         .init_fn = on_init,
+        .cleanup_fn = on_cleanup,
         .tick_fn = on_tick,
         .draw_fn = on_draw,
     };
@@ -35,6 +36,11 @@ pub fn main() !void {
     try delve.module.fps_counter.registerModule();
 
     try app.start(app.AppConfig{ .title = "Delve Framework - Quake MDL Example", .sampler_pool_size = 1024 });
+}
+
+pub fn on_cleanup() !void {
+    delve.debug.log("Quake MDL example shutting down!", .{});
+    mdl.deinit();
 }
 
 pub fn on_init() !void {
