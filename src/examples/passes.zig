@@ -93,19 +93,19 @@ pub fn on_init() !void {
     camera_offscreen = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 200.0, 5.0, math.Vec3.up);
 
     // make a cube
-    cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2, 3, 1), delve.colors.white, material1) catch {
+    cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2, 3, 1), delve.colors.white, &material1) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
 
     // and another
-    cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3, 0, -1), math.Vec3.new(1, 1, 2), delve.colors.white, material3) catch {
+    cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3, 0, -1), math.Vec3.new(1, 1, 2), delve.colors.white, &material3) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
 
     // and then a screen
-    cube3 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(20, 12.0, 0.25), delve.colors.white, material2) catch {
+    cube3 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(20, 12.0, 0.25), delve.colors.white, &material2) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };

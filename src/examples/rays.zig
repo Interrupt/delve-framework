@@ -76,17 +76,17 @@ pub fn on_init() !void {
     camera.position = delve.math.Vec3.new(0, 30, 32);
     camera.pitch_angle = -50.0;
 
-    cube_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(1, 1, 1), delve.colors.white, material_cube) catch {
+    cube_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(1, 1, 1), delve.colors.white, &material_cube) catch {
         delve.debug.fatal("Could not create cube mesh!", .{});
         return;
     };
 
-    hit_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(0.5, 0.5, 0.5), delve.colors.white, material_cube) catch {
+    hit_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(0.5, 0.5, 0.5), delve.colors.white, &material_cube) catch {
         delve.debug.fatal("Could not create cube mesh!", .{});
         return;
     };
 
-    ray_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(50, 0, 0), delve.math.Vec3.new(100, 0.1, 0.1), delve.colors.red, material_cube) catch {
+    ray_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(50, 0, 0), delve.math.Vec3.new(100, 0.1, 0.1), delve.colors.red, &material_cube) catch {
         delve.debug.fatal("Could not create cube mesh!", .{});
         return;
     };

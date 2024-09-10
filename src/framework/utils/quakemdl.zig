@@ -16,11 +16,13 @@ const File = std.fs.File;
 pub const MDL = struct {
     frames: []MDLFrameType,
     skins: []MDLSkinType,
+    material: *graphics.Material,
     allocator: Allocator,
 
     pub fn deinit(self: *MDL) void {
         self.allocator.free(self.frames);
         self.allocator.free(self.skins);
+        self.allocator.destroy(self.material);
     }
 };
 
@@ -95,7 +97,7 @@ const MDLMeshBuildConfig_ = struct {
     skin_width: f32,
     skin_height: f32,
     transform: math.Mat4,
-    material: graphics.Material,
+    material: *graphics.Material,
 };
 
 const MDLSkin_ = struct {
@@ -455,6 +457,10 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
     const triangles = try bytesToStructArray(Triangle_, triangle_buff);
     defer allocator.free(triangles);
 
+    var material = try allocator.create(graphics.Material);
+    material.* = default_material;
+    material.textures[0] = skins[0].single.texture;
+
     // Transform
     var m = math.Mat4.identity;
     m = m.mul(math.Mat4.translate(math.vec3(header.origin[0], header.origin[2], header.origin[1])));
@@ -472,7 +478,7 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
         .stvertexes = stvertices,
         .triangles = triangles,
         .transform = m,
-        .material = default_material,
+        .material = material,
     };
 
     // Frames
@@ -515,6 +521,7 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
     const mdl: MDL = .{
         .frames = frames,
         .skins = skins,
+        .material = material,
         .allocator = allocator,
     };
 

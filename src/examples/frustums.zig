@@ -76,7 +76,7 @@ pub fn on_init() !void {
         return;
     };
 
-    cube_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(1, 1, 1), delve.colors.white, material_cube) catch {
+    cube_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(1, 1, 1), delve.colors.white, &material_cube) catch {
         delve.debug.fatal("Could not create cube mesh!", .{});
         return;
     };
@@ -127,5 +127,5 @@ pub fn createFrustumMesh() !delve.graphics.mesh.Mesh {
 
     try builder.addFrustum(secondary_camera.getViewFrustum(), delve.math.Mat4.identity, delve.colors.cyan);
 
-    return builder.buildMesh(material_frustum);
+    return builder.buildMesh(&material_frustum);
 }
