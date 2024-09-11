@@ -1,5 +1,6 @@
 const std = @import("std");
 const Build = std.Build;
+const builtin = @import("builtin");
 const ziglua = @import("ziglua");
 const sokol = @import("sokol");
 const system_sdk = @import("system-sdk");
@@ -171,6 +172,9 @@ pub fn build(b: *std.Build) !void {
         try buildExample(b, example_item, delve_mod, delve_lib);
     }
 
+    // add the build shaders run step, to update the baked in default shaders
+    buildShaders(b);
+
     // TESTS
     const exe_tests = b.addTest(.{
         .root_source_file = b.path("src/framework/delve.zig"),
@@ -277,4 +281,51 @@ pub fn getEmsdkSystemIncludePath(dep_sokol: *Build.Dependency) Build.LazyPath {
 pub fn emscriptenRunStep(b: *Build, name: []const u8, dep_sokol: *Build.Dependency) *Build.Step.Run {
     const emsdk = dep_sokol.builder.dependency("emsdk", .{});
     return sokol.emRunStep(b, .{ .name = name, .emsdk = emsdk });
+}
+// Adds a run step to compile shaders, expects the shader compiler in ../sokol-tools-bin/
+fn buildShaders(b: *Build) void {
+    const sokol_tools_bin_dir = "../sokol-tools-bin/bin/";
+    const shaders_dir = "assets/shaders/";
+    const shaders_out_dir = "src/framework/graphics/shaders/";
+
+    const shaders = .{
+        "basic-lighting.glsl",
+        "default.glsl",
+        "default-mesh.glsl",
+        "emissive.glsl",
+        "skinned-basic-lighting.glsl",
+        "skinned.glsl",
+    };
+
+    const optional_shdc: ?[:0]const u8 = comptime switch (builtin.os.tag) {
+        .windows => "win32/sokol-shdc.exe",
+        .linux => "linux/sokol-shdc",
+        .macos => if (builtin.cpu.arch.isX86()) "osx/sokol-shdc" else "osx_arm64/sokol-shdc",
+        else => null,
+    };
+
+    if (optional_shdc == null) {
+        std.log.warn("unsupported host platform, skipping shader compiler step", .{});
+        return;
+    }
+
+    const shdc_step = b.step("shaders", "Compile shaders (needs ../sokol-tools-bin)");
+    const shdc_path = sokol_tools_bin_dir ++ optional_shdc.?;
+    const slang = "glsl300es:glsl430:wgsl:metal_macos:metal_ios:metal_sim:hlsl4";
+
+    inline for (shaders) |shader| {
+        const cmd = b.addSystemCommand(&.{
+            shdc_path,
+            "-i",
+            shaders_dir ++ shader,
+            "-o",
+            shaders_out_dir ++ shader ++ ".zig",
+            "-l",
+            slang,
+            "-f",
+            "sokol_zig",
+            "--reflection",
+        });
+        shdc_step.dependOn(&cmd.step);
+    }
 }
