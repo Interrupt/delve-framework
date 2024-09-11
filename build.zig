@@ -58,11 +58,6 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
-    const dep_zigyaml = b.dependency("zigyaml", .{
-        .target = target,
-        .optimize = optimize,
-    });
-
     const dep_yamlz = b.dependency("ymlz", .{
         .target = target,
         .optimize = optimize,
@@ -81,7 +76,6 @@ pub fn build(b: *std.Build) !void {
     const zaudio_item = .{ .module = dep_zaudio.module("root"), .name = "zaudio" };
     const cimgui_item = .{ .module = dep_cimgui.module("cimgui"), .name = "cimgui" };
     const stb_truetype_item = .{ .module = dep_stb_truetype.module("root"), .name = "stb_truetype" };
-    const zigyaml_item = .{ .module = dep_zigyaml.module("yaml"), .name = "zigyaml" };
     const ymlz_item = .{ .module = dep_yamlz.module("root"), .name = "ymlz" };
 
     const delve_module_imports = [_]ModuleImport{
@@ -92,7 +86,6 @@ pub fn build(b: *std.Build) !void {
         ziglua_item,
         cimgui_item,
         stb_truetype_item,
-        zigyaml_item,
         ymlz_item,
     };
 

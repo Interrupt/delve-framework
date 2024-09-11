@@ -24,25 +24,11 @@ pub fn loadFromYaml(cfg: graphics.ShaderConfig, file_path: []const u8) !?graphic
     const result = try parseYamlShader(allocator, file_path);
     var shader_info: ShaderInfo = .{ .shader_def = result };
 
+    debug.log("Loading shader yaml file: {s}", .{file_path});
+
     // debug output!
     for (result.programs) |program| {
-        debug.log("Found shader def: {s}: {s}", .{ result.slang, program.name });
-
-        // debug.log("  vs: {s}", .{program.vs.path});
-        // for (program.vs.uniform_blocks) |block| {
-        //     debug.log("    uniform: {s} - {d}", .{ block.struct_name, block.size });
-        //     for (block.uniforms) |*uniform| {
-        //         debug.log("      var: {s}: {s} x {d}", .{ uniform.name, uniform.type, uniform.array_count });
-        //     }
-        // }
-        // debug.log("  fs: {s}", .{program.fs.path});
-        // for (program.fs.uniform_blocks) |block| {
-        //     debug.log("    uniform: {s} - {d}", .{ block.struct_name, block.size });
-        //     for (block.uniforms) |*uniform| {
-        //         debug.log("      var: {s}: {s} x {d}", .{ uniform.name, uniform.type, uniform.array_count });
-        //     }
-        // }
-
+        debug.log("  Found shader def: {s}:{s}", .{ result.slang, program.name });
         shader_info.vs_source = try loadShaderSource(allocator, program.vs.path);
         shader_info.fs_source = try loadShaderSource(allocator, program.fs.path);
         break;

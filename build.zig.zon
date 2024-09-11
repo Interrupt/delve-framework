@@ -23,14 +23,9 @@
             .url = "git+https://github.com/floooh/sokol-zig.git#d3e21f76498213d6d58179065756f5f2ed9b90cf",
             .hash = "122052a192829b377c637ce242ee8c9121e03d8cd10c889758dc6fb176368de7d67b",
         },
-        .zigyaml = .{
-            .path = "../zig-yaml"
-            // .url = "git+https://github.com/kubkon/zig-yaml#beddd5da24de91d430ca7028b00986f7745b13e9",
-            // .hash = "1220841471bd4891cbb199d27cc5e7e0fb0a5b7c5388a70bd24fa3eb7285755c396c",
-        },
         .ymlz = .{
-            .url = "git+https://github.com/pwbh/ymlz#8ac6a6a8fef75984fcbfc9a72f8e72c57849f691",
-            .hash = "12208f67e404b253e91f12ec8b9b9645ff3669b00b3ffc67b5ab66b705408c64115c",
+            .url = "git+https://github.com/pwbh/ymlz#bd3ce82da20844117f3da76d0cd40453936b1b66",
+            .hash = "122066bde791372e092cf04ccf2b827e9b1164a2ea23c7187d71d2d2f39252777f25",
         },
         .zstbi = .{
             .path = "3rdparty/zstbi",
