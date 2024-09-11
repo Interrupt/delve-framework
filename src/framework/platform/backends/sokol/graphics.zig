@@ -247,6 +247,41 @@ pub const ShaderImpl = struct {
         if (shader_desc_fn == null)
             return null;
 
+        const shader_uniformblock_slot_fn = getBuiltinSokolUniformblockSlotFunction(builtin);
+        if (shader_uniformblock_slot_fn == null) {
+            debug.log("Could not find uniformblock slot fn in builtin shader! Did you build with '--reflection'?", .{});
+            return null;
+        }
+
+        const shader_uniformblock_size_fn = getBuiltinSokolUniformblockSizeFunction(builtin);
+        if (shader_uniformblock_size_fn == null) {
+            debug.log("Could not find uniformblock size fn in builtin shader! Did you build with '--reflection'?", .{});
+            return null;
+        }
+
+        const shader_uniform_offset_fn = getBuiltinSokolUniformOffsetFunction(builtin);
+        if (shader_uniform_offset_fn == null) {
+            debug.log("Could not find uniform offset fn in builtin shader! Did you build with '--reflection'?", .{});
+            return null;
+        }
+
+        debug.log("Loading builtin shader! ", .{});
+        if (shader_uniformblock_slot_fn.?(.VS, "vs_params")) |val| {
+            debug.log("  vs_params slot: {d}", .{val});
+        }
+        if (shader_uniformblock_size_fn.?(.VS, "vs_params")) |val| {
+            debug.log("  vs_params size: {d}", .{val});
+        }
+        if (shader_uniformblock_slot_fn.?(.FS, "fs_params")) |val| {
+            debug.log("  fs_params slot: {d}", .{val});
+        }
+        if (shader_uniformblock_size_fn.?(.FS, "fs_params")) |val| {
+            debug.log("  fs_params size: {d}", .{val});
+        }
+        if (shader_uniform_offset_fn.?(.FS, "fs_params", "u_alpha_cutoff")) |val| {
+            debug.log("  fs_params u_alpha_cutoff offset: {d}", .{val});
+        }
+
         return initSokolShader(cfg, shader_desc_fn.?(sg.queryBackend()));
     }
 
@@ -490,7 +525,7 @@ pub const ShaderImpl = struct {
         return initSokolShader(cfg, shader.?.impl.sokol_shader_desc);
     }
 
-    /// Find the function in the builtin that can actually make the ShaderDesc
+    /// Find the shader function in the builtin that can actually make the ShaderDesc
     fn getBuiltinSokolCreateFunction(comptime builtin: anytype) ?fn (sg.Backend) sg.ShaderDesc {
         comptime {
             const decls = @typeInfo(builtin).Struct.decls;
@@ -500,6 +535,60 @@ pub const ShaderImpl = struct {
                 if (field_type == .Fn) {
                     const fn_info = field_type.Fn;
                     if (fn_info.return_type == sg.ShaderDesc) {
+                        return field;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Find the shader function in the builtin that can get uniform block sizes by name
+    fn getBuiltinSokolUniformblockSizeFunction(comptime builtin: anytype) ?fn (stage: sg.ShaderStage, ub_name: []const u8) ?usize {
+        comptime {
+            const decls = @typeInfo(builtin).Struct.decls;
+            for (decls) |d| {
+                const field = @field(builtin, d.name);
+                const field_type = @typeInfo(@TypeOf(field));
+                if (field_type == .Fn) {
+                    const fn_info = field_type.Fn;
+                    if (std.mem.endsWith(u8, d.name, "UniformblockSize") and fn_info.return_type == ?usize) {
+                        return field;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Find the shader function in the builtin that can get uniform block slots by name
+    fn getBuiltinSokolUniformblockSlotFunction(comptime builtin: anytype) ?fn (stage: sg.ShaderStage, ub_name: []const u8) ?usize {
+        comptime {
+            const decls = @typeInfo(builtin).Struct.decls;
+            for (decls) |d| {
+                const field = @field(builtin, d.name);
+                const field_type = @typeInfo(@TypeOf(field));
+                if (field_type == .Fn) {
+                    const fn_info = field_type.Fn;
+                    if (std.mem.endsWith(u8, d.name, "UniformblockSlot") and fn_info.return_type == ?usize) {
+                        return field;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /// Find the shader function in the builtin that can get uniform offsets by name
+    fn getBuiltinSokolUniformOffsetFunction(comptime builtin: anytype) ?fn (stage: sg.ShaderStage, ub_name: []const u8, u_name: []const u8) ?usize {
+        comptime {
+            const decls = @typeInfo(builtin).Struct.decls;
+            for (decls) |d| {
+                const field = @field(builtin, d.name);
+                const field_type = @typeInfo(@TypeOf(field));
+                if (field_type == .Fn) {
+                    const fn_info = field_type.Fn;
+                    if (std.mem.endsWith(u8, d.name, "UniformOffset") and fn_info.return_type == ?usize) {
                         return field;
                     }
                 }
