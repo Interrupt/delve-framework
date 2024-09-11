@@ -6,6 +6,8 @@ out vec4 color;
 layout(location = 1) in vec4 color0;
 out vec2 uv;
 layout(location = 2) in vec2 texcoord0;
+layout(location = 3) in vec3 normals;
+layout(location = 4) in vec4 tangents;
 
 void main()
 {

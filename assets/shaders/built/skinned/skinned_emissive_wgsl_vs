@@ -1,0 +1,120 @@
+diagnostic(off, derivative_uniformity);
+
+alias Arr = array<mat4x4f, 64u>;
+
+struct vs_params {
+  /* @offset(0) */
+  u_projViewMatrix : mat4x4f,
+  /* @offset(64) */
+  u_modelMatrix : mat4x4f,
+  /* @offset(128) */
+  u_color : vec4f,
+  /* @offset(144) */
+  u_joints : Arr,
+}
+
+var<private> weights : vec4f;
+
+@group(0) @binding(0) var<uniform> x_22 : vs_params;
+
+var<private> joints : vec4f;
+
+var<private> pos : vec4f;
+
+var<private> color : vec4f;
+
+var<private> color0 : vec4f;
+
+var<private> uv : vec2f;
+
+var<private> texcoord0 : vec2f;
+
+var<private> normal : vec3f;
+
+var<private> normals : vec3f;
+
+var<private> tangent : vec4f;
+
+var<private> tangents : vec4f;
+
+var<private> joint : vec4f;
+
+var<private> weight : vec4f;
+
+var<private> gl_Position : vec4f;
+
+fn main_1() {
+  var skin : mat4x4f;
+  var model : mat4x4f;
+  let x_17 : f32 = weights.x;
+  let x_27 : f32 = joints.x;
+  let x_31 : mat4x4f = x_22.u_joints[i32(x_27)];
+  let x_32 : mat4x4f = (x_31 * x_17);
+  let x_35 : f32 = weights.y;
+  let x_37 : f32 = joints.y;
+  let x_40 : mat4x4f = x_22.u_joints[i32(x_37)];
+  let x_41 : mat4x4f = (x_40 * x_35);
+  let x_54 : mat4x4f = mat4x4f((x_32[0u] + x_41[0u]), (x_32[1u] + x_41[1u]), (x_32[2u] + x_41[2u]), (x_32[3u] + x_41[3u]));
+  let x_57 : f32 = weights.z;
+  let x_59 : f32 = joints.z;
+  let x_62 : mat4x4f = x_22.u_joints[i32(x_59)];
+  let x_63 : mat4x4f = (x_62 * x_57);
+  let x_76 : mat4x4f = mat4x4f((x_54[0u] + x_63[0u]), (x_54[1u] + x_63[1u]), (x_54[2u] + x_63[2u]), (x_54[3u] + x_63[3u]));
+  let x_79 : f32 = weights.w;
+  let x_81 : f32 = joints.w;
+  let x_84 : mat4x4f = x_22.u_joints[i32(x_81)];
+  let x_85 : mat4x4f = (x_84 * x_79);
+  skin = mat4x4f((x_76[0u] + x_85[0u]), (x_76[1u] + x_85[1u]), (x_76[2u] + x_85[2u]), (x_76[3u] + x_85[3u]));
+  let x_102 : mat4x4f = x_22.u_modelMatrix;
+  let x_103 : mat4x4f = skin;
+  model = (x_102 * x_103);
+  let x_111 : mat4x4f = x_22.u_projViewMatrix;
+  let x_112 : mat4x4f = model;
+  let x_115 : vec4f = pos;
+  gl_Position = ((x_111 * x_112) * x_115);
+  let x_121 : vec4f = color0;
+  let x_125 : vec4f = x_22.u_color;
+  color = (x_121 * x_125);
+  let x_132 : vec2f = texcoord0;
+  uv = x_132;
+  let x_138 : vec3f = normals;
+  normal = x_138;
+  let x_141 : vec4f = tangents;
+  tangent = x_141;
+  let x_143 : vec4f = joints;
+  joint = x_143;
+  let x_145 : vec4f = weights;
+  weight = x_145;
+  return;
+}
+
+struct main_out {
+  @builtin(position)
+  gl_Position : vec4f,
+  @location(0)
+  color_1 : vec4f,
+  @location(1)
+  uv_1 : vec2f,
+  @location(2)
+  normal_1 : vec3f,
+  @location(3)
+  tangent_1 : vec4f,
+  @location(4)
+  joint_1 : vec4f,
+  @location(5)
+  weight_1 : vec4f,
+}
+
+@vertex
+fn main(@location(6) weights_param : vec4f, @location(5) joints_param : vec4f, @location(0) pos_param : vec4f, @location(1) color0_param : vec4f, @location(2) texcoord0_param : vec2f, @location(3) normals_param : vec3f, @location(4) tangents_param : vec4f) -> main_out {
+  weights = weights_param;
+  joints = joints_param;
+  pos = pos_param;
+  color0 = color0_param;
+  texcoord0 = texcoord0_param;
+  normals = normals_param;
+  tangents = tangents_param;
+  main_1();
+  return main_out(gl_Position, color, uv, normal, tangent, joint, weight);
+}
+

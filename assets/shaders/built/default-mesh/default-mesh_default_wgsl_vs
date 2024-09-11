@@ -21,6 +21,10 @@ var<private> uv : vec2f;
 
 var<private> texcoord0 : vec2f;
 
+var<private> normals : vec3f;
+
+var<private> tangents : vec4f;
+
 var<private> gl_Position : vec4f;
 
 fn main_1() {
@@ -46,10 +50,12 @@ struct main_out {
 }
 
 @vertex
-fn main(@location(0) pos_param : vec4f, @location(1) color0_param : vec4f, @location(2) texcoord0_param : vec2f) -> main_out {
+fn main(@location(0) pos_param : vec4f, @location(1) color0_param : vec4f, @location(2) texcoord0_param : vec2f, @location(3) normals_param : vec3f, @location(4) tangents_param : vec4f) -> main_out {
   pos = pos_param;
   color0 = color0_param;
   texcoord0 = texcoord0_param;
+  normals = normals_param;
+  tangents = tangents_param;
   main_1();
   return main_out(gl_Position, color, uv);
 }

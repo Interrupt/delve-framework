@@ -33,7 +33,7 @@ struct fs_params {
 
 var<private> uv : vec2f;
 
-var<private> color : vec4f;
+var<private> baseDiffuse : vec4f;
 
 var<private> position_1 : vec4f;
 
@@ -42,6 +42,8 @@ var<private> normal : vec3f;
 @group(1) @binding(49) var tex_emissive : texture_2d<f32>;
 
 var<private> frag_color : vec4f;
+
+var<private> color : vec4f;
 
 var<private> tangent : vec4f;
 
@@ -125,7 +127,7 @@ fn main_1() {
   var param_6 : f32;
   let x_108 : vec2f = uv;
   let x_109 : vec4f = textureSample(tex, smp, x_108);
-  let x_112 : vec4f = color;
+  let x_112 : vec4f = baseDiffuse;
   c = (x_109 * x_112);
   let x_118 : vec4f = x_63.u_ambient_light;
   lit_color = x_118;
@@ -249,11 +251,12 @@ struct main_out {
 }
 
 @fragment
-fn main(@location(1) uv_param : vec2f, @location(0) color_param : vec4f, @location(4) position_1_param : vec4f, @location(2) normal_param : vec3f, @location(3) tangent_param : vec4f) -> main_out {
+fn main(@location(1) uv_param : vec2f, @location(5) baseDiffuse_param : vec4f, @location(4) position_1_param : vec4f, @location(2) normal_param : vec3f, @location(0) color_param : vec4f, @location(3) tangent_param : vec4f) -> main_out {
   uv = uv_param;
-  color = color_param;
+  baseDiffuse = baseDiffuse_param;
   position_1 = position_1_param;
   normal = normal_param;
+  color = color_param;
   tangent = tangent_param;
   main_1();
   return main_out(frag_color);

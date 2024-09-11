@@ -3,9 +3,9 @@ shaders:
     slang: glsl430
     programs:
       -
-        name: default
+        name: emissive
         vs:
-          path: assets/shaders/built/default/default_default_glsl430_vs.glsl
+          path: assets/shaders/built/emissive/emissive_emissive_glsl430_vs.glsl
           is_binary: false
           entry_point: main
           inputs:
@@ -27,6 +27,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 2
               type: vec2
+            -
+              slot: 3
+              name: normals
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec3
+            -
+              slot: 4
+              name: tangents
+              sem_name: TEXCOORD
+              sem_index: 4
+              type: vec4
           outputs:
             -
               slot: 0
@@ -40,6 +52,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           uniform_blocks:
             -
               slot: 0
@@ -69,7 +93,7 @@ shaders:
                   array_count: 0
                   offset: 128
         fs:
-          path: assets/shaders/built/default/default_default_glsl430_fs.glsl
+          path: assets/shaders/built/emissive/emissive_emissive_glsl430_fs.glsl
           is_binary: false
           entry_point: main
           inputs:
@@ -85,6 +109,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           outputs:
             -
               slot: 0
@@ -122,6 +158,12 @@ shaders:
               multisampled: false
               type: 2d
               sample_type: float
+            -
+              slot: 1
+              name: tex_emissive
+              multisampled: false
+              type: 2d
+              sample_type: float
           samplers:
             -
               slot: 0
@@ -132,14 +174,19 @@ shaders:
               slot: 0
               name: tex_smp
               image_name: tex
+              sampler_name: smp
+            -
+              slot: 1
+              name: tex_emissive_smp
+              image_name: tex_emissive
               sampler_name: smp
   -
     slang: glsl300es
     programs:
       -
-        name: default
+        name: emissive
         vs:
-          path: assets/shaders/built/default/default_default_glsl300es_vs.glsl
+          path: assets/shaders/built/emissive/emissive_emissive_glsl300es_vs.glsl
           is_binary: false
           entry_point: main
           inputs:
@@ -161,6 +208,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 2
               type: vec2
+            -
+              slot: 3
+              name: normals
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec3
+            -
+              slot: 4
+              name: tangents
+              sem_name: TEXCOORD
+              sem_index: 4
+              type: vec4
           outputs:
             -
               slot: 0
@@ -174,6 +233,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           uniform_blocks:
             -
               slot: 0
@@ -203,7 +274,7 @@ shaders:
                   array_count: 0
                   offset: 128
         fs:
-          path: assets/shaders/built/default/default_default_glsl300es_fs.glsl
+          path: assets/shaders/built/emissive/emissive_emissive_glsl300es_fs.glsl
           is_binary: false
           entry_point: main
           inputs:
@@ -219,6 +290,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           outputs:
             -
               slot: 0
@@ -256,6 +339,12 @@ shaders:
               multisampled: false
               type: 2d
               sample_type: float
+            -
+              slot: 1
+              name: tex_emissive
+              multisampled: false
+              type: 2d
+              sample_type: float
           samplers:
             -
               slot: 0
@@ -266,14 +355,19 @@ shaders:
               slot: 0
               name: tex_smp
               image_name: tex
+              sampler_name: smp
+            -
+              slot: 1
+              name: tex_emissive_smp
+              image_name: tex_emissive
               sampler_name: smp
   -
     slang: hlsl4
     programs:
       -
-        name: default
+        name: emissive
         vs:
-          path: assets/shaders/built/default/default_default_hlsl4_vs.hlsl
+          path: assets/shaders/built/emissive/emissive_emissive_hlsl4_vs.hlsl
           is_binary: false
           entry_point: main
           inputs:
@@ -295,6 +389,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 2
               type: vec2
+            -
+              slot: 3
+              name: normals
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec3
+            -
+              slot: 4
+              name: tangents
+              sem_name: TEXCOORD
+              sem_index: 4
+              type: vec4
           outputs:
             -
               slot: 0
@@ -308,6 +414,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           uniform_blocks:
             -
               slot: 0
@@ -337,7 +455,7 @@ shaders:
                   array_count: 0
                   offset: 128
         fs:
-          path: assets/shaders/built/default/default_default_hlsl4_fs.hlsl
+          path: assets/shaders/built/emissive/emissive_emissive_hlsl4_fs.hlsl
           is_binary: false
           entry_point: main
           inputs:
@@ -353,6 +471,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           outputs:
             -
               slot: 0
@@ -390,6 +520,12 @@ shaders:
               multisampled: false
               type: 2d
               sample_type: float
+            -
+              slot: 1
+              name: tex_emissive
+              multisampled: false
+              type: 2d
+              sample_type: float
           samplers:
             -
               slot: 0
@@ -400,14 +536,19 @@ shaders:
               slot: 0
               name: tex_smp
               image_name: tex
+              sampler_name: smp
+            -
+              slot: 1
+              name: tex_emissive_smp
+              image_name: tex_emissive
               sampler_name: smp
   -
     slang: metal_macos
     programs:
       -
-        name: default
+        name: emissive
         vs:
-          path: assets/shaders/built/default/default_default_metal_macos_vs.metal
+          path: assets/shaders/built/emissive/emissive_emissive_metal_macos_vs.metal
           is_binary: false
           entry_point: main0
           inputs:
@@ -429,6 +570,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 2
               type: vec2
+            -
+              slot: 3
+              name: normals
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec3
+            -
+              slot: 4
+              name: tangents
+              sem_name: TEXCOORD
+              sem_index: 4
+              type: vec4
           outputs:
             -
               slot: 0
@@ -442,6 +595,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           uniform_blocks:
             -
               slot: 0
@@ -471,7 +636,7 @@ shaders:
                   array_count: 0
                   offset: 128
         fs:
-          path: assets/shaders/built/default/default_default_metal_macos_fs.metal
+          path: assets/shaders/built/emissive/emissive_emissive_metal_macos_fs.metal
           is_binary: false
           entry_point: main0
           inputs:
@@ -487,6 +652,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           outputs:
             -
               slot: 0
@@ -524,6 +701,12 @@ shaders:
               multisampled: false
               type: 2d
               sample_type: float
+            -
+              slot: 1
+              name: tex_emissive
+              multisampled: false
+              type: 2d
+              sample_type: float
           samplers:
             -
               slot: 0
@@ -534,14 +717,19 @@ shaders:
               slot: 0
               name: tex_smp
               image_name: tex
+              sampler_name: smp
+            -
+              slot: 1
+              name: tex_emissive_smp
+              image_name: tex_emissive
               sampler_name: smp
   -
     slang: metal_ios
     programs:
       -
-        name: default
+        name: emissive
         vs:
-          path: assets/shaders/built/default/default_default_metal_ios_vs.metal
+          path: assets/shaders/built/emissive/emissive_emissive_metal_ios_vs.metal
           is_binary: false
           entry_point: main0
           inputs:
@@ -563,6 +751,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 2
               type: vec2
+            -
+              slot: 3
+              name: normals
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec3
+            -
+              slot: 4
+              name: tangents
+              sem_name: TEXCOORD
+              sem_index: 4
+              type: vec4
           outputs:
             -
               slot: 0
@@ -576,6 +776,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           uniform_blocks:
             -
               slot: 0
@@ -605,7 +817,7 @@ shaders:
                   array_count: 0
                   offset: 128
         fs:
-          path: assets/shaders/built/default/default_default_metal_ios_fs.metal
+          path: assets/shaders/built/emissive/emissive_emissive_metal_ios_fs.metal
           is_binary: false
           entry_point: main0
           inputs:
@@ -621,6 +833,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           outputs:
             -
               slot: 0
@@ -658,6 +882,12 @@ shaders:
               multisampled: false
               type: 2d
               sample_type: float
+            -
+              slot: 1
+              name: tex_emissive
+              multisampled: false
+              type: 2d
+              sample_type: float
           samplers:
             -
               slot: 0
@@ -668,14 +898,19 @@ shaders:
               slot: 0
               name: tex_smp
               image_name: tex
+              sampler_name: smp
+            -
+              slot: 1
+              name: tex_emissive_smp
+              image_name: tex_emissive
               sampler_name: smp
   -
     slang: metal_sim
     programs:
       -
-        name: default
+        name: emissive
         vs:
-          path: assets/shaders/built/default/default_default_metal_sim_vs.metal
+          path: assets/shaders/built/emissive/emissive_emissive_metal_sim_vs.metal
           is_binary: false
           entry_point: main0
           inputs:
@@ -697,6 +932,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 2
               type: vec2
+            -
+              slot: 3
+              name: normals
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec3
+            -
+              slot: 4
+              name: tangents
+              sem_name: TEXCOORD
+              sem_index: 4
+              type: vec4
           outputs:
             -
               slot: 0
@@ -710,6 +957,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           uniform_blocks:
             -
               slot: 0
@@ -739,7 +998,7 @@ shaders:
                   array_count: 0
                   offset: 128
         fs:
-          path: assets/shaders/built/default/default_default_metal_sim_fs.metal
+          path: assets/shaders/built/emissive/emissive_emissive_metal_sim_fs.metal
           is_binary: false
           entry_point: main0
           inputs:
@@ -755,6 +1014,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           outputs:
             -
               slot: 0
@@ -789,6 +1060,12 @@ shaders:
             -
               slot: 0
               name: tex
+              multisampled: false
+              type: 2d
+              sample_type: float
+            -
+              slot: 1
+              name: tex_emissive
               multisampled: false
               type: 2d
               sample_type: float
@@ -803,13 +1080,18 @@ shaders:
               name: tex_smp
               image_name: tex
               sampler_name: smp
+            -
+              slot: 1
+              name: tex_emissive_smp
+              image_name: tex_emissive
+              sampler_name: smp
   -
     slang: wgsl
     programs:
       -
-        name: default
+        name: emissive
         vs:
-          path: assets/shaders/built/default/default_default_wgsl_vs
+          path: assets/shaders/built/emissive/emissive_emissive_wgsl_vs
           is_binary: false
           entry_point: main
           inputs:
@@ -831,6 +1113,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 2
               type: vec2
+            -
+              slot: 3
+              name: normals
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec3
+            -
+              slot: 4
+              name: tangents
+              sem_name: TEXCOORD
+              sem_index: 4
+              type: vec4
           outputs:
             -
               slot: 0
@@ -844,6 +1138,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           uniform_blocks:
             -
               slot: 0
@@ -873,7 +1179,7 @@ shaders:
                   array_count: 0
                   offset: 128
         fs:
-          path: assets/shaders/built/default/default_default_wgsl_fs
+          path: assets/shaders/built/emissive/emissive_emissive_wgsl_fs
           is_binary: false
           entry_point: main
           inputs:
@@ -889,6 +1195,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 1
               type: vec2
+            -
+              slot: 2
+              name: normal
+              sem_name: TEXCOORD
+              sem_index: 2
+              type: vec3
+            -
+              slot: 3
+              name: tangent
+              sem_name: TEXCOORD
+              sem_index: 3
+              type: vec4
           outputs:
             -
               slot: 0
@@ -926,6 +1244,12 @@ shaders:
               multisampled: false
               type: 2d
               sample_type: float
+            -
+              slot: 1
+              name: tex_emissive
+              multisampled: false
+              type: 2d
+              sample_type: float
           samplers:
             -
               slot: 0
@@ -936,4 +1260,9 @@ shaders:
               slot: 0
               name: tex_smp
               image_name: tex
+              sampler_name: smp
+            -
+              slot: 1
+              name: tex_emissive_smp
+              image_name: tex_emissive
               sampler_name: smp

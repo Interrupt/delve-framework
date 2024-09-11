@@ -57,16 +57,6 @@ pub fn parseYamlShader(allocator: std.mem.Allocator, file_path: []const u8) !Sha
         return e;
     };
 
-    // var untyped_yaml = yaml.Yaml.load(allocator, source) catch |e| {
-    //     debug.log("Yaml loading error! {any}", .{e});
-    //     return e;
-    // };
-    //
-    // const result = untyped_yaml.parse(ShaderYaml) catch |e| {
-    //     debug.log("Yaml parsing error! {any}", .{e});
-    //     return e;
-    // };
-
     // find the shader that matches our graphics backend
     const shader_type = getShaderTypeFromBackend();
     for (result.shaders) |shader| {
@@ -94,7 +84,7 @@ pub const ShaderProgram = struct {
 
 pub const ShaderProgramDefinition = struct {
     path: []const u8,
-    is_binary: []const u8, // bool crashes?
+    is_binary: []const u8,
     entry_point: []const u8,
     inputs: ?[]ShaderSlot,
     outputs: ?[]ShaderSlot,
@@ -109,6 +99,7 @@ pub const ShaderSlot = struct {
     name: []const u8,
     sem_name: []const u8,
     sem_index: u32,
+    type: []const u8,
 };
 
 pub const UniformBlocks = struct {
@@ -117,6 +108,7 @@ pub const UniformBlocks = struct {
     struct_name: []const u8,
     inst_name: []const u8,
     uniforms: []ShaderUniform,
+    members: ?[]ShaderUniform,
 };
 
 pub const ShaderUniform = struct {
@@ -126,7 +118,6 @@ pub const ShaderUniform = struct {
     offset: i32,
 };
 
-// todo
 pub const ShaderImage = struct {
     slot: u32,
     name: []const u8,
@@ -147,19 +138,6 @@ pub const ShaderSamplerPairs = struct {
     image_name: []const u8,
     sampler_name: []const u8,
 };
-
-// pub fn testYaml() !void {
-//     var untyped = yaml.Yaml.load(mem.getAllocator(), "testentry: chad 2") catch |e| {
-//         debug.log("Yaml loading error! {any}", .{e});
-//         return;
-//     };
-//     defer untyped.deinit();
-//
-//     // var untyped = try yaml_parsed.load(YamlTest);
-//     // defer untyped.deinit();
-//
-//     debug.log("Yaml: {s}", .{untyped.docs.items[0].map.get("testentry").?.string});
-// }
 
 // Returns a string version of the backend that we should be looking for
 pub fn getShaderTypeFromBackend() []const u8 {

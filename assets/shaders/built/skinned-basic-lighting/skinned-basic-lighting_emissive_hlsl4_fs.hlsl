@@ -17,10 +17,11 @@ SamplerState smp : register(s0);
 Texture2D<float4> tex_emissive : register(t1);
 
 static float2 uv;
-static float4 color;
+static float4 baseDiffuse;
 static float4 position;
 static float3 normal;
 static float4 frag_color;
+static float4 color;
 static float4 tangent;
 
 struct SPIRV_Cross_Input
@@ -30,6 +31,7 @@ struct SPIRV_Cross_Input
     float3 normal : TEXCOORD2;
     float4 tangent : TEXCOORD3;
     float4 position : TEXCOORD4;
+    float4 baseDiffuse : TEXCOORD5;
 };
 
 struct SPIRV_Cross_Output
@@ -61,7 +63,7 @@ float calcFogFactor(float distance_to_eye)
 
 void frag_main()
 {
-    float4 _113 = tex.Sample(smp, uv) * color;
+    float4 _113 = tex.Sample(smp, uv) * baseDiffuse;
     float4 c = _113;
     float4 lit_color = _63_u_ambient_light;
     if (_113.w <= _63_u_alpha_cutoff)
@@ -78,32 +80,32 @@ void frag_main()
         float param_3 = 1.0f;
         float4 _198 = lit_color;
         float3 _200 = _198.xyz + ((_63_u_point_light_data[_145 + 1].xyz * max(dot(normalize(_168), normal), 0.0f)) * attenuate_light(param, param_1, param_2, param_3));
-        float4 _329 = _198;
-        _329.x = _200.x;
-        _329.y = _200.y;
-        _329.z = _200.z;
-        lit_color = _329;
+        float4 _330 = _198;
+        _330.x = _200.x;
+        _330.y = _200.y;
+        _330.z = _200.z;
+        lit_color = _330;
     }
     float4 _239 = lit_color;
     float3 _241 = _239.xyz + (_63_u_dir_light_color.xyz * (max(dot(float4(_63_u_dir_light_dir.x, _63_u_dir_light_dir.y, _63_u_dir_light_dir.z, 0.0f), float4(normal, 0.0f)), 0.0f) * _63_u_dir_light_dir.w));
-    float4 _335 = _239;
-    _335.x = _241.x;
-    _335.y = _241.y;
-    _335.z = _241.z;
-    lit_color = _335;
-    float4 _250 = c * _335;
+    float4 _336 = _239;
+    _336.x = _241.x;
+    _336.y = _241.y;
+    _336.z = _241.z;
+    lit_color = _336;
+    float4 _250 = c * _336;
     float4 _257 = tex_emissive.Sample(smp, uv);
     float3 _275 = (_250.xyz * (1.0f - min((_257.x + _257.y) + _257.z, 1.0f))) + _257.xyz;
-    float4 _344 = _250;
-    _344.x = _275.x;
-    _344.y = _275.y;
-    _344.z = _275.z;
-    float3 _296 = (_344.xyz * (1.0f - _63_u_color_override.w)) + (_63_u_color_override.xyz * _63_u_color_override.w);
-    float4 _350 = _344;
-    _350.x = _296.x;
-    _350.y = _296.y;
-    _350.z = _296.z;
-    c = _350;
+    float4 _345 = _250;
+    _345.x = _275.x;
+    _345.y = _275.y;
+    _345.z = _275.z;
+    float3 _296 = (_345.xyz * (1.0f - _63_u_color_override.w)) + (_63_u_color_override.xyz * _63_u_color_override.w);
+    float4 _351 = _345;
+    _351.x = _296.x;
+    _351.y = _296.y;
+    _351.z = _296.z;
+    c = _351;
     float param_4 = length(_63_u_cameraPos - position);
     frag_color = float4(lerp(c.xyz, _63_u_fog_color.xyz, calcFogFactor(param_4).xxx), 1.0f);
 }
@@ -111,9 +113,10 @@ void frag_main()
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
 {
     uv = stage_input.uv;
-    color = stage_input.color;
+    baseDiffuse = stage_input.baseDiffuse;
     position = stage_input.position;
     normal = stage_input.normal;
+    color = stage_input.color;
     tangent = stage_input.tangent;
     frag_main();
     SPIRV_Cross_Output stage_output;

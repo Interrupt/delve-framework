@@ -12,12 +12,16 @@ static float4 color;
 static float4 color0;
 static float2 uv;
 static float2 texcoord0;
+static float3 normals;
+static float4 tangents;
 
 struct SPIRV_Cross_Input
 {
     float4 pos : TEXCOORD0;
     float4 color0 : TEXCOORD1;
     float2 texcoord0 : TEXCOORD2;
+    float3 normals : TEXCOORD3;
+    float4 tangents : TEXCOORD4;
 };
 
 struct SPIRV_Cross_Output
@@ -39,6 +43,8 @@ SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)
     pos = stage_input.pos;
     color0 = stage_input.color0;
     texcoord0 = stage_input.texcoord0;
+    normals = stage_input.normals;
+    tangents = stage_input.tangents;
     vert_main();
     SPIRV_Cross_Output stage_output;
     stage_output.gl_Position = gl_Position;

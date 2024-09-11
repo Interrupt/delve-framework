@@ -5,7 +5,7 @@ shaders:
       -
         name: emissive
         vs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_glsl430_vs.glsl
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_glsl430_vs.glsl
           is_binary: false
           entry_point: main
           inputs:
@@ -39,6 +39,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: joints
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
+            -
+              slot: 6
+              name: weights
+              sem_name: TEXCOORD
+              sem_index: 6
+              type: vec4
           outputs:
             -
               slot: 0
@@ -70,17 +82,23 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 4240
               struct_name: vs_params
-              inst_name: _16
+              inst_name: _22
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 265
                   offset: 0
               members:
                 -
@@ -98,8 +116,13 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_joints
+                  type: mat4
+                  array_count: 64
+                  offset: 144
         fs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_glsl430_fs.glsl
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_glsl430_fs.glsl
           is_binary: false
           entry_point: main
           inputs:
@@ -132,6 +155,12 @@ shaders:
               name: position
               sem_name: TEXCOORD
               sem_index: 4
+              type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
               type: vec4
           outputs:
             -
@@ -238,7 +267,7 @@ shaders:
       -
         name: emissive
         vs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_glsl300es_vs.glsl
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_glsl300es_vs.glsl
           is_binary: false
           entry_point: main
           inputs:
@@ -272,6 +301,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: joints
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
+            -
+              slot: 6
+              name: weights
+              sem_name: TEXCOORD
+              sem_index: 6
+              type: vec4
           outputs:
             -
               slot: 0
@@ -303,17 +344,23 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 4240
               struct_name: vs_params
-              inst_name: _16
+              inst_name: _22
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 265
                   offset: 0
               members:
                 -
@@ -331,8 +378,13 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_joints
+                  type: mat4
+                  array_count: 64
+                  offset: 144
         fs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_glsl300es_fs.glsl
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_glsl300es_fs.glsl
           is_binary: false
           entry_point: main
           inputs:
@@ -365,6 +417,12 @@ shaders:
               name: position
               sem_name: TEXCOORD
               sem_index: 4
+              type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
               type: vec4
           outputs:
             -
@@ -471,7 +529,7 @@ shaders:
       -
         name: emissive
         vs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_hlsl4_vs.hlsl
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_hlsl4_vs.hlsl
           is_binary: false
           entry_point: main
           inputs:
@@ -505,6 +563,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: joints
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
+            -
+              slot: 6
+              name: weights
+              sem_name: TEXCOORD
+              sem_index: 6
+              type: vec4
           outputs:
             -
               slot: 0
@@ -536,17 +606,23 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 4240
               struct_name: vs_params
-              inst_name: _16
+              inst_name: _22
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 265
                   offset: 0
               members:
                 -
@@ -564,8 +640,13 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_joints
+                  type: mat4
+                  array_count: 64
+                  offset: 144
         fs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_hlsl4_fs.hlsl
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_hlsl4_fs.hlsl
           is_binary: false
           entry_point: main
           inputs:
@@ -598,6 +679,12 @@ shaders:
               name: position
               sem_name: TEXCOORD
               sem_index: 4
+              type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
               type: vec4
           outputs:
             -
@@ -704,7 +791,7 @@ shaders:
       -
         name: emissive
         vs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_metal_macos_vs.metal
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_metal_macos_vs.metal
           is_binary: false
           entry_point: main0
           inputs:
@@ -738,6 +825,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: joints
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
+            -
+              slot: 6
+              name: weights
+              sem_name: TEXCOORD
+              sem_index: 6
+              type: vec4
           outputs:
             -
               slot: 0
@@ -769,17 +868,23 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 4240
               struct_name: vs_params
-              inst_name: _16
+              inst_name: _22
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 265
                   offset: 0
               members:
                 -
@@ -797,8 +902,13 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_joints
+                  type: mat4
+                  array_count: 64
+                  offset: 144
         fs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_metal_macos_fs.metal
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_metal_macos_fs.metal
           is_binary: false
           entry_point: main0
           inputs:
@@ -831,6 +941,12 @@ shaders:
               name: position
               sem_name: TEXCOORD
               sem_index: 4
+              type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
               type: vec4
           outputs:
             -
@@ -937,7 +1053,7 @@ shaders:
       -
         name: emissive
         vs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_metal_ios_vs.metal
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_metal_ios_vs.metal
           is_binary: false
           entry_point: main0
           inputs:
@@ -971,6 +1087,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: joints
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
+            -
+              slot: 6
+              name: weights
+              sem_name: TEXCOORD
+              sem_index: 6
+              type: vec4
           outputs:
             -
               slot: 0
@@ -1002,17 +1130,23 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 4240
               struct_name: vs_params
-              inst_name: _16
+              inst_name: _22
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 265
                   offset: 0
               members:
                 -
@@ -1030,8 +1164,13 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_joints
+                  type: mat4
+                  array_count: 64
+                  offset: 144
         fs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_metal_ios_fs.metal
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_metal_ios_fs.metal
           is_binary: false
           entry_point: main0
           inputs:
@@ -1064,6 +1203,12 @@ shaders:
               name: position
               sem_name: TEXCOORD
               sem_index: 4
+              type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
               type: vec4
           outputs:
             -
@@ -1170,7 +1315,7 @@ shaders:
       -
         name: emissive
         vs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_metal_sim_vs.metal
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_metal_sim_vs.metal
           is_binary: false
           entry_point: main0
           inputs:
@@ -1204,6 +1349,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: joints
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
+            -
+              slot: 6
+              name: weights
+              sem_name: TEXCOORD
+              sem_index: 6
+              type: vec4
           outputs:
             -
               slot: 0
@@ -1235,17 +1392,23 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 4240
               struct_name: vs_params
-              inst_name: _16
+              inst_name: _22
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 265
                   offset: 0
               members:
                 -
@@ -1263,8 +1426,13 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_joints
+                  type: mat4
+                  array_count: 64
+                  offset: 144
         fs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_metal_sim_fs.metal
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_metal_sim_fs.metal
           is_binary: false
           entry_point: main0
           inputs:
@@ -1297,6 +1465,12 @@ shaders:
               name: position
               sem_name: TEXCOORD
               sem_index: 4
+              type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
               type: vec4
           outputs:
             -
@@ -1403,7 +1577,7 @@ shaders:
       -
         name: emissive
         vs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_wgsl_vs
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_wgsl_vs
           is_binary: false
           entry_point: main
           inputs:
@@ -1437,6 +1611,18 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: joints
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
+            -
+              slot: 6
+              name: weights
+              sem_name: TEXCOORD
+              sem_index: 6
+              type: vec4
           outputs:
             -
               slot: 0
@@ -1468,17 +1654,23 @@ shaders:
               sem_name: TEXCOORD
               sem_index: 4
               type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
+              type: vec4
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 4240
               struct_name: vs_params
-              inst_name: _16
+              inst_name: _22
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 265
                   offset: 0
               members:
                 -
@@ -1496,8 +1688,13 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_joints
+                  type: mat4
+                  array_count: 64
+                  offset: 144
         fs:
-          path: assets/shaders/built/basic-lighting/basic-lighting_emissive_wgsl_fs
+          path: assets/shaders/built/skinned-basic-lighting/skinned-basic-lighting_emissive_wgsl_fs
           is_binary: false
           entry_point: main
           inputs:
@@ -1530,6 +1727,12 @@ shaders:
               name: position
               sem_name: TEXCOORD
               sem_index: 4
+              type: vec4
+            -
+              slot: 5
+              name: baseDiffuse
+              sem_name: TEXCOORD
+              sem_index: 5
               type: vec4
           outputs:
             -
