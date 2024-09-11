@@ -24,7 +24,7 @@ const FSParams = graphics.FSDefaultUniforms;
 const vertex_layout = getVertexLayout();
 
 pub const MeshConfig = struct {
-    material: ?graphics.Material = null,
+    material: ?*graphics.Material = null,
 };
 
 pub fn init() !void {
@@ -39,7 +39,7 @@ pub fn deinit() void {
 /// These can be created on the fly, using a MeshBuilder, or loaded from GLTF files.
 pub const Mesh = struct {
     bindings: graphics.Bindings = undefined,
-    material: graphics.Material = undefined,
+    material: *graphics.Material = undefined,
     bounds: boundingbox.BoundingBox = undefined,
 
     has_skin: bool = false,
@@ -107,10 +107,12 @@ pub const Mesh = struct {
             }
         }
 
-        var material: graphics.Material = undefined;
+        var material: *graphics.Material = undefined;
         if (cfg.material == null) {
-            const tex = graphics.createDebugTexture();
-            material = graphics.Material.init(.{ .texture_0 = tex });
+            // Todo: Use a backup material!
+            debug.log("No material in mesh config!", .{});
+            // const tex = graphics.createDebugTexture();
+            // material = graphics.Material.init(.{ .texture_0 = tex });
         } else {
             material = cfg.material.?;
         }
@@ -158,7 +160,7 @@ pub const Mesh = struct {
 
     /// Draw this mesh
     pub fn draw(self: *Mesh, cam_matrices: CameraMatrices, model_matrix: math.Mat4) void {
-        graphics.drawWithMaterial(&self.bindings, &self.material, cam_matrices, model_matrix);
+        graphics.drawWithMaterial(&self.bindings, self.material, cam_matrices, model_matrix);
     }
 
     /// Draw this mesh, using the specified material instead of the set one
@@ -168,12 +170,12 @@ pub const Mesh = struct {
 };
 
 /// Create a mesh out of some vertex data
-pub fn createMesh(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: graphics.Material) Mesh {
+pub fn createMesh(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: *graphics.Material) Mesh {
     // create a mesh with the default vertex layout
     return createMeshWithLayout(vertices, indices, normals, tangents, material, vertex_layout);
 }
 
-pub fn createSkinnedMesh(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, joints: [][4]f32, weights: [][4]f32, material: graphics.Material, data: *zmesh.io.zcgltf.Data) Mesh {
+pub fn createSkinnedMesh(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, joints: [][4]f32, weights: [][4]f32, material: *graphics.Material, data: *zmesh.io.zcgltf.Data) Mesh {
     // create a mesh with the default vertex layout
     // debug.log("Creating skinned mesh: {d} indices, {d} normals, {d}tangents, {d} joints, {d} weights", .{ indices.len, normals.len, tangents.len, joints.len, weights.len });
 
@@ -199,7 +201,7 @@ pub fn createSkinnedMesh(vertices: []PackedVertex, indices: []u32, normals: [][3
 }
 
 /// Create a mesh out of some vertex data with a given vertex layout
-pub fn createMeshWithLayout(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: graphics.Material, layout: graphics.VertexLayout) Mesh {
+pub fn createMeshWithLayout(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: *graphics.Material, layout: graphics.VertexLayout) Mesh {
     // debug.log("Creating mesh: {d} indices", .{indices.len});
 
     var bindings = graphics.Bindings.init(.{
@@ -219,7 +221,7 @@ pub fn createMeshWithLayout(vertices: []PackedVertex, indices: []u32, normals: [
 }
 
 /// Creates a cube using a mesh builder
-pub fn createCube(pos: Vec3, size: Vec3, color: Color, material: graphics.Material) !Mesh {
+pub fn createCube(pos: Vec3, size: Vec3, color: Color, material: *graphics.Material) !Mesh {
     var builder = MeshBuilder.init(mem.getAllocator());
     defer builder.deinit();
 
@@ -466,7 +468,7 @@ pub const MeshBuilder = struct {
     }
 
     /// Bakes a mesh out of the mesh builder from the current state
-    pub fn buildMesh(self: *const MeshBuilder, material: graphics.Material) Mesh {
+    pub fn buildMesh(self: *const MeshBuilder, material: *graphics.Material) Mesh {
         const layout = getVertexLayout();
         return createMeshWithLayout(self.vertices.items, self.indices.items, self.normals.items, self.tangents.items, material, layout);
     }

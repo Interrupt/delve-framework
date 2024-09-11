@@ -106,6 +106,7 @@ pub const MaterialUniformDefaults = enum(i32) {
     POINT_LIGHTS_8,
     POINT_LIGHTS_16,
     POINT_LIGHTS_32,
+    FOG_DATA,
 };
 
 // Default uniform block layout for meshes
@@ -116,7 +117,7 @@ pub const default_fs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUni
 pub const default_skinned_mesh_vs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR, .JOINTS_64 };
 
 // Default FS uniform block layout for the basic lighting shader
-pub const default_lit_fs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16 };
+pub const default_lit_fs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16, .FOG_DATA };
 
 /// Default vertex shader uniform block layout
 pub const VSDefaultUniforms = struct {
@@ -635,6 +636,14 @@ pub const MaterialParams = struct {
     ambient_light: Color = colors.black,
     directional_light: DirectionalLight = undefined,
     point_lights: []PointLight = undefined,
+    fog: FogParams = .{},
+};
+
+pub const FogParams = struct {
+    color: Color = colors.red,
+    amount: f32 = 0.0,
+    start: f32 = 1.0,
+    end: f32 = 100.0,
 };
 
 pub const UniformBlockType = enum(i32) { BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, VEC3, VEC4, MAT3, MAT4 };
@@ -902,6 +911,13 @@ pub const Material = struct {
                 },
                 .POINT_LIGHTS_32 => {
                     self.addPointLightsToUniformBlock(u_block, 32);
+                },
+                .FOG_DATA => {
+                    var fog_color = self.params.fog.color;
+                    fog_color.a = self.params.fog.amount;
+
+                    u_block.addColor("u_fog_data", colors.Color.new(self.params.fog.start, self.params.fog.end, 0.0, 0.0)); // fog start and end
+                    u_block.addColor("u_fog_color", fog_color);
                 },
             }
         }

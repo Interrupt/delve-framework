@@ -22,6 +22,7 @@ const Color = colors.Color;
 
 const shader_builtin = delve.shaders.default_skinned;
 
+var material: delve.platform.graphics.Material = undefined;
 var mesh_test: skinned_mesh.SkinnedMesh = undefined;
 var animation: skinned_mesh.PlayingAnimation = undefined;
 
@@ -90,7 +91,7 @@ fn on_init() !void {
     const tex_base = graphics.Texture.init(&base_img);
 
     // Create a material out of our shader and textures
-    const material = delve.platform.graphics.Material.init(.{
+    material = delve.platform.graphics.Material.init(.{
         .shader = shader.?,
         .texture_0 = tex_base,
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
@@ -100,7 +101,7 @@ fn on_init() !void {
     });
 
     // Load our mesh!
-    const loaded = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = material });
+    const loaded = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = &material });
 
     if (loaded == null) {
         debug.fatal("Could not load skinned mesh!", .{});
