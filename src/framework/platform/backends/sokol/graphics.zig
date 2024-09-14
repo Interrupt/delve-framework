@@ -507,60 +507,6 @@ pub const ShaderImpl = struct {
         return null;
     }
 
-    /// Find the shader function in the builtin that can get uniform block sizes by name
-    fn getBuiltinSokolUniformblockSizeFunction(comptime builtin: anytype) ?fn (stage: sg.ShaderStage, ub_name: []const u8) ?usize {
-        comptime {
-            const decls = @typeInfo(builtin).Struct.decls;
-            for (decls) |d| {
-                const field = @field(builtin, d.name);
-                const field_type = @typeInfo(@TypeOf(field));
-                if (field_type == .Fn) {
-                    const fn_info = field_type.Fn;
-                    if (std.mem.endsWith(u8, d.name, "UniformblockSize") and fn_info.return_type == ?usize) {
-                        return field;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    /// Find the shader function in the builtin that can get uniform block slots by name
-    fn getBuiltinSokolUniformblockSlotFunction(comptime builtin: anytype) ?fn (stage: sg.ShaderStage, ub_name: []const u8) ?usize {
-        comptime {
-            const decls = @typeInfo(builtin).Struct.decls;
-            for (decls) |d| {
-                const field = @field(builtin, d.name);
-                const field_type = @typeInfo(@TypeOf(field));
-                if (field_type == .Fn) {
-                    const fn_info = field_type.Fn;
-                    if (std.mem.endsWith(u8, d.name, "UniformblockSlot") and fn_info.return_type == ?usize) {
-                        return field;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    /// Find the shader function in the builtin that can get uniform offsets by name
-    fn getBuiltinSokolUniformOffsetFunction(comptime builtin: anytype) ?fn (stage: sg.ShaderStage, ub_name: []const u8, u_name: []const u8) ?usize {
-        comptime {
-            const decls = @typeInfo(builtin).Struct.decls;
-            for (decls) |d| {
-                const field = @field(builtin, d.name);
-                const field_type = @typeInfo(@TypeOf(field));
-                if (field_type == .Fn) {
-                    const fn_info = field_type.Fn;
-                    if (std.mem.endsWith(u8, d.name, "UniformOffset") and fn_info.return_type == ?usize) {
-                        return field;
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
     fn makePipeline(self: *ShaderImpl, layout: graphics.VertexLayout) sg.Pipeline {
         var pipe_desc: sg.PipelineDesc = .{
             .index_type = if (layout.index_size == .UINT16) .UINT16 else .UINT32,
