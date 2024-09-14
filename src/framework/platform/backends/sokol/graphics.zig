@@ -584,13 +584,13 @@ pub const ShaderImpl = struct {
             _ = built_shader.impl.makePipeline(l);
         }
 
-        for (cfg.vs_uniformblocks, 0..) |block, slot| {
+        for (cfg.vs_uniformblocks, 0..) |block, i| {
             // debug.log("Found vs uniformblock: {s} at slot {d}", .{ block.name, block.slot });
-            built_shader.vs_uniformblocks[slot] = block;
+            built_shader.vs_uniformblocks[i] = block;
         }
-        for (cfg.fs_uniformblocks, 0..) |block, slot| {
+        for (cfg.fs_uniformblocks, 0..) |block, i| {
             // debug.log("Found fs uniformblock: {s} at slot {d}", .{ block.name, block.slot });
-            built_shader.fs_uniformblocks[slot] = block;
+            built_shader.fs_uniformblocks[i] = block;
         }
 
         return built_shader;
