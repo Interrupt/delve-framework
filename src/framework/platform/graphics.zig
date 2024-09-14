@@ -817,7 +817,7 @@ pub const Material = struct {
     material_params_vs_uniformblock: []const u8 = "vs_params",
     material_params_fs_uniformblock: []const u8 = "fs_params",
 
-    /// Hold our shader uniform data for the parameters
+    /// Data blocks to hold our shader uniform data for the material parameters
     material_params_vs_uniformblock_data: ?MaterialUniformBlock = null,
     material_params_fs_uniformblock_data: ?MaterialUniformBlock = null,
 
