@@ -235,9 +235,6 @@ pub const ShaderImpl = struct {
     // One shader can have many pipelines, so different VertexLayouts can apply it
     sokol_pipelines: std.ArrayList(PipelineBinding) = undefined,
 
-    get_uniformblock_size_fn: ?*const fn (stage: sg.ShaderStage, ub_name: []const u8) ?usize = null,
-    get_uniformblock_slot_fn: ?*const fn (stage: sg.ShaderStage, ub_name: []const u8) ?usize = null,
-
     /// Create a new shader using the default
     pub fn initDefault(cfg: graphics.ShaderConfig) Shader {
         return initFromBuiltin(cfg, shader_default).?;
@@ -249,38 +246,7 @@ pub const ShaderImpl = struct {
         if (shader_desc_fn == null)
             return null;
 
-        const shader_uniformblock_slot_fn = getBuiltinSokolUniformblockSlotFunction(builtin);
-        if (shader_uniformblock_slot_fn == null) {
-            debug.log("Could not find uniformblock slot fn in builtin shader! Did you build with '--reflection'?", .{});
-            return null;
-        }
-
-        const shader_uniformblock_size_fn = getBuiltinSokolUniformblockSizeFunction(builtin);
-        if (shader_uniformblock_size_fn == null) {
-            debug.log("Could not find uniformblock size fn in builtin shader! Did you build with '--reflection'?", .{});
-            return null;
-        }
-
-        const shader_uniform_offset_fn = getBuiltinSokolUniformOffsetFunction(builtin);
-        if (shader_uniform_offset_fn == null) {
-            debug.log("Could not find uniform offset fn in builtin shader! Did you build with '--reflection'?", .{});
-            return null;
-        }
-
-        const shader_desc_info = shader_desc_fn.?(.GLCORE);
-        for (shader_desc_info.vs.uniform_blocks) |block| {
-            if (block.size > 0)
-                debug.log("  vs uniform block: {s} size: {d}", .{ block.uniforms[0].name, block.size });
-        }
-        for (shader_desc_info.fs.uniform_blocks) |block| {
-            if (block.size > 0)
-                debug.log("  fs uniform block: {s} size: {d}", .{ block.uniforms[0].name, block.size });
-        }
-
-        var shader = initSokolShader(cfg, .{}, shader_desc_fn.?(sg.queryBackend()));
-        shader.impl.get_uniformblock_size_fn = &(shader_uniformblock_size_fn.?);
-        shader.impl.get_uniformblock_slot_fn = &(shader_uniformblock_slot_fn.?);
-        return shader;
+        return initSokolShader(cfg, shader_desc_fn.?(sg.queryBackend()));
     }
 
     fn terminateString(allocator: std.mem.Allocator, in_string: []const u8) ![:0]const u8 {
@@ -513,27 +479,14 @@ pub const ShaderImpl = struct {
         var updated_cfg = cfg;
         updated_cfg.shader_program_def = shader_program;
 
-        const uniform_blocks = graphics.ShaderUniformBlocks{};
-
-        return initSokolShader(updated_cfg, uniform_blocks, desc);
+        return initSokolShader(updated_cfg, desc);
     }
 
     pub fn cloneFromShader(cfg: graphics.ShaderConfig, shader: ?Shader) Shader {
         if (shader == null)
             return initDefault(cfg);
 
-        var shader_copy = initSokolShader(cfg, shader.?.uniform_blocks, shader.?.impl.sokol_shader_desc);
-
-        debug.log("Cloning shader!", .{});
-
-        if (shader.?.impl.get_uniformblock_size_fn) |found_fn| {
-            shader_copy.impl.get_uniformblock_size_fn = found_fn;
-        }
-        if (shader.?.impl.get_uniformblock_slot_fn) |found_fn| {
-            shader_copy.impl.get_uniformblock_slot_fn = found_fn;
-        }
-
-        return shader_copy;
+        return initSokolShader(cfg, shader.?.impl.sokol_shader_desc);
     }
 
     /// Find the shader function in the builtin that can actually make the ShaderDesc
@@ -652,7 +605,7 @@ pub const ShaderImpl = struct {
     }
 
     /// Create a shader from a Sokol Shader Description - useful for loading built-in shaders
-    pub fn initSokolShader(cfg: graphics.ShaderConfig, uniform_blocks: graphics.ShaderUniformBlocks, shader_desc: sg.ShaderDesc) Shader {
+    pub fn initSokolShader(cfg: graphics.ShaderConfig, shader_desc: sg.ShaderDesc) Shader {
         debug.info("Creating shader", .{});
         const shader = sg.makeShader(shader_desc);
 
@@ -675,7 +628,6 @@ pub const ShaderImpl = struct {
             },
             .handle = graphics.next_shader_handle,
             .cfg = cfg,
-            .uniform_blocks = uniform_blocks,
             .fs_texture_slots = num_fs_images,
             .vertex_attributes = cfg.vertex_attributes,
             .shader_program_def = cfg.shader_program_def,
@@ -731,15 +683,6 @@ pub const ShaderImpl = struct {
 
     pub fn destroy(self: *Shader) void {
         sg.destroyShader(self.impl.sokol_shader);
-    }
-
-    pub fn getUniformBlockSize(self: *Shader, stage: graphics.ShaderStage, name: []const u8) ?usize {
-        debug.log("getUniformBlockSize {s}", .{name});
-        if (self.impl.get_uniformblock_size_fn == null) {
-            debug.log("no uniform block size found for {s}", .{name});
-            return 0;
-        }
-        return self.impl.get_uniformblock_size_fn.?(convertShaderStage(stage), name);
     }
 };
 

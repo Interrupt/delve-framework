@@ -329,30 +329,10 @@ pub const ShaderImpl = sokol_gfx_backend.ShaderImpl;
 
 pub var next_shader_handle: u32 = 0;
 
-// Helper structs to keep track of Shader Uniforms and Shader Uniform Blocks
-pub const ShaderUniformInfo = struct {
-    name: []const u8,
-    type: []const u8,
-    offset: usize,
-};
-
-pub const ShaderUniformBlockInfo = struct {
-    name: []const u8,
-    slot: usize,
-    size: usize,
-    uniforms: [32]ShaderUniformInfo = undefined,
-};
-
-pub const ShaderUniformBlocks = struct {
-    vs: [8]ShaderUniformBlockInfo = undefined,
-    fs: [8]ShaderUniformBlockInfo = undefined,
-};
-
 /// A shader is a program that will run per-vertex and per-pixel
 pub const Shader = struct {
     handle: u32,
     cfg: ShaderConfig,
-    uniform_blocks: ShaderUniformBlocks,
 
     vertex_attributes: []const ShaderAttribute,
 
@@ -394,24 +374,6 @@ pub const Shader = struct {
     /// Updates the graphics state to draw using this shader
     pub fn apply(self: *Shader, layout: VertexLayout) bool {
         return ShaderImpl.apply(self, layout);
-    }
-
-    pub fn getUniformBlockSlot(self: *Shader, stage: ShaderStage, name: []const u8) ?usize {
-        _ = stage;
-        _ = name;
-        _ = self;
-        return null;
-    }
-
-    pub fn getUniformBlockSize(self: *Shader, stage: ShaderStage, name: []const u8) ?usize {
-        return ShaderImpl.getUniformBlockSize(self, stage, name);
-    }
-
-    pub fn getUniformOffset(self: *Shader, block_name: []const u8, uniform_name: []const u8) ?usize {
-        _ = uniform_name;
-        _ = block_name;
-        _ = self;
-        return null;
     }
 
     /// Sets a uniform variable block on this shader
@@ -657,6 +619,10 @@ pub const MaterialConfig = struct {
     // Samplers to create. Defaults to making one linearly filtered sampler
     samplers: []const FilterMode = &[_]FilterMode{.LINEAR},
 
+    // Number of uniform blocks to create. Default to 1 to always make the default block
+    num_uniform_vs_blocks: u8 = 1,
+    num_uniform_fs_blocks: u8 = 1,
+
     // Uniform blocks to create, by name
     vs_uniform_blocks: []const []const u8 = &[_][]const u8{"vs_params"},
     fs_uniform_blocks: []const []const u8 = &[_][]const u8{"fs_params"},
@@ -688,31 +654,16 @@ pub const UniformBlockType = enum(i32) { BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, V
 
 /// Holds the data for and builds a uniform block that can be passed to a shader
 pub const MaterialUniformBlock = struct {
-    name: []const u8,
     size: u64 = 0,
-    bytes: std.ArrayList(u8) = undefined,
+    bytes: std.ArrayList(u8),
 
     last_type: UniformBlockType = undefined,
 
     // TODO: Maybe the material uniform blocks should be mapped up front, data allocated, and then
     // we can easily ask for offsets into the data block instead of piecing it together
 
-    pub fn initWithSize(name: []const u8, size: usize) MaterialUniformBlock {
-        const byte_array = std.ArrayList(u8).initCapacity(allocator, size) catch {
-            debug.fatal("Could not create material!", .{});
-            return .{ .name = name };
-        };
-
+    pub fn init() MaterialUniformBlock {
         return MaterialUniformBlock{
-            .name = name,
-            .bytes = byte_array,
-            .size = size,
-        };
-    }
-
-    pub fn init(name: []const u8) MaterialUniformBlock {
-        return MaterialUniformBlock{
-            .name = name,
             .bytes = std.ArrayList(u8).init(allocator),
         };
     }
@@ -886,6 +837,14 @@ pub const Material = struct {
         if (cfg.texture_4 != null)
             material.textures[4] = cfg.texture_4;
 
+        // Create uniform blocks based on how many we were asked for
+        for (0..cfg.num_uniform_vs_blocks) |i| {
+            material.vs_uniforms[i] = MaterialUniformBlock.init();
+        }
+        for (0..cfg.num_uniform_fs_blocks) |i| {
+            material.fs_uniforms[i] = MaterialUniformBlock.init();
+        }
+
         var shader_config = if (cfg.shader != null) cfg.shader.?.cfg else ShaderConfig{};
         shader_config.cull_mode = cfg.cull_mode;
         shader_config.blend_mode = cfg.blend_mode;
@@ -894,26 +853,6 @@ pub const Material = struct {
 
         // make a shader out of our options
         material.shader = Shader.cloneFromShader(shader_config, cfg.shader);
-
-        // now we can setup our uniforms
-        for (cfg.vs_uniform_blocks, 0..) |block_name, i| {
-            const opt_size = material.shader.getUniformBlockSize(.VS, block_name);
-            if (opt_size) |size| {
-                debug.log("vs initWithSize {s} {d}", .{ block_name, size });
-                material.vs_uniforms[i] = MaterialUniformBlock.initWithSize(block_name, size);
-            } else {
-                debug.log("vs initWithSize not found", .{});
-            }
-        }
-        for (cfg.fs_uniform_blocks, 0..) |block_name, i| {
-            const opt_size = material.shader.getUniformBlockSize(.FS, block_name);
-            if (opt_size) |size| {
-                debug.log("fs initWithSize {s} {d}", .{ block_name, size });
-                material.fs_uniforms[i] = MaterialUniformBlock.initWithSize(block_name, size);
-            } else {
-                debug.log("fs initWithSize not found", .{});
-            }
-        }
 
         return material;
     }
