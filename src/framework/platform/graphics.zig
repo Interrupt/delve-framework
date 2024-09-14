@@ -7,6 +7,7 @@ const mem = @import("../mem.zig");
 const mesh = @import("../graphics/mesh.zig");
 const papp = @import("app.zig");
 const sokol_gfx_backend = @import("backends/sokol/graphics.zig");
+const shaders = @import("../graphics/shaders.zig");
 
 const sokol = @import("sokol");
 const slog = sokol.log;
@@ -36,6 +37,17 @@ pub var tex_grey: Texture = undefined;
 // Look into using a third party math.zig instead of sokol's
 // A vertex struct with position, color and uv-coords
 // TODO: Stop using packed color and uvs!
+
+pub const Backend = enum(i32) {
+    GLCORE,
+    GLES3,
+    D3D11,
+    METAL_IOS,
+    METAL_MACOS,
+    METAL_SIMULATOR,
+    WGPU,
+    DUMMY,
+};
 
 pub const BlendMode = enum {
     NONE, // opaque!
@@ -307,6 +319,9 @@ pub const ShaderConfig = struct {
         .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_PACKED },
     },
     is_depth_pixel_format: bool = false,
+
+    // optionally, take a shader_def
+    shader_program_def: ?shaders.ShaderProgram = null,
 };
 
 /// The actual backend implementation for shaders
@@ -333,6 +348,8 @@ pub const Shader = struct {
     vs_sampler_slots: u8 = 0,
     vs_uniform_slots: u8 = 1,
 
+    shader_program_def: ?shaders.ShaderProgram = null,
+
     impl: ShaderImpl,
 
     /// Create a new shader using the default
@@ -340,13 +357,13 @@ pub const Shader = struct {
         return ShaderImpl.initDefault(cfg);
     }
 
-    // TODO: Add support for loading shaders from built files as well!
-    // Sokol supports exporting to multiple shader formats alongside a YAML definition file,
-    // we could load that definition and the correct file based on the current backend.
-
     /// Creates a shader from a shader built in as a zig file
     pub fn initFromBuiltin(cfg: ShaderConfig, comptime builtin: anytype) ?Shader {
         return ShaderImpl.initFromBuiltin(cfg, builtin);
+    }
+
+    pub fn initFromShaderInfo(cfg: ShaderConfig, shader_info: shaders.ShaderInfo) ?Shader {
+        return ShaderImpl.initFromShaderInfo(cfg, shader_info);
     }
 
     /// Returns a copy of this shader
@@ -589,6 +606,7 @@ pub const MaterialConfig = struct {
     samplers: []const FilterMode = &[_]FilterMode{.LINEAR},
 
     // Number of uniform blocks to create. Default to 1 to always make the default block
+    // todo: maybe have a list of blocks to create by name instead?
     num_uniform_vs_blocks: u8 = 1,
     num_uniform_fs_blocks: u8 = 1,
 
@@ -1246,4 +1264,9 @@ pub fn getCommonVertexLayouts() []const VertexLayout {
     return &[_]VertexLayout{
         getDefaultVertexLayout(),
     };
+}
+
+/// Returns the backend currently in use
+pub fn getBackend() Backend {
+    return sokol_gfx_backend.getBackend();
 }

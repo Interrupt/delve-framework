@@ -59,6 +59,11 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
+    const dep_yamlz = b.dependency("ymlz", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     // inject the cimgui header search path into the sokol C library compile step
     const cimgui_root = dep_cimgui.namedWriteFiles("cimgui").getDirectory();
     dep_sokol.artifact("sokol_clib").addIncludePath(cimgui_root);
@@ -72,6 +77,7 @@ pub fn build(b: *std.Build) !void {
     const zaudio_item = .{ .module = dep_zaudio.module("root"), .name = "zaudio" };
     const cimgui_item = .{ .module = dep_cimgui.module("cimgui"), .name = "cimgui" };
     const stb_truetype_item = .{ .module = dep_stb_truetype.module("root"), .name = "stb_truetype" };
+    const ymlz_item = .{ .module = dep_yamlz.module("root"), .name = "ymlz" };
 
     const delve_module_imports = [_]ModuleImport{
         sokol_item,
@@ -81,6 +87,7 @@ pub fn build(b: *std.Build) !void {
         ziglua_item,
         cimgui_item,
         stb_truetype_item,
+        ymlz_item,
     };
 
     const link_libraries = [_]*Build.Step.Compile{
@@ -289,12 +296,12 @@ fn buildShaders(b: *Build) void {
     const shaders_out_dir = "src/framework/graphics/shaders/";
 
     const shaders = .{
-        "basic-lighting.glsl",
-        "default.glsl",
-        "default-mesh.glsl",
-        "emissive.glsl",
-        "skinned-basic-lighting.glsl",
-        "skinned.glsl",
+        "basic-lighting",
+        "default",
+        "default-mesh",
+        "emissive",
+        "skinned-basic-lighting",
+        "skinned",
     };
 
     const optional_shdc: ?[:0]const u8 = comptime switch (builtin.os.tag) {
@@ -313,17 +320,37 @@ fn buildShaders(b: *Build) void {
     const shdc_path = sokol_tools_bin_dir ++ optional_shdc.?;
     const slang = "glsl300es:glsl430:wgsl:metal_macos:metal_ios:metal_sim:hlsl4";
 
+    // build the .zig versions
     inline for (shaders) |shader| {
+        const shader_with_ext = shader ++ ".glsl";
         const cmd = b.addSystemCommand(&.{
             shdc_path,
             "-i",
-            shaders_dir ++ shader,
+            shaders_dir ++ shader_with_ext,
             "-o",
-            shaders_out_dir ++ shader ++ ".zig",
+            shaders_out_dir ++ shader_with_ext ++ ".zig",
             "-l",
             slang,
             "-f",
             "sokol_zig",
+            "--reflection",
+        });
+        shdc_step.dependOn(&cmd.step);
+    }
+
+    // build the yaml reflection versions
+    inline for (shaders) |shader| {
+        const shader_with_ext = shader ++ ".glsl";
+        const cmd = b.addSystemCommand(&.{
+            shdc_path,
+            "-i",
+            shaders_dir ++ shader_with_ext,
+            "-o",
+            shaders_dir ++ "built/" ++ shader ++ "/" ++ shader,
+            "-l",
+            slang,
+            "-f",
+            "bare_yaml",
             "--reflection",
         });
         shdc_step.dependOn(&cmd.step);

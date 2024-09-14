@@ -57,9 +57,12 @@ fn on_init() !void {
     };
     defer spritesheet_image.deinit();
 
-    // make the texture to draw and a default shader
+    // Load the default shader, but from a Yaml description file!
+    const loaded_shader = try delve.graphics.shaders.loadFromYaml(.{}, "assets/shaders/built/default/default_reflection.yaml");
+    shader_default = loaded_shader.?;
+
+    // make the texture to draw
     sprite_texture = graphics.Texture.init(&spritesheet_image);
-    shader_default = graphics.Shader.initDefault(.{});
 
     // create a set of animations from our sprite sheet
     sprite_sheet = delve.graphics.sprites.AnimatedSpriteSheet.initFromGrid(1, 32, "cat_") catch {

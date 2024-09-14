@@ -23,6 +23,10 @@
             .url = "git+https://github.com/floooh/sokol-zig.git#d3e21f76498213d6d58179065756f5f2ed9b90cf",
             .hash = "122052a192829b377c637ce242ee8c9121e03d8cd10c889758dc6fb176368de7d67b",
         },
+        .ymlz = .{
+            .url = "git+https://github.com/pwbh/ymlz#bd3ce82da20844117f3da76d0cd40453936b1b66",
+            .hash = "122066bde791372e092cf04ccf2b827e9b1164a2ea23c7187d71d2d2f39252777f25",
+        },
         .zstbi = .{
             .path = "3rdparty/zstbi",
         },

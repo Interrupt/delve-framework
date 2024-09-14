@@ -1,7 +1,9 @@
 const std = @import("std");
 const debug = @import("../../../debug.zig");
 const graphics = @import("../../graphics.zig");
+const mem = @import("../../../mem.zig");
 const images = @import("../../../images.zig");
+const shaders = @import("../../../graphics/shaders.zig");
 const sokol = @import("sokol");
 const shader_default = @import("../../../graphics/shaders/default.glsl.zig");
 
@@ -235,8 +237,7 @@ pub const ShaderImpl = struct {
 
     /// Create a new shader using the default
     pub fn initDefault(cfg: graphics.ShaderConfig) Shader {
-        const shader_desc = shader_default.defaultShaderDesc(sg.queryBackend());
-        return initSokolShader(cfg, shader_desc);
+        return initFromBuiltin(cfg, shader_default).?;
     }
 
     /// Creates a shader from a shader built in as a zig file
@@ -248,6 +249,239 @@ pub const ShaderImpl = struct {
         return initSokolShader(cfg, shader_desc_fn.?(sg.queryBackend()));
     }
 
+    fn terminateString(allocator: std.mem.Allocator, in_string: []const u8) ![:0]const u8 {
+        var terminated_value = try allocator.alloc(u8, in_string.len + 1);
+        terminated_value[in_string.len] = 0;
+        std.mem.copyForwards(u8, terminated_value, in_string);
+        return terminated_value[0..in_string.len :0];
+    }
+
+    fn stringUniformTypeToSokolType(string: []const u8) sg.UniformType {
+        if (std.mem.eql(u8, string, "float"))
+            return .FLOAT;
+        if (std.mem.eql(u8, string, "vec2"))
+            return .FLOAT2;
+        if (std.mem.eql(u8, string, "vec3"))
+            return .FLOAT3;
+        if (std.mem.eql(u8, string, "vec4"))
+            return .FLOAT4;
+        if (std.mem.eql(u8, string, "int"))
+            return .INT;
+        if (std.mem.eql(u8, string, "ivec2"))
+            return .INT2;
+        if (std.mem.eql(u8, string, "ivec3"))
+            return .INT3;
+        if (std.mem.eql(u8, string, "ivec4"))
+            return .INT4;
+        if (std.mem.eql(u8, string, "mat4"))
+            return .MAT4;
+
+        return .INVALID;
+    }
+
+    fn stringImageSampleTypeToSokolType(string: []const u8) sg.ImageSampleType {
+        if (std.mem.eql(u8, string, "float"))
+            return .FLOAT;
+        if (std.mem.eql(u8, string, "depth"))
+            return .DEPTH;
+        if (std.mem.eql(u8, string, "sint"))
+            return .SINT;
+        if (std.mem.eql(u8, string, "uint"))
+            return .UINT;
+        if (std.mem.eql(u8, string, "unfilterable-float"))
+            return .UNFILTERABLE_FLOAT;
+
+        return .FLOAT;
+    }
+
+    fn stringImageTypeToSokolType(string: []const u8) sg.ImageType {
+        if (std.mem.eql(u8, string, "2d"))
+            return ._2D;
+        if (std.mem.eql(u8, string, "cube"))
+            return .CUBE;
+        if (std.mem.eql(u8, string, "3d"))
+            return ._3D;
+        if (std.mem.eql(u8, string, "array"))
+            return .ARRAY;
+
+        return ._2D;
+    }
+
+    fn stringSampleTypeToSokolType(string: []const u8) sg.SamplerType {
+        if (std.mem.eql(u8, string, "filtering"))
+            return .FILTERING;
+        if (std.mem.eql(u8, string, "nonfiltering"))
+            return .NONFILTERING;
+        if (std.mem.eql(u8, string, "comparison"))
+            return .COMPARISON;
+
+        return .FILTERING;
+    }
+
+    fn stringBool(string: []const u8) bool {
+        if (std.mem.eql(u8, string, "true"))
+            return true;
+        return false;
+    }
+
+    /// Creates a shader from a ShaderDefinition struct
+    pub fn initFromShaderInfo(cfg: graphics.ShaderConfig, shader_info: shaders.ShaderInfo) ?Shader {
+        var arena = std.heap.ArenaAllocator.init(mem.getAllocator());
+        defer arena.deinit();
+        const allocator = arena.allocator();
+
+        // const backend = sg.queryBackend();
+        // debug.log("Graphics backend: {any}", .{backend});
+
+        var vs_images_hashmap: std.StringHashMap(u32) = std.StringHashMap(u32).init(allocator);
+        var vs_samplers_hashmap: std.StringHashMap(u32) = std.StringHashMap(u32).init(allocator);
+        var fs_images_hashmap: std.StringHashMap(u32) = std.StringHashMap(u32).init(allocator);
+        var fs_samplers_hashmap: std.StringHashMap(u32) = std.StringHashMap(u32).init(allocator);
+
+        // Assume there is only one shader program for now, that appears to be true.
+        const shader_program = shader_info.shader_def.programs[0];
+
+        const vs_entry = terminateString(allocator, shader_program.vs.entry_point) catch {
+            return null;
+        };
+
+        const fs_entry = terminateString(allocator, shader_program.fs.entry_point) catch {
+            return null;
+        };
+
+        var desc: sg.ShaderDesc = .{};
+        desc.label = "shader"; // does this matter?
+
+        // vertex shader defs
+        desc.vs.source = shader_info.vs_source.ptr;
+        desc.vs.entry = vs_entry.ptr;
+
+        // vs uniforms
+        if (shader_program.vs.uniform_blocks) |uniform_blocks| {
+            for (uniform_blocks) |block| {
+                desc.vs.uniform_blocks[block.slot].size = block.size;
+                desc.vs.uniform_blocks[block.slot].layout = .STD140;
+
+                for (block.uniforms, 0..) |uniform, i| {
+                    const uniform_name = terminateString(allocator, uniform.name) catch {
+                        return null;
+                    };
+
+                    desc.vs.uniform_blocks[block.slot].uniforms[i].name = uniform_name.ptr;
+                    desc.vs.uniform_blocks[block.slot].uniforms[i].type = stringUniformTypeToSokolType(uniform.type);
+                    desc.vs.uniform_blocks[block.slot].uniforms[i].array_count = uniform.array_count;
+                }
+            }
+        }
+
+        // vs images
+        if (shader_program.vs.images) |imgs| {
+            for (imgs) |img| {
+                desc.vs.images[img.slot].used = true;
+                desc.vs.images[img.slot].multisampled = stringBool(img.multisampled);
+                desc.vs.images[img.slot].image_type = stringImageTypeToSokolType(img.type);
+                desc.vs.images[img.slot].sample_type = stringImageSampleTypeToSokolType(img.sample_type);
+
+                vs_images_hashmap.put(img.name, img.slot) catch {
+                    return null;
+                };
+            }
+        }
+
+        // vs samplers
+        if (shader_program.vs.samplers) |samplers| {
+            for (samplers) |sample| {
+                desc.vs.samplers[sample.slot].used = true;
+                desc.vs.samplers[sample.slot].sampler_type = stringSampleTypeToSokolType(sample.sampler_type);
+
+                vs_samplers_hashmap.put(sample.name, sample.slot) catch {
+                    return null;
+                };
+            }
+        }
+
+        // vs sampler pairs
+        if (shader_program.vs.image_sampler_pairs) |pairs| {
+            for (pairs) |pair| {
+                desc.vs.image_sampler_pairs[pair.slot].used = true;
+                desc.vs.image_sampler_pairs[pair.slot].image_slot = @intCast(vs_images_hashmap.get(pair.image_name).?);
+                desc.vs.image_sampler_pairs[pair.slot].sampler_slot = @intCast(vs_samplers_hashmap.get(pair.sampler_name).?);
+            }
+        }
+
+        // fragment shader defs
+        desc.fs.source = shader_info.fs_source.ptr;
+        desc.fs.entry = fs_entry.ptr;
+
+        // fs uniforms
+        if (shader_program.fs.uniform_blocks) |uniform_blocks| {
+            for (uniform_blocks) |block| {
+                desc.fs.uniform_blocks[block.slot].size = block.size;
+                desc.fs.uniform_blocks[block.slot].layout = .STD140;
+
+                for (block.uniforms, 0..) |uniform, i| {
+                    const uniform_name = terminateString(allocator, uniform.name) catch {
+                        return null;
+                    };
+
+                    desc.fs.uniform_blocks[block.slot].uniforms[i].name = uniform_name.ptr;
+                    desc.fs.uniform_blocks[block.slot].uniforms[i].type = stringUniformTypeToSokolType(uniform.type);
+                    desc.fs.uniform_blocks[block.slot].uniforms[i].array_count = uniform.array_count;
+                }
+            }
+        }
+
+        // fs images
+        if (shader_program.fs.images) |imgs| {
+            for (imgs) |img| {
+                desc.fs.images[img.slot].used = true;
+                desc.fs.images[img.slot].multisampled = stringBool(img.multisampled);
+                desc.fs.images[img.slot].image_type = stringImageTypeToSokolType(img.type);
+                desc.fs.images[img.slot].sample_type = stringImageSampleTypeToSokolType(img.sample_type);
+
+                fs_images_hashmap.put(img.name, img.slot) catch {
+                    return null;
+                };
+            }
+        }
+
+        // fs samplers
+        if (shader_program.fs.samplers) |samplers| {
+            for (samplers) |sample| {
+                desc.fs.samplers[sample.slot].used = true;
+                desc.fs.samplers[sample.slot].sampler_type = stringSampleTypeToSokolType(sample.sampler_type);
+
+                fs_samplers_hashmap.put(sample.name, sample.slot) catch {
+                    return null;
+                };
+            }
+        }
+
+        // fs sampler pairs
+        if (shader_program.fs.image_sampler_pairs) |pairs| {
+            for (pairs) |pair| {
+                desc.fs.image_sampler_pairs[pair.slot].used = true;
+                desc.fs.image_sampler_pairs[pair.slot].image_slot = @intCast(pair.slot);
+                desc.fs.image_sampler_pairs[pair.slot].sampler_slot = @intCast(pair.slot);
+            }
+        }
+
+        // vs sampler pairs
+        if (shader_program.fs.image_sampler_pairs) |pairs| {
+            for (pairs) |pair| {
+                desc.fs.image_sampler_pairs[pair.slot].used = true;
+                desc.fs.image_sampler_pairs[pair.slot].image_slot = @intCast(fs_images_hashmap.get(pair.image_name).?);
+                desc.fs.image_sampler_pairs[pair.slot].sampler_slot = @intCast(fs_samplers_hashmap.get(pair.sampler_name).?);
+            }
+        }
+
+        // put the shader definition that we are using into our config
+        var updated_cfg = cfg;
+        updated_cfg.shader_program_def = shader_program;
+
+        return initSokolShader(updated_cfg, desc);
+    }
+
     pub fn cloneFromShader(cfg: graphics.ShaderConfig, shader: ?Shader) Shader {
         if (shader == null)
             return initDefault(cfg);
@@ -255,7 +489,7 @@ pub const ShaderImpl = struct {
         return initSokolShader(cfg, shader.?.impl.sokol_shader_desc);
     }
 
-    /// Find the function in the builtin that can actually make the ShaderDesc
+    /// Find the shader function in the builtin that can actually make the ShaderDesc
     fn getBuiltinSokolCreateFunction(comptime builtin: anytype) ?fn (sg.Backend) sg.ShaderDesc {
         comptime {
             const decls = @typeInfo(builtin).Struct.decls;
@@ -318,7 +552,7 @@ pub const ShaderImpl = struct {
 
     /// Create a shader from a Sokol Shader Description - useful for loading built-in shaders
     pub fn initSokolShader(cfg: graphics.ShaderConfig, shader_desc: sg.ShaderDesc) Shader {
-        // var pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator);
+        debug.info("Creating shader", .{});
         const shader = sg.makeShader(shader_desc);
 
         var num_fs_images: u8 = 0;
@@ -329,8 +563,6 @@ pub const ShaderImpl = struct {
                 break;
             }
         }
-
-        debug.info("Creating shader", .{});
 
         defer graphics.next_shader_handle += 1;
         var built_shader = Shader{
@@ -344,6 +576,7 @@ pub const ShaderImpl = struct {
             .cfg = cfg,
             .fs_texture_slots = num_fs_images,
             .vertex_attributes = cfg.vertex_attributes,
+            .shader_program_def = cfg.shader_program_def,
         };
 
         // Cache some common pipelines
@@ -398,6 +631,12 @@ pub const ShaderImpl = struct {
         sg.destroyShader(self.impl.sokol_shader);
     }
 };
+
+/// Converts our ShaderStage to a sokol shader stage
+fn convertShaderStage(stage: graphics.ShaderStage) sg.ShaderStage {
+    // Our enums match up, so this is easy!
+    return @enumFromInt(@intFromEnum(stage));
+}
 
 /// Converts our FilterMode to a sokol sampler description
 fn convertFilterModeToSamplerDesc(filter: graphics.FilterMode) sg.SamplerDesc {
@@ -523,4 +762,9 @@ fn vertexLayoutsAreEql(a: graphics.VertexLayout, b: graphics.VertexLayout) bool 
     }
 
     return true;
+}
+
+pub fn getBackend() graphics.Backend {
+    const backend = sg.queryBackend();
+    return @enumFromInt(@intFromEnum(backend));
 }
