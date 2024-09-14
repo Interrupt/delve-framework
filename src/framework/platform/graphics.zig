@@ -388,20 +388,6 @@ pub const Shader = struct {
         }
     }
 
-    pub fn applyUniformBlockByName(self: *Shader, stage: ShaderStage, name: []const u8, data: Anything) void {
-        _ = name;
-        switch (stage) {
-            .VS => {
-                const slot: u32 = 0;
-                self.vs_uniform_blocks[slot] = data;
-            },
-            .FS => {
-                const slot: u32 = 0;
-                self.fs_uniform_blocks[slot] = data;
-            },
-        }
-    }
-
     pub fn destroy(self: *Shader) void {
         return ShaderImpl.destroy(self);
     }
@@ -620,12 +606,9 @@ pub const MaterialConfig = struct {
     samplers: []const FilterMode = &[_]FilterMode{.LINEAR},
 
     // Number of uniform blocks to create. Default to 1 to always make the default block
+    // todo: maybe have a list of blocks to create by name instead?
     num_uniform_vs_blocks: u8 = 1,
     num_uniform_fs_blocks: u8 = 1,
-
-    // Uniform blocks to create, by name
-    vs_uniform_blocks: []const []const u8 = &[_][]const u8{"vs_params"},
-    fs_uniform_blocks: []const []const u8 = &[_][]const u8{"fs_params"},
 
     // whether to automatically bind the 0 slot for a material using MaterialParams
     use_default_params: bool = true,
@@ -656,7 +639,6 @@ pub const UniformBlockType = enum(i32) { BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, V
 pub const MaterialUniformBlock = struct {
     size: u64 = 0,
     bytes: std.ArrayList(u8),
-
     last_type: UniformBlockType = undefined,
 
     // TODO: Maybe the material uniform blocks should be mapped up front, data allocated, and then
