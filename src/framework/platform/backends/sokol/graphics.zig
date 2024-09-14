@@ -584,6 +584,14 @@ pub const ShaderImpl = struct {
             _ = built_shader.impl.makePipeline(l);
         }
 
+        // Set the uniformblocks to use for this shader
+        for (cfg.vs_uniformblocks, 0..) |block, i| {
+            built_shader.vs_uniformblocks[i] = block;
+        }
+        for (cfg.fs_uniformblocks, 0..) |block, i| {
+            built_shader.fs_uniformblocks[i] = block;
+        }
+
         return built_shader;
     }
 
@@ -610,12 +618,12 @@ pub const ShaderImpl = struct {
         }
 
         // apply uniform blocks
-        for (self.vs_uniform_blocks, 0..) |block, i| {
+        for (self.vs_uniformblock_data, 0..) |block, i| {
             if (block) |b|
                 sg.applyUniforms(.VS, @intCast(i), sg.Range{ .ptr = b.ptr, .size = b.size });
         }
 
-        for (self.fs_uniform_blocks, 0..) |block, i| {
+        for (self.fs_uniformblock_data, 0..) |block, i| {
             if (block) |b|
                 sg.applyUniforms(.FS, @intCast(i), sg.Range{ .ptr = b.ptr, .size = b.size });
         }

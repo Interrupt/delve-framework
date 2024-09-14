@@ -320,6 +320,11 @@ pub const ShaderConfig = struct {
     },
     is_depth_pixel_format: bool = false,
 
+    // the vs and fs uniformblocks that will be bound to
+    // TODO: use shader reflection to look up the slot automatically instead of it needing to be defined
+    vs_uniformblocks: []const ShaderUniformBlockDef = &[_]ShaderUniformBlockDef{.{ .name = "vs_params", .slot = 0 }},
+    fs_uniformblocks: []const ShaderUniformBlockDef = &[_]ShaderUniformBlockDef{.{ .name = "fs_params", .slot = 0 }},
+
     // optionally, take a shader_def
     shader_program_def: ?shaders.ShaderProgram = null,
 };
@@ -329,6 +334,11 @@ pub const ShaderImpl = sokol_gfx_backend.ShaderImpl;
 
 pub var next_shader_handle: u32 = 0;
 
+pub const ShaderUniformBlockDef = struct {
+    name: []const u8,
+    slot: usize,
+};
+
 /// A shader is a program that will run per-vertex and per-pixel
 pub const Shader = struct {
     handle: u32,
@@ -337,8 +347,11 @@ pub const Shader = struct {
     vertex_attributes: []const ShaderAttribute,
 
     // uniform blocks to use for the next draw call
-    fs_uniform_blocks: [3]?Anything = [_]?Anything{null} ** 3,
-    vs_uniform_blocks: [3]?Anything = [_]?Anything{null} ** 3,
+    fs_uniformblock_data: [5]?Anything = [_]?Anything{null} ** 5,
+    vs_uniformblock_data: [5]?Anything = [_]?Anything{null} ** 5,
+
+    fs_uniformblocks: [5]?ShaderUniformBlockDef = [_]?ShaderUniformBlockDef{null} ** 5,
+    vs_uniformblocks: [5]?ShaderUniformBlockDef = [_]?ShaderUniformBlockDef{null} ** 5,
 
     fs_texture_slots: u8 = 1,
     fs_sampler_slots: u8 = 1,
@@ -377,14 +390,32 @@ pub const Shader = struct {
     }
 
     /// Sets a uniform variable block on this shader
-    pub fn applyUniformBlock(self: *Shader, stage: ShaderStage, slot: u8, data: Anything) void {
+    pub fn applyUniformBlock(self: *Shader, stage: ShaderStage, slot: usize, data: Anything) void {
         switch (stage) {
             .VS => {
-                self.vs_uniform_blocks[slot] = data;
+                self.vs_uniformblock_data[slot] = data;
             },
             .FS => {
-                self.fs_uniform_blocks[slot] = data;
+                self.fs_uniformblock_data[slot] = data;
             },
+        }
+    }
+
+    /// Sets a uniform variable block on this shader, by name
+    pub fn applyUniformBlockByName(self: *Shader, stage: ShaderStage, uniformblock_name: []const u8, data: Anything) void {
+        const blocks = switch (stage) {
+            .VS => self.vs_uniformblocks,
+            .FS => self.fs_uniformblocks,
+        };
+
+        // find the slot for this name, and apply it
+        for (blocks) |opt_block| {
+            if (opt_block) |block| {
+                if (std.mem.eql(u8, uniformblock_name, block.name)) {
+                    self.applyUniformBlock(stage, block.slot, data);
+                    return;
+                }
+            }
         }
     }
 
@@ -602,15 +633,13 @@ pub const MaterialConfig = struct {
     default_vs_uniform_layout: []const MaterialUniformDefaults = default_vs_uniforms,
     default_fs_uniform_layout: []const MaterialUniformDefaults = default_fs_uniforms,
 
+    material_params_vs_uniformblock: []const u8 = "vs_params",
+    material_params_fs_uniformblock: []const u8 = "fs_params",
+
     // Samplers to create. Defaults to making one linearly filtered sampler
     samplers: []const FilterMode = &[_]FilterMode{.LINEAR},
 
-    // Number of uniform blocks to create. Default to 1 to always make the default block
-    // todo: maybe have a list of blocks to create by name instead?
-    num_uniform_vs_blocks: u8 = 1,
-    num_uniform_fs_blocks: u8 = 1,
-
-    // whether to automatically bind the 0 slot for a material using MaterialParams
+    // whether to automatically bind material params to the material params uniform blocks
     use_default_params: bool = true,
 };
 
@@ -784,9 +813,13 @@ pub const Material = struct {
     default_vs_uniform_layout: []const MaterialUniformDefaults,
     default_fs_uniform_layout: []const MaterialUniformDefaults,
 
-    /// Hold our shader uniforms
-    vs_uniforms: [5]?MaterialUniformBlock = [_]?MaterialUniformBlock{null} ** 5,
-    fs_uniforms: [5]?MaterialUniformBlock = [_]?MaterialUniformBlock{null} ** 5,
+    // The VS and FS uniform blocks to use for the material params
+    material_params_vs_uniformblock: []const u8 = "vs_params",
+    material_params_fs_uniformblock: []const u8 = "fs_params",
+
+    /// Data blocks to hold our shader uniform data for the material parameters
+    material_params_vs_uniformblock_data: ?MaterialUniformBlock = null,
+    material_params_fs_uniformblock_data: ?MaterialUniformBlock = null,
 
     // Hold our samplers
     sokol_samplers: [5]?sg.Sampler = [_]?sg.Sampler{null} ** 5,
@@ -819,13 +852,9 @@ pub const Material = struct {
         if (cfg.texture_4 != null)
             material.textures[4] = cfg.texture_4;
 
-        // Create uniform blocks based on how many we were asked for
-        for (0..cfg.num_uniform_vs_blocks) |i| {
-            material.vs_uniforms[i] = MaterialUniformBlock.init();
-        }
-        for (0..cfg.num_uniform_fs_blocks) |i| {
-            material.fs_uniforms[i] = MaterialUniformBlock.init();
-        }
+        // Create uniform blocks to store our material param data
+        material.material_params_vs_uniformblock_data = MaterialUniformBlock.init();
+        material.material_params_fs_uniformblock_data = MaterialUniformBlock.init();
 
         var shader_config = if (cfg.shader != null) cfg.shader.?.cfg else ShaderConfig{};
         shader_config.cull_mode = cfg.cull_mode;
@@ -938,26 +967,22 @@ pub const Material = struct {
 
         // Set our default uniform vars first
         if (has_default_vs and self.use_default_params) {
-            if (self.vs_uniforms[0] != null)
-                self.setDefaultUniformVars(self.default_vs_uniform_layout, &self.vs_uniforms[0].?, view_matrix, proj_matrix, model_matrix);
+            if (self.material_params_vs_uniformblock_data) |*data| {
+                self.setDefaultUniformVars(self.default_vs_uniform_layout, data, view_matrix, proj_matrix, model_matrix);
+            }
         }
         if (has_default_fs and self.use_default_params) {
-            if (self.fs_uniforms[0] != null)
-                self.setDefaultUniformVars(self.default_fs_uniform_layout, &self.fs_uniforms[0].?, view_matrix, proj_matrix, model_matrix);
+            if (self.material_params_fs_uniformblock_data) |*data| {
+                self.setDefaultUniformVars(self.default_fs_uniform_layout, data, view_matrix, proj_matrix, model_matrix);
+            }
         }
 
-        // Now apply all uniform var blocks
-        for (0..self.vs_uniforms.len) |i| {
-            if (self.vs_uniforms[i]) |u_block| {
-                if (u_block.size > 0)
-                    self.shader.applyUniformBlock(.VS, @intCast(i), asAnything(u_block.bytes.items));
-            }
+        // Now, actually apply these uniform blocks to the shader
+        if (self.material_params_vs_uniformblock_data) |*data| {
+            self.shader.applyUniformBlockByName(.VS, "vs_params", asAnything(data.bytes.items));
         }
-        for (0..self.fs_uniforms.len) |i| {
-            if (self.fs_uniforms[i]) |u_block| {
-                if (u_block.size > 0)
-                    self.shader.applyUniformBlock(.FS, @intCast(i), asAnything(u_block.bytes.items));
-            }
+        if (self.material_params_fs_uniformblock_data) |*data| {
+            self.shader.applyUniformBlockByName(.FS, "fs_params", asAnything(data.bytes.items));
         }
     }
 };
