@@ -230,6 +230,8 @@ pub const ShaderImpl = struct {
     sokol_shader: sg.Shader,
     sokol_shader_desc: sg.ShaderDesc,
     cfg: graphics.ShaderConfig,
+
+    // Shader instances do not own their sokol_shader, instead they share it with a parent Shader
     is_instance: bool = false,
 
     // One shader can have many pipelines, so different VertexLayouts can apply it
