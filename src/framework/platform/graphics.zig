@@ -379,9 +379,9 @@ pub const Shader = struct {
         return ShaderImpl.initFromShaderInfo(cfg, shader_info);
     }
 
-    /// Returns a copy of this shader
-    pub fn cloneFromShader(cfg: ShaderConfig, shader: ?Shader) Shader {
-        return ShaderImpl.cloneFromShader(cfg, shader);
+    /// Returns a new instance of this shader
+    pub fn makeNewInstance(cfg: ShaderConfig, shader: ?Shader) Shader {
+        return ShaderImpl.makeNewInstance(cfg, shader);
     }
 
     /// Updates the graphics state to draw using this shader
@@ -679,6 +679,10 @@ pub const MaterialUniformBlock = struct {
         };
     }
 
+    pub fn deinit(self: *MaterialUniformBlock) void {
+        self.bytes.deinit();
+    }
+
     pub fn addAlignmentPadding(self: *MaterialUniformBlock) void {
         const sizef: f64 = @floatFromInt(self.size);
         const commit_next: u64 = @intFromFloat(@ceil(sizef / 16));
@@ -863,18 +867,18 @@ pub const Material = struct {
         shader_config.depth_compare = cfg.depth_compare;
 
         // make a shader out of our options
-        material.shader = Shader.cloneFromShader(shader_config, cfg.shader);
+        material.shader = Shader.makeNewInstance(shader_config, cfg.shader);
 
         return material;
     }
 
     /// Frees a material
     pub fn deinit(self: *Material) void {
-        for (self.vs_uniforms) |vsu| {
-            allocator.free(vsu);
+        if (self.material_params_vs_uniformblock_data) |*block_data| {
+            block_data.deinit();
         }
-        for (self.fs_uniforms) |fsu| {
-            allocator.free(fsu);
+        if (self.material_params_fs_uniformblock_data) |*block_data| {
+            block_data.deinit();
         }
     }
 

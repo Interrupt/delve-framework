@@ -227,10 +227,10 @@ pub const PipelineBinding = struct {
 };
 
 pub const ShaderImpl = struct {
-    // sokol_pipeline: ?sg.Pipeline,
     sokol_shader: sg.Shader,
     sokol_shader_desc: sg.ShaderDesc,
     cfg: graphics.ShaderConfig,
+    is_instance: bool = false,
 
     // One shader can have many pipelines, so different VertexLayouts can apply it
     sokol_pipelines: std.ArrayList(PipelineBinding) = undefined,
@@ -482,11 +482,18 @@ pub const ShaderImpl = struct {
         return initSokolShader(updated_cfg, desc);
     }
 
-    pub fn cloneFromShader(cfg: graphics.ShaderConfig, shader: ?Shader) Shader {
-        if (shader == null)
-            return initDefault(cfg);
+    pub fn makeNewInstance(cfg: graphics.ShaderConfig, shader: ?Shader) Shader {
+        if (shader) |*s| {
+            // Return a copy of our shader, but mark that this is a clone so that we don't free the sokol shader twice
+            var newShader = s.*;
+            newShader.impl.sokol_pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator);
+            newShader.impl.is_instance = true;
+            return newShader;
+        }
 
-        return initSokolShader(cfg, shader.?.impl.sokol_shader_desc);
+        // fallback shader!
+        // TODO: Should we return null instead?
+        return initDefault(cfg);
     }
 
     /// Find the shader function in the builtin that can actually make the ShaderDesc
@@ -636,7 +643,9 @@ pub const ShaderImpl = struct {
     }
 
     pub fn destroy(self: *Shader) void {
-        sg.destroyShader(self.impl.sokol_shader);
+        self.impl.sokol_pipelines.deinit();
+        if (!self.impl.is_instance)
+            sg.destroyShader(self.impl.sokol_shader);
     }
 };
 
