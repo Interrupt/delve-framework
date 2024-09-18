@@ -1,18 +1,32 @@
 const std = @import("std");
+const time = std.time;
+
 const app = @import("../app.zig");
 const debug = @import("../debug.zig");
-const gfx = @import("graphics.zig");
 const mem = @import("../mem.zig");
 const modules = @import("../modules.zig");
-const time = @import("std").time;
-const sokol_app_backend = @import("backends/sokol/app.zig");
 
-// Actual app backend, implementation could be switched out here
-const AppBackend = sokol_app_backend.App;
+const graphics = @import("graphics.zig");
+const input = @import("input.zig");
+const audio = @import("audio.zig");
+
+const build_config = @import("config");
+
+const platform_backend = switch (build_config.platform_backend) {
+    .sdl => @import("backends/sdl3.zig"),
+    .sokol => @import("backends/sokol_app.zig"),
+};
 
 const NS_PER_SECOND: i64 = 1_000_000_000;
 const NS_PER_SECOND_F: f32 = 1_000_000_000.0;
 const NS_FPS_LIMIT_OVERHEAD = 1_250_000; // tuned to ensure consistent frame pacing
+
+pub const PlatformHooks = struct {
+    on_init_fn: *const fn () void,
+    on_frame_fn: *const fn () void,
+    on_cleanup_fn: *const fn () void,
+    // maybe an on_event fn?
+};
 
 const DeltaTime = struct {
     f_delta_time: f32,
@@ -59,7 +73,7 @@ const state = struct {
 pub fn init() !void {
     debug.log("App platform starting", .{});
 
-    AppBackend.init(.{
+    platform_backend.init(.{
         .on_init_fn = on_init,
         .on_cleanup_fn = on_cleanup,
         .on_frame_fn = on_frame,
@@ -71,30 +85,36 @@ pub fn init() !void {
 
 pub fn deinit() void {
     debug.log("App platform stopping", .{});
-    AppBackend.deinit();
+    platform_backend.deinit();
 }
 
 pub fn startMainLoop(config: app.AppConfig) void {
-    if (config.target_fps) |target|
+    if (config.target_fps) |target| {
         setTargetFPS(target);
+    }
 
-    if (config.use_fixed_timestep)
+    if (config.use_fixed_timestep) {
         setFixedTimestep(config.fixed_timestep_delta);
+    }
 
-    AppBackend.startMainLoop(config);
+    platform_backend.startMainLoop(config);
 }
 
 pub fn getWidth() i32 {
-    return AppBackend.getWidth();
+    return platform_backend.getWidth();
 }
 
 pub fn getHeight() i32 {
-    return AppBackend.getHeight();
+    return platform_backend.getHeight();
+}
+
+pub fn getDpiScale() f32 {
+    return platform_backend.getDpiScale();
 }
 
 pub fn captureMouse(captured: bool) void {
     state.mouse_captured = captured;
-    AppBackend.captureMouse(captured);
+    platform_backend.captureMouse(captured);
 }
 
 pub fn isMouseCaptured() bool {
@@ -107,7 +127,7 @@ pub fn getAspectRatio() f32 {
 
 fn on_init() void {
     // Start graphics first
-    gfx.init() catch {
+    graphics.init() catch {
         debug.log("Fatal error initializing graphics backend!\n", .{});
         return;
     };
@@ -129,7 +149,7 @@ fn on_cleanup() void {
     modules.stopModules();
     modules.cleanupModules();
     app.stopSubsystems();
-    gfx.deinit();
+    graphics.deinit();
     debug.deinit();
     mem.deinit();
 }
@@ -162,9 +182,9 @@ fn on_frame() void {
     modules.preDrawModules();
 
     // then draw!
-    gfx.startFrame();
+    graphics.startFrame();
     modules.drawModules();
-    gfx.endFrame();
+    graphics.endFrame();
 
     // tell modules this frame is done
     modules.postDrawModules();
@@ -284,7 +304,7 @@ pub fn getFixedTimestepLerp(include_delta: bool) f32 {
 
 /// Exit cleanly
 pub fn exit() void {
-    sokol_app_backend.exit();
+    platform_backend.exit();
 }
 
 /// Exit with an error
@@ -294,10 +314,10 @@ pub fn exitWithError() void {
 
 // Start a new Imgui frame
 pub fn startImguiFrame() void {
-    sokol_app_backend.startImguiFrame();
+    platform_backend.startImguiFrame();
 }
 
 // Render Imgui
 pub fn renderImgui() void {
-    sokol_app_backend.renderImgui();
+    platform_backend.renderImgui();
 }
