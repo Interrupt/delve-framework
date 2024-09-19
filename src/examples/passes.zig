@@ -92,6 +92,12 @@ pub fn on_init() !void {
     camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 200.0, 5.0, math.Vec3.up);
     camera_offscreen = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 200.0, 5.0, math.Vec3.up);
 
+    // Need to flip the textures when drawing an offscreen rendered buffer in OpenGL!
+    // Could also use `@glsl_options flip_vert_y` in the shader that actually draws the offscreen textures on the mesh
+    const backend = delve.platform.graphics.getBackend();
+    const is_opengl = (backend == .GLCORE or backend == .GLES3);
+    const flip_mod: math.Vec3 = if (!is_opengl) math.Vec3.new(1, 1, 1) else math.Vec3.new(1, -1, 1);
+
     // make a cube
     cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2, 3, 1), delve.colors.white, &material1) catch {
         delve.debug.log("Could not create cube!", .{});
@@ -99,13 +105,13 @@ pub fn on_init() !void {
     };
 
     // and another
-    cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3, 0, -1), math.Vec3.new(1, 1, 2), delve.colors.white, &material3) catch {
+    cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3, 0, -1), math.Vec3.new(1, 1, 2).mul(flip_mod), delve.colors.white, &material3) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
 
     // and then a screen
-    cube3 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(20, 12.0, 0.25), delve.colors.white, &material2) catch {
+    cube3 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(20, 12.0, 0.25).mul(flip_mod), delve.colors.white, &material2) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
