@@ -94,21 +94,21 @@ pub fn initModules() void {
             modules.add(module) catch {
                 debug.err("Error adding module to initialize: {s}", .{module.name});
             };
-        }
 
-        // now, initialize any modules that need to be
-        for (modules.items) |*module| {
-            if (module.did_init)
-                continue;
-
-            debug.log("Initializing module: {s}", .{module.name});
-            if (module.init_fn != null)
-                module.init_fn.?() catch {
-                    debug.err("Error initializing module: {s}", .{module.name});
+            // initialize any new modules that were added
+            for (modules.items) |*m| {
+                if (m.did_init)
                     continue;
-                };
 
-            module.did_init = true;
+                debug.log("Initializing module: {s}", .{m.name});
+                if (m.init_fn != null)
+                    m.init_fn.?() catch {
+                        debug.err("Error initializing module: {s}", .{m.name});
+                        continue;
+                    };
+
+                m.did_init = true;
+            }
         }
     }
 
