@@ -85,7 +85,7 @@ pub fn registerModule(module: Module) !void {
 }
 
 /// Gets a registered module
-pub fn getModule(module_name: [:0]const u8) ?Module {
+pub fn getModule(module_name: [:0]const u8) ?*Module {
     for (modules.items) |*module| {
         if (std.mem.eql(u8, module_name, module.name)) {
             return module;
