@@ -81,6 +81,7 @@ fn bindZigLibrary(comptime name: [:0]const u8, comptime zigfile: anytype) !void 
     // Register the library as a module to tie into the app lifecycle
     var scriptApiModule = modules.Module{
         .name = "scriptapi." ++ name,
+        .priority = modules.Priority.first, // initialize these right away
     };
 
     // bind lifecycle functions for the library module

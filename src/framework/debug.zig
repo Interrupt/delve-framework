@@ -147,10 +147,10 @@ const LogList = struct {
 };
 
 pub fn init() void {
-    std.debug.print("debug module initializing\n", .{});
-
     if (!needs_init)
         return;
+
+    std.debug.print("Debug system initializing\n", .{});
 
     stack_fallback_allocator = std.heap.stackFallback(256, mem.getAllocator());
     allocator = stack_fallback_allocator.get();
@@ -171,7 +171,7 @@ pub fn init() void {
 }
 
 pub fn deinit() void {
-    std.debug.print("debug module deinitializing\n", .{});
+    std.debug.print("Debug system deinitializing\n", .{});
 
     if (!needs_deinit)
         return;
@@ -199,7 +199,7 @@ pub fn info(comptime fmt: []const u8, args: anytype) void {
 }
 
 pub fn warning(comptime fmt: []const u8, args: anytype) void {
-    addLogEntry(fmt, args, .WARNING);
+    addLogEntry("WARNING: " ++ fmt, args, .WARNING);
 }
 
 pub fn err(comptime fmt: []const u8, args: anytype) void {

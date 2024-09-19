@@ -81,6 +81,4 @@ pub fn stopSubsystems() void {
 
     if (app_config.enable_audio)
         audio.deinit();
-
-    debug.deinit();
 }

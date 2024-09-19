@@ -9,6 +9,8 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var time: f32 = 0.0;
 
 pub fn main() !void {
+    defer _ = gpa.deinit();
+
     const clear_module = delve.modules.Module{
         .name = "clear_example",
         .init_fn = on_init,
