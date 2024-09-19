@@ -65,13 +65,13 @@ pub fn registerModule(module: Module) !void {
     // only allow one version of a module to be registered!
     for (modules_to_add.items) |*m| {
         if (std.mem.eql(u8, module.name, m.name)) {
-            debug.log("Module {s} is already being registered! Skipping.", .{module.name});
+            debug.warning("Module {s} is already being registered! Skipping.", .{module.name});
             return;
         }
     }
     for (modules.items) |*m| {
         if (std.mem.eql(u8, module.name, m.name)) {
-            debug.log("Module {s} is already registered! Skipping.", .{module.name});
+            debug.warning("Module {s} is already registered! Skipping.", .{module.name});
             return;
         }
     }

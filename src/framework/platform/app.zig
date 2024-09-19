@@ -56,7 +56,7 @@ const state = struct {
 };
 
 pub fn init() !void {
-    debug.log("App starting", .{});
+    debug.log("App platform starting", .{});
 
     AppBackend.init(.{
         .on_init_fn = on_init,
@@ -69,7 +69,7 @@ pub fn init() !void {
 }
 
 pub fn deinit() void {
-    debug.log("App stopping", .{});
+    debug.log("App platform stopping", .{});
     AppBackend.deinit();
 }
 
@@ -129,6 +129,7 @@ fn on_cleanup() void {
     modules.cleanupModules();
     app.stopSubsystems();
     gfx.deinit();
+    debug.deinit();
 }
 
 fn on_frame() void {
