@@ -61,6 +61,12 @@ pub fn registerModule(module: Module) !void {
             return;
         }
     }
+    for (modules.items) |*m| {
+        if (std.mem.eql(u8, module.name, m.name)) {
+            debug.log("Module {s} is already registered! Skipping.", .{module.name});
+            return;
+        }
+    }
 
     try modules_to_add.add(module);
     debug.log("Registered module: {s}", .{module.name});
