@@ -11,8 +11,16 @@ var initialized_modules: bool = false;
 // don't put modules in the main list while iterating
 var modules_to_add: ModuleQueue = undefined;
 
-// Maybe we should store ArrayLists of functions to call instead of iterating through a map?
-// - that would avoid a lot of checking for null when lots of moduels are registered
+// Some easy to work with priorities
+pub const Priority = struct {
+    pub const first: i32 = -50;
+    pub const highest: i32 = 0;
+    pub const high: i32 = 50;
+    pub const normal: i32 = 100;
+    pub const low: i32 = 150;
+    pub const lowest: i32 = 200;
+    pub const last: i32 = 250;
+};
 
 /// A Module is a named set of functions that tie into the app lifecycle
 pub const Module = struct {

@@ -17,7 +17,7 @@ pub fn registerModule() !void {
         .tick_fn = on_tick,
         .draw_fn = on_draw,
         .cleanup_fn = on_cleanup,
-        .priority = 0,
+        .priority = modules.Priority.first,
     };
 
     try modules.registerModule(luaSimpleLifecycle);
