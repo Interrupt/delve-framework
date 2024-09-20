@@ -59,6 +59,7 @@ pub fn on_init() !void {
         delve.debug.log("Error loading image", .{});
         return;
     };
+    defer img.deinit();
     const tex = graphics.Texture.init(&img);
 
     // Create our offscreen passes

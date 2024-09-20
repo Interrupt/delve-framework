@@ -74,6 +74,7 @@ fn on_init() !void {
         debug.log("Assets: Error loading image asset: {s}", .{base_texture_file});
         return;
     };
+    defer base_img.deinit();
     const tex_base = graphics.Texture.init(&base_img);
 
     // Load the emissive texture for the mesh
@@ -82,6 +83,7 @@ fn on_init() !void {
         debug.log("Assets: Error loading image asset: {s}", .{emissive_texture_file});
         return;
     };
+    defer emissive_img.deinit();
     const tex_emissive = graphics.Texture.init(&emissive_img);
 
     // Make our emissive shader from one that is pre-compiled
