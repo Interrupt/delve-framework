@@ -993,7 +993,7 @@ pub const Material = struct {
 };
 
 pub const state = struct {
-    pub var debug_shader: Shader = undefined;
+    pub var default_shader: Shader = undefined;
     var debug_draw_bindings: Bindings = undefined;
     var debug_material: Material = undefined;
     var debug_draw_color_override: Color = colors.transparent;
@@ -1035,9 +1035,9 @@ pub fn init() !void {
     state.debug_draw_bindings.set(debug_vertices, debug_indices, &[_]u32{}, &[_]u32{}, 6);
 
     // Use the default shader for debug drawing
-    state.debug_shader = Shader.initDefault(.{ .cull_mode = .NONE });
+    state.default_shader = Shader.initDefault(.{ .cull_mode = .NONE });
     state.debug_material = Material.init(.{
-        .shader = state.debug_shader,
+        .shader = state.default_shader,
         .texture_0 = tex_white,
         .cull_mode = .NONE,
         .blend_mode = .NONE,
@@ -1057,7 +1057,9 @@ pub fn deinit() void {
     debug.log("Graphics subsystem stopping", .{});
 
     // clean up our debug draw resources
-    state.debug_shader.destroy();
+    state.default_shader.destroy();
+    state.debug_material.deinit();
+    state.debug_draw_bindings.destroy();
     tex_white.destroy();
     tex_black.destroy();
     tex_grey.destroy();
@@ -1186,10 +1188,10 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
     };
 
     // set our default vs/fs shader uniforms to the 0 slots
-    state.debug_shader.applyUniformBlock(.FS, 0, asAnything(&fs_params));
-    state.debug_shader.applyUniformBlock(.VS, 0, asAnything(&vs_params));
+    state.default_shader.applyUniformBlock(.FS, 0, asAnything(&fs_params));
+    state.default_shader.applyUniformBlock(.VS, 0, asAnything(&vs_params));
 
-    draw(&state.debug_draw_bindings, &state.debug_shader);
+    draw(&state.debug_draw_bindings, &state.default_shader);
 }
 
 /// Sets the color override used when drawing debug shapes
