@@ -1054,6 +1054,12 @@ pub fn init() !void {
 /// Stops the graphics subystem
 pub fn deinit() void {
     debug.log("Graphics subsystem stopping", .{});
+
+    // clean up our debug draw resources
+    state.debug_shader.destroy();
+    tex_white.destroy();
+    tex_black.destroy();
+    tex_grey.destroy();
 }
 
 /// Called at the start of a frame
