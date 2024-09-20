@@ -880,6 +880,7 @@ pub const Material = struct {
         if (self.material_params_fs_uniformblock_data) |*block_data| {
             block_data.deinit();
         }
+        self.shader.destroy();
     }
 
     /// Builds and applys a uniform block from a layout
@@ -992,8 +993,8 @@ pub const Material = struct {
 };
 
 pub const state = struct {
+    pub var debug_shader: Shader = undefined;
     var debug_draw_bindings: Bindings = undefined;
-    var debug_shader: Shader = undefined;
     var debug_material: Material = undefined;
     var debug_draw_color_override: Color = colors.transparent;
     var debug_text_scale: f32 = 1.0;

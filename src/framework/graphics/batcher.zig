@@ -58,7 +58,7 @@ pub const SpriteBatcher = struct {
         const tex = if (cfg.texture != null) cfg.texture.? else graphics.createDebugTexture();
         sprite_batcher.current_tex = tex;
 
-        const shader = if (cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{});
+        const shader = if (cfg.shader != null) cfg.shader.? else graphics.Shader.makeNewInstance(.{}, graphics.state.debug_shader);
         sprite_batcher.useShader(shader);
 
         return sprite_batcher;
@@ -243,7 +243,7 @@ pub const Batcher = struct {
             .vertex_buffer = try allocator.alloc(Vertex, cfg.min_vertices),
             .index_buffer = try allocator.alloc(u32, cfg.min_indices),
             .bindings = graphics.Bindings.init(.{ .updatable = true, .index_len = cfg.min_indices, .vert_len = cfg.min_vertices }),
-            .shader = if (cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{}),
+            .shader = if (cfg.shader != null) cfg.shader.? else graphics.Shader.makeNewInstance(.{}, graphics.state.debug_shader),
             .material = if (cfg.material != null) cfg.material.? else null,
             .flip_tex_y = cfg.flip_tex_y,
         };

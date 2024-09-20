@@ -44,7 +44,8 @@ pub fn main() !void {
         // See https://github.com/ziglang/zig/issues/19072
         try delve.init(std.heap.c_allocator);
     } else {
-        try delve.init(gpa.allocator());
+        // try delve.init(gpa.allocator());
+        try delve.init(delve.mem.createDefaultAllocator());
     }
 
     try registerModule();
@@ -208,6 +209,8 @@ fn on_draw() void {
 fn on_cleanup() !void {
     debug.log("Batch example module cleaning up", .{});
     test_batch.deinit();
+    test_material_1.deinit();
+    test_material_2.deinit();
     texture_1.destroy();
     texture_2.destroy();
     shader_opaque.destroy();
