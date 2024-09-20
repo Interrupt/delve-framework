@@ -2,7 +2,7 @@ const std = @import("std");
 
 // Hack: keep our GeneralPurposeAllocator internal to the delve framework, as quitting on OSX
 // seems to quit immediately after Sokol cleans up.
-pub var default_gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 32 }){};
+pub var default_gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 16 }){};
 
 pub var main_allocator: std.mem.Allocator = undefined;
 
