@@ -2,6 +2,7 @@ const std = @import("std");
 const app = @import("../app.zig");
 const debug = @import("../debug.zig");
 const gfx = @import("graphics.zig");
+const mem = @import("../mem.zig");
 const modules = @import("../modules.zig");
 const time = @import("std").time;
 const sokol_app_backend = @import("backends/sokol/app.zig");
@@ -130,6 +131,7 @@ fn on_cleanup() void {
     app.stopSubsystems();
     gfx.deinit();
     debug.deinit();
+    mem.deinit();
 }
 
 fn on_frame() void {

@@ -233,12 +233,8 @@ fn addLogEntry(comptime fmt: []const u8, args: anytype, level: LogLevel) void {
         return;
     };
 
-    const written = string_writer.toOwnedSlice() catch {
-        std.debug.print("Error: string_writer.toOwnedSlice() - Out of memory?\n", .{});
-        return;
-    };
-
     // Log to std out
+    const written = string_writer.items;
     std.debug.print("{s}\n", .{written});
 
     // Keep the line in the console log
