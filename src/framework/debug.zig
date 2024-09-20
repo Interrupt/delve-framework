@@ -222,7 +222,7 @@ fn addLogEntry(comptime fmt: []const u8, args: anytype, level: LogLevel) void {
 
     // Use an array list to write our string
     var string_writer = std.ArrayList(u8).init(allocator);
-    errdefer string_writer.deinit();
+    defer string_writer.deinit();
 
     string_writer.writer().print(fmt, args) catch {
         std.debug.print("Could not write to debug log! - Out of memory?\n", .{});
