@@ -51,6 +51,12 @@ fn compareModules(_: void, a: Module, b: Module) std.math.Order {
     return std.math.order(a.priority, b.priority);
 }
 
+pub fn deinit() void {
+    debug.log("Modules system shutting down", .{});
+    modules.deinit();
+    modules_to_add.deinit();
+}
+
 /// Registers a module to tie it into the app lifecycle
 pub fn registerModule(module: Module) !void {
     if (needs_init) {

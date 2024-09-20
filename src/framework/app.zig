@@ -2,6 +2,7 @@ const std = @import("std");
 const debug = @import("debug.zig");
 const images = @import("images.zig");
 const meshes = @import("graphics/mesh.zig");
+const modules = @import("modules.zig");
 const colors = @import("colors.zig");
 const fonts = @import("fonts.zig");
 const scripting = @import("scripting/manager.zig");
@@ -74,6 +75,7 @@ pub fn startSubsystems() !void {
 }
 
 pub fn stopSubsystems() void {
+    modules.deinit();
     colors.deinit();
     input.deinit();
     fonts.deinit();
