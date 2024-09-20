@@ -193,6 +193,7 @@ pub const SpriteBatcher = struct {
         while (it.next()) |batcher| {
             batcher.value_ptr.deinit();
         }
+        self.batches.deinit();
     }
 
     /// Update the transform matrix for the batches

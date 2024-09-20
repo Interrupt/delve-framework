@@ -44,7 +44,6 @@ pub fn main() !void {
         // See https://github.com/ziglang/zig/issues/19072
         try delve.init(std.heap.c_allocator);
     } else {
-        // try delve.init(gpa.allocator());
         try delve.init(delve.mem.createDefaultAllocator());
     }
 
