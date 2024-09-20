@@ -187,6 +187,7 @@ pub fn on_init() !void {
                     try materials.put(mat_name_null, .{ .material = fallback_material });
                     continue;
                 };
+                defer tex_img.deinit();
                 const tex = graphics.Texture.init(&tex_img);
 
                 const mat = graphics.Material.init(.{

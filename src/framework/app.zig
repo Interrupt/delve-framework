@@ -78,6 +78,7 @@ pub fn stopSubsystems() void {
     input.deinit();
     fonts.deinit();
     meshes.deinit();
+    images.deinit();
 
     if (app_config.enable_audio)
         audio.deinit();

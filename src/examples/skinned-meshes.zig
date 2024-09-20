@@ -88,6 +88,7 @@ fn on_init() !void {
         debug.log("Assets: Error loading image asset: {s}", .{mesh_texture_file});
         return;
     };
+    defer base_img.deinit();
     const tex_base = graphics.Texture.init(&base_img);
 
     // Create a material out of our shader and textures
