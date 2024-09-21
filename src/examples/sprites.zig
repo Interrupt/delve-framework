@@ -44,7 +44,7 @@ pub fn main() !void {
         // See https://github.com/ziglang/zig/issues/19072
         try delve.init(std.heap.c_allocator);
     } else {
-        try delve.init(gpa.allocator());
+        try delve.init(delve.mem.createDefaultAllocator());
     }
 
     try registerModule();
@@ -138,9 +138,9 @@ fn pre_draw() void {
         }
 
         if (@mod(i, 5) == 0) {
-            test_batch.useShader(shader_blend);
+            test_batch.useShader(&shader_blend);
         } else {
-            test_batch.useShader(shader_opaque);
+            test_batch.useShader(&shader_opaque);
         }
 
         var transform: math.Mat4 = undefined;
@@ -160,7 +160,7 @@ fn pre_draw() void {
         }
     }
 
-    test_batch.useShader(shader_blend);
+    test_batch.useShader(&shader_blend);
 
     // test a line!
     const line_y_start = std.math.sin(time * 0.01);
@@ -208,6 +208,8 @@ fn on_draw() void {
 fn on_cleanup() !void {
     debug.log("Batch example module cleaning up", .{});
     test_batch.deinit();
+    test_material_1.deinit();
+    test_material_2.deinit();
     texture_1.destroy();
     texture_2.destroy();
     shader_opaque.destroy();

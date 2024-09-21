@@ -489,6 +489,7 @@ pub const ShaderImpl = struct {
             // Return a copy of our shader, but mark that this is a clone so that we don't free the sokol shader twice
             var newShader = s.*;
             newShader.impl.sokol_pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator);
+            newShader.impl.cfg = cfg;
             newShader.impl.is_instance = true;
             return newShader;
         }
@@ -561,7 +562,7 @@ pub const ShaderImpl = struct {
 
     /// Create a shader from a Sokol Shader Description - useful for loading built-in shaders
     pub fn initSokolShader(cfg: graphics.ShaderConfig, shader_desc: sg.ShaderDesc) Shader {
-        debug.info("Creating shader", .{});
+        debug.info("Creating shader: {d}", .{graphics.next_shader_handle});
         const shader = sg.makeShader(shader_desc);
 
         var num_fs_images: u8 = 0;
@@ -615,7 +616,6 @@ pub const ShaderImpl = struct {
         }
 
         if (pipeline == null) {
-            debug.info("Shader pipeline not found, creating one now", .{});
             pipeline = self.impl.makePipeline(layout);
         }
 
@@ -645,9 +645,15 @@ pub const ShaderImpl = struct {
     }
 
     pub fn destroy(self: *Shader) void {
+        // TODO: Maybe only shaders, not instances, should keep all pipelines
+        for (self.impl.sokol_pipelines.items) |p| {
+            sg.destroyPipeline(p.sokol_pipeline);
+        }
         self.impl.sokol_pipelines.deinit();
-        if (!self.impl.is_instance)
+
+        if (!self.impl.is_instance) {
             sg.destroyShader(self.impl.sokol_shader);
+        }
     }
 };
 

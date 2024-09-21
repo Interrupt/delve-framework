@@ -86,6 +86,7 @@ fn on_init() !void {
     const static_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
 
     var base_img: images.Image = try images.loadFile(mesh_texture_file);
+    defer base_img.deinit();
     const tex_base = graphics.Texture.init(&base_img);
 
     // Create a material out of our shader and textures

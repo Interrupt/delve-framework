@@ -32,7 +32,7 @@ const BatcherConfig = struct {
     min_vertices: usize = 128,
     min_indices: usize = 128,
     texture: ?graphics.Texture = null,
-    shader: ?graphics.Shader = null,
+    shader: ?*graphics.Shader = null,
     material: ?*graphics.Material = null,
     flip_tex_y: bool = false,
 };
@@ -46,8 +46,11 @@ pub const SpriteBatcher = struct {
     config: BatcherConfig = BatcherConfig{},
     current_batch_key: u64 = 0,
     current_tex: graphics.Texture = undefined,
-    current_shader: graphics.Shader = undefined,
+    current_shader: *graphics.Shader = undefined,
     current_material: ?*graphics.Material = null,
+
+    // If we needed to make resources, we need to clean them up later too
+    owned_texture: ?graphics.Texture = null,
 
     /// Creates a new SpriteBatcher using the given config
     pub fn init(cfg: BatcherConfig) !SpriteBatcher {
@@ -58,8 +61,12 @@ pub const SpriteBatcher = struct {
         const tex = if (cfg.texture != null) cfg.texture.? else graphics.createDebugTexture();
         sprite_batcher.current_tex = tex;
 
-        const shader = if (cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{});
+        // Use either the configured shader, or fall back to the default
+        const shader = if (cfg.shader != null) cfg.shader.? else graphics.getDefaultShader();
         sprite_batcher.useShader(shader);
+
+        if (cfg.texture == null)
+            sprite_batcher.owned_texture = tex;
 
         return sprite_batcher;
     }
@@ -72,7 +79,7 @@ pub const SpriteBatcher = struct {
     }
 
     /// Switch the current batch to one for the given shader
-    pub fn useShader(self: *SpriteBatcher, shader: graphics.Shader) void {
+    pub fn useShader(self: *SpriteBatcher, shader: *graphics.Shader) void {
         self.current_batch_key = makeSpriteBatchKey(self.current_tex, shader);
         self.current_shader = shader;
         self.current_material = null;
@@ -193,6 +200,11 @@ pub const SpriteBatcher = struct {
         while (it.next()) |batcher| {
             batcher.value_ptr.deinit();
         }
+        self.batches.deinit();
+
+        if (self.owned_texture) |*tex| {
+            tex.destroy();
+        }
     }
 
     /// Update the transform matrix for the batches
@@ -209,7 +221,7 @@ pub const SpriteBatcher = struct {
     }
 };
 
-fn makeSpriteBatchKey(tex: graphics.Texture, shader: graphics.Shader) u64 {
+fn makeSpriteBatchKey(tex: graphics.Texture, shader: *const graphics.Shader) u64 {
     return tex.handle + (shader.handle * 1000000);
 }
 
@@ -228,7 +240,7 @@ pub const Batcher = struct {
     vertex_pos: usize,
     index_pos: usize,
     bindings: graphics.Bindings,
-    shader: graphics.Shader,
+    shader: *graphics.Shader,
     material: ?*graphics.Material = null,
     transform: Mat4 = Mat4.identity,
     flip_tex_y: bool = false,
@@ -236,6 +248,7 @@ pub const Batcher = struct {
     /// Setup and return a new Batcher
     pub fn init(cfg: BatcherConfig) !Batcher {
         var allocator = mem.getAllocator();
+
         var batcher: Batcher = Batcher{
             .allocator = allocator,
             .vertex_pos = 0,
@@ -243,7 +256,7 @@ pub const Batcher = struct {
             .vertex_buffer = try allocator.alloc(Vertex, cfg.min_vertices),
             .index_buffer = try allocator.alloc(u32, cfg.min_indices),
             .bindings = graphics.Bindings.init(.{ .updatable = true, .index_len = cfg.min_indices, .vert_len = cfg.min_vertices }),
-            .shader = if (cfg.shader != null) cfg.shader.? else graphics.Shader.initDefault(.{}),
+            .shader = if (cfg.shader != null) cfg.shader.? else graphics.getDefaultShader(),
             .material = if (cfg.material != null) cfg.material.? else null,
             .flip_tex_y = cfg.flip_tex_y,
         };
@@ -479,7 +492,7 @@ pub const Batcher = struct {
         self.shader.applyUniformBlock(.FS, 0, graphics.asAnything(&fs_params));
         self.shader.applyUniformBlock(.VS, 0, graphics.asAnything(&vs_params));
 
-        graphics.draw(&self.bindings, &self.shader);
+        graphics.draw(&self.bindings, self.shader);
     }
 
     /// Submit a draw call to draw all shapes for this batch
@@ -503,7 +516,6 @@ pub const Batcher = struct {
         var needs_resize = false;
 
         if (self.vertex_buffer.len < needed_vertices) {
-            // debug.log("Growing vertex buffer to {d}", .{self.vertex_buffer.len * 2});
             self.vertex_buffer = self.allocator.realloc(self.vertex_buffer, self.vertex_buffer.len * 2) catch {
                 debug.log("Could not allocate needed vertices! Needed {d}", .{needed_vertices});
                 return;
@@ -511,7 +523,6 @@ pub const Batcher = struct {
             needs_resize = true;
         }
         if (self.index_buffer.len < needed_indices) {
-            // debug.log("Growing index buffer to {d}", .{self.index_buffer.len * 2});
             self.index_buffer = self.allocator.realloc(self.index_buffer, self.index_buffer.len * 2) catch {
                 debug.log("Could not allocate needed indices! Needed {d}", .{needed_indices});
                 return;
@@ -522,7 +533,6 @@ pub const Batcher = struct {
         if (!needs_resize)
             return;
 
-        // debug.log("Resizing buffer to {d}x{d}", .{self.vertex_buffer.len, self.index_buffer.len});
         self.bindings.resize(self.vertex_buffer.len, self.index_buffer.len);
     }
 };

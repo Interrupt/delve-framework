@@ -381,7 +381,10 @@ pub const Shader = struct {
 
     /// Returns a new instance of this shader
     pub fn makeNewInstance(cfg: ShaderConfig, shader: ?Shader) Shader {
-        return ShaderImpl.makeNewInstance(cfg, shader);
+        if (shader != null) {
+            return ShaderImpl.makeNewInstance(cfg, shader.?);
+        }
+        return initDefault(cfg);
     }
 
     /// Updates the graphics state to draw using this shader
@@ -691,7 +694,6 @@ pub const MaterialUniformBlock = struct {
         if (self.size < commit_size) {
             const diff_bytes = commit_size - self.size;
             self.addPadding(diff_bytes);
-            // debug.log("Added {d} padding bytes", .{diff_bytes});
         }
     }
 
@@ -880,6 +882,7 @@ pub const Material = struct {
         if (self.material_params_fs_uniformblock_data) |*block_data| {
             block_data.deinit();
         }
+        self.shader.destroy();
     }
 
     /// Builds and applys a uniform block from a layout
@@ -992,8 +995,8 @@ pub const Material = struct {
 };
 
 pub const state = struct {
+    var default_shader: Shader = undefined;
     var debug_draw_bindings: Bindings = undefined;
-    var debug_shader: Shader = undefined;
     var debug_material: Material = undefined;
     var debug_draw_color_override: Color = colors.transparent;
     var debug_text_scale: f32 = 1.0;
@@ -1034,9 +1037,9 @@ pub fn init() !void {
     state.debug_draw_bindings.set(debug_vertices, debug_indices, &[_]u32{}, &[_]u32{}, 6);
 
     // Use the default shader for debug drawing
-    state.debug_shader = Shader.initDefault(.{ .cull_mode = .NONE });
+    state.default_shader = Shader.initDefault(.{ .cull_mode = .NONE });
     state.debug_material = Material.init(.{
-        .shader = state.debug_shader,
+        .shader = state.default_shader,
         .texture_0 = tex_white,
         .cull_mode = .NONE,
         .blend_mode = .NONE,
@@ -1056,7 +1059,9 @@ pub fn deinit() void {
     debug.log("Graphics subsystem stopping", .{});
 
     // clean up our debug draw resources
-    state.debug_shader.destroy();
+    state.default_shader.destroy();
+    state.debug_material.deinit();
+    state.debug_draw_bindings.destroy();
     tex_white.destroy();
     tex_black.destroy();
     tex_grey.destroy();
@@ -1185,10 +1190,10 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
     };
 
     // set our default vs/fs shader uniforms to the 0 slots
-    state.debug_shader.applyUniformBlock(.FS, 0, asAnything(&fs_params));
-    state.debug_shader.applyUniformBlock(.VS, 0, asAnything(&vs_params));
+    state.default_shader.applyUniformBlock(.FS, 0, asAnything(&fs_params));
+    state.default_shader.applyUniformBlock(.VS, 0, asAnything(&vs_params));
 
-    draw(&state.debug_draw_bindings, &state.debug_shader);
+    draw(&state.debug_draw_bindings, &state.default_shader);
 }
 
 /// Sets the color override used when drawing debug shapes
@@ -1251,6 +1256,11 @@ pub fn createDebugTexture() Texture {
         0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
     };
     return Texture.initFromBytes(4, 4, img);
+}
+
+/// Return our default shader
+pub fn getDefaultShader() *Shader {
+    return &state.default_shader;
 }
 
 fn convertFilterModeToSamplerDesc(filter: FilterMode) sg.SamplerDesc {
