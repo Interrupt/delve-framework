@@ -32,7 +32,7 @@ const BatcherConfig = struct {
     min_vertices: usize = 128,
     min_indices: usize = 128,
     texture: ?graphics.Texture = null,
-    shader: ?*graphics.Shader = null,
+    shader: ?graphics.Shader = null,
     material: ?*graphics.Material = null,
     flip_tex_y: bool = false,
 };
@@ -46,7 +46,7 @@ pub const SpriteBatcher = struct {
     config: BatcherConfig = BatcherConfig{},
     current_batch_key: u64 = 0,
     current_tex: graphics.Texture = undefined,
-    current_shader: *graphics.Shader = undefined,
+    current_shader: graphics.Shader = undefined,
     current_material: ?*graphics.Material = null,
 
     // If we needed to make resources, we need to clean them up later too
@@ -79,7 +79,7 @@ pub const SpriteBatcher = struct {
     }
 
     /// Switch the current batch to one for the given shader
-    pub fn useShader(self: *SpriteBatcher, shader: *graphics.Shader) void {
+    pub fn useShader(self: *SpriteBatcher, shader: graphics.Shader) void {
         self.current_batch_key = makeSpriteBatchKey(self.current_tex, shader);
         self.current_shader = shader;
         self.current_material = null;
@@ -221,7 +221,7 @@ pub const SpriteBatcher = struct {
     }
 };
 
-fn makeSpriteBatchKey(tex: graphics.Texture, shader: *const graphics.Shader) u64 {
+fn makeSpriteBatchKey(tex: graphics.Texture, shader: graphics.Shader) u64 {
     return tex.handle + (shader.handle * 1000000);
 }
 
@@ -240,7 +240,7 @@ pub const Batcher = struct {
     vertex_pos: usize,
     index_pos: usize,
     bindings: graphics.Bindings,
-    shader: *graphics.Shader,
+    shader: graphics.Shader,
     material: ?*graphics.Material = null,
     transform: Mat4 = Mat4.identity,
     flip_tex_y: bool = false,
@@ -492,7 +492,7 @@ pub const Batcher = struct {
         self.shader.applyUniformBlock(.FS, 0, graphics.asAnything(&fs_params));
         self.shader.applyUniformBlock(.VS, 0, graphics.asAnything(&vs_params));
 
-        graphics.draw(&self.bindings, self.shader);
+        graphics.draw(&self.bindings, &self.shader);
     }
 
     /// Submit a draw call to draw all shapes for this batch

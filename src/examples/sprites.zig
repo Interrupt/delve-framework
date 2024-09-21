@@ -138,9 +138,9 @@ fn pre_draw() void {
         }
 
         if (@mod(i, 5) == 0) {
-            test_batch.useShader(&shader_blend);
+            test_batch.useShader(shader_blend);
         } else {
-            test_batch.useShader(&shader_opaque);
+            test_batch.useShader(shader_opaque);
         }
 
         var transform: math.Mat4 = undefined;
@@ -160,7 +160,7 @@ fn pre_draw() void {
         }
     }
 
-    test_batch.useShader(&shader_blend);
+    test_batch.useShader(shader_blend);
 
     // test a line!
     const line_y_start = std.math.sin(time * 0.01);

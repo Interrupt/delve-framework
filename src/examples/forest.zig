@@ -280,7 +280,7 @@ fn pre_draw() void {
 
 /// Add the ground plane to the sprite batch
 fn addGround(ground_size: math.Vec2) void {
-    sprite_batch.useShader(&shader_blend);
+    sprite_batch.useShader(shader_blend);
     sprite_batch.useTexture(graphics.tex_white);
 
     // ground plane needs to be big enough to cover where the trees will be
@@ -303,7 +303,7 @@ fn addClouds(density: f32) void {
     const billboard_dir = math.Vec3.new(camera.direction.x, camera.direction.y, camera.direction.z).norm();
     const rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
 
-    cloud_batch.useShader(&shader_blend);
+    cloud_batch.useShader(shader_blend);
     cloud_batch.useTexture(tex_treesheet);
     cloud_batch.reset();
 

@@ -1259,8 +1259,8 @@ pub fn createDebugTexture() Texture {
 }
 
 /// Return our default shader
-pub fn getDefaultShader() *Shader {
-    return &state.default_shader;
+pub fn getDefaultShader() Shader {
+    return state.default_shader;
 }
 
 fn convertFilterModeToSamplerDesc(filter: FilterMode) sg.SamplerDesc {

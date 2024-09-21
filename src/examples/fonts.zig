@@ -106,7 +106,7 @@ fn on_pre_draw() void {
     // Ideally you would only do this when the text updates, and just draw the batch until then
     font_batch.reset();
 
-    font_batch.useShader(&shader_blend);
+    font_batch.useShader(shader_blend);
 
     if (found_font) |font| {
         // give the header a bit of padding
