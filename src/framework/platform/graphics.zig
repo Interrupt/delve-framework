@@ -381,7 +381,10 @@ pub const Shader = struct {
 
     /// Returns a new instance of this shader
     pub fn makeNewInstance(cfg: ShaderConfig, shader: ?Shader) Shader {
-        return ShaderImpl.makeNewInstance(cfg, shader);
+        if (shader != null) {
+            return ShaderImpl.makeNewInstance(cfg, shader.?);
+        }
+        return initDefault(cfg);
     }
 
     /// Updates the graphics state to draw using this shader
@@ -691,7 +694,6 @@ pub const MaterialUniformBlock = struct {
         if (self.size < commit_size) {
             const diff_bytes = commit_size - self.size;
             self.addPadding(diff_bytes);
-            // debug.log("Added {d} padding bytes", .{diff_bytes});
         }
     }
 
@@ -993,7 +995,7 @@ pub const Material = struct {
 };
 
 pub const state = struct {
-    pub var default_shader: Shader = undefined;
+    var default_shader: Shader = undefined;
     var debug_draw_bindings: Bindings = undefined;
     var debug_material: Material = undefined;
     var debug_draw_color_override: Color = colors.transparent;
@@ -1254,6 +1256,11 @@ pub fn createDebugTexture() Texture {
         0xFF555555, 0xFF999999, 0xFF555555, 0xFF999999,
     };
     return Texture.initFromBytes(4, 4, img);
+}
+
+/// Return our default shader
+pub fn getDefaultShader() *Shader {
+    return &state.default_shader;
 }
 
 fn convertFilterModeToSamplerDesc(filter: FilterMode) sg.SamplerDesc {
