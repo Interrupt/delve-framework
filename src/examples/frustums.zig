@@ -44,7 +44,7 @@ pub fn on_init() !void {
     const shader = delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
 
     // Create some materials
-    material_frustum = delve.platform.graphics.Material.init(.{
+    material_frustum = try delve.platform.graphics.Material.init(.{
         .shader = shader,
         .texture_0 = delve.platform.graphics.createSolidTexture(0x66FFFFFF),
         .cull_mode = .NONE,
@@ -52,12 +52,12 @@ pub fn on_init() !void {
         .blend_mode = .BLEND,
     });
 
-    material_cube = delve.platform.graphics.Material.init(.{
+    material_cube = try delve.platform.graphics.Material.init(.{
         .shader = shader,
         .texture_0 = delve.platform.graphics.tex_white,
     });
 
-    material_highlight = delve.platform.graphics.Material.init(.{
+    material_highlight = try delve.platform.graphics.Material.init(.{
         .shader = shader,
         .texture_0 = delve.platform.graphics.createSolidTexture(0xFF0000CC),
     });

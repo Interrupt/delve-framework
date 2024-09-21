@@ -92,7 +92,7 @@ fn on_init() !void {
     const tex_base = graphics.Texture.init(&base_img);
 
     // Create a material out of our shader and textures
-    material = delve.platform.graphics.Material.init(.{
+    material = try delve.platform.graphics.Material.init(.{
         .shader = shader.?,
         .texture_0 = tex_base,
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),

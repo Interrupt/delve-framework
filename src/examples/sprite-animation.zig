@@ -71,7 +71,7 @@ fn on_init() !void {
     shader_default = loaded_shader.?;
 
     // make a material to draw with
-    test_material = graphics.Material.init(.{
+    test_material = try graphics.Material.init(.{
         .shader = shader_default,
         .texture_0 = sprite_texture,
         .cull_mode = .BACK,

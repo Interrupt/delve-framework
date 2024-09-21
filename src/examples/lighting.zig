@@ -90,7 +90,7 @@ fn on_init() !void {
     const tex_base = graphics.Texture.init(&base_img);
 
     // Create a material out of our shader and textures
-    skinned_mesh_material = delve.platform.graphics.Material.init(.{
+    skinned_mesh_material = try delve.platform.graphics.Material.init(.{
         .shader = skinned_shader.?,
         .texture_0 = tex_base,
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
@@ -103,7 +103,7 @@ fn on_init() !void {
     });
 
     // Create a material out of the texture
-    static_mesh_material = graphics.Material.init(.{
+    static_mesh_material = try graphics.Material.init(.{
         .shader = static_shader.?,
         .texture_0 = delve.platform.graphics.createSolidTexture(0xFFFFFFFF),
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),

@@ -94,14 +94,14 @@ fn on_init() !void {
     shader_blend = graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.BLEND });
 
     // Create some test materials out of our shader and textures
-    test_material_1 = graphics.Material.init(.{
+    test_material_1 = try graphics.Material.init(.{
         .shader = shader_opaque,
         .texture_0 = graphics.tex_white,
         .cull_mode = .BACK,
         .blend_mode = .BLEND,
     });
 
-    test_material_2 = graphics.Material.init(.{
+    test_material_2 = try graphics.Material.init(.{
         .shader = shader_opaque,
         .texture_0 = texture_1,
         .cull_mode = .BACK,

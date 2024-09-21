@@ -95,7 +95,7 @@ fn on_init() !void {
     }
 
     // Create a material out of our shader and textures
-    material = graphics.Material.init(.{
+    material = try graphics.Material.init(.{
         .shader = shader.?,
         .texture_0 = tex_base,
         .texture_1 = tex_emissive,

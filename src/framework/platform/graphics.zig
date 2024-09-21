@@ -813,7 +813,11 @@ pub const Material = struct {
     use_default_params: bool = true,
 
     // Material params are used for automatic binding
-    params: MaterialParams = MaterialParams{},
+    params: *MaterialParams = undefined,
+
+    /// Data blocks to hold our shader uniform data for the material parameters
+    material_params_vs_uniformblock_data: ?*MaterialUniformBlock = null,
+    material_params_fs_uniformblock_data: ?*MaterialUniformBlock = null,
 
     /// Holds what will be automatically binded by the material
     default_vs_uniform_layout: []const MaterialUniformDefaults,
@@ -823,13 +827,9 @@ pub const Material = struct {
     material_params_vs_uniformblock: []const u8 = "vs_params",
     material_params_fs_uniformblock: []const u8 = "fs_params",
 
-    /// Data blocks to hold our shader uniform data for the material parameters
-    material_params_vs_uniformblock_data: ?MaterialUniformBlock = null,
-    material_params_fs_uniformblock_data: ?MaterialUniformBlock = null,
-
     // Hold our samplers
     sokol_samplers: [5]?sg.Sampler = [_]?sg.Sampler{null} ** 5,
-    pub fn init(cfg: MaterialConfig) Material {
+    pub fn init(cfg: MaterialConfig) !Material {
         var material = Material{
             .blend_mode = cfg.blend_mode,
             .depth_write_enabled = cfg.depth_write_enabled,
@@ -858,9 +858,18 @@ pub const Material = struct {
         if (cfg.texture_4 != null)
             material.textures[4] = cfg.texture_4;
 
+        material.params = try allocator.create(MaterialParams);
+        material.params.* = MaterialParams{};
+
+        const vs_uniform_block = try allocator.create(MaterialUniformBlock);
+        vs_uniform_block.* = MaterialUniformBlock.init();
+
+        const fs_uniform_block = try allocator.create(MaterialUniformBlock);
+        fs_uniform_block.* = MaterialUniformBlock.init();
+
         // Create uniform blocks to store our material param data
-        material.material_params_vs_uniformblock_data = MaterialUniformBlock.init();
-        material.material_params_fs_uniformblock_data = MaterialUniformBlock.init();
+        material.material_params_vs_uniformblock_data = vs_uniform_block;
+        material.material_params_fs_uniformblock_data = fs_uniform_block;
 
         var shader_config = if (cfg.shader != null) cfg.shader.?.cfg else ShaderConfig{};
         shader_config.cull_mode = cfg.cull_mode;
@@ -876,12 +885,16 @@ pub const Material = struct {
 
     /// Frees a material
     pub fn deinit(self: *Material) void {
-        if (self.material_params_vs_uniformblock_data) |*block_data| {
+        if (self.material_params_vs_uniformblock_data) |block_data| {
             block_data.deinit();
+            allocator.destroy(block_data);
         }
-        if (self.material_params_fs_uniformblock_data) |*block_data| {
+        if (self.material_params_fs_uniformblock_data) |block_data| {
             block_data.deinit();
+            allocator.destroy(block_data);
         }
+
+        allocator.destroy(self.params);
         self.shader.destroy();
     }
 
@@ -974,21 +987,21 @@ pub const Material = struct {
 
         // Set our default uniform vars first
         if (has_default_vs and self.use_default_params) {
-            if (self.material_params_vs_uniformblock_data) |*data| {
+            if (self.material_params_vs_uniformblock_data) |data| {
                 self.setDefaultUniformVars(self.default_vs_uniform_layout, data, view_matrix, proj_matrix, model_matrix);
             }
         }
         if (has_default_fs and self.use_default_params) {
-            if (self.material_params_fs_uniformblock_data) |*data| {
+            if (self.material_params_fs_uniformblock_data) |data| {
                 self.setDefaultUniformVars(self.default_fs_uniform_layout, data, view_matrix, proj_matrix, model_matrix);
             }
         }
 
         // Now, actually apply these uniform blocks to the shader
-        if (self.material_params_vs_uniformblock_data) |*data| {
+        if (self.material_params_vs_uniformblock_data) |data| {
             self.shader.applyUniformBlockByName(.VS, "vs_params", asAnything(data.bytes.items));
         }
-        if (self.material_params_fs_uniformblock_data) |*data| {
+        if (self.material_params_fs_uniformblock_data) |data| {
             self.shader.applyUniformBlockByName(.FS, "fs_params", asAnything(data.bytes.items));
         }
     }
@@ -1038,7 +1051,7 @@ pub fn init() !void {
 
     // Use the default shader for debug drawing
     state.default_shader = Shader.initDefault(.{ .cull_mode = .NONE });
-    state.debug_material = Material.init(.{
+    state.debug_material = try Material.init(.{
         .shader = state.default_shader,
         .texture_0 = tex_white,
         .cull_mode = .NONE,
