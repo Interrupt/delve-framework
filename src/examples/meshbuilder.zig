@@ -62,19 +62,19 @@ pub fn on_init() !void {
     camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 20.0, 5.0, math.Vec3.up);
 
     // make a cube
-    cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2, 3, 1), delve.colors.white, &material) catch {
+    cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2, 3, 1), delve.colors.white, material) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
 
     // and another
-    cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3, 0, -1), math.Vec3.new(1, 1, 2), delve.colors.green, &material) catch {
+    cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3, 0, -1), math.Vec3.new(1, 1, 2), delve.colors.green, material) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
 
     // and then a floor
-    cube3 = delve.graphics.mesh.createCube(math.Vec3.new(0, -2, 0), math.Vec3.new(12, 0.25, 12), delve.colors.red, &material) catch {
+    cube3 = delve.graphics.mesh.createCube(math.Vec3.new(0, -2, 0), math.Vec3.new(12, 0.25, 12), delve.colors.red, material) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };

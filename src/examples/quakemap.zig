@@ -207,7 +207,7 @@ pub fn on_init() !void {
     entity_meshes = try quake_map.buildEntityMeshes(allocator, math.Mat4.identity, &materials, &fallback_quake_material);
 
     // make a bounding box cube
-    cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), bounding_box_size, delve.colors.red, &fallback_material);
+    cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), bounding_box_size, delve.colors.red, fallback_material);
 
     // set a bg color
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_light);

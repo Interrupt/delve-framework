@@ -102,7 +102,7 @@ fn on_init() !void {
     });
 
     // Load our mesh!
-    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), "assets/meshes/SciFiHelmet.gltf", .{ .material = &material });
+    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), "assets/meshes/SciFiHelmet.gltf", .{ .material = material });
 }
 
 fn on_tick(delta: f32) void {

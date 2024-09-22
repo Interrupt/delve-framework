@@ -102,7 +102,7 @@ fn on_init() !void {
     });
 
     // Load our mesh!
-    const loaded = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = &material });
+    const loaded = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = material });
 
     if (loaded == null) {
         debug.fatal("Could not load skinned mesh!", .{});

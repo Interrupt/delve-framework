@@ -113,7 +113,7 @@ fn on_init() !void {
     });
 
     // Load an animated mesh
-    const loaded_mesh = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = &skinned_mesh_material });
+    const loaded_mesh = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = skinned_mesh_material });
 
     if (loaded_mesh == null) {
         debug.fatal("Could not load skinned mesh!", .{});
@@ -121,8 +121,8 @@ fn on_init() !void {
     }
 
     // make some cubes
-    cube1 = try delve.graphics.mesh.createCube(math.Vec3.new(0, -1.0, 0), math.Vec3.new(10.0, 0.25, 10.0), delve.colors.white, &static_mesh_material);
-    cube2 = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2.0, 1.25, 1.0), delve.colors.white, &static_mesh_material);
+    cube1 = try delve.graphics.mesh.createCube(math.Vec3.new(0, -1.0, 0), math.Vec3.new(10.0, 0.25, 10.0), delve.colors.white, static_mesh_material);
+    cube2 = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2.0, 1.25, 1.0), delve.colors.white, static_mesh_material);
 
     animated_mesh = loaded_mesh.?;
     animation = try animated_mesh.createAnimation(0, 1.0, true);

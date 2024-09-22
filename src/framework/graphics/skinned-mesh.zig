@@ -222,7 +222,7 @@ pub const SkinnedMesh = struct {
             self.applySkeletonTransforms();
 
         self.mesh.material.state.params.joints = &self.joint_locations;
-        graphics.drawWithMaterial(&self.mesh.bindings, self.mesh.material, cam_matrices, model_matrix);
+        graphics.drawWithMaterial(&self.mesh.bindings, &self.mesh.material, cam_matrices, model_matrix);
     }
 
     /// Draw this mesh, using the specified material instead of the set one
