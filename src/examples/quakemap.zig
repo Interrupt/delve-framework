@@ -8,6 +8,7 @@ const graphics = delve.platform.graphics;
 const math = delve.math;
 
 var camera: delve.graphics.camera.Camera = undefined;
+var shader: delve.platform.graphics.Shader = undefined;
 var fallback_material: graphics.Material = undefined;
 var fallback_quake_material: delve.utils.quakemap.QuakeMaterial = undefined;
 var materials: std.StringHashMap(delve.utils.quakemap.QuakeMaterial) = undefined;
@@ -33,6 +34,7 @@ pub fn main() !void {
         .init_fn = on_init,
         .tick_fn = on_tick,
         .draw_fn = on_draw,
+        .cleanup_fn = on_cleanup,
     };
 
     // Pick the allocator to use depending on platform
@@ -42,7 +44,8 @@ pub fn main() !void {
         // See https://github.com/ziglang/zig/issues/19072
         try delve.init(std.heap.c_allocator);
     } else {
-        try delve.init(gpa.allocator());
+        // Using the default allocator will let us detect memory leaks
+        try delve.init(delve.mem.createDefaultAllocator());
     }
 
     try delve.modules.registerModule(example);
@@ -146,9 +149,11 @@ pub fn on_init() !void {
     var err: delve.utils.quakemap.ErrorInfo = undefined;
     quake_map = try delve.utils.quakemap.QuakeMap.read(allocator, test_map_file, map_transform, &err);
 
+    shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
+
     // Create a material out of the texture
     fallback_material = try graphics.Material.init(.{
-        .shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }),
+        .shader = shader,
         .texture_0 = fallback_tex,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
@@ -163,7 +168,6 @@ pub fn on_init() !void {
     player_pos = camera.position;
 
     materials = std.StringHashMap(delve.utils.quakemap.QuakeMaterial).init(allocator);
-    const shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
 
     for (quake_map.worldspawn.solids.items) |solid| {
         for (solid.faces.items) |face| {
@@ -323,4 +327,13 @@ pub fn do_player_move(delta: f32) void {
 pub fn setGravityCmd(new_gravity: f32) void {
     gravity = new_gravity;
     delve.debug.log("Changed gravity to {d}", .{gravity});
+}
+
+pub fn on_cleanup() !void {
+    var it = materials.valueIterator();
+    while (it.next()) |mat_ptr| {
+        mat_ptr.material.deinit();
+    }
+    materials.deinit();
+    shader.destroy();
 }

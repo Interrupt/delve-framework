@@ -11,18 +11,33 @@ const graphics = @import("../platform/graphics.zig");
 
 const assert = std.debug.assert;
 const Allocator = std.mem.Allocator;
+const ArenaAllocator = std.heap.ArenaAllocator;
 const File = std.fs.File;
 
 pub const MDL = struct {
     frames: []MDLFrameType,
     skins: []MDLSkinType,
-    material: *graphics.Material,
-    allocator: Allocator,
+    material: graphics.Material,
+    arena_allocator: ArenaAllocator,
 
     pub fn deinit(self: *MDL) void {
-        self.allocator.free(self.frames);
-        self.allocator.free(self.skins);
-        self.allocator.destroy(self.material);
+        for (self.skins) |skin| {
+            switch (skin) {
+                .single => |*frame| {
+                    // self.allocator.free(frame.pixels);
+                    @constCast(&frame.texture).destroy();
+                },
+                .group => |group| {
+                    for (group.textures) |tex| {
+                        @constCast(&tex).destroy();
+                    }
+                    // self.allocator.free(group.frames);
+                },
+            }
+        }
+
+        self.arena_allocator.deinit();
+        self.material.deinit();
     }
 };
 
@@ -97,7 +112,7 @@ const MDLMeshBuildConfig_ = struct {
     skin_width: f32,
     skin_height: f32,
     transform: math.Mat4,
-    material: *graphics.Material,
+    material: graphics.Material,
 };
 
 const MDLSkin_ = struct {
@@ -130,6 +145,7 @@ const MDLSkin_ = struct {
     pub fn toTexture(self: *const MDLSkin_, allocator: Allocator) !graphics.Texture {
         const size: u32 = self.width * self.height;
         const bytes = try allocator.alloc(u8, size * 4);
+        defer allocator.free(bytes);
 
         for (0.., self.pixels) |j, index| {
             const i = @as(u32, index);
@@ -150,6 +166,7 @@ const MDLSkinGroup_ = struct {
     count: u32,
     intervals: []f32,
     pixels: []u8,
+    allocator: Allocator,
 
     pub fn read(allocator: Allocator, file: File, width: u32, height: u32) !MDLSkinGroup_ {
         // Skin type
@@ -165,7 +182,7 @@ const MDLSkinGroup_ = struct {
         // Skin intervals
         const intervals_buff = try allocator.alloc(u8, count * @sizeOf(f32));
         _ = try file.read(intervals_buff);
-        const intervals: []f32 = try bytesToStructArray(f32, intervals_buff);
+        const intervals: []f32 = try bytesToStructArray(f32, allocator, intervals_buff);
 
         // Skin pixels
         const size: u32 = width * height * count;
@@ -179,12 +196,19 @@ const MDLSkinGroup_ = struct {
             .count = count,
             .intervals = intervals,
             .pixels = pixels,
+            .allocator = allocator,
         };
+    }
+
+    pub fn deinit(self: *MDLSkinGroup_) void {
+        self.allocator.free(self.intervals);
+        self.allocator.free(self.pixels);
     }
 
     pub fn toTexture(self: *const MDLSkinGroup_, allocator: Allocator, index: u32) !graphics.Texture {
         const size: u32 = self.width * self.height;
         const bytes = try allocator.alloc(u8, size * 4);
+        defer allocator.free(bytes);
 
         const start = index * size;
         const end = start + size;
@@ -225,7 +249,7 @@ const MDLFrame_ = struct {
         const vertbuff = try allocator.alloc(u8, @sizeOf(TriVertex_) * vertex_count);
         defer allocator.free(vertbuff);
         _ = try file.read(vertbuff);
-        const trivertexes = try bytesToStructArray(TriVertex_, vertbuff);
+        const trivertexes = try bytesToStructArray(TriVertex_, allocator, vertbuff);
 
         return .{
             .min = min,
@@ -258,7 +282,7 @@ const MDLFrameGroup_ = struct {
         // Frame intervals
         const intervals_buff = try allocator.alloc(u8, count * @sizeOf(f32));
         _ = try file.read(intervals_buff);
-        const intervals: []f32 = try bytesToStructArray(f32, intervals_buff);
+        const intervals: []f32 = try bytesToStructArray(f32, allocator, intervals_buff);
 
         // Frames
         const frames: []MDLFrame_ = try allocator.alloc(MDLFrame_, count);
@@ -307,8 +331,7 @@ const TriVertex_ = struct {
     }
 };
 
-fn bytesToStructArray(comptime T: type, bytes: []u8) std.mem.Allocator.Error![]T {
-    const allocator = mem.getAllocator();
+fn bytesToStructArray(comptime T: type, allocator: Allocator, bytes: []u8) std.mem.Allocator.Error![]T {
     const size: u32 = @sizeOf(T);
     const length: u32 = @as(u32, @intCast(bytes.len)) / size;
     const result: []T = try allocator.alloc(T, length);
@@ -392,7 +415,10 @@ fn makeMesh(allocator: Allocator, frame: MDLFrame_, config: MDLMeshBuildConfig_)
     return builder.buildMesh(config.material);
 }
 
-pub fn open(allocator: Allocator, path: []const u8) !MDL {
+pub fn open(in_allocator: Allocator, path: []const u8) !MDL {
+    var arena = ArenaAllocator.init(in_allocator);
+    var allocator = arena.allocator();
+
     var file = try std.fs.cwd().openFile(
         path,
         std.fs.File.OpenFlags{
@@ -416,9 +442,10 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
         const skin_type: SkinType = @enumFromInt(@as(u32, @bitCast(work)));
 
         if (skin_type == SkinType.SINGLE) {
-            const skin = try MDLSkin_.read(allocator, file, header.skin_width, header.skin_height);
+            var skin = try MDLSkin_.read(allocator, file, header.skin_width, header.skin_height);
             const texture = try skin.toTexture(allocator);
             skins[i] = .{ .single = .{ .texture = texture } };
+            defer allocator.free(skin.pixels);
         } else if (skin_type == SkinType.GROUP) {
             const group = try MDLSkinGroup_.read(allocator, file, header.skin_width, header.skin_height);
 
@@ -437,8 +464,9 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
     }
 
     // Material
-    const default_material = graphics.Material.init(.{
+    const default_material = try graphics.Material.init(.{
         .shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = mesh.getShaderAttributes() }, default_mesh),
+        .own_shader = true,
         .texture_0 = skins[0].single.texture,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
@@ -447,19 +475,15 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
     const stvert_buff: []u8 = try allocator.alloc(u8, @sizeOf(STVertex_) * header.vertex_count);
     defer allocator.free(stvert_buff);
     _ = try file.read(stvert_buff);
-    const stvertices = try bytesToStructArray(STVertex_, stvert_buff);
+    const stvertices = try bytesToStructArray(STVertex_, allocator, stvert_buff);
     defer allocator.free(stvertices);
 
     // Triangles
     const triangle_buff: []u8 = try allocator.alloc(u8, @sizeOf(Triangle_) * header.triangle_count);
     defer allocator.free(triangle_buff);
     _ = try file.read(triangle_buff);
-    const triangles = try bytesToStructArray(Triangle_, triangle_buff);
+    const triangles = try bytesToStructArray(Triangle_, allocator, triangle_buff);
     defer allocator.free(triangles);
-
-    var material = try allocator.create(graphics.Material);
-    material.* = default_material;
-    material.textures[0] = skins[0].single.texture;
 
     // Transform
     var m = math.Mat4.identity;
@@ -478,7 +502,7 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
         .stvertexes = stvertices,
         .triangles = triangles,
         .transform = m,
-        .material = material,
+        .material = default_material,
     };
 
     // Frames
@@ -521,8 +545,8 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
     const mdl: MDL = .{
         .frames = frames,
         .skins = skins,
-        .material = material,
-        .allocator = allocator,
+        .material = default_material,
+        .arena_allocator = arena,
     };
 
     return mdl;
