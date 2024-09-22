@@ -33,7 +33,17 @@ pub fn init() !void {
 }
 
 pub fn deinit() void {
-    loaded_fonts.clearAndFree();
+    var allocator = mem.getAllocator();
+
+    // cleanup fonts
+    var it = loaded_fonts.valueIterator();
+    while (it.next()) |font_ptr| {
+        allocator.free(font_ptr.font_mem);
+        allocator.free(font_ptr.char_info);
+        font_ptr.texture.destroy();
+    }
+
+    loaded_fonts.deinit();
 }
 
 // Grab a single character from a font, updating cursor position
