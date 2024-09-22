@@ -90,7 +90,7 @@ fn on_init() !void {
     const tex_base = graphics.Texture.init(&base_img);
 
     // Create a material out of our shader and textures
-    skinned_mesh_material = delve.platform.graphics.Material.init(.{
+    skinned_mesh_material = try delve.platform.graphics.Material.init(.{
         .shader = skinned_shader.?,
         .texture_0 = tex_base,
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
@@ -103,7 +103,7 @@ fn on_init() !void {
     });
 
     // Create a material out of the texture
-    static_mesh_material = graphics.Material.init(.{
+    static_mesh_material = try graphics.Material.init(.{
         .shader = static_shader.?,
         .texture_0 = delve.platform.graphics.createSolidTexture(0xFFFFFFFF),
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
@@ -113,7 +113,7 @@ fn on_init() !void {
     });
 
     // Load an animated mesh
-    const loaded_mesh = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = &skinned_mesh_material });
+    const loaded_mesh = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = skinned_mesh_material });
 
     if (loaded_mesh == null) {
         debug.fatal("Could not load skinned mesh!", .{});
@@ -121,8 +121,8 @@ fn on_init() !void {
     }
 
     // make some cubes
-    cube1 = try delve.graphics.mesh.createCube(math.Vec3.new(0, -1.0, 0), math.Vec3.new(10.0, 0.25, 10.0), delve.colors.white, &static_mesh_material);
-    cube2 = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2.0, 1.25, 1.0), delve.colors.white, &static_mesh_material);
+    cube1 = try delve.graphics.mesh.createCube(math.Vec3.new(0, -1.0, 0), math.Vec3.new(10.0, 0.25, 10.0), delve.colors.white, static_mesh_material);
+    cube2 = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2.0, 1.25, 1.0), delve.colors.white, static_mesh_material);
 
     animated_mesh = loaded_mesh.?;
     animation = try animated_mesh.createAnimation(0, 1.0, true);
@@ -163,10 +163,10 @@ fn on_draw() void {
     const point_lights = &[_]delve.platform.graphics.PointLight{ point_light_1, point_light_2, point_light_3 };
 
     // add the lights and camera to the materials
-    static_mesh_material.params.point_lights = @constCast(point_lights);
-    static_mesh_material.params.directional_light = directional_light;
-    static_mesh_material.params.ambient_light = colors.Color.new(0.02, 0.02, 0.05, 1.0);
-    skinned_mesh_material.params = static_mesh_material.params;
+    static_mesh_material.state.params.point_lights = @constCast(point_lights);
+    static_mesh_material.state.params.directional_light = directional_light;
+    static_mesh_material.state.params.ambient_light = colors.Color.new(0.02, 0.02, 0.05, 1.0);
+    skinned_mesh_material.state.params = static_mesh_material.state.params;
 
     animated_mesh.draw(view_mats, model);
     cube1.draw(view_mats, Mat4.identity);

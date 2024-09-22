@@ -33,7 +33,7 @@ const BatcherConfig = struct {
     min_indices: usize = 128,
     texture: ?graphics.Texture = null,
     shader: ?graphics.Shader = null,
-    material: ?*graphics.Material = null,
+    material: ?graphics.Material = null,
     flip_tex_y: bool = false,
 };
 
@@ -47,7 +47,7 @@ pub const SpriteBatcher = struct {
     current_batch_key: u64 = 0,
     current_tex: graphics.Texture = undefined,
     current_shader: graphics.Shader = undefined,
-    current_material: ?*graphics.Material = null,
+    current_material: ?graphics.Material = null,
 
     // If we needed to make resources, we need to clean them up later too
     owned_texture: ?graphics.Texture = null,
@@ -94,7 +94,7 @@ pub const SpriteBatcher = struct {
     }
 
     /// Switch the current batch to one for the given material
-    pub fn useMaterial(self: *SpriteBatcher, material: *graphics.Material) void {
+    pub fn useMaterial(self: *SpriteBatcher, material: graphics.Material) void {
         self.current_batch_key = makeSpriteBatchKeyFromMaterial(material);
         self.current_material = material;
     }
@@ -225,11 +225,8 @@ fn makeSpriteBatchKey(tex: graphics.Texture, shader: graphics.Shader) u64 {
     return tex.handle + (shader.handle * 1000000);
 }
 
-fn makeSpriteBatchKeyFromMaterial(material: *const graphics.Material) u64 {
-    // Hash the material, just like an auto map would.
-    var hasher = Wyhash.init(0);
-    autoHash(&hasher, material);
-    return hasher.final();
+fn makeSpriteBatchKeyFromMaterial(material: graphics.Material) u64 {
+    return @intCast(@intFromPtr(material.state));
 }
 
 /// Handles drawing a batch of primitive shapes all with the same texture / shader
@@ -241,7 +238,7 @@ pub const Batcher = struct {
     index_pos: usize,
     bindings: graphics.Bindings,
     shader: graphics.Shader,
-    material: ?*graphics.Material = null,
+    material: ?graphics.Material = null,
     transform: Mat4 = Mat4.identity,
     flip_tex_y: bool = false,
 
@@ -503,7 +500,7 @@ pub const Batcher = struct {
         if (self.material == null)
             return;
 
-        graphics.drawWithMaterial(&self.bindings, self.material.?, cam_matrices, model_matrix);
+        graphics.drawWithMaterial(&self.bindings, &self.material.?, cam_matrices, model_matrix);
     }
 
     /// Expand the buffers for this batch if needed to fit the new size

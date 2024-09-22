@@ -147,7 +147,7 @@ pub fn on_init() !void {
     quake_map = try delve.utils.quakemap.QuakeMap.read(allocator, test_map_file, map_transform, &err);
 
     // Create a material out of the texture
-    fallback_material = graphics.Material.init(.{
+    fallback_material = try graphics.Material.init(.{
         .shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }),
         .texture_0 = fallback_tex,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
@@ -190,7 +190,7 @@ pub fn on_init() !void {
                 defer tex_img.deinit();
                 const tex = graphics.Texture.init(&tex_img);
 
-                const mat = graphics.Material.init(.{
+                const mat = try graphics.Material.init(.{
                     .shader = shader,
                     .samplers = &[_]graphics.FilterMode{.NEAREST},
                     .texture_0 = tex,
@@ -207,7 +207,7 @@ pub fn on_init() !void {
     entity_meshes = try quake_map.buildEntityMeshes(allocator, math.Mat4.identity, &materials, &fallback_quake_material);
 
     // make a bounding box cube
-    cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), bounding_box_size, delve.colors.red, &fallback_material);
+    cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), bounding_box_size, delve.colors.red, fallback_material);
 
     // set a bg color
     delve.platform.graphics.setClearColor(delve.colors.examples_bg_light);

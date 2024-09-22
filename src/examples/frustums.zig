@@ -44,7 +44,7 @@ pub fn on_init() !void {
     const shader = delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
 
     // Create some materials
-    material_frustum = delve.platform.graphics.Material.init(.{
+    material_frustum = try delve.platform.graphics.Material.init(.{
         .shader = shader,
         .texture_0 = delve.platform.graphics.createSolidTexture(0x66FFFFFF),
         .cull_mode = .NONE,
@@ -52,12 +52,12 @@ pub fn on_init() !void {
         .blend_mode = .BLEND,
     });
 
-    material_cube = delve.platform.graphics.Material.init(.{
+    material_cube = try delve.platform.graphics.Material.init(.{
         .shader = shader,
         .texture_0 = delve.platform.graphics.tex_white,
     });
 
-    material_highlight = delve.platform.graphics.Material.init(.{
+    material_highlight = try delve.platform.graphics.Material.init(.{
         .shader = shader,
         .texture_0 = delve.platform.graphics.createSolidTexture(0xFF0000CC),
     });
@@ -76,7 +76,7 @@ pub fn on_init() !void {
         return;
     };
 
-    cube_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(1, 1, 1), delve.colors.white, &material_cube) catch {
+    cube_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(1, 1, 1), delve.colors.white, material_cube) catch {
         delve.debug.fatal("Could not create cube mesh!", .{});
         return;
     };
@@ -111,7 +111,7 @@ pub fn on_draw() void {
             const bounds = cube_mesh.bounds.translate(cube_pos);
 
             if (frustum.containsBoundingBox(bounds)) {
-                cube_mesh.drawWithMaterial(&material_highlight, view_mats, cube_model_matrix);
+                cube_mesh.drawWithMaterial(material_highlight, view_mats, cube_model_matrix);
             } else {
                 cube_mesh.draw(view_mats, cube_model_matrix);
             }
@@ -127,5 +127,5 @@ pub fn createFrustumMesh() !delve.graphics.mesh.Mesh {
 
     try builder.addFrustum(secondary_camera.getViewFrustum(), delve.math.Mat4.identity, delve.colors.cyan);
 
-    return builder.buildMesh(&material_frustum);
+    return builder.buildMesh(material_frustum);
 }

@@ -95,14 +95,14 @@ fn on_init() !void {
     }
 
     // Create a material out of our shader and textures
-    material = graphics.Material.init(.{
+    material = try graphics.Material.init(.{
         .shader = shader.?,
         .texture_0 = tex_base,
         .texture_1 = tex_emissive,
     });
 
     // Load our mesh!
-    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), "assets/meshes/SciFiHelmet.gltf", .{ .material = &material });
+    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), "assets/meshes/SciFiHelmet.gltf", .{ .material = material });
 }
 
 fn on_tick(delta: f32) void {
@@ -126,7 +126,7 @@ fn on_draw() void {
     model = model.mul(Mat4.rotate(time * 0.6, Vec3.new(0.0, 1.0, 0.0)));
 
     const sin_val = std.math.sin(time * 0.006) + 0.5;
-    mesh_test.?.material.params.draw_color = Color.new(sin_val, sin_val, sin_val, 1.0);
+    mesh_test.?.material.state.params.draw_color = Color.new(sin_val, sin_val, sin_val, 1.0);
     mesh_test.?.draw(view_mats, model);
 
     model = Mat4.translate(Vec3.new(-2.0, 0.0, 0.0));

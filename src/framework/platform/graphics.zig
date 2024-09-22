@@ -802,10 +802,10 @@ pub const MaterialUniformBlock = struct {
     }
 };
 
-/// A material for drawing, consists of a shader and potentially many textures
-pub const Material = struct {
-    textures: [5]?Texture = [_]?Texture{null} ** 5,
+/// The internal state of a Material
+pub const MaterialState = struct {
     shader: Shader = undefined,
+    textures: [5]?Texture = [_]?Texture{null} ** 5,
     blend_mode: BlendMode,
     depth_write_enabled: bool,
     depth_compare: CompareFunc,
@@ -815,7 +815,7 @@ pub const Material = struct {
     // Material params are used for automatic binding
     params: MaterialParams = MaterialParams{},
 
-    /// Holds what will be automatically binded by the material
+    // Holds what will be automatically binded by the material
     default_vs_uniform_layout: []const MaterialUniformDefaults,
     default_fs_uniform_layout: []const MaterialUniformDefaults,
 
@@ -823,14 +823,23 @@ pub const Material = struct {
     material_params_vs_uniformblock: []const u8 = "vs_params",
     material_params_fs_uniformblock: []const u8 = "fs_params",
 
-    /// Data blocks to hold our shader uniform data for the material parameters
+    // Data blocks to hold our shader uniform data for the material parameters
     material_params_vs_uniformblock_data: ?MaterialUniformBlock = null,
     material_params_fs_uniformblock_data: ?MaterialUniformBlock = null,
 
     // Hold our samplers
     sokol_samplers: [5]?sg.Sampler = [_]?sg.Sampler{null} ** 5,
-    pub fn init(cfg: MaterialConfig) Material {
-        var material = Material{
+};
+
+/// A material for drawing, consists of a shader and potentially many textures
+pub const Material = struct {
+    // Hold an allocated internal state, so that shaders can be passed around by value
+    state: *MaterialState,
+
+    pub fn init(cfg: MaterialConfig) !Material {
+        // Create our new internal state pointer
+        const new_state = try allocator.create(MaterialState);
+        new_state.* = .{
             .blend_mode = cfg.blend_mode,
             .depth_write_enabled = cfg.depth_write_enabled,
             .depth_compare = cfg.depth_compare,
@@ -838,51 +847,55 @@ pub const Material = struct {
             .default_vs_uniform_layout = cfg.default_vs_uniform_layout,
             .default_fs_uniform_layout = cfg.default_fs_uniform_layout,
             .use_default_params = cfg.use_default_params,
+            .material_params_vs_uniformblock_data = MaterialUniformBlock.init(),
+            .material_params_fs_uniformblock_data = MaterialUniformBlock.init(),
+        };
+
+        var material = Material{
+            .state = new_state,
         };
 
         // Make samplers from filter modes
         for (cfg.samplers, 0..) |sampler_filter, i| {
             const sampler_desc = convertFilterModeToSamplerDesc(sampler_filter);
-            material.sokol_samplers[i] = sg.makeSampler(sampler_desc);
+            material.state.sokol_samplers[i] = sg.makeSampler(sampler_desc);
         }
 
         // Set textures. ugly!
         if (cfg.texture_0 != null)
-            material.textures[0] = cfg.texture_0;
+            material.state.textures[0] = cfg.texture_0;
         if (cfg.texture_1 != null)
-            material.textures[1] = cfg.texture_1;
+            material.state.textures[1] = cfg.texture_1;
         if (cfg.texture_2 != null)
-            material.textures[2] = cfg.texture_2;
+            material.state.textures[2] = cfg.texture_2;
         if (cfg.texture_3 != null)
-            material.textures[3] = cfg.texture_3;
+            material.state.textures[3] = cfg.texture_3;
         if (cfg.texture_4 != null)
-            material.textures[4] = cfg.texture_4;
+            material.state.textures[4] = cfg.texture_4;
 
-        // Create uniform blocks to store our material param data
-        material.material_params_vs_uniformblock_data = MaterialUniformBlock.init();
-        material.material_params_fs_uniformblock_data = MaterialUniformBlock.init();
-
+        // Now make a shader using our draw options
         var shader_config = if (cfg.shader != null) cfg.shader.?.cfg else ShaderConfig{};
         shader_config.cull_mode = cfg.cull_mode;
         shader_config.blend_mode = cfg.blend_mode;
         shader_config.depth_write_enabled = cfg.depth_write_enabled;
         shader_config.depth_compare = cfg.depth_compare;
 
-        // make a shader out of our options
-        material.shader = Shader.makeNewInstance(shader_config, cfg.shader);
+        material.state.shader = Shader.makeNewInstance(shader_config, cfg.shader);
 
         return material;
     }
 
     /// Frees a material
     pub fn deinit(self: *Material) void {
-        if (self.material_params_vs_uniformblock_data) |*block_data| {
+        if (self.state.material_params_vs_uniformblock_data) |*block_data| {
             block_data.deinit();
         }
-        if (self.material_params_fs_uniformblock_data) |*block_data| {
+        if (self.state.material_params_fs_uniformblock_data) |*block_data| {
             block_data.deinit();
         }
-        self.shader.destroy();
+
+        self.state.shader.destroy();
+        allocator.destroy(self.state);
     }
 
     /// Builds and applys a uniform block from a layout
@@ -890,6 +903,8 @@ pub const Material = struct {
         // Don't do anything if we have no layout for the default block
         if (layout.len == 0)
             return;
+
+        const params = &self.state.params;
 
         u_block.begin();
         for (layout) |item| {
@@ -901,19 +916,19 @@ pub const Material = struct {
                     u_block.addMatrix("u_modelMatrix", model_matrix);
                 },
                 .COLOR => {
-                    u_block.addColor("u_color", self.params.draw_color);
+                    u_block.addColor("u_color", params.draw_color);
                 },
                 .COLOR_OVERRIDE => {
-                    u_block.addColor("u_colorOverride", self.params.color_override);
+                    u_block.addColor("u_colorOverride", params.color_override);
                 },
                 .ALPHA_CUTOFF => {
-                    u_block.addFloat("u_alphaCutoff", self.params.alpha_cutoff);
+                    u_block.addFloat("u_alphaCutoff", params.alpha_cutoff);
                 },
                 .JOINTS_64 => {
-                    u_block.addBytesFrom(self.params.joints[0..64], UniformBlockType.MAT4);
+                    u_block.addBytesFrom(params.joints[0..64], UniformBlockType.MAT4);
                 },
                 .JOINTS_256 => {
-                    u_block.addBytesFrom(self.params.joints[0..256], UniformBlockType.MAT4);
+                    u_block.addBytesFrom(params.joints[0..256], UniformBlockType.MAT4);
                 },
                 .CAMERA_POSITION => {
                     const inv_view = view_matrix.invert();
@@ -921,10 +936,10 @@ pub const Material = struct {
                     u_block.addBytesFrom(&cam_array, UniformBlockType.VEC4);
                 },
                 .AMBIENT_LIGHT => {
-                    u_block.addColor("u_ambientLight", self.params.ambient_light);
+                    u_block.addColor("u_ambientLight", params.ambient_light);
                 },
                 .DIRECTIONAL_LIGHT => {
-                    u_block.addBytesFrom(&self.params.directional_light.toArray(), UniformBlockType.VEC4);
+                    u_block.addBytesFrom(&params.directional_light.toArray(), UniformBlockType.VEC4);
                 },
                 .POINT_LIGHTS_8 => {
                     self.addPointLightsToUniformBlock(u_block, 8);
@@ -936,10 +951,10 @@ pub const Material = struct {
                     self.addPointLightsToUniformBlock(u_block, 32);
                 },
                 .FOG_DATA => {
-                    var fog_color = self.params.fog.color;
-                    fog_color.a = self.params.fog.amount;
+                    var fog_color = params.fog.color;
+                    fog_color.a = params.fog.amount;
 
-                    u_block.addColor("u_fog_data", colors.Color.new(self.params.fog.start, self.params.fog.end, 0.0, 0.0)); // fog start and end
+                    u_block.addColor("u_fog_data", colors.Color.new(params.fog.start, params.fog.end, 0.0, 0.0)); // fog start and end
                     u_block.addColor("u_fog_color", fog_color);
                 },
             }
@@ -948,13 +963,13 @@ pub const Material = struct {
     }
 
     pub fn addPointLightsToUniformBlock(self: *Material, u_block: *MaterialUniformBlock, comptime max_lights: usize) void {
-        const num_lights = self.params.point_lights.len;
+        const num_lights = self.state.params.point_lights.len;
         u_block.addFloat("u_num_point_lights", @floatFromInt(num_lights));
 
         // each light is packed as two vec4s
         for (0..max_lights) |i| {
             if (i < num_lights) {
-                u_block.addBytesFrom(&self.params.point_lights[i].toArray(), UniformBlockType.VEC4);
+                u_block.addBytesFrom(&self.state.params.point_lights[i].toArray(), UniformBlockType.VEC4);
             } else {
                 u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
                 u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
@@ -966,30 +981,30 @@ pub const Material = struct {
     pub fn applyUniforms(self: *Material, cam_matrices: CameraMatrices, model_matrix: Mat4) void {
         // If no default layout is set, we'll treat the first uniform block like any other
         // otherwise, we start custom blocks at index 1.
-        const has_default_vs: bool = self.default_vs_uniform_layout.len > 0;
-        const has_default_fs: bool = self.default_fs_uniform_layout.len > 0;
+        const has_default_vs: bool = self.state.default_vs_uniform_layout.len > 0;
+        const has_default_fs: bool = self.state.default_fs_uniform_layout.len > 0;
 
         const view_matrix = cam_matrices.view;
         const proj_matrix = cam_matrices.proj;
 
         // Set our default uniform vars first
-        if (has_default_vs and self.use_default_params) {
-            if (self.material_params_vs_uniformblock_data) |*data| {
-                self.setDefaultUniformVars(self.default_vs_uniform_layout, data, view_matrix, proj_matrix, model_matrix);
+        if (has_default_vs and self.state.use_default_params) {
+            if (self.state.material_params_vs_uniformblock_data) |*data| {
+                self.setDefaultUniformVars(self.state.default_vs_uniform_layout, data, view_matrix, proj_matrix, model_matrix);
             }
         }
-        if (has_default_fs and self.use_default_params) {
-            if (self.material_params_fs_uniformblock_data) |*data| {
-                self.setDefaultUniformVars(self.default_fs_uniform_layout, data, view_matrix, proj_matrix, model_matrix);
+        if (has_default_fs and self.state.use_default_params) {
+            if (self.state.material_params_fs_uniformblock_data) |*data| {
+                self.setDefaultUniformVars(self.state.default_fs_uniform_layout, data, view_matrix, proj_matrix, model_matrix);
             }
         }
 
         // Now, actually apply these uniform blocks to the shader
-        if (self.material_params_vs_uniformblock_data) |*data| {
-            self.shader.applyUniformBlockByName(.VS, "vs_params", asAnything(data.bytes.items));
+        if (self.state.material_params_vs_uniformblock_data) |*data| {
+            self.state.shader.applyUniformBlockByName(.VS, "vs_params", asAnything(data.bytes.items));
         }
-        if (self.material_params_fs_uniformblock_data) |*data| {
-            self.shader.applyUniformBlockByName(.FS, "fs_params", asAnything(data.bytes.items));
+        if (self.state.material_params_fs_uniformblock_data) |*data| {
+            self.state.shader.applyUniformBlockByName(.FS, "fs_params", asAnything(data.bytes.items));
         }
     }
 };
@@ -1038,7 +1053,7 @@ pub fn init() !void {
 
     // Use the default shader for debug drawing
     state.default_shader = Shader.initDefault(.{ .cull_mode = .NONE });
-    state.debug_material = Material.init(.{
+    state.debug_material = try Material.init(.{
         .shader = state.default_shader,
         .texture_0 = tex_white,
         .cull_mode = .NONE,
@@ -1164,7 +1179,7 @@ pub fn getDebugTextScale() f32 {
 pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32, color: Color) void {
     // apply the texture
     state.debug_draw_bindings.setTexture(tex);
-    state.debug_material.textures[0] = tex_white;
+    state.debug_material.state.textures[0] = tex_white;
 
     // create a view state
     var proj = getProjectionOrtho(0.001, 10.0, false);
@@ -1230,7 +1245,7 @@ pub fn draw(bindings: *Bindings, shader: *Shader) void {
 pub fn drawSubsetWithMaterial(bindings: *Bindings, start: u32, end: u32, material: *Material, cam_matrices: CameraMatrices, model_matrix: Mat4) void {
     bindings.updateFromMaterial(material);
     material.applyUniforms(cam_matrices, model_matrix);
-    drawSubset(bindings, start, end, &material.shader);
+    drawSubset(bindings, start, end, &material.state.shader);
 }
 
 /// Draw a whole binding, using a material

@@ -221,8 +221,8 @@ pub const SkinnedMesh = struct {
         if (self.joint_locations_dirty)
             self.applySkeletonTransforms();
 
-        self.mesh.material.params.joints = &self.joint_locations;
-        graphics.drawWithMaterial(&self.mesh.bindings, self.mesh.material, cam_matrices, model_matrix);
+        self.mesh.material.state.params.joints = &self.joint_locations;
+        graphics.drawWithMaterial(&self.mesh.bindings, &self.mesh.material, cam_matrices, model_matrix);
     }
 
     /// Draw this mesh, using the specified material instead of the set one
@@ -230,7 +230,7 @@ pub const SkinnedMesh = struct {
         if (self.joint_locations_dirty)
             self.applySkeletonTransforms();
 
-        self.mesh.material.params.joints = &self.joint_locations;
+        self.mesh.material.state.params.joints = &self.joint_locations;
         graphics.drawWithMaterial(&self.mesh.bindings, material, cam_matrices, model_matrix);
     }
 

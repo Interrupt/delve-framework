@@ -71,7 +71,7 @@ fn on_init() !void {
     shader_default = loaded_shader.?;
 
     // make a material to draw with
-    test_material = graphics.Material.init(.{
+    test_material = try graphics.Material.init(.{
         .shader = shader_default,
         .texture_0 = sprite_texture,
         .cull_mode = .BACK,
@@ -115,7 +115,7 @@ fn on_draw() void {
     sprite_batch.reset();
 
     // make sure we are using our material
-    sprite_batch.useMaterial(&test_material);
+    sprite_batch.useMaterial(test_material);
 
     // add our sprite rectangle
     const rect = delve.spatial.Rect.new(cur_frame.offset, cur_frame.size);

@@ -633,11 +633,11 @@ pub const QuakeMap = struct {
             if (b.indices.items.len == 0)
                 continue;
 
-            var found_material = materials.getPtr(builder.key_ptr.*);
+            const found_material = materials.getPtr(builder.key_ptr.*);
             if (found_material == null) {
-                try out_meshes.append(b.buildMesh(&fallback_material.?.material));
+                try out_meshes.append(b.buildMesh(fallback_material.?.material));
             } else {
-                try out_meshes.append(b.buildMesh(&found_material.?.material));
+                try out_meshes.append(b.buildMesh(found_material.?.material));
             }
         }
     }

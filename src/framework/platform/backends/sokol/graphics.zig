@@ -144,13 +144,13 @@ pub const BindingsImpl = struct {
     }
 
     pub fn updateFromMaterial(self: *Bindings, material: *Material) void {
-        for (0..material.textures.len) |i| {
-            if (material.textures[i] != null)
-                self.impl.sokol_bindings.?.fs.images[i] = material.textures[i].?.sokol_image.?;
+        for (0..material.state.textures.len) |i| {
+            if (material.state.textures[i] != null)
+                self.impl.sokol_bindings.?.fs.images[i] = material.state.textures[i].?.sokol_image.?;
         }
 
         // bind samplers
-        for (material.sokol_samplers, 0..) |sampler, i| {
+        for (material.state.sokol_samplers, 0..) |sampler, i| {
             if (sampler) |s|
                 self.impl.sokol_bindings.?.fs.samplers[i] = s;
         }
