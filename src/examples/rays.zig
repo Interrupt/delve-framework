@@ -24,6 +24,7 @@ pub fn main() !void {
         .init_fn = on_init,
         .tick_fn = on_tick,
         .draw_fn = on_draw,
+        .cleanup_fn = on_cleanup,
     };
 
     // Pick the allocator to use depending on platform
@@ -33,7 +34,8 @@ pub fn main() !void {
         // See https://github.com/ziglang/zig/issues/19072
         try delve.init(std.heap.c_allocator);
     } else {
-        try delve.init(gpa.allocator());
+        // Using the default allocator will let us detect memory leaks
+        try delve.init(delve.mem.createDefaultAllocator());
     }
 
     try delve.modules.registerModule(example);
@@ -48,6 +50,7 @@ pub fn on_init() !void {
     // Create some materials
     material_frustum = try delve.platform.graphics.Material.init(.{
         .shader = shader,
+        .own_shader = true,
         .texture_0 = delve.platform.graphics.createSolidTexture(0x66FFFFFF),
         .cull_mode = .NONE,
         .depth_write_enabled = false,
@@ -140,4 +143,16 @@ pub fn on_draw() void {
     }
 
     ray_mesh.draw(view_mats, delve.math.Mat4.rotate(time * 10.0, delve.math.Vec3.up));
+}
+
+pub fn on_cleanup() !void {
+    material_frustum.deinit();
+    material_cube.deinit();
+    material_highlight.deinit();
+    material_hitpoint.deinit();
+
+    frustum_mesh.deinit();
+    cube_mesh.deinit();
+    hit_mesh.deinit();
+    ray_mesh.deinit();
 }
