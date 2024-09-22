@@ -115,7 +115,7 @@ fn on_draw() void {
     sprite_batch.reset();
 
     // make sure we are using our material
-    sprite_batch.useMaterial(&test_material);
+    sprite_batch.useMaterial(test_material);
 
     // add our sprite rectangle
     const rect = delve.spatial.Rect.new(cur_frame.offset, cur_frame.size);

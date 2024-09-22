@@ -177,12 +177,12 @@ fn pre_draw() void {
 
     // test using materials as well!
     // test a filled rectangle
-    test_batch.useMaterial(&test_material_1);
+    test_batch.useMaterial(test_material_1);
     test_batch.setTransformMatrix(math.Mat4.translate(math.vec3(0, 0, -0.001)));
 
     test_batch.addRectangle(rect1, sprites.TextureRegion.default(), colors.cyan.mul(Color{ .a = 0.75 }));
 
-    test_batch.useMaterial(&test_material_2);
+    test_batch.useMaterial(test_material_2);
     test_batch.setTransformMatrix(math.Mat4.translate(math.vec3(1, -1, -0.001)));
 
     const rect3 = Rect.new(math.vec2(-1.0, 0), math.vec2(1, 1));
