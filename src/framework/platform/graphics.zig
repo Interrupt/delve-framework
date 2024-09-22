@@ -631,6 +631,7 @@ pub const MaterialConfig = struct {
 
     // The parent shader to base us on
     shader: ?Shader = null,
+    own_shader: bool = false, // whether to own our shader, or to make a new instance of it
 
     // The layouts of the default (0th) vertex and fragment shaders
     default_vs_uniform_layout: []const MaterialUniformDefaults = default_vs_uniforms,
@@ -880,7 +881,11 @@ pub const Material = struct {
         shader_config.depth_write_enabled = cfg.depth_write_enabled;
         shader_config.depth_compare = cfg.depth_compare;
 
-        material.state.shader = Shader.makeNewInstance(shader_config, cfg.shader);
+        if (cfg.shader != null and cfg.own_shader) {
+            material.state.shader = cfg.shader.?;
+        } else {
+            material.state.shader = Shader.makeNewInstance(shader_config, cfg.shader);
+        }
 
         return material;
     }

@@ -71,6 +71,22 @@ pub const AnimatedSpriteSheet = struct {
         };
     }
 
+    pub fn deinit(self: *AnimatedSpriteSheet) void {
+        // Cleanup SpriteAnimation entries
+        var it = self.entries.valueIterator();
+        while (it.next()) |sprite_anim_ptr| {
+            self.allocator.free(sprite_anim_ptr.frames);
+        }
+
+        // Also cleanup the key names that we allocated
+        var key_it = self.entries.keyIterator();
+        while (key_it.next()) |key_ptr| {
+            self.allocator.free(key_ptr.*);
+        }
+
+        self.entries.deinit();
+    }
+
     /// Play the animation under the given animation name
     pub fn playAnimation(self: *AnimatedSpriteSheet, animation_name: [:0]const u8) ?PlayingAnimation {
         const entry = self.getAnimation(animation_name);
