@@ -16,13 +16,29 @@ const File = std.fs.File;
 pub const MDL = struct {
     frames: []MDLFrameType,
     skins: []MDLSkinType,
-    material: *graphics.Material,
+    material: graphics.Material,
     allocator: Allocator,
 
     pub fn deinit(self: *MDL) void {
+        for (self.skins) |skin| {
+            switch (skin) {
+                .single => |*frame| {
+                    // self.allocator.free(frame.pixels);
+                    @constCast(&frame.texture).destroy();
+                },
+                .group => |group| {
+                    for (group.textures) |tex| {
+                        @constCast(&tex).destroy();
+                    }
+                    // self.allocator.free(group.frames);
+                },
+            }
+        }
+
         self.allocator.free(self.frames);
         self.allocator.free(self.skins);
-        self.allocator.destroy(self.material);
+
+        self.material.deinit();
     }
 };
 
@@ -97,7 +113,7 @@ const MDLMeshBuildConfig_ = struct {
     skin_width: f32,
     skin_height: f32,
     transform: math.Mat4,
-    material: *graphics.Material,
+    material: graphics.Material,
 };
 
 const MDLSkin_ = struct {
@@ -130,6 +146,7 @@ const MDLSkin_ = struct {
     pub fn toTexture(self: *const MDLSkin_, allocator: Allocator) !graphics.Texture {
         const size: u32 = self.width * self.height;
         const bytes = try allocator.alloc(u8, size * 4);
+        defer allocator.free(bytes);
 
         for (0.., self.pixels) |j, index| {
             const i = @as(u32, index);
@@ -150,6 +167,7 @@ const MDLSkinGroup_ = struct {
     count: u32,
     intervals: []f32,
     pixels: []u8,
+    allocator: Allocator,
 
     pub fn read(allocator: Allocator, file: File, width: u32, height: u32) !MDLSkinGroup_ {
         // Skin type
@@ -179,12 +197,19 @@ const MDLSkinGroup_ = struct {
             .count = count,
             .intervals = intervals,
             .pixels = pixels,
+            .allocator = allocator,
         };
+    }
+
+    pub fn deinit(self: *MDLSkinGroup_) void {
+        self.allocator.free(self.intervals);
+        self.allocator.free(self.pixels);
     }
 
     pub fn toTexture(self: *const MDLSkinGroup_, allocator: Allocator, index: u32) !graphics.Texture {
         const size: u32 = self.width * self.height;
         const bytes = try allocator.alloc(u8, size * 4);
+        defer allocator.free(bytes);
 
         const start = index * size;
         const end = start + size;
@@ -416,9 +441,10 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
         const skin_type: SkinType = @enumFromInt(@as(u32, @bitCast(work)));
 
         if (skin_type == SkinType.SINGLE) {
-            const skin = try MDLSkin_.read(allocator, file, header.skin_width, header.skin_height);
+            var skin = try MDLSkin_.read(allocator, file, header.skin_width, header.skin_height);
             const texture = try skin.toTexture(allocator);
             skins[i] = .{ .single = .{ .texture = texture } };
+            defer allocator.free(skin.pixels);
         } else if (skin_type == SkinType.GROUP) {
             const group = try MDLSkinGroup_.read(allocator, file, header.skin_width, header.skin_height);
 
@@ -437,7 +463,7 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
     }
 
     // Material
-    const default_material = graphics.Material.init(.{
+    const default_material = try graphics.Material.init(.{
         .shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = mesh.getShaderAttributes() }, default_mesh),
         .texture_0 = skins[0].single.texture,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
@@ -457,10 +483,6 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
     const triangles = try bytesToStructArray(Triangle_, triangle_buff);
     defer allocator.free(triangles);
 
-    var material = try allocator.create(graphics.Material);
-    material.* = default_material;
-    material.textures[0] = skins[0].single.texture;
-
     // Transform
     var m = math.Mat4.identity;
     m = m.mul(math.Mat4.translate(math.vec3(header.origin[0], header.origin[2], header.origin[1])));
@@ -478,7 +500,7 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
         .stvertexes = stvertices,
         .triangles = triangles,
         .transform = m,
-        .material = material,
+        .material = default_material,
     };
 
     // Frames
@@ -521,7 +543,7 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
     const mdl: MDL = .{
         .frames = frames,
         .skins = skins,
-        .material = material,
+        .material = default_material,
         .allocator = allocator,
     };
 
