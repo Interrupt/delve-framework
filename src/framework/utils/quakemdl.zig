@@ -11,13 +11,14 @@ const graphics = @import("../platform/graphics.zig");
 
 const assert = std.debug.assert;
 const Allocator = std.mem.Allocator;
+const ArenaAllocator = std.heap.ArenaAllocator;
 const File = std.fs.File;
 
 pub const MDL = struct {
     frames: []MDLFrameType,
     skins: []MDLSkinType,
     material: graphics.Material,
-    allocator: Allocator,
+    arena_allocator: ArenaAllocator,
 
     pub fn deinit(self: *MDL) void {
         for (self.skins) |skin| {
@@ -35,9 +36,7 @@ pub const MDL = struct {
             }
         }
 
-        self.allocator.free(self.frames);
-        self.allocator.free(self.skins);
-
+        self.arena_allocator.deinit();
         self.material.deinit();
     }
 };
@@ -183,7 +182,7 @@ const MDLSkinGroup_ = struct {
         // Skin intervals
         const intervals_buff = try allocator.alloc(u8, count * @sizeOf(f32));
         _ = try file.read(intervals_buff);
-        const intervals: []f32 = try bytesToStructArray(f32, intervals_buff);
+        const intervals: []f32 = try bytesToStructArray(f32, allocator, intervals_buff);
 
         // Skin pixels
         const size: u32 = width * height * count;
@@ -250,7 +249,7 @@ const MDLFrame_ = struct {
         const vertbuff = try allocator.alloc(u8, @sizeOf(TriVertex_) * vertex_count);
         defer allocator.free(vertbuff);
         _ = try file.read(vertbuff);
-        const trivertexes = try bytesToStructArray(TriVertex_, vertbuff);
+        const trivertexes = try bytesToStructArray(TriVertex_, allocator, vertbuff);
 
         return .{
             .min = min,
@@ -283,7 +282,7 @@ const MDLFrameGroup_ = struct {
         // Frame intervals
         const intervals_buff = try allocator.alloc(u8, count * @sizeOf(f32));
         _ = try file.read(intervals_buff);
-        const intervals: []f32 = try bytesToStructArray(f32, intervals_buff);
+        const intervals: []f32 = try bytesToStructArray(f32, allocator, intervals_buff);
 
         // Frames
         const frames: []MDLFrame_ = try allocator.alloc(MDLFrame_, count);
@@ -332,8 +331,7 @@ const TriVertex_ = struct {
     }
 };
 
-fn bytesToStructArray(comptime T: type, bytes: []u8) std.mem.Allocator.Error![]T {
-    const allocator = mem.getAllocator();
+fn bytesToStructArray(comptime T: type, allocator: Allocator, bytes: []u8) std.mem.Allocator.Error![]T {
     const size: u32 = @sizeOf(T);
     const length: u32 = @as(u32, @intCast(bytes.len)) / size;
     const result: []T = try allocator.alloc(T, length);
@@ -417,7 +415,10 @@ fn makeMesh(allocator: Allocator, frame: MDLFrame_, config: MDLMeshBuildConfig_)
     return builder.buildMesh(config.material);
 }
 
-pub fn open(allocator: Allocator, path: []const u8) !MDL {
+pub fn open(in_allocator: Allocator, path: []const u8) !MDL {
+    var arena = ArenaAllocator.init(in_allocator);
+    var allocator = arena.allocator();
+
     var file = try std.fs.cwd().openFile(
         path,
         std.fs.File.OpenFlags{
@@ -465,6 +466,7 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
     // Material
     const default_material = try graphics.Material.init(.{
         .shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = mesh.getShaderAttributes() }, default_mesh),
+        .own_shader = true,
         .texture_0 = skins[0].single.texture,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
@@ -473,14 +475,14 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
     const stvert_buff: []u8 = try allocator.alloc(u8, @sizeOf(STVertex_) * header.vertex_count);
     defer allocator.free(stvert_buff);
     _ = try file.read(stvert_buff);
-    const stvertices = try bytesToStructArray(STVertex_, stvert_buff);
+    const stvertices = try bytesToStructArray(STVertex_, allocator, stvert_buff);
     defer allocator.free(stvertices);
 
     // Triangles
     const triangle_buff: []u8 = try allocator.alloc(u8, @sizeOf(Triangle_) * header.triangle_count);
     defer allocator.free(triangle_buff);
     _ = try file.read(triangle_buff);
-    const triangles = try bytesToStructArray(Triangle_, triangle_buff);
+    const triangles = try bytesToStructArray(Triangle_, allocator, triangle_buff);
     defer allocator.free(triangles);
 
     // Transform
@@ -544,7 +546,7 @@ pub fn open(allocator: Allocator, path: []const u8) !MDL {
         .frames = frames,
         .skins = skins,
         .material = default_material,
-        .allocator = allocator,
+        .arena_allocator = arena,
     };
 
     return mdl;
