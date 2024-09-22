@@ -212,8 +212,7 @@ pub const SkinnedMesh = struct {
         if (self.joint_transforms) |transforms| {
             transforms.deinit();
         }
-
-        self.bone_indices.clearAndFree();
+        self.bone_indices.deinit();
     }
 
     /// Draw this mesh

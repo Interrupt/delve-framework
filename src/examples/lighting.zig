@@ -24,6 +24,9 @@ const Color = colors.Color;
 const lit_shader = delve.shaders.default_basic_lighting;
 const skinned_lit_shader = delve.shaders.default_skinned_basic_lighting;
 
+var skinned_shader: graphics.Shader = undefined;
+var static_shader: graphics.Shader = undefined;
+
 var animated_mesh: skinned_mesh.SkinnedMesh = undefined;
 var animation: skinned_mesh.PlayingAnimation = undefined;
 
@@ -51,7 +54,8 @@ pub fn main() !void {
         // See https://github.com/ziglang/zig/issues/19072
         try delve.init(std.heap.c_allocator);
     } else {
-        try delve.init(gpa.allocator());
+        // Using the default allocator will let us detect memory leaks
+        try delve.init(delve.mem.createDefaultAllocator());
     }
 
     try registerModule();
@@ -81,9 +85,8 @@ fn on_init() !void {
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
     // make shaders for skinned and unskinned meshes
-    const skinned_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() }, skinned_lit_shader);
-
-    const static_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
+    skinned_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() }, skinned_lit_shader).?;
+    static_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader).?;
 
     var base_img: images.Image = try images.loadFile(mesh_texture_file);
     defer base_img.deinit();
@@ -91,7 +94,7 @@ fn on_init() !void {
 
     // Create a material out of our shader and textures
     skinned_mesh_material = try delve.platform.graphics.Material.init(.{
-        .shader = skinned_shader.?,
+        .shader = skinned_shader,
         .texture_0 = tex_base,
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
 
@@ -104,7 +107,7 @@ fn on_init() !void {
 
     // Create a material out of the texture
     static_mesh_material = try graphics.Material.init(.{
-        .shader = static_shader.?,
+        .shader = static_shader,
         .texture_0 = delve.platform.graphics.createSolidTexture(0xFFFFFFFF),
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),
 
@@ -175,6 +178,12 @@ fn on_draw() void {
 
 fn on_cleanup() !void {
     debug.log("Lighting example module cleaning up", .{});
+
+    skinned_shader.destroy();
+    static_shader.destroy();
+
+    skinned_mesh_material.deinit();
+    static_mesh_material.deinit();
 
     animation.deinit();
     animated_mesh.deinit();

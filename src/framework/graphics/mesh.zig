@@ -43,6 +43,7 @@ pub const Mesh = struct {
     bounds: boundingbox.BoundingBox = undefined,
 
     has_skin: bool = false,
+
     zmesh_data: ?*zmesh.io.zcgltf.Data = null,
 
     pub fn initFromFile(allocator: std.mem.Allocator, filename: [:0]const u8, cfg: MeshConfig) ?Mesh {
@@ -64,6 +65,9 @@ pub const Mesh = struct {
         defer mesh_positions.deinit();
         defer mesh_normals.deinit();
         defer mesh_texcoords.deinit();
+        defer mesh_tangents.deinit();
+        defer mesh_joints.deinit();
+        defer mesh_weights.deinit();
 
         for (0..data.meshes_count) |i| {
             const mesh = data.meshes.?[i];
@@ -92,6 +96,7 @@ pub const Mesh = struct {
             debug.log("Could not process mesh file!", .{});
             return null;
         };
+        defer allocator.free(vertices);
 
         for (mesh_positions.items, 0..) |vert, i| {
             vertices[i].x = vert[0];
@@ -146,7 +151,6 @@ pub const Mesh = struct {
         if (self.zmesh_data) |mesh_data| {
             zmesh.io.freeData(mesh_data);
         }
-
         self.bindings.destroy();
     }
 
