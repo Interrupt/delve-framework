@@ -7,6 +7,8 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var primary_camera: delve.graphics.camera.Camera = undefined;
 var secondary_camera: delve.graphics.camera.Camera = undefined;
 
+var shader: delve.platform.graphics.Shader = undefined;
+
 var material_frustum: delve.platform.graphics.Material = undefined;
 var material_cube: delve.platform.graphics.Material = undefined;
 var material_highlight: delve.platform.graphics.Material = undefined;
@@ -24,7 +26,8 @@ pub fn main() !void {
         // See https://github.com/ziglang/zig/issues/19072
         try delve.init(std.heap.c_allocator);
     } else {
-        try delve.init(gpa.allocator());
+        // Using the default allocator will let us detect memory leaks
+        try delve.init(delve.mem.createDefaultAllocator());
     }
 
     const example = delve.modules.Module{
@@ -32,6 +35,7 @@ pub fn main() !void {
         .init_fn = on_init,
         .tick_fn = on_tick,
         .draw_fn = on_draw,
+        .cleanup_fn = on_cleanup,
     };
 
     try delve.modules.registerModule(example);
@@ -41,7 +45,7 @@ pub fn main() !void {
 }
 
 pub fn on_init() !void {
-    const shader = delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
+    shader = delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh).?;
 
     // Create some materials
     material_frustum = try delve.platform.graphics.Material.init(.{
@@ -119,6 +123,14 @@ pub fn on_draw() void {
     }
 
     frustum_mesh.draw(view_mats, frustum_model_matrix);
+}
+
+pub fn on_cleanup() !void {
+    frustum_mesh.deinit();
+    material_highlight.deinit();
+    material_cube.deinit();
+    material_frustum.deinit();
+    shader.destroy();
 }
 
 pub fn createFrustumMesh() !delve.graphics.mesh.Mesh {

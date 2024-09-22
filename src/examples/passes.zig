@@ -16,6 +16,7 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 var camera: delve.graphics.camera.Camera = undefined;
 var camera_offscreen: delve.graphics.camera.Camera = undefined;
 
+var shader: delve.platform.graphics.Shader = undefined;
 var material1: graphics.Material = undefined;
 var material2: graphics.Material = undefined;
 var material3: graphics.Material = undefined;
@@ -36,6 +37,7 @@ pub fn main() !void {
         .tick_fn = on_tick,
         .pre_draw_fn = pre_draw,
         .draw_fn = on_draw,
+        .cleanup_fn = on_cleanup,
     };
 
     // Pick the allocator to use depending on platform
@@ -45,7 +47,8 @@ pub fn main() !void {
         // See https://github.com/ziglang/zig/issues/19072
         try delve.init(std.heap.c_allocator);
     } else {
-        try delve.init(gpa.allocator());
+        // Using the default allocator will let us detect memory leaks
+        try delve.init(delve.mem.createDefaultAllocator());
     }
 
     try delve.modules.registerModule(example);
@@ -66,24 +69,24 @@ pub fn on_init() !void {
     offscreen_pass = graphics.RenderPass.init(.{ .width = 1024, .height = 768 });
     offscreen_pass_2 = graphics.RenderPass.init(.{ .width = 640, .height = 480 });
 
-    const shader = delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
+    shader = delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh).?;
 
     // Create a material out of the texture
-    material1 = graphics.Material.init(.{
+    material1 = try graphics.Material.init(.{
         .shader = shader,
         .texture_0 = tex,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
 
     // Create a material that uses our main offscreen render texture
-    material2 = graphics.Material.init(.{
+    material2 = try graphics.Material.init(.{
         .shader = shader,
         .texture_0 = offscreen_pass.render_texture_color,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
 
     // Create a material that uses our secondary offscreen render texture
-    material3 = graphics.Material.init(.{
+    material3 = try graphics.Material.init(.{
         .shader = shader,
         .texture_0 = offscreen_pass_2.render_texture_color,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
@@ -100,19 +103,19 @@ pub fn on_init() !void {
     const flip_mod: math.Vec3 = if (!is_opengl) math.Vec3.new(1, 1, 1) else math.Vec3.new(1, -1, 1);
 
     // make a cube
-    cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2, 3, 1), delve.colors.white, &material1) catch {
+    cube1 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(2, 3, 1), delve.colors.white, material1) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
 
     // and another
-    cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3, 0, -1), math.Vec3.new(1, 1, 2).mul(flip_mod), delve.colors.white, &material3) catch {
+    cube2 = delve.graphics.mesh.createCube(math.Vec3.new(3, 0, -1), math.Vec3.new(1, 1, 2).mul(flip_mod), delve.colors.white, material3) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
 
     // and then a screen
-    cube3 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(20, 12.0, 0.25).mul(flip_mod), delve.colors.white, &material2) catch {
+    cube3 = delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), math.Vec3.new(20, 12.0, 0.25).mul(flip_mod), delve.colors.white, material2) catch {
         delve.debug.log("Could not create cube!", .{});
         return;
     };
@@ -182,4 +185,18 @@ pub fn on_draw() void {
 
     // reset the clear color back to ours
     graphics.setClearColor(delve.colors.examples_bg_dark);
+}
+
+pub fn on_cleanup() !void {
+    shader.destroy();
+    material1.deinit();
+    material2.deinit();
+    material3.deinit();
+    cube1.deinit();
+    cube2.deinit();
+    cube3.deinit();
+
+    // cleanup the nested examples too
+    if (nested_example_1.cleanup_fn) |cleanup_fn| try cleanup_fn();
+    if (nested_example_2.cleanup_fn) |cleanup_fn| try cleanup_fn();
 }
