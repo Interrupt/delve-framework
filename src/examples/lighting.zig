@@ -165,10 +165,15 @@ fn on_draw() void {
 
     const point_lights = &[_]delve.platform.graphics.PointLight{ point_light_1, point_light_2, point_light_3 };
 
-    // add the lights and camera to the materials
-    static_mesh_material.state.params.point_lights = @constCast(point_lights);
-    static_mesh_material.state.params.directional_light = directional_light;
-    static_mesh_material.state.params.ambient_light = colors.Color.new(0.02, 0.02, 0.05, 1.0);
+    // create the light params to draw with
+    const light_params: graphics.MaterialLightParams = .{
+        .point_lights = @constCast(point_lights),
+        .directional_light = directional_light,
+        .ambient_light = colors.Color.new(0.02, 0.02, 0.05, 1.0),
+    };
+
+    // add set the light params to the materials
+    static_mesh_material.state.params.lighting = light_params;
     skinned_mesh_material.state.params = static_mesh_material.state.params;
 
     animated_mesh.draw(view_mats, model);

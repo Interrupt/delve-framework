@@ -7,6 +7,8 @@ struct vs_params {
   u_modelMatrix : mat4x4f,
   /* @offset(128) */
   u_color : vec4f,
+  /* @offset(144) */
+  u_tex_pan : vec4f,
 }
 
 @group(0) @binding(0) var<uniform> x_19 : vs_params;
@@ -32,7 +34,8 @@ fn main_1() {
   let x_39 : vec4f = x_19.u_color;
   color = (x_35 * x_39);
   let x_46 : vec2f = texcoord0;
-  uv = x_46;
+  let x_49 : vec4f = x_19.u_tex_pan;
+  uv = (x_46 + vec2f(x_49.x, x_49.y));
   return;
 }
 

@@ -3,6 +3,7 @@ cbuffer vs_params : register(b0)
     row_major float4x4 _19_u_projViewMatrix : packoffset(c0);
     row_major float4x4 _19_u_modelMatrix : packoffset(c4);
     float4 _19_u_color : packoffset(c8);
+    float4 _19_u_tex_pan : packoffset(c9);
 };
 
 
@@ -31,7 +32,7 @@ void vert_main()
 {
     gl_Position = mul(pos, mul(_19_u_modelMatrix, _19_u_projViewMatrix));
     color = color0 * _19_u_color;
-    uv = texcoord0;
+    uv = texcoord0 + _19_u_tex_pan.xy;
 }
 
 SPIRV_Cross_Output main(SPIRV_Cross_Input stage_input)

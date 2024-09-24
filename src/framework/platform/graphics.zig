@@ -107,14 +107,15 @@ pub const MaterialUniformDefaults = enum(i32) {
     POINT_LIGHTS_16,
     POINT_LIGHTS_32,
     FOG_DATA,
+    TEXTURE_PAN,
 };
 
 // Default uniform block layout for meshes
-pub const default_vs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR };
+pub const default_vs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR, .TEXTURE_PAN };
 pub const default_fs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .COLOR_OVERRIDE, .ALPHA_CUTOFF };
 
 // Default VS uniform block layout for skinned meshes
-pub const default_skinned_mesh_vs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR, .JOINTS_64 };
+pub const default_skinned_mesh_vs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .PROJECTION_VIEW_MATRIX, .MODEL_MATRIX, .COLOR, .JOINTS_64, .TEXTURE_PAN };
 
 // Default FS uniform block layout for the basic lighting shader
 pub const default_lit_fs_uniforms: []const MaterialUniformDefaults = &[_]MaterialUniformDefaults{ .CAMERA_POSITION, .COLOR_OVERRIDE, .ALPHA_CUTOFF, .AMBIENT_LIGHT, .DIRECTIONAL_LIGHT, .POINT_LIGHTS_16, .FOG_DATA };
@@ -124,6 +125,7 @@ pub const VSDefaultUniforms = struct {
     projViewMatrix: math.Mat4 align(16),
     modelMatrix: math.Mat4,
     in_color: [4]f32 = .{ 1.0, 1.0, 1.0, 1.0 },
+    texture_pan: [4]f32 = .{ 0.0, 0.0, 0.0, 0.0 },
 };
 
 /// Default fragment shader uniform block layout
@@ -655,23 +657,28 @@ pub const MaterialConfig = struct {
     use_default_params: bool = true,
 };
 
-/// Material params can get binded automatically to the default uniform block (0)
+/// Material params can get bound automatically to the default uniform block (usually block 0)
 pub const MaterialParams = struct {
-    draw_color: Color = colors.white,
-    color_override: Color = colors.transparent,
-    alpha_cutoff: f32 = 0.0,
-    joints: []Mat4 = undefined,
-    ambient_light: Color = colors.black,
-    directional_light: DirectionalLight = undefined,
-    point_lights: []PointLight = undefined,
-    fog: FogParams = .{},
+    draw_color: Color = colors.white, // base color tint
+    color_override: Color = colors.transparent, // flash color, but alpha is preserved
+    alpha_cutoff: f32 = 0.0, // the alpha value to use as the opaque discard cutoff
+    texture_pan: Vec4 = Vec4.zero, // how much to pan the texture
+    joints: []Mat4 = undefined, // joints to use for skinned meshes
+    lighting: MaterialLightParams = .{}, // light properties
+    fog: MaterialFogParams = .{}, // fog properties
 };
 
-pub const FogParams = struct {
+pub const MaterialFogParams = struct {
     color: Color = colors.red,
     amount: f32 = 0.0,
     start: f32 = 1.0,
     end: f32 = 100.0,
+};
+
+pub const MaterialLightParams = struct {
+    ambient_light: Color = colors.black, // the ambient light term
+    directional_light: DirectionalLight = undefined, // directional light term
+    point_lights: []PointLight = undefined, // point lights to use
 };
 
 pub const UniformBlockType = enum(i32) { BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, VEC3, VEC4, MAT3, MAT4 };
@@ -949,10 +956,10 @@ pub const Material = struct {
                     u_block.addBytesFrom(&cam_array, UniformBlockType.VEC4);
                 },
                 .AMBIENT_LIGHT => {
-                    u_block.addColor("u_ambientLight", params.ambient_light);
+                    u_block.addColor("u_ambientLight", params.lighting.ambient_light);
                 },
                 .DIRECTIONAL_LIGHT => {
-                    u_block.addBytesFrom(&params.directional_light.toArray(), UniformBlockType.VEC4);
+                    u_block.addBytesFrom(&params.lighting.directional_light.toArray(), UniformBlockType.VEC4);
                 },
                 .POINT_LIGHTS_8 => {
                     self.addPointLightsToUniformBlock(u_block, 8);
@@ -970,19 +977,22 @@ pub const Material = struct {
                     u_block.addColor("u_fog_data", colors.Color.new(params.fog.start, params.fog.end, 0.0, 0.0)); // fog start and end
                     u_block.addColor("u_fog_color", fog_color);
                 },
+                .TEXTURE_PAN => {
+                    u_block.addBytesFrom(&params.texture_pan.toArray(), UniformBlockType.VEC4);
+                },
             }
         }
         u_block.end();
     }
 
     pub fn addPointLightsToUniformBlock(self: *Material, u_block: *MaterialUniformBlock, comptime max_lights: usize) void {
-        const num_lights = self.state.params.point_lights.len;
+        const num_lights = self.state.params.lighting.point_lights.len;
         u_block.addFloat("u_num_point_lights", @floatFromInt(num_lights));
 
         // each light is packed as two vec4s
         for (0..max_lights) |i| {
             if (i < num_lights) {
-                u_block.addBytesFrom(&self.state.params.point_lights[i].toArray(), UniformBlockType.VEC4);
+                u_block.addBytesFrom(&self.state.params.lighting.point_lights[i].toArray(), UniformBlockType.VEC4);
             } else {
                 u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
                 u_block.addVec4("u_point_light_data", Vec4.new(0, 0, 0, 0));
@@ -1207,11 +1217,12 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
     model = model.mul(Mat4.translate(translate_vec));
     model = model.mul(Mat4.scale(scale_vec));
 
-    // make our shader params
+    // make our default shader params
     const vs_params = shader_default.VsParams{
         .u_projViewMatrix = proj.mul(view),
         .u_modelMatrix = model,
         .u_color = color.toArray(),
+        .u_tex_pan = Vec4.zero.toArray(),
     };
 
     const fs_params = shader_default.FsParams{
