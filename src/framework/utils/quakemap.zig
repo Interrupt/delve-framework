@@ -305,14 +305,20 @@ pub const Solid = struct {
         return true;
     }
 
+    /// A helper to sweep the collision of a bounding box with a given velocity
     pub fn checkBoundingBoxCollisionWithVelocity(self: *const Solid, bounds: BoundingBox, velocity: Vec3) ?QuakeMapHit {
+        return self.checkCollisionTraceWithSize(bounds, bounds.center, bounds.center.add(velocity));
+    }
+
+    /// Sweeps a collision trace with a size
+    pub fn checkCollisionTraceWithSize(self: *const Solid, bounds: BoundingBox, start: Vec3, end: Vec3) ?QuakeMapHit {
         var worldhit: ?QuakeMapHit = null;
 
         const size = bounds.max.sub(bounds.min).scale(0.5);
         const planes = self.getExpandedPlanes(size);
 
-        const point = bounds.center;
-        const next = point.add(velocity);
+        const point = start;
+        const next = end;
 
         if (planes.len == 0)
             return null;
@@ -358,7 +364,8 @@ pub const Solid = struct {
         return worldhit;
     }
 
-    pub fn checkLineCollision(self: *const Solid, start: Vec3, end: Vec3) ?QuakeMapHit {
+    /// Checks a collision trace with no size
+    pub fn checkCollisionTrace(self: *const Solid, start: Vec3, end: Vec3) ?QuakeMapHit {
         var worldhit: ?QuakeMapHit = null;
 
         if (self.faces.items.len == 0)
