@@ -39,7 +39,7 @@ pub fn get_texture(filename: [*:0]const u8) i64 {
     const filename_len = filename_idx;
 
     debug.log("Assets: Loading Image: {s}...", .{filename});
-    var new_img: images.Image = images.loadFile(filename[0..filename_len :0]) catch {
+    const new_img: images.Image = images.loadFile(filename[0..filename_len :0]) catch {
         debug.log("Assets: Error loading image asset: {s}", .{filename});
         return -1;
     };
@@ -55,7 +55,7 @@ pub fn get_texture(filename: [*:0]const u8) i64 {
         return -1;
     };
 
-    const texture = graphics.Texture.init(&new_img);
+    const texture = graphics.Texture.init(new_img);
     texture_handles.put(new_handle, texture) catch {
         debug.log("Assets: Error caching loaded texture!", .{});
         return -1;

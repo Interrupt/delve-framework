@@ -56,7 +56,7 @@ fn on_init() !void {
         debug.log("Could not load test texture", .{});
         return;
     };
-    texture = graphics.Texture.init(&test_image);
+    texture = graphics.Texture.init(test_image);
 
     graphics.setClearColor(colors.examples_bg_dark);
 }

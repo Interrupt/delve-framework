@@ -63,7 +63,7 @@ pub fn on_init() !void {
         return;
     };
     defer img.deinit();
-    const tex = graphics.Texture.init(&img);
+    const tex = graphics.Texture.init(img);
 
     // Create our offscreen passes
     offscreen_pass = graphics.RenderPass.init(.{ .width = 1024, .height = 768 });

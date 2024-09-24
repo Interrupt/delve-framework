@@ -192,7 +192,7 @@ pub fn on_init() !void {
                     continue;
                 };
                 defer tex_img.deinit();
-                const tex = graphics.Texture.init(&tex_img);
+                const tex = graphics.Texture.init(tex_img);
 
                 const mat = try graphics.Material.init(.{
                     .shader = shader,

@@ -49,7 +49,7 @@ pub fn on_init() !void {
         return;
     };
     defer img.deinit();
-    const tex = graphics.Texture.init(&img);
+    const tex = graphics.Texture.init(img);
 
     const shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
 

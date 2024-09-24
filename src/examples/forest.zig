@@ -189,7 +189,7 @@ fn on_init() !void {
         return;
     };
 
-    tex_treesheet = graphics.Texture.init(&treesheet_img);
+    tex_treesheet = graphics.Texture.init(treesheet_img);
 
     // make our default shader
     shader_blend = graphics.Shader.initDefault(.{ .blend_mode = .NONE, .cull_mode = .NONE });

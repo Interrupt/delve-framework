@@ -90,7 +90,7 @@ fn on_init() !void {
 
     var base_img: images.Image = try images.loadFile(mesh_texture_file);
     defer base_img.deinit();
-    const tex_base = graphics.Texture.init(&base_img);
+    const tex_base = graphics.Texture.init(base_img);
 
     // Create a material out of our shader and textures
     skinned_mesh_material = try delve.platform.graphics.Material.init(.{
