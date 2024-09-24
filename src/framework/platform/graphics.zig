@@ -447,7 +447,7 @@ pub const Texture = struct {
     sokol_image: ?sg.Image,
 
     /// Creates a new texture from an Image
-    pub fn init(image: *images.Image) Texture {
+    pub fn init(image: images.Image) Texture {
         defer next_texture_handle += 1;
 
         var img_desc: sg.ImageDesc = .{

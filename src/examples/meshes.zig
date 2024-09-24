@@ -78,7 +78,7 @@ fn on_init() !void {
         return;
     };
     defer base_img.deinit();
-    const tex_base = graphics.Texture.init(&base_img);
+    const tex_base = graphics.Texture.init(base_img);
 
     // Load the emissive texture for the mesh
     const emissive_texture_file = "assets/meshes/SciFiHelmet_Emissive_512.png";
@@ -87,7 +87,7 @@ fn on_init() !void {
         return;
     };
     defer emissive_img.deinit();
-    const tex_emissive = graphics.Texture.init(&emissive_img);
+    const tex_emissive = graphics.Texture.init(emissive_img);
 
     // Make our emissive shader from one that is pre-compiled
     shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = mesh.getShaderAttributes() }, emissive_shader_builtin);

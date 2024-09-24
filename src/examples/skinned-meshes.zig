@@ -86,7 +86,7 @@ fn on_init() !void {
     };
     defer base_img.deinit();
 
-    const tex_base = graphics.Texture.init(&base_img);
+    const tex_base = graphics.Texture.init(base_img);
 
     // Create a material out of our shader and textures
     material = try delve.platform.graphics.Material.init(.{

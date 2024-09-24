@@ -74,7 +74,7 @@ fn on_init() !void {
         debug.log("Could not load test texture", .{});
         return;
     };
-    texture = graphics.Texture.init(&test_image);
+    texture = graphics.Texture.init(test_image);
 }
 
 fn on_tick(delta: f32) void {

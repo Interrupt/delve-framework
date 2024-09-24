@@ -87,8 +87,8 @@ fn on_init() !void {
     defer test_image_2.deinit();
 
     // make some textures from our images
-    texture_1 = graphics.Texture.init(&test_image_1);
-    texture_2 = graphics.Texture.init(&test_image_2);
+    texture_1 = graphics.Texture.init(test_image_1);
+    texture_2 = graphics.Texture.init(test_image_2);
 
     // make some shaders for testing
     shader_opaque = try graphics.Shader.initDefault(.{});

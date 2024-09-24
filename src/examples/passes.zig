@@ -63,13 +63,13 @@ pub fn on_init() !void {
         return;
     };
     defer img.deinit();
-    const tex = graphics.Texture.init(&img);
+    const tex = graphics.Texture.init(img);
 
     // Create our offscreen passes
     offscreen_pass = graphics.RenderPass.init(.{ .width = 1024, .height = 768 });
     offscreen_pass_2 = graphics.RenderPass.init(.{ .width = 640, .height = 480 });
 
-    shader = delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh).?;
+    shader = try delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
 
     // Create a material out of the texture
     material1 = try graphics.Material.init(.{
