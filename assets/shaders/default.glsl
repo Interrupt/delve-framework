@@ -12,6 +12,7 @@ uniform vs_params {
     mat4 u_projViewMatrix;
     mat4 u_modelMatrix;
     vec4 u_color;
+    vec4 u_tex_pan;
 };
 
 in vec4 pos;
@@ -24,7 +25,7 @@ out vec2 uv;
 void main() {
     gl_Position = u_projViewMatrix * u_modelMatrix * pos;
     color = color0 * u_color;
-    uv = texcoord0;
+    uv = texcoord0 + u_tex_pan.xy;
 }
 #pragma sokol @end
 

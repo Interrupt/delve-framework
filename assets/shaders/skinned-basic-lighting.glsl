@@ -13,6 +13,7 @@ uniform vs_params {
     mat4 u_modelMatrix;
     vec4 u_color;
     mat4 u_joints[64];
+    vec4 u_tex_pan;
 };
 
 in vec4 pos;
@@ -39,7 +40,7 @@ void main() {
     mat4 model = u_modelMatrix * skin;
 
     color = vec4(0.0, 0.0, 0.0, 1.0);
-    uv = texcoord0;
+    uv = texcoord0 + u_tex_pan.xy;
     normal = normalize(model * vec4(normals, 0.0)).xyz;
     tangent = tangents;
     position = model * pos;

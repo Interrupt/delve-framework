@@ -479,6 +479,7 @@ pub const Batcher = struct {
             .projViewMatrix = cam_matrices.proj.mul(cam_matrices.view),
             .modelMatrix = model_matrix,
             .in_color = .{ 1.0, 1.0, 1.0, 1.0 },
+            .texture_pan = .{ 0.0, 0.0, 0.0, 0.0 },
         };
 
         const fs_params = FSParams{

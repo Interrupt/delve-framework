@@ -113,7 +113,8 @@ fn on_init() !void {
 }
 
 fn on_tick(deltatime: f32) void {
-    _ = deltatime;
+    test_material_2.state.params.texture_pan.x += deltatime;
+    test_material_2.state.params.texture_pan.y += 0.5 * deltatime;
 
     if (input.isKeyJustPressed(.ESCAPE)) {
         papp.exit();

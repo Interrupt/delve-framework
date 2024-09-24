@@ -8,6 +8,7 @@ struct vs_params
     float4x4 u_projViewMatrix;
     float4x4 u_modelMatrix;
     float4 u_color;
+    float4 u_tex_pan;
 };
 
 struct main0_out
@@ -29,7 +30,7 @@ vertex main0_out main0(main0_in in [[stage_in]], constant vs_params& _19 [[buffe
     main0_out out = {};
     out.gl_Position = (_19.u_projViewMatrix * _19.u_modelMatrix) * in.pos;
     out.color = in.color0 * _19.u_color;
-    out.uv = in.texcoord0;
+    out.uv = in.texcoord0 + _19.u_tex_pan.xy;
     return out;
 }
 

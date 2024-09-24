@@ -43,14 +43,14 @@ shaders:
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 160
               struct_name: vs_params
               inst_name: _19
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 10
                   offset: 0
               members:
                 -
@@ -68,6 +68,11 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_tex_pan
+                  type: vec4
+                  array_count: 0
+                  offset: 144
         fs:
           path: assets/shaders/built/default/default_default_glsl430_fs.glsl
           is_binary: false
@@ -177,14 +182,14 @@ shaders:
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 160
               struct_name: vs_params
               inst_name: _19
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 10
                   offset: 0
               members:
                 -
@@ -202,6 +207,11 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_tex_pan
+                  type: vec4
+                  array_count: 0
+                  offset: 144
         fs:
           path: assets/shaders/built/default/default_default_glsl300es_fs.glsl
           is_binary: false
@@ -311,14 +321,14 @@ shaders:
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 160
               struct_name: vs_params
               inst_name: _19
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 10
                   offset: 0
               members:
                 -
@@ -336,6 +346,11 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_tex_pan
+                  type: vec4
+                  array_count: 0
+                  offset: 144
         fs:
           path: assets/shaders/built/default/default_default_hlsl4_fs.hlsl
           is_binary: false
@@ -445,14 +460,14 @@ shaders:
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 160
               struct_name: vs_params
               inst_name: _19
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 10
                   offset: 0
               members:
                 -
@@ -470,6 +485,11 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_tex_pan
+                  type: vec4
+                  array_count: 0
+                  offset: 144
         fs:
           path: assets/shaders/built/default/default_default_metal_macos_fs.metal
           is_binary: false
@@ -579,14 +599,14 @@ shaders:
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 160
               struct_name: vs_params
               inst_name: _19
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 10
                   offset: 0
               members:
                 -
@@ -604,6 +624,11 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_tex_pan
+                  type: vec4
+                  array_count: 0
+                  offset: 144
         fs:
           path: assets/shaders/built/default/default_default_metal_ios_fs.metal
           is_binary: false
@@ -713,14 +738,14 @@ shaders:
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 160
               struct_name: vs_params
               inst_name: _19
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 10
                   offset: 0
               members:
                 -
@@ -738,6 +763,11 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_tex_pan
+                  type: vec4
+                  array_count: 0
+                  offset: 144
         fs:
           path: assets/shaders/built/default/default_default_metal_sim_fs.metal
           is_binary: false
@@ -847,14 +877,14 @@ shaders:
           uniform_blocks:
             -
               slot: 0
-              size: 144
+              size: 160
               struct_name: vs_params
               inst_name: _19
               uniforms:
                 -
                   name: vs_params
                   type: vec4
-                  array_count: 9
+                  array_count: 10
                   offset: 0
               members:
                 -
@@ -872,6 +902,11 @@ shaders:
                   type: vec4
                   array_count: 0
                   offset: 128
+                -
+                  name: u_tex_pan
+                  type: vec4
+                  array_count: 0
+                  offset: 144
         fs:
           path: assets/shaders/built/default/default_default_wgsl_fs
           is_binary: false
