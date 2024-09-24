@@ -21,6 +21,10 @@ pub const Shader = graphics.Shader;
 // the list of layouts to automatically create Pipelines for
 const common_vertex_layouts = graphics.getCommonVertexLayouts();
 
+const ShaderInitError = error{
+    ShaderNotFound,
+};
+
 pub const BindingsImpl = struct {
     sokol_bindings: ?sg.Bindings,
     default_sokol_sampler: sg.Sampler = undefined,
@@ -238,17 +242,17 @@ pub const ShaderImpl = struct {
     sokol_pipelines: *std.ArrayList(PipelineBinding),
 
     /// Create a new shader using the default
-    pub fn initDefault(cfg: graphics.ShaderConfig) Shader {
-        return initFromBuiltin(cfg, shader_default).?;
+    pub fn initDefault(cfg: graphics.ShaderConfig) !Shader {
+        return try initFromBuiltin(cfg, shader_default);
     }
 
     /// Creates a shader from a shader built in as a zig file
-    pub fn initFromBuiltin(cfg: graphics.ShaderConfig, comptime builtin: anytype) ?Shader {
+    pub fn initFromBuiltin(cfg: graphics.ShaderConfig, comptime builtin: anytype) !Shader {
         const shader_desc_fn = getBuiltinSokolCreateFunction(builtin);
         if (shader_desc_fn == null)
-            return null;
+            return ShaderInitError.ShaderNotFound;
 
-        return initSokolShader(cfg, shader_desc_fn.?(sg.queryBackend()));
+        return try initSokolShader(cfg, shader_desc_fn.?(sg.queryBackend()));
     }
 
     fn terminateString(allocator: std.mem.Allocator, in_string: []const u8) ![:0]const u8 {
@@ -327,7 +331,7 @@ pub const ShaderImpl = struct {
     }
 
     /// Creates a shader from a ShaderDefinition struct
-    pub fn initFromShaderInfo(cfg: graphics.ShaderConfig, shader_info: shaders.ShaderInfo) ?Shader {
+    pub fn initFromShaderInfo(cfg: graphics.ShaderConfig, shader_info: shaders.ShaderInfo) !Shader {
         var arena = std.heap.ArenaAllocator.init(mem.getAllocator());
         defer arena.deinit();
         const allocator = arena.allocator();
@@ -343,13 +347,8 @@ pub const ShaderImpl = struct {
         // Assume there is only one shader program for now, that appears to be true.
         const shader_program = shader_info.shader_def.programs[0];
 
-        const vs_entry = terminateString(allocator, shader_program.vs.entry_point) catch {
-            return null;
-        };
-
-        const fs_entry = terminateString(allocator, shader_program.fs.entry_point) catch {
-            return null;
-        };
+        const vs_entry = try terminateString(allocator, shader_program.vs.entry_point);
+        const fs_entry = try terminateString(allocator, shader_program.fs.entry_point);
 
         var desc: sg.ShaderDesc = .{};
         desc.label = "shader"; // does this matter?
@@ -365,10 +364,7 @@ pub const ShaderImpl = struct {
                 desc.vs.uniform_blocks[block.slot].layout = .STD140;
 
                 for (block.uniforms, 0..) |uniform, i| {
-                    const uniform_name = terminateString(allocator, uniform.name) catch {
-                        return null;
-                    };
-
+                    const uniform_name = try terminateString(allocator, uniform.name);
                     desc.vs.uniform_blocks[block.slot].uniforms[i].name = uniform_name.ptr;
                     desc.vs.uniform_blocks[block.slot].uniforms[i].type = stringUniformTypeToSokolType(uniform.type);
                     desc.vs.uniform_blocks[block.slot].uniforms[i].array_count = uniform.array_count;
@@ -383,10 +379,7 @@ pub const ShaderImpl = struct {
                 desc.vs.images[img.slot].multisampled = stringBool(img.multisampled);
                 desc.vs.images[img.slot].image_type = stringImageTypeToSokolType(img.type);
                 desc.vs.images[img.slot].sample_type = stringImageSampleTypeToSokolType(img.sample_type);
-
-                vs_images_hashmap.put(img.name, img.slot) catch {
-                    return null;
-                };
+                try vs_images_hashmap.put(img.name, img.slot);
             }
         }
 
@@ -395,10 +388,7 @@ pub const ShaderImpl = struct {
             for (samplers) |sample| {
                 desc.vs.samplers[sample.slot].used = true;
                 desc.vs.samplers[sample.slot].sampler_type = stringSampleTypeToSokolType(sample.sampler_type);
-
-                vs_samplers_hashmap.put(sample.name, sample.slot) catch {
-                    return null;
-                };
+                try vs_samplers_hashmap.put(sample.name, sample.slot);
             }
         }
 
@@ -422,10 +412,7 @@ pub const ShaderImpl = struct {
                 desc.fs.uniform_blocks[block.slot].layout = .STD140;
 
                 for (block.uniforms, 0..) |uniform, i| {
-                    const uniform_name = terminateString(allocator, uniform.name) catch {
-                        return null;
-                    };
-
+                    const uniform_name = try terminateString(allocator, uniform.name);
                     desc.fs.uniform_blocks[block.slot].uniforms[i].name = uniform_name.ptr;
                     desc.fs.uniform_blocks[block.slot].uniforms[i].type = stringUniformTypeToSokolType(uniform.type);
                     desc.fs.uniform_blocks[block.slot].uniforms[i].array_count = uniform.array_count;
@@ -440,10 +427,7 @@ pub const ShaderImpl = struct {
                 desc.fs.images[img.slot].multisampled = stringBool(img.multisampled);
                 desc.fs.images[img.slot].image_type = stringImageTypeToSokolType(img.type);
                 desc.fs.images[img.slot].sample_type = stringImageSampleTypeToSokolType(img.sample_type);
-
-                fs_images_hashmap.put(img.name, img.slot) catch {
-                    return null;
-                };
+                try fs_images_hashmap.put(img.name, img.slot);
             }
         }
 
@@ -452,10 +436,7 @@ pub const ShaderImpl = struct {
             for (samplers) |sample| {
                 desc.fs.samplers[sample.slot].used = true;
                 desc.fs.samplers[sample.slot].sampler_type = stringSampleTypeToSokolType(sample.sampler_type);
-
-                fs_samplers_hashmap.put(sample.name, sample.slot) catch {
-                    return null;
-                };
+                try fs_samplers_hashmap.put(sample.name, sample.slot);
             }
         }
 
@@ -481,10 +462,10 @@ pub const ShaderImpl = struct {
         var updated_cfg = cfg;
         updated_cfg.shader_program_def = shader_program;
 
-        return initSokolShader(updated_cfg, desc);
+        return try initSokolShader(updated_cfg, desc);
     }
 
-    pub fn makeNewInstance(cfg: graphics.ShaderConfig, shader: ?Shader) Shader {
+    pub fn makeNewInstance(cfg: graphics.ShaderConfig, shader: ?Shader) !Shader {
         if (shader) |*s| {
             const pipeline_list = graphics.allocator.create(std.ArrayList(PipelineBinding)) catch {
                 debug.err("Could not create new shader instance!", .{});
@@ -502,7 +483,7 @@ pub const ShaderImpl = struct {
 
         // fallback shader!
         // TODO: Should we return null instead?
-        return initDefault(cfg);
+        return try initDefault(cfg);
     }
 
     /// Find the shader function in the builtin that can actually make the ShaderDesc
@@ -567,7 +548,7 @@ pub const ShaderImpl = struct {
     }
 
     /// Create a shader from a Sokol Shader Description - useful for loading built-in shaders
-    pub fn initSokolShader(cfg: graphics.ShaderConfig, shader_desc: sg.ShaderDesc) ?Shader {
+    pub fn initSokolShader(cfg: graphics.ShaderConfig, shader_desc: sg.ShaderDesc) !Shader {
         debug.info("Creating shader: {d}", .{graphics.next_shader_handle});
         const shader = sg.makeShader(shader_desc);
 
@@ -580,10 +561,7 @@ pub const ShaderImpl = struct {
             }
         }
 
-        const pipeline_list = graphics.allocator.create(std.ArrayList(PipelineBinding)) catch {
-            debug.err("Error creating new Sokol shader!", .{});
-            return null;
-        };
+        const pipeline_list = try graphics.allocator.create(std.ArrayList(PipelineBinding));
         pipeline_list.* = std.ArrayList(PipelineBinding).init(graphics.allocator);
 
         defer graphics.next_shader_handle += 1;

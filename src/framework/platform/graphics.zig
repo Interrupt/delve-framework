@@ -366,25 +366,25 @@ pub const Shader = struct {
     impl: ShaderImpl,
 
     /// Create a new shader using the default
-    pub fn initDefault(cfg: ShaderConfig) Shader {
-        return ShaderImpl.initDefault(cfg);
+    pub fn initDefault(cfg: ShaderConfig) !Shader {
+        return try ShaderImpl.initDefault(cfg);
     }
 
     /// Creates a shader from a shader built in as a zig file
-    pub fn initFromBuiltin(cfg: ShaderConfig, comptime builtin: anytype) ?Shader {
-        return ShaderImpl.initFromBuiltin(cfg, builtin);
+    pub fn initFromBuiltin(cfg: ShaderConfig, comptime builtin: anytype) !Shader {
+        return try ShaderImpl.initFromBuiltin(cfg, builtin);
     }
 
-    pub fn initFromShaderInfo(cfg: ShaderConfig, shader_info: shaders.ShaderInfo) ?Shader {
-        return ShaderImpl.initFromShaderInfo(cfg, shader_info);
+    pub fn initFromShaderInfo(cfg: ShaderConfig, shader_info: shaders.ShaderInfo) !Shader {
+        return try ShaderImpl.initFromShaderInfo(cfg, shader_info);
     }
 
     /// Returns a new instance of this shader
-    pub fn makeNewInstance(cfg: ShaderConfig, shader: ?Shader) Shader {
+    pub fn makeNewInstance(cfg: ShaderConfig, shader: ?Shader) !Shader {
         if (shader != null) {
-            return ShaderImpl.makeNewInstance(cfg, shader.?);
+            return try ShaderImpl.makeNewInstance(cfg, shader.?);
         }
-        return initDefault(cfg);
+        return try initDefault(cfg);
     }
 
     /// Updates the graphics state to draw using this shader
@@ -884,7 +884,7 @@ pub const Material = struct {
         if (cfg.shader != null and cfg.own_shader) {
             material.state.shader = cfg.shader.?;
         } else {
-            material.state.shader = Shader.makeNewInstance(shader_config, cfg.shader);
+            material.state.shader = try Shader.makeNewInstance(shader_config, cfg.shader);
         }
 
         return material;
@@ -1057,7 +1057,7 @@ pub fn init() !void {
     state.debug_draw_bindings.set(debug_vertices, debug_indices, &[_]u32{}, &[_]u32{}, 6);
 
     // Use the default shader for debug drawing
-    state.default_shader = Shader.initDefault(.{ .cull_mode = .NONE });
+    state.default_shader = try Shader.initDefault(.{ .cull_mode = .NONE });
     state.debug_material = try Material.init(.{
         .shader = state.default_shader,
         .texture_0 = tex_white,
