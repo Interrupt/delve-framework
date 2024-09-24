@@ -363,28 +363,32 @@ pub const Shader = struct {
 
     shader_program_def: ?shaders.ShaderProgram = null,
 
-    impl: ShaderImpl,
+    impl: *ShaderImpl,
 
     /// Create a new shader using the default
     pub fn initDefault(cfg: ShaderConfig) !Shader {
-        return try ShaderImpl.initDefault(cfg);
+        return ShaderImpl.initDefault(cfg);
     }
 
     /// Creates a shader from a shader built in as a zig file
     pub fn initFromBuiltin(cfg: ShaderConfig, comptime builtin: anytype) !Shader {
-        return try ShaderImpl.initFromBuiltin(cfg, builtin);
+        var shader = try ShaderImpl.initFromBuiltin(cfg, builtin);
+        shader.makeCommonPipelines();
+        return shader;
     }
 
     pub fn initFromShaderInfo(cfg: ShaderConfig, shader_info: shaders.ShaderInfo) !Shader {
-        return try ShaderImpl.initFromShaderInfo(cfg, shader_info);
+        var shader = try ShaderImpl.initFromShaderInfo(cfg, shader_info);
+        shader.makeCommonPipelines();
+        return shader;
     }
 
     /// Returns a new instance of this shader
     pub fn makeNewInstance(cfg: ShaderConfig, shader: ?Shader) !Shader {
         if (shader != null) {
-            return try ShaderImpl.makeNewInstance(cfg, shader.?);
+            return ShaderImpl.makeNewInstance(cfg, shader.?);
         }
-        return try initDefault(cfg);
+        return initDefault(cfg);
     }
 
     /// Updates the graphics state to draw using this shader
@@ -420,6 +424,10 @@ pub const Shader = struct {
                 }
             }
         }
+    }
+
+    pub fn makeCommonPipelines(self: *Shader) void {
+        ShaderImpl.makeCommonPipelines(self);
     }
 
     pub fn destroy(self: *Shader) void {
@@ -1058,6 +1066,8 @@ pub fn init() !void {
 
     // Use the default shader for debug drawing
     state.default_shader = try Shader.initDefault(.{ .cull_mode = .NONE });
+    state.default_shader.makeCommonPipelines();
+
     state.debug_material = try Material.init(.{
         .shader = state.default_shader,
         .texture_0 = tex_white,

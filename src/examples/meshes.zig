@@ -90,13 +90,7 @@ fn on_init() !void {
     const tex_emissive = graphics.Texture.init(&emissive_img);
 
     // Make our emissive shader from one that is pre-compiled
-    const loaded_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = mesh.getShaderAttributes() }, emissive_shader_builtin);
-
-    if (loaded_shader == null) {
-        debug.log("Could not get emissive shader", .{});
-        return;
-    }
-    shader = loaded_shader.?;
+    shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = mesh.getShaderAttributes() }, emissive_shader_builtin);
 
     // Create a material out of our shader and textures
     material = try graphics.Material.init(.{

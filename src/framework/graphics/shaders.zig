@@ -34,7 +34,7 @@ pub fn loadFromYaml(cfg: graphics.ShaderConfig, file_path: []const u8) !?graphic
         break;
     }
 
-    return graphics.Shader.initFromShaderInfo(cfg, shader_info);
+    return try graphics.Shader.initFromShaderInfo(cfg, shader_info);
 }
 
 fn loadShaderSource(allocator: std.mem.Allocator, shader_path: []const u8) ![:0]const u8 {

@@ -67,7 +67,7 @@ fn on_init() !void {
     _ = try delve.fonts.loadFont("IBMPlexSerif", "assets/fonts/IBMPlexSerif-Regular.ttf", 1024, 200);
 
     // make a shader with alpha blending
-    shader_blend = graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.BLEND });
+    shader_blend = try graphics.Shader.initDefault(.{ .blend_mode = graphics.BlendMode.BLEND });
 }
 
 fn on_tick(delta: f32) void {
