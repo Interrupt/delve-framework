@@ -45,7 +45,7 @@ pub fn main() !void {
 }
 
 pub fn on_init() !void {
-    shader = delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh).?;
+    shader = try delve.platform.graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
 
     // Create some materials
     material_frustum = try delve.platform.graphics.Material.init(.{

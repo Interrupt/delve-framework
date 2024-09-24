@@ -51,11 +51,11 @@ pub fn on_init() !void {
     defer img.deinit();
     const tex = graphics.Texture.init(&img);
 
-    const shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
+    const shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
 
     // Create a material out of the texture
     material = try graphics.Material.init(.{
-        .shader = shader.?,
+        .shader = shader,
         .own_shader = true,
         .texture_0 = tex,
         .samplers = &[_]graphics.FilterMode{.NEAREST},

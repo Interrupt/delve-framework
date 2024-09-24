@@ -465,7 +465,7 @@ pub fn open(in_allocator: Allocator, path: []const u8) !MDL {
 
     // Material
     const default_material = try graphics.Material.init(.{
-        .shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = mesh.getShaderAttributes() }, default_mesh),
+        .shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = mesh.getShaderAttributes() }, default_mesh),
         .own_shader = true,
         .texture_0 = skins[0].single.texture,
         .samplers = &[_]graphics.FilterMode{.NEAREST},

@@ -78,23 +78,19 @@ fn on_init() !void {
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
     // Make our emissive shader from one that is pre-compiled
-    const shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() }, shader_builtin);
-
-    if (shader == null) {
-        debug.log("Could not get shader", .{});
-        return;
-    }
+    const shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() }, shader_builtin);
 
     var base_img: images.Image = images.loadFile(mesh_texture_file) catch {
         debug.log("Assets: Error loading image asset: {s}", .{mesh_texture_file});
         return;
     };
     defer base_img.deinit();
+
     const tex_base = graphics.Texture.init(&base_img);
 
     // Create a material out of our shader and textures
     material = try delve.platform.graphics.Material.init(.{
-        .shader = shader.?,
+        .shader = shader,
         .own_shader = true,
         .texture_0 = tex_base,
         .texture_1 = delve.platform.graphics.createSolidTexture(0x00000000),

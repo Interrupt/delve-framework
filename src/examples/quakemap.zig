@@ -149,7 +149,7 @@ pub fn on_init() !void {
     var err: delve.utils.quakemap.ErrorInfo = undefined;
     quake_map = try delve.utils.quakemap.QuakeMap.read(allocator, test_map_file, map_transform, &err);
 
-    shader = graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
+    shader = try graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
 
     // Create a material out of the texture
     fallback_material = try graphics.Material.init(.{
