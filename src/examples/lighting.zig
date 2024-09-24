@@ -85,8 +85,8 @@ fn on_init() !void {
     camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
     // make shaders for skinned and unskinned meshes
-    skinned_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() }, skinned_lit_shader).?;
-    static_shader = graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader).?;
+    skinned_shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() }, skinned_lit_shader);
+    static_shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, lit_shader);
 
     var base_img: images.Image = try images.loadFile(mesh_texture_file);
     defer base_img.deinit();

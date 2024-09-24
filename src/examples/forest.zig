@@ -192,7 +192,7 @@ fn on_init() !void {
     tex_treesheet = graphics.Texture.init(treesheet_img);
 
     // make our default shader
-    shader_blend = graphics.Shader.initDefault(.{ .blend_mode = .NONE, .cull_mode = .NONE });
+    shader_blend = try graphics.Shader.initDefault(.{ .blend_mode = .NONE, .cull_mode = .NONE });
 
     // set the sky color
     graphics.setClearColor(sky_color);
