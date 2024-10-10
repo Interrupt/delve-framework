@@ -9,7 +9,6 @@ const shader_default = @import("../../../graphics/shaders/default.glsl.zig");
 
 const slog = sokol.log;
 const sg = sokol.gfx;
-const sapp = sokol.app;
 const debugtext = sokol.debugtext;
 
 pub const Bindings = graphics.Bindings;

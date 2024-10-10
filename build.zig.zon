@@ -1,6 +1,6 @@
 .{
     .name = "delve",
-    .version = "0.0.2",
+    .version = "0.1.1",
     .paths = .{
         "src",
         "3rdparty",
@@ -22,6 +22,9 @@
         .sokol = .{
             .url = "git+https://github.com/floooh/sokol-zig.git#d3e21f76498213d6d58179065756f5f2ed9b90cf",
             .hash = "122052a192829b377c637ce242ee8c9121e03d8cd10c889758dc6fb176368de7d67b",
+        },
+        .sdl = .{
+            .path = "3rdparty/sdl",
         },
         .ymlz = .{
             .url = "git+https://github.com/pwbh/ymlz#bd3ce82da20844117f3da76d0cd40453936b1b66",

@@ -8,10 +8,16 @@ const system_sdk = @import("system-sdk");
 var target: Build.ResolvedTarget = undefined;
 var optimize: std.builtin.OptimizeMode = undefined;
 
+const PlatformBackend = enum {
+    sdl,
+    sokol,
+};
+
 const ModuleImport = struct {
     module: *Build.Module,
     name: []const u8,
 };
+
 const BuildCollection = struct {
     add_imports: []const ModuleImport,
     link_libraries: []const *Build.Step.Compile,
@@ -21,10 +27,20 @@ pub fn build(b: *std.Build) !void {
     target = b.standardTargetOptions(.{});
     optimize = b.standardOptimizeOption(.{});
 
+    const delve_config = b.addOptions();
+    const platform_backend = b.option(PlatformBackend, "platform_backend", "(default: sokol)") orelse PlatformBackend.sokol;
+    delve_config.addOption(PlatformBackend, "platform_backend", platform_backend);
+
+    // Set sokol up first because it brings in things like the emscripten sdk.
     const dep_sokol = b.dependency("sokol", .{
         .target = target,
         .optimize = optimize,
         .with_sokol_imgui = true,
+    });
+
+    const dep_sdl = b.dependency("sdl", .{
+        .target = target,
+        .optimize = optimize,
     });
 
     const dep_ziglua = b.dependency("ziglua", .{
@@ -67,6 +83,9 @@ pub fn build(b: *std.Build) !void {
     // inject the cimgui header search path into the sokol C library compile step
     const cimgui_root = dep_cimgui.namedWriteFiles("cimgui").getDirectory();
     dep_sokol.artifact("sokol_clib").addIncludePath(cimgui_root);
+    if (platform_backend == PlatformBackend.sdl) {
+        dep_sokol.artifact("sokol_clib").defineCMacro("SOKOL_IMGUI_NO_SOKOL_APP", "");
+    }
 
     dep_stb_truetype.artifact("stb_truetype").addIncludePath(b.path("3rdparty/stb_truetype/libs"));
 
@@ -110,6 +129,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+    delve_mod.addOptions("config", delve_config);
 
     for (build_collection.add_imports) |build_import| {
         delve_mod.addImport(build_import.name, build_import.module);
@@ -124,6 +144,10 @@ pub fn build(b: *std.Build) !void {
         delve_mod.linkLibrary(lib);
     }
 
+    if (platform_backend == PlatformBackend.sdl) {
+        delve_mod.linkLibrary(dep_sdl.artifact("SDL3"));
+    }
+
     // For web builds, add the Emscripten system headers so C libraries can find the stdlib headers
     if (target.result.isWasm()) {
         const emsdk_include_path = getEmsdkSystemIncludePath(dep_sokol);
@@ -136,6 +160,10 @@ pub fn build(b: *std.Build) !void {
 
         for (build_collection.link_libraries) |lib| {
             lib.addSystemIncludePath(emsdk_include_path);
+        }
+
+        if (platform_backend == PlatformBackend.sdl) {
+            dep_sdl.artifact("SDL3").addIncludePath(emsdk_include_path);
         }
     }
 
@@ -283,6 +311,11 @@ pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build
 pub fn getEmsdkSystemIncludePath(dep_sokol: *Build.Dependency) Build.LazyPath {
     const dep_emsdk = dep_sokol.builder.dependency("emsdk", .{});
     return dep_emsdk.path("upstream/emscripten/cache/sysroot/include");
+}
+
+pub fn getEmsdkSysroot(dep_sokol: *Build.Dependency) Build.LazyPath {
+    const dep_emsdk = dep_sokol.builder.dependency("emsdk", .{});
+    return dep_emsdk.path("upstream/emscripten");
 }
 
 pub fn emscriptenRunStep(b: *Build, name: []const u8, dep_sokol: *Build.Dependency) *Build.Step.Run {
