@@ -1,7 +1,3 @@
-const c = @cImport({
-    @cInclude("SDL3/SDL.h");
-});
-
 const std = @import("std");
 const assert = std.debug.assert;
 const app = @import("../../app.zig");
@@ -15,10 +11,18 @@ const slog = sokol.log;
 const sg = sokol.gfx;
 const simgui = sokol.imgui;
 
+const target = @import("builtin").target;
+
+const c = @cImport({
+    @cInclude("SDL3/SDL.h");
+    if (target.os.tag == .emscripten) @cInclude("emscripten.h");
+});
+
 var window: *c.SDL_Window = undefined;
 var gl_context: c.SDL_GLContext = undefined;
 var app_config: app.AppConfig = undefined;
 var hooks: platform.PlatformHooks = undefined;
+var running: bool = false;
 
 pub fn init(cfg: platform.PlatformHooks) void {
     debug.log("Initializing SDL Backend", .{});
@@ -128,43 +132,56 @@ pub fn startMainLoop(config: app.AppConfig) void {
 
     debug.log("SDL app starting main loop", .{});
 
-    var event: c.SDL_Event = undefined;
-
-    var running = true;
-    while (running) {
-        while (c.SDL_PollEvent(&event)) {
-            if (imguiHandleEvent(&event)) {
-                continue;
-            }
-            switch (event.type) {
-                c.SDL_EVENT_QUIT => {
-                    running = false;
-                },
-                c.SDL_EVENT_MOUSE_BUTTON_DOWN => {
-                    input.onMouseDown(event.button.button);
-                },
-                c.SDL_EVENT_MOUSE_BUTTON_UP => {
-                    input.onMouseUp(event.button.button);
-                },
-                c.SDL_EVENT_MOUSE_MOTION => {
-                    input.onMouseMoved(event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel);
-                },
-                c.SDL_EVENT_KEY_DOWN => {
-                    if (!event.key.repeat) {
+    const tick = struct {
+        pub fn call() callconv(.C) void {
+            var event: c.SDL_Event = undefined;
+            while (c.SDL_PollEvent(&event)) {
+                if (imguiHandleEvent(&event)) {
+                    continue;
+                }
+                switch (event.type) {
+                    c.SDL_EVENT_QUIT => {
+                        if (target.os.tag == .emscripten) {
+                            c.emscripten_cancel_main_loop();
+                        } else {
+                            running = false;
+                        }
+                    },
+                    c.SDL_EVENT_MOUSE_BUTTON_DOWN => {
+                        input.onMouseDown(event.button.button);
+                    },
+                    c.SDL_EVENT_MOUSE_BUTTON_UP => {
+                        input.onMouseUp(event.button.button);
+                    },
+                    c.SDL_EVENT_MOUSE_MOTION => {
+                        input.onMouseMoved(event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel);
+                    },
+                    c.SDL_EVENT_KEY_DOWN => {
+                        if (!event.key.repeat) {
+                            const code = sdlkToKeyCode(&event.key);
+                            input.onKeyDown(@intFromEnum(code));
+                        }
+                    },
+                    c.SDL_EVENT_KEY_UP => {
                         const code = sdlkToKeyCode(&event.key);
-                        input.onKeyDown(@intFromEnum(code));
-                    }
-                },
-                c.SDL_EVENT_KEY_UP => {
-                    const code = sdlkToKeyCode(&event.key);
-                    input.onKeyUp(@intFromEnum(code));
-                },
-                else => {},
+                        input.onKeyUp(@intFromEnum(code));
+                    },
+                    else => {},
+                }
             }
-        }
 
-        frame();
-        assert(c.SDL_GL_SwapWindow(window));
+            frame();
+            assert(c.SDL_GL_SwapWindow(window));
+        }
+    }.call;
+
+    if (target.os.tag == .emscripten) {
+        c.emscripten_set_main_loop(tick, 0, 1);
+    } else {
+        running = true;
+        while (running) {
+            tick();
+        }
     }
 
     cleanup();

@@ -797,6 +797,7 @@ const emscripten_src_files = [_][]const u8{
 
     "src/thread/pthread/SDL_syscond.c",
     "src/thread/pthread/SDL_sysmutex.c",
+    "src/thread/pthread/SDL_sysrwlock.c",
     "src/thread/pthread/SDL_syssem.c",
     "src/thread/pthread/SDL_systhread.c",
     "src/thread/pthread/SDL_systls.c",
