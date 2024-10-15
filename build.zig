@@ -4,6 +4,8 @@ const builtin = @import("builtin");
 const ziglua = @import("ziglua");
 const sokol = @import("sokol");
 const system_sdk = @import("system-sdk");
+const fs = std.fs;
+const log = std.log;
 
 var target: Build.ResolvedTarget = undefined;
 var optimize: std.builtin.OptimizeMode = undefined;
@@ -341,6 +343,10 @@ fn buildShaders(b: *Build) void {
     // build the yaml reflection versions
     inline for (shaders) |shader| {
         const shader_with_ext = shader ++ ".glsl";
+        fs.cwd().makePath(shaders_dir ++ "built/" ++ shader) catch |err| {
+            log.info("Could not create path {}", .{err});
+        };
+
         const cmd = b.addSystemCommand(&.{
             shdc_path,
             "-i",
