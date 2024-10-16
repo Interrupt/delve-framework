@@ -40,7 +40,7 @@ Delve will use the `assets/main.lua` Lua file for scripting unless given a new p
 
 ## 2D and 3D rendering
 
-Rendering uses the Sokol framework to use modern, cross platform graphics APIs. Supports DirectX 11/12, OpenGL 3/ES, Metal, and [WebGPU](WebGPU).
+Rendering uses the Sokol framework to use modern, cross platform graphics APIs. Supports DirectX 11, OpenGL 3/ES, Metal, and [WebGPU](WebGPU).
 
 https://github.com/user-attachments/assets/ea26efe1-d9b9-4714-bc18-30fe5bc850da
 
