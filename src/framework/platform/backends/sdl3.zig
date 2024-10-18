@@ -10,6 +10,7 @@ const sokol = @import("sokol");
 const slog = sokol.log;
 const sg = sokol.gfx;
 const simgui = sokol.imgui;
+const sglue = sokol.glue;
 
 const target = @import("builtin").target;
 
@@ -69,7 +70,7 @@ fn sokol_init() void {
 
     sg.setup(.{
         // TODO
-        //.environment = sglue.environment(),
+        .environment = if (target.os.tag == .emscripten) sglue.environment() else .{},
         .logger = .{
             .func = slog.func,
         },
@@ -146,6 +147,13 @@ pub fn startMainLoop(config: app.AppConfig) void {
                         } else {
                             running = false;
                         }
+                    },
+                    c.SDL_EVENT_WINDOW_RESIZED => {
+                        var w: c_int = 0;
+                        var h: c_int = 0;
+                        assert(c.SDL_GetWindowSize(window, &w, &h));
+                        //sg.create_offscreen_pass(w, h);
+                        debug.log("Window size: {} x {}", .{ w, h });
                     },
                     c.SDL_EVENT_MOUSE_BUTTON_DOWN => {
                         input.onMouseDown(event.button.button);

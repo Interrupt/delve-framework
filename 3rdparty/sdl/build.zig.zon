@@ -4,8 +4,8 @@
     .version = "3.1.3-1",
     .dependencies = .{
         .sdl_src = .{
-            .url = "git+https://github.com/libsdl-org/SDL#e292d1f5ace469f718d7b6b4dec8c28e37dcaa0e",
-            .hash = "12206a5bacedd2bdd3a56bf9c65d62a593fe0e05be586fb16ee4cc90468a97b95022",
+            .url = "git+https://github.com/libsdl-org/SDL#afee27a5304b5dec9a8694cb408f877bf1c58d6a",
+            .hash = "1220e118f229f4e63568c548748d693df623891e0053d1d0630d4ae9e0d3971267cc",
         },
     },
     .paths = .{
