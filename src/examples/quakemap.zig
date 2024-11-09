@@ -142,7 +142,8 @@ pub fn on_init() !void {
         \\}
     ;
 
-    map_transform = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
+    const translate = delve.math.Mat4.translate(delve.math.Vec3.x_axis.scale(10.0));
+    map_transform = delve.math.Mat4.scale(delve.math.Vec3.new(0.1, 0.1, 0.1)).mul(translate).mul(delve.math.Mat4.rotate(-90, delve.math.Vec3.x_axis));
 
     // const allocator = gpa.allocator();
     const allocator = std.heap.c_allocator;
