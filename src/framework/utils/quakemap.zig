@@ -50,6 +50,8 @@ pub const Face = struct {
     scale_y: f32,
     uv_direction: Vec3, // cache Closest Axis
     vertices: []Vec3,
+    transform: math.Mat4,
+    inv_transform: math.Mat4,
 };
 
 pub const Entity = struct {
@@ -550,26 +552,20 @@ pub const QuakeMap = struct {
         const v1 = try readPoint(&iter, math.Mat4.identity);
         const v2 = try readPoint(&iter, math.Mat4.identity);
 
-        // Get UV scaling from the transform matrix. Assume uniform scaling.
-        var scale = transform.m[0][0] * transform.m[0][0] + transform.m[0][1] * transform.m[0][1] + transform.m[0][2] * transform.m[0][2];
-        scale = std.math.sqrt(scale);
-
         // map planes are clockwise, flip them around when computing the plane to get a counter-clockwise plane
-        face.plane = Plane.initFromTriangle(v2, v1, v0);
-        const direction = closestAxis(face.plane.normal);
-        face.uv_direction = direction.mulMat4(transform).norm();
-        face.u_axis = if (direction.x == 1) Vec3.new(0, 1, 0).mulMat4(transform).norm() else Vec3.new(1, 0, 0).mulMat4(transform).norm();
-        face.v_axis = if (direction.z == 1) Vec3.new(0, -1, 0).mulMat4(transform).norm() else Vec3.new(0, 0, -1).mulMat4(transform).norm();
+        face.plane = Plane.initFromTriangle(v2.mulMat4(transform), v1.mulMat4(transform), v0.mulMat4(transform));
+        face.untransformed_plane = Plane.initFromTriangle(v2, v1, v0);
+        face.uv_direction = closestAxis(face.untransformed_plane.normal);
+        face.u_axis = if (face.uv_direction.x == 1) Vec3.new(0, 1, 0) else Vec3.new(1, 0, 0);
+        face.v_axis = if (face.uv_direction.z == 1) Vec3.new(0, -1, 0) else Vec3.new(0, 0, -1);
         face.texture_name = try readSymbol(&iter);
         face.shift_x = try readDecimal(&iter);
         face.shift_y = try readDecimal(&iter);
         face.rotation = try readDecimal(&iter);
-        face.scale_x = try readDecimal(&iter) * scale;
-        face.scale_y = try readDecimal(&iter) * scale;
-
-        // transform the plane, but keep an untransformed version around for building the vertices
-        face.untransformed_plane = face.plane;
-        face.plane = face.plane.mulMat4(transform);
+        face.scale_x = try readDecimal(&iter);
+        face.scale_y = try readDecimal(&iter);
+        face.transform = transform;
+        face.inv_transform = transform.invert();
 
         return face;
     }
@@ -682,21 +678,24 @@ pub const QuakeMap = struct {
 
         for (0..face.vertices.len - 2) |i| {
             const pos_0 = Vec3.new(face.vertices[0].x, face.vertices[0].y, face.vertices[0].z);
+            const inv_pos_0 = pos_0.mulMat4(face.inv_transform);
             const uv_0 = Vec2.new(
-                (u_axis.dot(pos_0) + face.shift_x) / tex_size_x,
-                (v_axis.dot(pos_0) + face.shift_y) / tex_size_y,
+                (u_axis.dot(inv_pos_0) + face.shift_x) / tex_size_x,
+                (v_axis.dot(inv_pos_0) + face.shift_y) / tex_size_y,
             );
 
             const pos_1 = Vec3.new(face.vertices[i + 1].x, face.vertices[i + 1].y, face.vertices[i + 1].z);
+            const inv_pos_1 = pos_1.mulMat4(face.inv_transform);
             const uv_1 = Vec2.new(
-                (u_axis.dot(pos_1) + face.shift_x) / tex_size_x,
-                (v_axis.dot(pos_1) + face.shift_y) / tex_size_y,
+                (u_axis.dot(inv_pos_1) + face.shift_x) / tex_size_x,
+                (v_axis.dot(inv_pos_1) + face.shift_y) / tex_size_y,
             );
 
             const pos_2 = Vec3.new(face.vertices[i + 2].x, face.vertices[i + 2].y, face.vertices[i + 2].z);
+            const inv_pos_2 = pos_2.mulMat4(face.inv_transform);
             const uv_2 = Vec2.new(
-                (u_axis.dot(pos_2) + face.shift_x) / tex_size_x,
-                (v_axis.dot(pos_2) + face.shift_y) / tex_size_y,
+                (u_axis.dot(inv_pos_2) + face.shift_x) / tex_size_x,
+                (v_axis.dot(inv_pos_2) + face.shift_y) / tex_size_y,
             );
 
             const v0: graphics.Vertex = .{ .pos = pos_0, .uv = uv_0, .normal = face.plane.normal };
