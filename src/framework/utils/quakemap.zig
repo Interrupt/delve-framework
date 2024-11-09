@@ -594,13 +594,20 @@ pub const QuakeMap = struct {
 
     /// Builds meshes for the map, bucketed by materials
     pub fn buildWorldMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
+        return try self.buildMeshesForEntity(&self.worldspawn, allocator, transform, materials, fallback_material);
+    }
+
+    /// Builds meshes for all entity solids - in a real scenario, you'll probably want to use buildMeshesForEntity instead
+    pub fn buildEntityMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
 
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
 
-        // Add our solids
-        for (self.worldspawn.solids.items) |solid| {
-            try addSolidToMeshBuilders(allocator, &mesh_builders, solid, materials, transform);
+        // Add the solids for all of the entities
+        for (self.entities.items) |*entity| {
+            for (entity.solids.items) |solid| {
+                try addSolidToMeshBuilders(allocator, &mesh_builders, solid, materials, transform);
+            }
         }
 
         // We're ready to build all of our mesh builders now!
@@ -609,17 +616,16 @@ pub const QuakeMap = struct {
         return meshes;
     }
 
-    /// Builds meshes for all entity solids - in a real scenario, you'll want to do this yourself
-    pub fn buildEntityMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
+    /// Builds meshes for a specific entity
+    pub fn buildMeshesForEntity(self: *const QuakeMap, entity: *const Entity, allocator: Allocator, transform: math.Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
+        _ = self;
 
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
 
-        // Add the solids for all of the entities
-        for (self.entities.items) |entity| {
-            for (entity.solids.items) |solid| {
-                try addSolidToMeshBuilders(allocator, &mesh_builders, solid, materials, transform);
-            }
+        // Add our solids
+        for (entity.solids.items) |solid| {
+            try addSolidToMeshBuilders(allocator, &mesh_builders, solid, materials, transform);
         }
 
         // We're ready to build all of our mesh builders now!
