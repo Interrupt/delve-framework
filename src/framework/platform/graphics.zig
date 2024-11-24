@@ -528,6 +528,8 @@ pub const RenderPassConfig = struct {
     write_color: bool = true,
     write_depth: bool = false,
     write_stencil: bool = false,
+    clear_depth: bool = true,
+    clear_stencil: bool = true,
 };
 
 /// A render pass describes an offscreen render target
@@ -592,8 +594,16 @@ pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
 
     var pass_action = sg.PassAction{};
     pass_action.colors[0] = .{ .load_action = .LOAD, .store_action = .STORE };
-    pass_action.depth = .{ .load_action = .CLEAR, .clear_value = 1.0, .store_action = .STORE };
-    pass_action.stencil = .{ .load_action = .CLEAR, .clear_value = 0.0, .store_action = .STORE };
+    pass_action.depth = .{
+        .load_action = if (render_pass.config.clear_depth) .CLEAR else .LOAD,
+        .clear_value = 1.0,
+        .store_action = .STORE,
+    };
+    pass_action.stencil = .{
+        .load_action = if (render_pass.config.clear_stencil) .CLEAR else .LOAD,
+        .clear_value = 0.0,
+        .store_action = .STORE,
+    };
 
     // Don't need to store the end result in some cases
     if (!render_pass.config.write_color)
@@ -1204,7 +1214,6 @@ pub fn getDebugTextScale() f32 {
 pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32, color: Color) void {
     // apply the texture
     state.debug_draw_bindings.setTexture(tex);
-    state.debug_material.state.textures[0] = tex_white;
 
     // create a view state
     var proj = getProjectionOrtho(0.001, 10.0, false);
@@ -1235,6 +1244,21 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
     state.default_shader.applyUniformBlock(.VS, 0, asAnything(&vs_params));
 
     draw(&state.debug_draw_bindings, &state.default_shader);
+}
+
+pub fn drawDebugRectangleWithMaterial(material: *Material, x: f32, y: f32, width: f32, height: f32) void {
+    // create a view state
+    const proj = getProjectionOrtho(0.001, 10.0, false);
+    const view = Mat4.lookat(.{ .x = 0.0, .y = 0.0, .z = 5.0 }, Vec3.zero, Vec3.up);
+
+    const translate_vec: Vec3 = Vec3{ .x = x, .y = @as(f32, @floatFromInt(getDisplayHeight())) - (y + height), .z = -2.5 };
+    const scale_vec: Vec3 = Vec3{ .x = width, .y = height, .z = 1.0 };
+
+    var model = Mat4.identity;
+    model = model.mul(Mat4.translate(translate_vec));
+    model = model.mul(Mat4.scale(scale_vec));
+
+    drawWithMaterial(&state.debug_draw_bindings, material, .{ .view = view, .proj = proj }, model);
 }
 
 /// Sets the color override used when drawing debug shapes
