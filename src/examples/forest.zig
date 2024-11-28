@@ -374,11 +374,9 @@ fn addGrass(pos: math.Vec3, grass_area: u32, grass_size: f32, density: f32) void
                 const sprite_idx: usize = if (random.float(f32) < 0.85) 2 else 0;
                 const tex_region = grass_sprites[sprite_idx];
 
-                // const draw_pos = math.Vec3.new(xpos + x_offset, 0, zpos + z_offset);
-                const draw_pos = math.Vec3.new(x_offset, 0, z_offset);
+                const draw_pos = math.Vec3.new(xpos + x_offset, 0, zpos + z_offset);
                 const rot_matrix = math.Mat4.rotate(random.float(f32) * 360, camera.up);
-                // const transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
-                const transform = math.Mat4.translate(camera.pos.add(camera.direction.scale(10.0)).add(draw_pos)).mul(rot_matrix);
+                const transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
 
                 grass_batch.setTransformMatrix(transform);
 
