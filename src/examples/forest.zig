@@ -221,7 +221,7 @@ fn pre_draw() void {
     time += papp.getCurrentDeltaTime();
 
     // set up a matrix that will billboard to face the camera, but ignore the up dir
-    const billboard_dir = math.Vec3.new(camera.direction.x, 0, camera.direction.z).norm();
+    const billboard_dir = math.Vec3.new(camera.direction.x, 0, camera.direction.z).scale(-1);
     const rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
 
     // make our grass, if needed
@@ -301,7 +301,7 @@ fn addClouds(density: f32) void {
     var random = rnd.random();
 
     // set up a matrix that will billboard to face the camera
-    const billboard_dir = math.Vec3.new(camera.direction.x, camera.direction.y, camera.direction.z).norm();
+    const billboard_dir = camera.direction.scale(-1);
     const rot_matrix = math.Mat4.billboard(billboard_dir, camera.up);
 
     cloud_batch.useShader(shader_blend);
