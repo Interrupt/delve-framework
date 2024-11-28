@@ -25,7 +25,7 @@ const angle_to_radians: f32 = 57.29578;
 /// Basic camera system with support for first and third person modes
 pub const Camera = struct {
     position: Vec3 = Vec3.zero,
-    direction: Vec3 = Vec3.z_axis,
+    direction: Vec3 = Vec3.z_axis.scale(-1),
     up: Vec3 = Vec3.up,
     right: Vec3 = Vec3.x_axis,
 
