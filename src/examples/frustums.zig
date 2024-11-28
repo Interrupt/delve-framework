@@ -80,9 +80,6 @@ pub fn on_init() !void {
         return;
     };
 
-    // secondary_camera.setPitch(45.0);
-    // secondary_camera.position.y = -10.0;
-
     cube_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(1, 1, 1), delve.colors.white, material_cube) catch {
         delve.debug.fatal("Could not create cube mesh!", .{});
         return;

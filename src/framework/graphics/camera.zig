@@ -81,7 +81,6 @@ pub const Camera = struct {
 
     /// Get the direction 90 degrees to the right of our direction
     pub fn getRightDirection(self: *Camera) Vec3 {
-        // return self.up.cross(self.direction).norm();
         return self.right;
     }
 
