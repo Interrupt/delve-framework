@@ -255,13 +255,13 @@ pub fn do_player_move(delta: f32) void {
         var dir = camera.direction;
         dir.y = 0.0;
         dir = dir.norm();
-        move_dir = move_dir.sub(dir);
+        move_dir = move_dir.add(dir);
     }
     if (delve.platform.input.isKeyPressed(.S)) {
         var dir = camera.direction;
         dir.y = 0.0;
         dir = dir.norm();
-        move_dir = move_dir.add(dir);
+        move_dir = move_dir.sub(dir);
     }
 
     // get our sideways input direction

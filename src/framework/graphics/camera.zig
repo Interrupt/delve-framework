@@ -25,8 +25,9 @@ const angle_to_radians: f32 = 57.29578;
 /// Basic camera system with support for first and third person modes
 pub const Camera = struct {
     position: Vec3 = Vec3.zero,
-    direction: Vec3 = Vec3.z_axis,
+    direction: Vec3 = Vec3.z_axis.scale(-1),
     up: Vec3 = Vec3.up,
+    right: Vec3 = Vec3.x_axis,
 
     yaw_angle: f32 = 0.0,
     pitch_angle: f32 = 0.0,
@@ -80,14 +81,14 @@ pub const Camera = struct {
 
     /// Get the direction 90 degrees to the right of our direction
     pub fn getRightDirection(self: *Camera) Vec3 {
-        return self.up.cross(self.direction).norm();
+        return self.right;
     }
 
     /// Move the camera along its direction
     pub fn moveForward(self: *Camera, amount: f32) void {
         // fly mode
         if (self.move_mode == .FLY) {
-            self.position = self.position.add(self.direction.scale(-amount));
+            self.position = self.position.add(self.direction.scale(amount));
             return;
         }
 
@@ -96,7 +97,7 @@ pub const Camera = struct {
         dir.y = 0.0;
         dir = dir.norm();
 
-        self.position = self.position.add(dir.scale(-amount));
+        self.position = self.position.add(dir.scale(amount));
     }
 
     /// Move the camera along its right direction
@@ -105,7 +106,7 @@ pub const Camera = struct {
     }
 
     pub fn updateDirection(self: *Camera) void {
-        var dir = math.Vec3.z_axis;
+        var dir = math.Vec3.z_axis.scale(-1);
         dir = dir.rotate(self.pitch_angle, math.Vec3.x_axis);
         dir = dir.rotate(self.yaw_angle, math.Vec3.y_axis);
         self.direction = dir;
@@ -114,6 +115,11 @@ pub const Camera = struct {
         up = up.rotate(self.pitch_angle, math.Vec3.x_axis);
         up = up.rotate(self.yaw_angle, math.Vec3.y_axis);
         self.up = up;
+
+        var right = math.Vec3.x_axis;
+        right = right.rotate(self.pitch_angle, math.Vec3.x_axis);
+        right = right.rotate(self.yaw_angle, math.Vec3.y_axis);
+        self.right = right;
     }
 
     /// Rotate the camera left and right
@@ -193,13 +199,13 @@ pub const Camera = struct {
 
         // third person camera
         if (self.view_mode == .THIRD_PERSON) {
-            self.view = Mat4.lookat(self.position.add(self.direction.scale(self.boom_arm_length)), self.position, self.up);
+            self.view = Mat4.lookat(self.position.sub(self.direction.scale(self.boom_arm_length)), self.position, self.up);
             return self.getViewMatrices();
         }
 
         // first person camera
-        self.view = Mat4.lookat(Vec3.zero, Vec3.zero.sub(self.direction), self.up);
-        self.view = self.view.mul(Mat4.rotate(self.roll_angle, self.direction));
+        self.view = Mat4.lookat(Vec3.zero, Vec3.zero.add(self.direction), self.up);
+        self.view = self.view.mul(Mat4.rotate(-self.roll_angle, self.direction));
         self.view = self.view.mul(Mat4.translate(self.position.scale(-1)));
 
         return self.getViewMatrices();

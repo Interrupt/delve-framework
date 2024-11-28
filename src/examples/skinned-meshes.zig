@@ -75,7 +75,6 @@ fn on_init() !void {
     // Make a perspective camera, with a 90 degree FOV
     camera = cam.Camera.initThirdPerson(90.0, 0.01, 150.0, 2.0, Vec3.up);
     camera.position = Vec3.new(0.0, 0.0, 0.0);
-    camera.direction = Vec3.new(0.0, 0.0, 1.0);
 
     // Make our emissive shader from one that is pre-compiled
     const shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = skinned_mesh.getSkinnedShaderAttributes() }, shader_builtin);
