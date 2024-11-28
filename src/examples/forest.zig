@@ -319,7 +319,8 @@ fn addClouds(density: f32) void {
         draw_pos = draw_pos.rotate(random.float(f32) * 80.0, math.Vec3.x_axis);
         draw_pos = draw_pos.rotate(random.float(f32) * 360.0 + @as(f32, @floatCast(time * 0.5)), math.Vec3.up);
 
-        const transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
+        // const transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
+        const transform = math.Mat4.translate(camera.position.add(camera.direction.scale(10.0))).mul(rot_matrix);
 
         cloud_batch.setTransformMatrix(transform);
 
@@ -374,9 +375,11 @@ fn addGrass(pos: math.Vec3, grass_area: u32, grass_size: f32, density: f32) void
                 const sprite_idx: usize = if (random.float(f32) < 0.85) 2 else 0;
                 const tex_region = grass_sprites[sprite_idx];
 
-                const draw_pos = math.Vec3.new(xpos + x_offset, 0, zpos + z_offset);
+                // const draw_pos = math.Vec3.new(xpos + x_offset, 0, zpos + z_offset);
+                const draw_pos = math.Vec3.new(x_offset, 0, z_offset);
                 const rot_matrix = math.Mat4.rotate(random.float(f32) * 360, camera.up);
-                const transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
+                // const transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
+                const transform = math.Mat4.translate(camera.pos.add(camera.direction.scale(10.0)).add(draw_pos)).mul(rot_matrix);
 
                 grass_batch.setTransformMatrix(transform);
 
@@ -404,7 +407,7 @@ fn on_draw() void {
     sprite_batch.draw(view_mats, math.Mat4.identity);
 
     // make clouds follow the camera
-    cloud_batch.draw(view_mats, math.Mat4.translate(camera.position));
+    cloud_batch.draw(view_mats, math.Mat4.identity);
 }
 
 fn on_cleanup() !void {

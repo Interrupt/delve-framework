@@ -80,6 +80,9 @@ pub fn on_init() !void {
         return;
     };
 
+    // secondary_camera.setPitch(45.0);
+    // secondary_camera.position.y = -10.0;
+
     cube_mesh = delve.graphics.mesh.createCube(delve.math.Vec3.new(0, 0, 0), delve.math.Vec3.new(1, 1, 1), delve.colors.white, material_cube) catch {
         delve.debug.fatal("Could not create cube mesh!", .{});
         return;
@@ -100,11 +103,13 @@ pub fn on_tick(delta: f32) void {
 
     primary_camera.runSimpleCamera(8 * delta, 120 * delta, true);
     secondary_camera.setYaw(time * 50.0);
+
+    delve.debug.log("x_pos: {d:3} y_pos: {d:3} z_pos: {d:3}", .{ primary_camera.position.x, primary_camera.position.y, primary_camera.position.z });
 }
 
 pub fn on_draw() void {
     const view_mats = primary_camera.update();
-    const frustum_model_matrix = delve.math.Mat4.rotate(secondary_camera.yaw_angle, delve.math.Vec3.up);
+    const frustum_model_matrix = delve.math.Mat4.translate(secondary_camera.position).mul(delve.math.Mat4.rotate(secondary_camera.yaw_angle, delve.math.Vec3.up).mul(delve.math.Mat4.rotate(secondary_camera.pitch_angle, delve.math.Vec3.x_axis.scale(-1))));
 
     for (0..10) |x| {
         for (0..10) |z| {
