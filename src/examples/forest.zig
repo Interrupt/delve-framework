@@ -319,8 +319,7 @@ fn addClouds(density: f32) void {
         draw_pos = draw_pos.rotate(random.float(f32) * 80.0, math.Vec3.x_axis);
         draw_pos = draw_pos.rotate(random.float(f32) * 360.0 + @as(f32, @floatCast(time * 0.5)), math.Vec3.up);
 
-        // const transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
-        const transform = math.Mat4.translate(camera.position.add(camera.direction.scale(10.0))).mul(rot_matrix);
+        const transform = math.Mat4.translate(draw_pos).mul(rot_matrix);
 
         cloud_batch.setTransformMatrix(transform);
 
@@ -407,7 +406,7 @@ fn on_draw() void {
     sprite_batch.draw(view_mats, math.Mat4.identity);
 
     // make clouds follow the camera
-    cloud_batch.draw(view_mats, math.Mat4.identity);
+    cloud_batch.draw(view_mats, math.Mat4.translate(camera.position));
 }
 
 fn on_cleanup() !void {
