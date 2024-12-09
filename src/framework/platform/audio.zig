@@ -1,6 +1,7 @@
 const std = @import("std");
 const zaudio = @import("zaudio");
 const debug = @import("../debug.zig");
+const math = @import("../math.zig");
 const mem = @import("../mem.zig");
 const modules = @import("../modules.zig");
 
@@ -97,15 +98,16 @@ pub const Sound = struct {
     }
 
     /// Sets the position of this sound
-    pub fn setPosition(self: *Sound, pos: [3]f32, dir: [3]f32, vel: [3]f32) void {
+    pub fn setPosition(self: *Sound, position: math.Vec3) void {
         if (getZaudioSound(self.handle)) |sound| {
-            // Make sure this sound is spatialized! Will be absolute by default
-            // if (sound.getPositioning() != zaudio.Positioning.relative)
-            //     sound.setPositioning(zaudio.Positioning.relative);
+            sound.setPosition(position.toArray());
+        }
+    }
 
-            sound.setPosition(pos);
-            sound.setDirection(dir);
-            sound.setVelocity(vel);
+    /// Sets the range rolloff of this sound
+    pub fn setRangeRolloff(self: *Sound, rolloff: f32) void {
+        if (getZaudioSound(self.handle)) |sound| {
+            sound.setRolloff(rolloff);
         }
     }
 
@@ -156,6 +158,20 @@ pub const Sound = struct {
 
         return 1.0;
     }
+
+    /// Sets whether this sound is spatialized
+    pub fn setIs3d(self: *Sound, is3d: bool) void {
+        if (getZaudioSound(self.handle)) |sound|
+            sound.setSpatializationEnabled(is3d);
+    }
+
+    /// Returns whether this sound is spatialized
+    pub fn getIs3d(self: *Sound) bool {
+        if (getZaudioSound(self.handle)) |sound|
+            return sound.getSpatializationEnabled();
+
+        return true;
+    }
 };
 
 /// Registers the audio subsystem as a module
@@ -194,35 +210,26 @@ pub fn deinit() void {
     zaudio.deinit();
 }
 
-/// Loads and plays a piece of music
-pub fn playMusic(filename: [:0]const u8, volume: f32, loop: bool) ?Sound {
-    var sound = loadSound(filename, true) catch {
-        debug.log("Could not load music file! ({s})", .{filename});
-        return null;
-    };
+pub const SoundOptions = struct {
+    stream: bool = false,
+    volume: f32 = 1.0,
+    loop: bool = false,
+    is_3d: bool = false,
+    distance_rolloff: f32 = 1.0,
+};
 
-    // Just do one handle lookup here
-    if (getZaudioSound(sound.handle)) |zaudio_sound| {
-        zaudio_sound.setVolume(volume);
-        zaudio_sound.setLooping(loop);
-        zaudio_sound.start() catch {
-            sound.requestDestroy();
-        };
-    }
-
-    return sound;
-}
-
-/// Loads and plays a sound effect
-pub fn playSound(filename: [:0]const u8, volume: f32) ?Sound {
-    var sound = loadSound(filename, false) catch {
+/// Loads and plays a sound file
+pub fn playSound(filename: [:0]const u8, options: SoundOptions) ?Sound {
+    var sound = loadSound(filename, options.stream) catch {
         debug.log("Could not load sound file! ({s})", .{filename});
         return null;
     };
 
-    // Just do one handle lookup here
     if (getZaudioSound(sound.handle)) |zaudio_sound| {
-        zaudio_sound.setVolume(volume);
+        zaudio_sound.setVolume(options.volume);
+        zaudio_sound.setSpatializationEnabled(options.is_3d);
+        zaudio_sound.setRolloff(options.distance_rolloff);
+        zaudio_sound.setLooping(options.loop);
         zaudio_sound.start() catch {
             sound.requestDestroy();
         };
