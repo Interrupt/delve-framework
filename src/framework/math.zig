@@ -26,6 +26,10 @@ pub const Vec2 = extern struct {
         return Vec2{ .x = val[0], .y = val[1] };
     }
 
+    pub fn toArray(self: Vec2) [2]f32 {
+        return [_]f32{ self.x, self.y };
+    }
+
     pub fn new(x: f32, y: f32) Vec2 {
         return Vec2{ .x = x, .y = y };
     }

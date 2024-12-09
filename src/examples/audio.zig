@@ -50,24 +50,36 @@ fn on_init() !void {
 
     audio.enableSpatialAudio(true);
     audio.setListenerPosition(.{ 0.0, 0.0, 0.0 });
-    audio.setListenerDirection(.{ 1.0, 0.0, 0.0 });
+    audio.setListenerDirection(.{ 0.0, 0.0, -1.0 });
     audio.setListenerWorldUp(.{ 0.0, 1.0, 0.0 });
 
-    music_test = audio.playMusic("assets/sample-9s.mp3", 0.5, true);
+    music_test = audio.playSound("assets/sample-9s.mp3", .{
+        .volume = 0.5,
+        .stream = true,
+        .loop = true,
+        .is_3d = true,
+        .distance_rolloff = 0.2,
+    });
 
     graphics.setClearColor(colors.light_grey);
-
-    if (music_test != null) {
-        music_test.?.setPosition(.{ -1.0, 0.0, 3.0 }, .{ 1.0, 0.0, 0.0 }, .{ 0.0, 0.0, 0.0 });
-    }
 }
 
 fn on_tick(delta: f32) void {
     _ = delta;
 
+    const mouse_pos = input.getMousePosition();
+    const app_width: f32 = @floatFromInt(delve.platform.app.getWidth());
+    const app_height: f32 = @floatFromInt(delve.platform.app.getHeight());
+
     if (input.isMouseButtonJustPressed(input.MouseButtons.LEFT)) {
-        sound_test = audio.playSound("assets/sample-shoot.wav", 0.1);
+        sound_test = audio.playSound("assets/sample-shoot.wav", .{ .volume = 0.1 });
     }
+
+    music_test.?.setPosition(delve.math.Vec3.new(
+        ((mouse_pos.x / app_width) * 32.0) - 16.0,
+        ((mouse_pos.y / app_height) * -32.0) + 16.0,
+        0,
+    ));
 
     if (input.isKeyJustPressed(.ESCAPE))
         delve.platform.app.exit();
