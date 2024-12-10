@@ -172,6 +172,12 @@ pub const Sound = struct {
 
         return true;
     }
+
+    /// Fades a sound in or out. Use -1 for the start or end volume to use the current volume
+    pub fn fade(self: *Sound, start_volume: f32, end_volume: f32, seconds: f32) void {
+        if (getZaudioSound(self.handle)) |sound|
+            sound.setFadeInMilliseconds(start_volume, end_volume, @intFromFloat(seconds * 1000.0));
+    }
 };
 
 /// Registers the audio subsystem as a module
@@ -216,6 +222,9 @@ pub const SoundOptions = struct {
     loop: bool = false,
     is_3d: bool = false,
     distance_rolloff: f32 = 1.0,
+    fade_in_time: ?f32 = null,
+    min_gain: ?f32 = null,
+    max_gain: ?f32 = null,
 };
 
 /// Loads and plays a sound file
@@ -230,6 +239,17 @@ pub fn playSound(filename: [:0]const u8, options: SoundOptions) ?Sound {
         zaudio_sound.setSpatializationEnabled(options.is_3d);
         zaudio_sound.setRolloff(options.distance_rolloff);
         zaudio_sound.setLooping(options.loop);
+
+        if (options.fade_in_time) |t| {
+            zaudio_sound.setFadeInMilliseconds(0.0, -1.0, @intFromFloat(t * 1000.0));
+        }
+        if (options.min_gain) |g| {
+            zaudio_sound.setMinGain(g);
+        }
+        if (options.max_gain) |g| {
+            zaudio_sound.setMaxGain(g);
+        }
+
         zaudio_sound.start() catch {
             sound.requestDestroy();
         };
@@ -255,30 +275,30 @@ pub fn loadSound(filename: [:0]const u8, stream: bool) !Sound {
 }
 
 /// Sets the position of our listener for spatial audio
-pub fn setListenerPosition(pos: [3]f32) void {
+pub fn setListenerPosition(pos: math.Vec3) void {
     if (zaudio_engine) |engine| {
-        engine.setListenerPosition(0, pos);
+        engine.setListenerPosition(0, pos.toArray());
     }
 }
 
 /// Sets the direction of our listener for spatial audio
-pub fn setListenerDirection(dir: [3]f32) void {
+pub fn setListenerDirection(dir: math.Vec3) void {
     if (zaudio_engine) |engine| {
-        engine.setListenerDirection(0, dir);
+        engine.setListenerDirection(0, dir.toArray());
     }
 }
 
 /// Sets the velocity of our listener for spatial audio
-pub fn setListenerVelocity(vel: [3]f32) void {
+pub fn setListenerVelocity(vel: math.Vec3) void {
     if (zaudio_engine) |engine| {
-        engine.setListenerVelocity(0, vel);
+        engine.setListenerVelocity(0, vel.toArray());
     }
 }
 
 /// Sets the 'up' value for the listener
-pub fn setListenerWorldUp(up: [3]f32) void {
+pub fn setListenerWorldUp(up: math.Vec3) void {
     if (zaudio_engine) |engine| {
-        engine.setListenerWorldUp(0, up);
+        engine.setListenerWorldUp(0, up.toArray());
     }
 }
 

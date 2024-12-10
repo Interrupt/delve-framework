@@ -49,16 +49,16 @@ fn on_init() !void {
     debug.log("Audio example module initializing", .{});
 
     audio.enableSpatialAudio(true);
-    audio.setListenerPosition(.{ 0.0, 0.0, 0.0 });
-    audio.setListenerDirection(.{ 0.0, 0.0, -1.0 });
-    audio.setListenerWorldUp(.{ 0.0, 1.0, 0.0 });
+    audio.setListenerPosition(delve.math.Vec3.zero);
+    audio.setListenerDirection(delve.math.Vec3.z_axis.scale(-1));
+    audio.setListenerWorldUp(delve.math.Vec3.y_axis);
 
     music_test = audio.playSound("assets/sample-9s.mp3", .{
         .volume = 0.5,
         .stream = true,
         .loop = true,
         .is_3d = true,
-        .distance_rolloff = 0.2,
+        .distance_rolloff = 0.5,
     });
 
     graphics.setClearColor(colors.light_grey);
