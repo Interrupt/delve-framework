@@ -57,7 +57,7 @@ fn on_init() !void {
         .volume = 0.5,
         .stream = true,
         .loop = true,
-        .is_3d = true,
+        .position = delve.math.Vec3.new(0, 0, 0), // could also set .is_3d = true
         .distance_rolloff = 0.5,
     });
 
@@ -75,7 +75,7 @@ fn on_tick(delta: f32) void {
         sound_test = audio.playSound("assets/sample-shoot.wav", .{ .volume = 0.1 });
     }
 
-    music_test.?.setPosition(delve.math.Vec3.new(
+    audio.setListenerPosition(delve.math.Vec3.new(
         ((mouse_pos.x / app_width) * 32.0) - 16.0,
         ((mouse_pos.y / app_height) * -32.0) + 16.0,
         0,
