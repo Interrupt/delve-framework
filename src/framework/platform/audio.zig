@@ -104,8 +104,8 @@ pub const Sound = struct {
         }
     }
 
-    /// Sets the range rolloff of this sound
-    pub fn setRangeRolloff(self: *Sound, rolloff: f32) void {
+    /// Sets the distance rolloff of this sound
+    pub fn setDistanceRolloff(self: *Sound, rolloff: f32) void {
         if (getZaudioSound(self.handle)) |sound| {
             sound.setRolloff(rolloff);
         }
