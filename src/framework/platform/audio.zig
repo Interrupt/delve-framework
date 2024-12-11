@@ -221,6 +221,7 @@ pub const SoundOptions = struct {
     volume: f32 = 1.0,
     loop: bool = false,
     is_3d: bool = false,
+    position: ?math.Vec3 = null,
     distance_rolloff: f32 = 1.0,
     fade_in_time: ?f32 = null,
     min_gain: ?f32 = null,
@@ -236,10 +237,13 @@ pub fn playSound(filename: [:0]const u8, options: SoundOptions) ?Sound {
 
     if (getZaudioSound(sound.handle)) |zaudio_sound| {
         zaudio_sound.setVolume(options.volume);
-        zaudio_sound.setSpatializationEnabled(options.is_3d);
-        zaudio_sound.setRolloff(options.distance_rolloff);
         zaudio_sound.setLooping(options.loop);
+        zaudio_sound.setSpatializationEnabled(options.is_3d or options.position != null);
+        zaudio_sound.setRolloff(options.distance_rolloff);
 
+        if (options.position) |pos| {
+            zaudio_sound.setPosition(pos.toArray());
+        }
         if (options.fade_in_time) |t| {
             zaudio_sound.setFadeInMilliseconds(0.0, -1.0, @intFromFloat(t * 1000.0));
         }
