@@ -302,13 +302,13 @@ pub const Batcher = struct {
         const v = region.v;
         const u_2 = region.u_2;
         const v_2 = region.v_2;
-        const color_i = color.toInt();
+        const color_a = color.toArray();
 
         const verts = &[_]Vertex{
-            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color_i, .u = u, .v = v_2 },
-            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color_i, .u = u_2, .v = v_2 },
-            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_i, .u = u_2, .v = v },
-            .{ .x = v3.x, .y = v3.y, .z = 0, .color = color_i, .u = u, .v = v },
+            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color_a, .u = u, .v = v_2 },
+            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color_a, .u = u_2, .v = v_2 },
+            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_a, .u = u_2, .v = v },
+            .{ .x = v3.x, .y = v3.y, .z = 0, .color = color_a, .u = u, .v = v },
         };
 
         const indices = &[_]u32{ 0, 1, 2, 0, 2, 3 };
@@ -389,12 +389,12 @@ pub const Batcher = struct {
             return;
         };
 
-        const color_i = color.toInt();
+        const color_a = color.toArray();
 
         const verts = &[_]Vertex{
-            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color_i, .u = uv0.x, .v = uv0.y },
-            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color_i, .u = uv1.x, .v = uv1.y },
-            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_i, .u = uv2.x, .v = uv2.y },
+            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color_a, .u = uv0.x, .v = uv0.y },
+            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color_a, .u = uv1.x, .v = uv1.y },
+            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_a, .u = uv2.x, .v = uv2.y },
         };
 
         const indices = &[_]u32{ 0, 1, 2 };

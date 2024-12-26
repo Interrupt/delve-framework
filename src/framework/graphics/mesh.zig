@@ -98,7 +98,7 @@ pub const Mesh = struct {
         };
         defer allocator.free(vertices);
 
-        const white_color = colors.white.toInt();
+        const white_color = colors.white.toArray();
 
         for (mesh_positions.items, 0..) |vert, i| {
             vertices[i].x = vert[0];
@@ -257,7 +257,7 @@ pub fn getSkinnedVertexLayout() graphics.VertexLayout {
 pub fn getShaderAttributes() []const graphics.ShaderAttribute {
     return &[_]graphics.ShaderAttribute{
         .{ .name = "pos", .attr_type = .FLOAT3, .binding = .VERT_PACKED },
-        .{ .name = "color0", .attr_type = .UBYTE4N, .binding = .VERT_PACKED },
+        .{ .name = "color0", .attr_type = .FLOAT4, .binding = .VERT_PACKED },
         .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_PACKED },
         .{ .name = "normals", .attr_type = .FLOAT3, .binding = .VERT_NORMALS },
         .{ .name = "tangents", .attr_type = .FLOAT4, .binding = .VERT_TANGENTS },
@@ -267,7 +267,7 @@ pub fn getShaderAttributes() []const graphics.ShaderAttribute {
 pub fn getSkinnedShaderAttributes() []const graphics.ShaderAttribute {
     return &[_]graphics.ShaderAttribute{
         .{ .name = "pos", .attr_type = .FLOAT3, .binding = .VERT_PACKED },
-        .{ .name = "color0", .attr_type = .UBYTE4N, .binding = .VERT_PACKED },
+        .{ .name = "color0", .attr_type = .FLOAT4, .binding = .VERT_PACKED },
         .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_PACKED },
         .{ .name = "normals", .attr_type = .FLOAT3, .binding = .VERT_NORMALS },
         .{ .name = "tangents", .attr_type = .FLOAT4, .binding = .VERT_TANGENTS },
@@ -298,13 +298,13 @@ pub const MeshBuilder = struct {
         const v = 0.0;
         const u_2 = 1.0;
         const v_2 = 1.0;
-        const color_i = color.toInt();
+        const color_array = color.toArray();
 
         const verts = &[_]PackedVertex{
-            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color_i, .u = u, .v = v_2 },
-            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color_i, .u = u_2, .v = v_2 },
-            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_i, .u = u_2, .v = v },
-            .{ .x = v3.x, .y = v3.y, .z = 0, .color = color_i, .u = u, .v = v },
+            .{ .x = v0.x, .y = v0.y, .z = 0, .color = color_array, .u = u, .v = v_2 },
+            .{ .x = v1.x, .y = v1.y, .z = 0, .color = color_array, .u = u_2, .v = v_2 },
+            .{ .x = v2.x, .y = v2.y, .z = 0, .color = color_array, .u = u_2, .v = v },
+            .{ .x = v3.x, .y = v3.y, .z = 0, .color = color_array, .u = u, .v = v },
         };
 
         const indices = &[_]u32{ 0, 1, 2, 0, 2, 3 };
@@ -340,12 +340,12 @@ pub const MeshBuilder = struct {
         const v = 0.0;
         const u_2 = 1.0;
         const v_2 = 1.0;
-        const color_i = color.toInt();
+        const color_a = color.toArray();
 
         const verts = &[_]PackedVertex{
-            .{ .x = v0.x, .y = v0.y, .z = v0.z, .color = color_i, .u = u, .v = v_2 },
-            .{ .x = v1.x, .y = v1.y, .z = v1.z, .color = color_i, .u = u_2, .v = v_2 },
-            .{ .x = v2.x, .y = v2.y, .z = v2.z, .color = color_i, .u = u_2, .v = v },
+            .{ .x = v0.x, .y = v0.y, .z = v0.z, .color = color_a, .u = u, .v = v_2 },
+            .{ .x = v1.x, .y = v1.y, .z = v1.z, .color = color_a, .u = u_2, .v = v_2 },
+            .{ .x = v2.x, .y = v2.y, .z = v2.z, .color = color_a, .u = u_2, .v = v },
         };
 
         const normal = v0.cross(v1).mulMat4(transform).norm().toArray();
