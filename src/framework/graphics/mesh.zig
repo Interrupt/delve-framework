@@ -98,10 +98,14 @@ pub const Mesh = struct {
         };
         defer allocator.free(vertices);
 
+        const white_color = colors.white.toInt();
+
         for (mesh_positions.items, 0..) |vert, i| {
             vertices[i].x = vert[0];
             vertices[i].y = vert[1];
             vertices[i].z = vert[2];
+
+            vertices[i].color = white_color;
 
             if (mesh_texcoords.items.len > i) {
                 vertices[i].u = mesh_texcoords.items[i][0];
