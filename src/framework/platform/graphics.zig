@@ -151,7 +151,7 @@ pub const PackedVertex = struct {
     x: f32,
     y: f32,
     z: f32,
-    color: u32 = 0xFFFFFFFF,
+    color: [4]f32 = [_]f32{ 1.0, 1.0, 1.0, 1.0 },
     u: f32 = 0,
     v: f32 = 0,
 
@@ -187,7 +187,7 @@ pub const Vertex = struct {
 
     // returns the packed version of this vertex
     pub fn pack(self: *const Vertex) PackedVertex {
-        return .{ .x = self.pos.x, .y = self.pos.y, .z = self.pos.z, .u = self.uv.x, .v = self.uv.y, .color = self.color.toInt() };
+        return .{ .x = self.pos.x, .y = self.pos.y, .z = self.pos.z, .u = self.uv.x, .v = self.uv.y, .color = self.color.toArray() };
     }
 };
 
@@ -317,7 +317,7 @@ pub const ShaderConfig = struct {
     cull_mode: CullMode = .NONE,
     vertex_attributes: []const ShaderAttribute = &[_]ShaderAttribute{
         .{ .name = "pos", .attr_type = .FLOAT3, .binding = .VERT_PACKED },
-        .{ .name = "color0", .attr_type = .UBYTE4N, .binding = .VERT_PACKED },
+        .{ .name = "color0", .attr_type = .FLOAT4, .binding = .VERT_PACKED },
         .{ .name = "texcoord0", .attr_type = .FLOAT2, .binding = .VERT_PACKED },
     },
     is_depth_pixel_format: bool = false,
@@ -1073,11 +1073,12 @@ pub fn init() !void {
     debugtext.setup(text_desc);
 
     // Create vertex buffer with debug quad vertices
+    const white_color_array = colors.white.toArray();
     const debug_vertices = &[_]PackedVertex{
-        .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 0 },
-        .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 1, .v = 0 },
-        .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 1, .v = 1 },
-        .{ .x = 0.0, .y = 0.0, .z = 0.0, .color = 0xFFFFFFFF, .u = 0, .v = 1 },
+        .{ .x = 0.0, .y = 1.0, .z = 0.0, .color = white_color_array, .u = 0, .v = 0 },
+        .{ .x = 1.0, .y = 1.0, .z = 0.0, .color = white_color_array, .u = 1, .v = 0 },
+        .{ .x = 1.0, .y = 0.0, .z = 0.0, .color = white_color_array, .u = 1, .v = 1 },
+        .{ .x = 0.0, .y = 0.0, .z = 0.0, .color = white_color_array, .u = 0, .v = 1 },
     };
     const debug_indices = &[_]u32{ 0, 1, 2, 0, 2, 3 };
 
