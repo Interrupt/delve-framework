@@ -1,0 +1,97 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+			"folder_exclude_patterns": [
+				".zig-cache",
+				"3rdparty/system-sdk/*",
+				"zig-out",
+			],
+		}
+	],
+	"build_systems": [
+		{
+			"name": "Build",
+			"working_dir": "$project_path",
+			"cmd": ["zig", "build", "-Dplatform_backend=sdl"],
+			"file_regex": "^\\s*([^:]+):(\\d+):(\\d+):\\s*(.*)$",
+			"variants": [
+				{
+					"name": "Sokol Backend",
+					"cmd": ["zig", "build"],
+				},
+				{
+					"name": "Release",
+					"cmd": ["zig", "build", "-Doptimize=ReleaseFast", "-Dplatform_backend=sdl"],
+				},
+				{
+					"name": "Release - Sokol App",
+					"cmd": ["zig", "build", "-Doptimize=ReleaseFast"],
+				},
+				{
+					"name": "Windows x86_64",
+					"cmd": ["zig", "build", "-Dplatform_backend=sdl", "-Dtarget=x86_64-windows"]
+				},
+				{
+					"name": "Windows x86_64 - Sokol App",
+					"cmd": ["zig", "build", "-Dplatform_backend=sokol", "-Dtarget=x86_64-windows"]
+				},
+				{
+					"name": "wasm32",
+					"cmd": ["zig", "build", "-Dtarget=wasm32-emscripten", "--release=small", "-Dplatform_backend=sdl"]
+				},
+				{
+					"name": "wasm32 - Sokol App",
+					"cmd": ["zig", "build", "-Dtarget=wasm32-emscripten", "--release=small"]
+				}
+			],
+			"target": "terminus_exec",
+            "cancel": "terminus_cancel_build",
+		},
+		{
+			"name": "Forest",
+			"working_dir": "$project_path",
+			"cmd": ["zig", "build", "run-forest", "-Dplatform_backend=sdl"],
+			"file_regex": "^\\s*([^:]+):(\\d+):(\\d+):\\s*(.*)$",
+			"variants": [
+				{
+					"name": "Release",
+					"cmd": ["zig", "build", "run-forest", "-Doptimize=ReleaseFast", "-Dplatform_backend=sdl"],
+				},
+				{
+					"name": "Windows x86_64",
+					"cmd": ["zig", "build", "run-forest", "-Dtarget=x86_64-windows", "-Dplatform_backend=sdl"]
+				},
+				{
+					"name": "Windows x86_64 - Sokol App",
+					"cmd": ["zig", "build", "run-forest", "-Dtarget=x86_64-windows"]
+				},
+				{
+					"name": "Sokol Backend",
+					"cmd": ["zig", "build", "run-forest"],
+				},
+				{
+					"name": "wasm32",
+					"cmd": ["zig", "build", "run-forest", "-Dtarget=wasm32-emscripten", "--release=small", "-Dplatform_backend=sdl"]
+				},
+				{
+					"name": "wasm32 - Sokol App",
+					"cmd": ["zig", "build", "run-forest", "-Dtarget=wasm32-emscripten", "--release=small"]
+				}
+			],
+			"target": "terminus_exec",
+            "cancel": "terminus_cancel_build",
+		}
+	],
+	"settings":
+	{
+		"LSP":
+		{
+			"zig":
+			{
+				"enabled": true
+			}
+		}
+	},
+}

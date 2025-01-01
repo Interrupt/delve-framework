@@ -5,14 +5,13 @@ const images = @import("../images.zig");
 const math = @import("../math.zig");
 const mem = @import("../mem.zig");
 const mesh = @import("../graphics/mesh.zig");
-const papp = @import("app.zig");
+const platform = @import("app.zig");
 const sokol_gfx_backend = @import("backends/sokol/graphics.zig");
 const shaders = @import("../graphics/shaders.zig");
 
 const sokol = @import("sokol");
 const slog = sokol.log;
 const sg = sokol.gfx;
-const sapp = sokol.app;
 const sglue = sokol.glue;
 const debugtext = sokol.debugtext;
 
@@ -1118,6 +1117,22 @@ pub fn deinit() void {
     tex_grey.destroy();
 }
 
+fn swapchain() sg.Swapchain {
+    const config = @import("config");
+    if (config.platform_backend == .sdl) {
+        // TODO: DirectX devices??? Metal devices???
+        return .{
+            .width = platform.getWidth(),
+            .height = platform.getHeight(),
+            .sample_count = 1,
+            .color_format = sg.PixelFormat.RGBA8,
+            .depth_format = sg.PixelFormat.DEPTH_STENCIL,
+        };
+    } else {
+        return sglue.swapchain();
+    }
+}
+
 /// Called at the start of a frame
 pub fn startFrame() void {
     if (state.in_offscreen_pass) {
@@ -1126,13 +1141,13 @@ pub fn startFrame() void {
     }
 
     // reset debug text
-    debugtext.canvas(sapp.widthf() * 0.5, sapp.heightf() * 0.5);
+    debugtext.canvas(@as(f32, @floatFromInt(platform.getWidth())) * 0.5, @as(f32, @floatFromInt(platform.getHeight())) * 0.5);
     debugtext.layer(0);
 
     state.in_default_pass = true;
 
-    // reset to drawing to the swapchain on every frame start
-    sg.beginPass(.{ .action = default_pass_action, .swapchain = sglue.swapchain() });
+    // TODO: reset to drawing to the swapchain on every frame start
+    sg.beginPass(.{ .action = default_pass_action, .swapchain = swapchain() });
 }
 
 /// Called at the end of a frame
@@ -1165,16 +1180,18 @@ pub fn setClearColor(color: Color) void {
 
 /// Returns a perspective projection matrix for our current app
 pub fn getProjectionPerspective(fov: f32, near: f32, far: f32) Mat4 {
-    const aspect = papp.getAspectRatio();
+    const aspect = platform.getAspectRatio();
     return Mat4.persp(fov, aspect, near, far);
 }
 
 /// Returns an orthographic projection matrix for our current app
 pub fn getProjectionOrtho(near: f32, far: f32, flip_y: bool) Mat4 {
+    const w = @as(f32, @floatFromInt(platform.getWidth()));
+    const h = @as(f32, @floatFromInt(platform.getHeight()));
     if (flip_y) {
-        return Mat4.ortho(0.0, sapp.widthf(), sapp.heightf(), 0.0, near, far);
+        return Mat4.ortho(0.0, w, h, 0.0, near, far);
     }
-    return Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), near, far);
+    return Mat4.ortho(0.0, w, 0.0, h, near, far);
 }
 
 /// Returns a custom orthographic projection matrix for our current app
@@ -1202,7 +1219,9 @@ pub fn drawDebugTextChar(x: f32, y: f32, char: u8) void {
 
 /// Sets the scaling used when drawing debug text
 pub fn setDebugTextScale(scale: f32) void {
-    debugtext.canvas(sapp.widthf() / (scale * 2.0), sapp.heightf() / (scale * 2.0));
+    const w = @as(f32, @floatFromInt(platform.getWidth()));
+    const h = @as(f32, @floatFromInt(platform.getHeight()));
+    debugtext.canvas(w / (scale * 2.0), h / (scale * 2.0));
     state.debug_text_scale = scale * 2.0;
 }
 
@@ -1269,17 +1288,17 @@ pub fn setDebugDrawColorOverride(color: Color) void {
 
 /// Returns the app's display width
 pub fn getDisplayWidth() i32 {
-    return sapp.width();
+    return platform.getWidth();
 }
 
 /// Returns the app's display height
 pub fn getDisplayHeight() i32 {
-    return sapp.height();
+    return platform.getHeight();
 }
 
 /// Returns the pixel DPI scaling used for the app
 pub fn getDisplayDPIScale() f32 {
-    return sapp.dpiScale();
+    return platform.getDpiScale();
 }
 
 /// Draw part of a binding
