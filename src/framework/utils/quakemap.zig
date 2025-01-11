@@ -11,6 +11,7 @@ const assert = std.debug.assert;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
+const ArenaAllocator = std.heap.ArenaAllocator;
 const Allocator = std.mem.Allocator;
 const TokenIterator = std.mem.TokenIterator;
 const Vec3 = math.Vec3;
@@ -69,6 +70,14 @@ pub const Entity = struct {
         };
     }
 
+    fn deinit(self: *Entity) void {
+        for (self.solids.items) |*s| {
+            s.deinit();
+        }
+        self.solids.deinit();
+        self.properties.deinit();
+    }
+
     fn indexOfProperty(self: Entity, key: []const u8) ?usize {
         for (self.properties.items, 0..) |property, i| {
             if (std.mem.eql(u8, property.key, key)) {
@@ -112,6 +121,10 @@ pub const Solid = struct {
 
     fn init(allocator: Allocator) Solid {
         return .{ .faces = std.ArrayList(Face).init(allocator) };
+    }
+
+    fn deinit(self: *Solid) void {
+        self.faces.deinit();
     }
 
     fn computeVertices(self: *Solid, transform: math.Mat4) !void {
@@ -464,14 +477,29 @@ pub const QuakeMaterial = struct {
 };
 
 pub const QuakeMap = struct {
+    arena_allocator: ArenaAllocator,
     worldspawn: Entity,
     entities: std.ArrayList(Entity),
     map_transform: math.Mat4,
 
-    pub fn read(allocator: Allocator, data: []const u8, transform: math.Mat4, error_info: *ErrorInfo) !QuakeMap {
+    pub fn read(in_allocator: Allocator, data: []const u8, transform: math.Mat4, error_info: *ErrorInfo) !QuakeMap {
+        var arena = ArenaAllocator.init(in_allocator);
+        const allocator = arena.allocator();
+
         var worldspawn: ?Entity = null;
         var entities = std.ArrayList(Entity).init(allocator);
         var iter = std.mem.tokenize(u8, data, "\r\n");
+
+        errdefer {
+            for (entities.items) |*e| {
+                e.deinit();
+            }
+            entities.deinit();
+
+            if (worldspawn) |*w| {
+                w.deinit();
+            }
+        }
 
         error_info.line_number = 0;
         while (iter.next()) |line| {
@@ -491,14 +519,21 @@ pub const QuakeMap = struct {
         }
 
         return .{
+            .arena_allocator = arena,
             .worldspawn = worldspawn orelse return error.WorldSpawnNotFound,
             .entities = entities,
             .map_transform = transform,
         };
     }
 
+    pub fn deinit(self: *QuakeMap) void {
+        self.arena_allocator.deinit();
+    }
+
     fn readEntity(allocator: Allocator, iter: *TokenIterator(u8, .any), transform: math.Mat4, error_info: *ErrorInfo) !Entity {
         var entity = Entity.init(allocator);
+        errdefer entity.deinit();
+
         while (iter.next()) |line| {
             error_info.line_number += 1;
             switch (line[0]) {
@@ -532,6 +567,8 @@ pub const QuakeMap = struct {
 
     fn readSolid(allocator: Allocator, iter: *TokenIterator(u8, .any), transform: math.Mat4, error_info: *ErrorInfo) !Solid {
         var solid = Solid.init(allocator);
+        errdefer solid.deinit();
+
         while (iter.next()) |line| {
             error_info.line_number += 1;
             switch (line[0]) {
@@ -602,6 +639,7 @@ pub const QuakeMap = struct {
 
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
+        defer mesh_builders.deinit();
 
         // Add the solids for all of the entities
         for (self.entities.items) |*entity| {
@@ -613,6 +651,13 @@ pub const QuakeMap = struct {
         // We're ready to build all of our mesh builders now!
         var meshes = std.ArrayList(mesh.Mesh).init(allocator);
         try buildMeshes(&mesh_builders, materials, fallback_material, &meshes);
+
+        // clear our mesh builders
+        var it = mesh_builders.valueIterator();
+        while (it.next()) |b| {
+            b.deinit();
+        }
+
         return meshes;
     }
 
@@ -622,6 +667,7 @@ pub const QuakeMap = struct {
 
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
+        defer mesh_builders.deinit();
 
         // Add our solids
         for (entity.solids.items) |solid| {
@@ -631,6 +677,13 @@ pub const QuakeMap = struct {
         // We're ready to build all of our mesh builders now!
         var meshes = std.ArrayList(mesh.Mesh).init(allocator);
         try buildMeshes(&mesh_builders, materials, fallback_material, &meshes);
+
+        // clear our mesh builders
+        var it = mesh_builders.valueIterator();
+        while (it.next()) |b| {
+            b.deinit();
+        }
+
         return meshes;
     }
 
