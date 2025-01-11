@@ -351,7 +351,7 @@ pub fn on_cleanup() !void {
     var it = loaded_sounds.iterator();
     while (it.next()) |sound| {
         if (sound.value_ptr.zaudio_sound) |zaudio_sound| {
-            debug.log("Cleaning up sound.", .{});
+            debug.info("Cleaning up sound.", .{});
             zaudio_sound.destroy();
         }
     }
