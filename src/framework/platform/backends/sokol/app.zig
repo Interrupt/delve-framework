@@ -18,6 +18,7 @@ pub const SokolAppConfig = struct {
     on_init_fn: *const fn () void,
     on_frame_fn: *const fn () void,
     on_cleanup_fn: *const fn () void,
+    on_resize_fn: *const fn () void,
     // maybe an on_event fn?
 };
 
@@ -28,6 +29,7 @@ pub const App = struct {
     on_init_fn: *const fn () void,
     on_frame_fn: *const fn () void,
     on_cleanup_fn: *const fn () void,
+    on_resize_fn: *const fn () void,
 
     pub fn init(cfg: SokolAppConfig) void {
         debug.log("Creating Sokol App backend", .{});
@@ -36,6 +38,7 @@ pub const App = struct {
             .on_init_fn = cfg.on_init_fn,
             .on_frame_fn = cfg.on_frame_fn,
             .on_cleanup_fn = cfg.on_cleanup_fn,
+            .on_resize_fn = cfg.on_resize_fn,
         };
     }
 
@@ -84,34 +87,48 @@ pub const App = struct {
         if (imgui_did_handle)
             return;
 
-        if (ev.type == .MOUSE_DOWN) {
-            input.onMouseDown(@intFromEnum(ev.mouse_button));
-        } else if (ev.type == .MOUSE_UP) {
-            input.onMouseUp(@intFromEnum(ev.mouse_button));
-        } else if (ev.type == .MOUSE_MOVE) {
-            input.onMouseMoved(ev.mouse_x, ev.mouse_y, ev.mouse_dx, ev.mouse_dy);
-        } else if (ev.type == .KEY_DOWN) {
-            if (!ev.key_repeat)
-                input.onKeyDown(@intFromEnum(ev.key_code));
-        } else if (ev.type == .KEY_UP) {
-            input.onKeyUp(@intFromEnum(ev.key_code));
-        } else if (ev.type == .CHAR) {
-            input.onKeyChar(ev.char_code);
-        } else if (ev.type == .TOUCHES_BEGAN) {
-            for (ev.touches) |touch| {
-                if (touch.changed)
-                    input.onTouchBegin(touch.pos_x, touch.pos_y, touch.identifier);
-            }
-        } else if (ev.type == .TOUCHES_MOVED) {
-            for (ev.touches) |touch| {
-                if (touch.changed)
-                    input.onTouchMoved(touch.pos_x, touch.pos_y, touch.identifier);
-            }
-        } else if (ev.type == .TOUCHES_ENDED) {
-            for (ev.touches) |touch| {
-                if (touch.changed)
-                    input.onTouchEnded(touch.pos_x, touch.pos_y, touch.identifier);
-            }
+        switch (ev.type) {
+            .MOUSE_DOWN => {
+                input.onMouseDown(@intFromEnum(ev.mouse_button));
+            },
+            .MOUSE_UP => {
+                input.onMouseUp(@intFromEnum(ev.mouse_button));
+            },
+            .MOUSE_MOVE => {
+                input.onMouseMoved(ev.mouse_x, ev.mouse_y, ev.mouse_dx, ev.mouse_dy);
+            },
+            .KEY_DOWN => {
+                if (!ev.key_repeat)
+                    input.onKeyDown(@intFromEnum(ev.key_code));
+            },
+            .KEY_UP => {
+                input.onKeyUp(@intFromEnum(ev.key_code));
+            },
+            .CHAR => {
+                input.onKeyChar(ev.char_code);
+            },
+            .TOUCHES_BEGAN => {
+                for (ev.touches) |touch| {
+                    if (touch.changed)
+                        input.onTouchBegin(touch.pos_x, touch.pos_y, touch.identifier);
+                }
+            },
+            .TOUCHES_MOVED => {
+                for (ev.touches) |touch| {
+                    if (touch.changed)
+                        input.onTouchMoved(touch.pos_x, touch.pos_y, touch.identifier);
+                }
+            },
+            .TOUCHES_ENDED => {
+                for (ev.touches) |touch| {
+                    if (touch.changed)
+                        input.onTouchEnded(touch.pos_x, touch.pos_y, touch.identifier);
+                }
+            },
+            .RESIZED => {
+                app.on_resize_fn();
+            },
+            else => {},
         }
     }
 

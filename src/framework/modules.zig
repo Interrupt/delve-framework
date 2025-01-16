@@ -34,6 +34,7 @@ pub const Module = struct {
     draw_fn: ?*const fn () void = null,
     post_draw_fn: ?*const fn () void = null,
     cleanup_fn: ?*const fn () anyerror!void = null,
+    on_resize_fn: ?*const fn () anyerror!void = null,
     priority: i32 = 100, // lower priority runs earlier!
 
     // state properties
@@ -197,5 +198,17 @@ pub fn cleanupModules() void {
 
         // reset back to initial state
         module.did_init = false;
+    }
+}
+
+/// Calls the onResize function of all modules
+pub fn onResizeModules() void {
+    for (modules.items) |*module| {
+        if (module.on_resize_fn != null) {
+            module.on_resize_fn.?() catch {
+                debug.err("Error resizing module: {s}", .{module.name});
+                continue;
+            };
+        }
     }
 }

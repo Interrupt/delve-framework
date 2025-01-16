@@ -11,6 +11,7 @@ pub fn main() !void {
         .name = "clear_example",
         .init_fn = on_init,
         .tick_fn = on_tick,
+        .on_resize_fn = on_resize,
     };
 
     // Pick the allocator to use depending on platform
@@ -47,4 +48,8 @@ pub fn on_tick(delta: f32) void {
     bg_color.b = (@sin(time * 2.5) + 1.0) * 0.5;
 
     delve.platform.graphics.setClearColor(bg_color);
+}
+
+pub fn on_resize() !void {
+    // Could call some resize logic here if needed
 }
