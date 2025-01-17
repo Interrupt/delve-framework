@@ -188,6 +188,8 @@ pub fn on_draw() void {
 }
 
 pub fn on_cleanup() !void {
+    offscreen_pass.destroy();
+    offscreen_pass_2.destroy();
     shader.destroy();
     material1.deinit();
     material2.deinit();
