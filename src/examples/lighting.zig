@@ -44,8 +44,6 @@ var static_mesh_material: delve.platform.graphics.Material = undefined;
 
 // This example shows an example of some simple lighting in a shader
 
-// Web build note: this does not seem to work when built in --release=fast or --release=small
-
 pub fn main() !void {
     // Pick the allocator to use depending on platform
     const builtin = @import("builtin");
