@@ -359,6 +359,15 @@ pub const ShaderImpl = struct {
         desc.vs.source = shader_info.vs_source.ptr;
         desc.vs.entry = vs_entry.ptr;
 
+        // attributes (needed for sokol's hlsl validation - not used besides that?)
+        if (shader_program.vs.inputs) |inputs| {
+            for (inputs) |input| {
+                desc.attrs[input.slot].sem_index = @intCast(input.sem_index);
+                desc.attrs[input.slot].sem_name = input.sem_name.ptr;
+                desc.attrs[input.slot].name = input.name.ptr;
+            }
+        }
+
         // vs uniforms
         if (shader_program.vs.uniform_blocks) |uniform_blocks| {
             for (uniform_blocks) |block| {
