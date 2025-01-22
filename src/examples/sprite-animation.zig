@@ -13,8 +13,8 @@ var sprite_animation: delve.graphics.sprites.PlayingAnimation = undefined;
 
 var loop_delay_time: f32 = 0.0;
 
-var shader_default: graphics.Shader = undefined;
 var test_material: graphics.Material = undefined;
+var shader: graphics.Shader = undefined;
 
 // This example shows how to draw animated sprites out of a sprite sheet
 
@@ -63,17 +63,12 @@ fn on_init() !void {
     // make the texture to draw
     sprite_texture = graphics.Texture.init(spritesheet_image);
 
-    // Load the default shader, but from a Yaml description file!
-    const loaded_shader = try delve.graphics.shaders.loadFromYaml(.{}, "assets/shaders/built/default/default_reflection.yaml");
-    if (loaded_shader == null) {
-        delve.debug.log("Could not load shader from yaml!", .{});
-        return;
-    }
-    shader_default = loaded_shader.?;
+    // make our shader to draw with
+    shader = try graphics.Shader.initDefault(.{});
 
     // make a material to draw with
     test_material = try graphics.Material.init(.{
-        .shader = shader_default,
+        .shader = shader,
         .texture_0 = sprite_texture,
         .cull_mode = .BACK,
         .blend_mode = .NONE, // no alpha blending
@@ -138,6 +133,6 @@ fn on_cleanup() !void {
     sprite_texture.destroy();
     sprite_batch.deinit();
     sprite_sheet.deinit();
+    shader.destroy();
     test_material.deinit();
-    shader_default.destroy();
 }
