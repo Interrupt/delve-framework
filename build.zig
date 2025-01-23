@@ -113,6 +113,9 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
+    // Sokol module (exposed for using shader file outside of delve)
+    try b.modules.put("sokol", dep_sokol.module("sokol"));
+
     for (build_collection.add_imports) |build_import| {
         delve_mod.addImport(build_import.name, build_import.module);
     }
