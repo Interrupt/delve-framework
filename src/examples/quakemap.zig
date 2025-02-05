@@ -150,7 +150,7 @@ pub fn on_init() !void {
     var err: delve.utils.quakemap.ErrorInfo = undefined;
     quake_map = try delve.utils.quakemap.QuakeMap.read(allocator, test_map_file, map_transform, &err);
 
-    shader = try graphics.Shader.initDefault(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() });
+    shader = try graphics.Shader.initFromBuiltin(.{ .vertex_attributes = delve.graphics.mesh.getShaderAttributes() }, delve.shaders.default_mesh);
 
     // Create a material out of the texture
     fallback_material = try graphics.Material.init(.{
@@ -337,4 +337,6 @@ pub fn on_cleanup() !void {
     }
     materials.deinit();
     shader.destroy();
+
+    quake_map.deinit();
 }

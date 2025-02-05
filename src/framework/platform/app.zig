@@ -63,6 +63,7 @@ pub fn init() !void {
         .on_init_fn = on_init,
         .on_cleanup_fn = on_cleanup,
         .on_frame_fn = on_frame,
+        .on_resize_fn = on_resize,
     });
 
     state.game_loop_timer = try time.Timer.start();
@@ -171,6 +172,10 @@ fn on_frame() void {
 
     // keep under our FPS limit, if needed
     state.did_limit_fps = limitFps();
+}
+
+fn on_resize() void {
+    modules.onResizeModules();
 }
 
 fn limitFps() bool {

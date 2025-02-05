@@ -567,18 +567,18 @@ pub const RenderPass = struct {
     /// Destroys a render pass and its associated textures
     pub fn destroy(self: *RenderPass) void {
         if (self.render_texture_color != null) {
-            self.render_texture_color.destroy();
+            self.render_texture_color.?.destroy();
             self.render_texture_color = null;
         }
 
         if (self.render_texture_depth != null) {
-            self.render_texture_depth.destroy();
+            self.render_texture_depth.?.destroy();
             self.render_texture_depth = null;
         }
 
-        if (self.sokol_pass != null) {
-            sg.destroyPass(self.sokol_pass);
-            self.sokol_pass = null;
+        if (self.sokol_attachments != null) {
+            sg.destroyAttachments(self.sokol_attachments.?);
+            self.sokol_attachments = null;
         }
     }
 };

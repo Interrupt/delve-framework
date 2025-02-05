@@ -163,6 +163,14 @@ pub const Camera = struct {
 
     /// A simple FPS flying camera, for examples and debugging
     pub fn runSimpleCamera(self: *Camera, move_speed: f32, turn_speed: f32, use_mouselook: bool) void {
+        // handle the viewport changing size
+        const width: f32 = @floatFromInt(app.getWidth());
+        const height: f32 = @floatFromInt(app.getHeight());
+        if (width != self._viewport_width or height != self._viewport_height) {
+            self.setViewport(width, height);
+        }
+
+        // handle input
         if (input.isKeyPressed(.W)) {
             self.moveForward(move_speed);
         } else if (input.isKeyPressed(.S)) {
