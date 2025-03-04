@@ -37,10 +37,10 @@ pub fn loadFile(file_path: [:0]const u8) !Image {
     //
     // return loadBytes(contents);
 
-    return Image.loadFromFile(file_path, 0);
+    return Image.loadFromFile(file_path, 4);
 }
 
 pub fn loadBytes(image_bytes: []const u8) !Image {
     debug.info("Loading image bytes", .{});
-    return Image.loadFromMemory(image_bytes, 0);
+    return Image.loadFromMemory(image_bytes, 4);
 }
