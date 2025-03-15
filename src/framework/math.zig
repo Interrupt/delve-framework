@@ -187,8 +187,8 @@ pub const Vec3 = extern struct {
         return Vec3.new(@max(left.x, right.x), @max(left.y, right.y), @max(left.z, right.z));
     }
 
-    pub fn toVec4(v: *const Vec3) Vec4 {
-        return Vec4.new(v.x, v.y, v.z, 0.0);
+    pub fn toVec4(v: *const Vec3, w: f32) Vec4 {
+        return Vec4.new(v.x, v.y, v.z, w);
     }
 
     pub const zero = Vec3.new(0.0, 0.0, 0.0);

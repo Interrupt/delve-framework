@@ -5,6 +5,7 @@ const boundingbox = @import("boundingbox.zig");
 const assert = std.debug.assert;
 
 const Vec3 = math.Vec3;
+const Vec4 = math.Vec4;
 
 // Based a lot on the LibGdx plane class
 
@@ -158,17 +159,16 @@ pub const Plane = struct {
     }
 
     pub fn mulMat4(self: *const Plane, transform: math.Mat4) Plane {
-        const origin = self.normal.scale(self.d);
-        const along = origin.add(self.normal);
+        const on_plane = self.normal.scale(self.d).toVec4(1.0);
+        const normal = self.normal.toVec4(0.0);
 
-        // get a transformed origin and point down the plane normal direction
-        const origin_trans = origin.mulMat4(transform);
-        const along_trans = along.mulMat4(transform);
+        const transformed_on_plane = on_plane.mulMat4(transform);
+        const transformed_normal = normal.mulMat4(transform.invert().transpose());
 
-        // make the new normal based on the new direction
-        const normal = along_trans.sub(origin_trans).norm();
+        const new_normal = transformed_normal.toVec3().norm();
+        const new_distance = transformed_on_plane.toVec3().dot(new_normal);
 
-        return Plane.init(normal, origin_trans.scale(-1));
+        return .{ .normal = new_normal, .d = new_distance };
     }
 };
 
