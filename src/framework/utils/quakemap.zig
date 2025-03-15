@@ -853,7 +853,7 @@ test "QuakeMap.read" {
     const allocator = gpa.allocator();
 
     var err: ErrorInfo = undefined;
-    const map = try QuakeMap.read(allocator, test_map_file, &err);
+    const map = try QuakeMap.read(allocator, test_map_file, math.Mat4.identity, &err);
 
     // Check to see if we have a world
     assert(std.mem.eql(u8, map.worldspawn.classname, "worldspawn"));

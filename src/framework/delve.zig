@@ -92,3 +92,11 @@ pub fn init(allocator: std.mem.Allocator) !void {
     mem.init(allocator);
     debug.log("Delve Framework Initialized", .{});
 }
+
+test {
+    // can run these via 'zig test src/framework/delve.zig'
+    @import("std").testing.refAllDecls(math);
+    @import("std").testing.refAllDecls(spatial);
+    @import("std").testing.refAllDecls(platform);
+    @import("std").testing.refAllDecls(utils);
+}
