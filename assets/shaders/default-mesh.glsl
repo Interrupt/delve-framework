@@ -23,11 +23,15 @@ in vec4 tangents;
 
 out vec4 color;
 out vec2 uv;
+out vec3 normal;
+out vec4 tangent;
 
 void main() {
     gl_Position = u_projViewMatrix * u_modelMatrix * pos;
     color = color0 * u_color;
     uv = texcoord0 + u_tex_pan.xy;
+    normal = normals;
+    tangent = tangents;
 }
 #pragma sokol @end
 
@@ -41,6 +45,8 @@ uniform fs_params {
 
 in vec4 color;
 in vec2 uv;
+in vec3 normal;
+in vec4 tangent;
 out vec4 frag_color;
 
 void main() {
@@ -54,6 +60,10 @@ void main() {
     // to also make sprite flash effects easier, allow a color to take over the final output
     float override_mod = 1.0 - u_color_override.a;
     c.rgb = (c.rgb * override_mod) + (u_color_override.rgb * u_color_override.a);
+
+    // test if these values were being optimized away
+    float test = normal.x;
+    float test2 = tangent.x;
 
     frag_color = c;
 }

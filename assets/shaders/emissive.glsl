@@ -70,6 +70,10 @@ void main() {
     float override_mod = 1.0 - u_color_override.a;
     c.rgb = (c.rgb * override_mod) + (u_color_override.rgb * u_color_override.a);
 
+    // test if these values were being optimized away
+    float test = normal.x;
+    float test2 = tangent.x;
+
     frag_color = c;
 }
 #pragma sokol @end
