@@ -601,8 +601,8 @@ pub const QuakeMap = struct {
         const v2 = try readPoint(&iter, math.Mat4.identity);
 
         // map planes are clockwise, flip them around when computing the plane to get a counter-clockwise plane
-        face.plane = Plane.initFromTriangle(v2.mulMat4(transform), v1.mulMat4(transform), v0.mulMat4(transform));
         face.untransformed_plane = Plane.initFromTriangle(v2, v1, v0);
+        face.plane = face.untransformed_plane.mulMat4(transform);
         face.uv_direction = closestAxis(face.untransformed_plane.normal);
         face.u_axis = if (face.uv_direction.x == 1) Vec3.new(0, 1, 0) else Vec3.new(1, 0, 0);
         face.v_axis = if (face.uv_direction.z == 1) Vec3.new(0, -1, 0) else Vec3.new(0, 0, -1);
