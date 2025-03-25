@@ -287,6 +287,7 @@ pub const Vec4 = extern struct {
     pub const zero = Vec4.new(0.0, 0.0, 0.0, 1.0);
 };
 
+// Mat4: 4x4 matrix stored in row-major
 pub const Mat4 = extern struct {
     m: [4][4]f32,
 

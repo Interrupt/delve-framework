@@ -7,7 +7,6 @@ const rays = @import("../spatial/rays.zig");
 const mesh = @import("../graphics/mesh.zig");
 const colors = @import("../colors.zig");
 const graphics = @import("../platform/graphics.zig");
-const assert = std.debug.assert;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
@@ -91,24 +90,35 @@ pub const Entity = struct {
         return self.indexOfProperty(key) != null;
     }
 
-    pub fn getStringProperty(self: Entity, key: []const u8) ![]const u8 {
-        const i = self.indexOfProperty(key) orelse return error.NotFound;
+    pub fn getStringProperty(self: Entity, key: []const u8) ?[]const u8 {
+        const i = self.indexOfProperty(key) orelse return null;
         return self.properties.items[i].value;
     }
 
-    pub fn getFloatProperty(self: Entity, key: []const u8) !f32 {
-        const string = try self.getStringProperty(key);
-        return try parseFloat(string);
+    pub fn getFloatProperty(self: Entity, key: []const u8) ?f32 {
+        const string_opt = self.getStringProperty(key);
+        if (string_opt == null) return null;
+        return parseFloat(string_opt.?) catch {
+            return null;
+        };
     }
 
-    pub fn getVec3Property(self: Entity, key: []const u8) !Vec3 {
-        const string = try self.getStringProperty(key);
-        var it = std.mem.tokenizeScalar(u8, string, ' ');
+    pub fn getVec3Property(self: Entity, key: []const u8) ?Vec3 {
+        const string_opt = self.getStringProperty(key);
+        if (string_opt == null) return null;
+
+        var it = std.mem.tokenizeScalar(u8, string_opt.?, ' ');
 
         var vec3: Vec3 = undefined;
-        vec3.x = try parseFloat(it.next() orelse return error.ExpectedFloat);
-        vec3.y = try parseFloat(it.next() orelse return error.ExpectedFloat);
-        vec3.z = try parseFloat(it.next() orelse return error.ExpectedFloat);
+        vec3.x = parseFloat(it.next() orelse return null) catch {
+            return null;
+        };
+        vec3.y = parseFloat(it.next() orelse return null) catch {
+            return null;
+        };
+        vec3.z = parseFloat(it.next() orelse return null) catch {
+            return null;
+        };
 
         return vec3;
     }
@@ -117,6 +127,7 @@ pub const Entity = struct {
 pub const Solid = struct {
     faces: std.ArrayList(Face),
     bounds: BoundingBox = undefined,
+    hidden: bool = false, // whether to add to meshes
     custom_flags: u32 = 0, // eg: water, lava, etc
 
     fn init(allocator: Allocator) Solid {
@@ -590,8 +601,8 @@ pub const QuakeMap = struct {
         const v2 = try readPoint(&iter, math.Mat4.identity);
 
         // map planes are clockwise, flip them around when computing the plane to get a counter-clockwise plane
-        face.plane = Plane.initFromTriangle(v2.mulMat4(transform), v1.mulMat4(transform), v0.mulMat4(transform));
         face.untransformed_plane = Plane.initFromTriangle(v2, v1, v0);
+        face.plane = face.untransformed_plane.mulMat4(transform);
         face.uv_direction = closestAxis(face.untransformed_plane.normal);
         face.u_axis = if (face.uv_direction.x == 1) Vec3.new(0, 1, 0) else Vec3.new(1, 0, 0);
         face.v_axis = if (face.uv_direction.z == 1) Vec3.new(0, -1, 0) else Vec3.new(0, 0, -1);
@@ -644,6 +655,9 @@ pub const QuakeMap = struct {
         // Add the solids for all of the entities
         for (self.entities.items) |*entity| {
             for (entity.solids.items) |solid| {
+                if (solid.hidden)
+                    continue;
+
                 try addSolidToMeshBuilders(allocator, &mesh_builders, solid, materials, transform);
             }
         }
@@ -671,6 +685,9 @@ pub const QuakeMap = struct {
 
         // Add our solids
         for (entity.solids.items) |solid| {
+            if (solid.hidden)
+                continue;
+
             try addSolidToMeshBuilders(allocator, &mesh_builders, solid, materials, transform);
         }
 
@@ -826,6 +843,8 @@ fn calculateRotatedUV(face: Face, u_axis: *Vec3, v_axis: *Vec3) void {
 }
 
 test "QuakeMap.read" {
+    const testing = std.testing;
+
     // Test loading a very simple Quake map!
     // This is the example from https://quakewiki.org/wiki/Quake_Map_Format
 
@@ -847,6 +866,7 @@ test "QuakeMap.read" {
         \\"spawnflags" "0"
         \\"classname" "info_player_start"
         \\"origin" "32 32 24"
+        \\"test_string" "hello"
         \\}
     ;
 
@@ -856,32 +876,34 @@ test "QuakeMap.read" {
     const map = try QuakeMap.read(allocator, test_map_file, math.Mat4.identity, &err);
 
     // Check to see if we have a world
-    assert(std.mem.eql(u8, map.worldspawn.classname, "worldspawn"));
-    assert(map.worldspawn.solids.items.len == 1);
-    assert(map.worldspawn.solids.items[0].faces.items.len == 6);
+    try testing.expectEqualSlices(u8, "worldspawn", map.worldspawn.classname);
+    try testing.expect(map.worldspawn.solids.items.len == 1);
+    try testing.expect(map.worldspawn.solids.items[0].faces.items.len == 6);
 
     // Check to see that our one solid is a cube!
     for (0..6) |idx| {
         const face = map.worldspawn.solids.items[0].faces.items[idx];
-        assert(face.vertices.len == 4);
+        try testing.expect(face.vertices.len == 4);
     }
 
     // Check our first face to see if it looks accurate
     const first_face = map.worldspawn.solids.items[0].faces.items[0];
-    assert(std.mem.eql(u8, first_face.texture_name, "mmetal1_2"));
-    assert(first_face.shift_x == 0);
-    assert(first_face.shift_y == 0);
-    assert(first_face.rotation == 0);
-    assert(first_face.scale_x == 1);
-    assert(first_face.scale_y == 1);
-    assert(std.meta.eql(first_face.vertices[0], Vec3.new(256, 0, 0)));
-    assert(std.meta.eql(first_face.vertices[1], Vec3.new(256, 0, -64)));
-    assert(std.meta.eql(first_face.vertices[2], Vec3.new(256, 256, -64)));
-    assert(std.meta.eql(first_face.vertices[3], Vec3.new(256, 256, 0)));
+    try testing.expectEqualSlices(u8, "mmetal1_2", first_face.texture_name);
+    try testing.expect(first_face.shift_x == 0);
+    try testing.expect(first_face.shift_y == 0);
+    try testing.expect(first_face.rotation == 0);
+    try testing.expect(first_face.scale_x == 1);
+    try testing.expect(first_face.scale_y == 1);
+    try testing.expectEqual(first_face.vertices[0], Vec3.new(256, 0, 0));
+    try testing.expectEqual(first_face.vertices[1], Vec3.new(256, 0, -64));
+    try testing.expectEqual(first_face.vertices[2], Vec3.new(256, 256, -64));
+    try testing.expectEqual(first_face.vertices[3], Vec3.new(256, 256, 0));
 
     // Check our one entity
-    assert(map.entities.items.len == 1);
-    assert(std.mem.eql(u8, map.entities.items[0].classname, "info_player_start"));
-    assert(map.entities.items[0].spawnflags == 0);
-    assert(std.meta.eql(map.entities.items[0].getVec3Property("origin"), Vec3.new(32, 32, 24)));
+    try testing.expect(map.entities.items.len == 1);
+    try testing.expectEqualSlices(u8, "info_player_start", map.entities.items[0].classname);
+    try testing.expect(map.entities.items[0].spawnflags == 0);
+    try testing.expectEqual(map.entities.items[0].getVec3Property("origin"), Vec3.new(32, 32, 24));
+    try testing.expectEqual(map.entities.items[0].getFloatProperty("bogus"), null);
+    try testing.expectEqualSlices(u8, "hello", map.entities.items[0].getStringProperty("test_string").?);
 }
