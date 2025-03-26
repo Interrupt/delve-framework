@@ -31,6 +31,33 @@ pub const ErrorInfo = struct {
 pub const QuakeMapHit = struct {
     loc: Vec3,
     plane: Plane,
+    solid: *const Solid,
+
+    // Find which of our faces was hit by getting the closest one
+    pub fn getFace(self: *const QuakeMapHit) *Face {
+        var closest_face_idx: usize = 0;
+        var closest_face_dist: f32 = std.math.floatMax(f32);
+        var closest_angle_diff: f32 = 0;
+
+        for (0..self.solid.faces.items.len) |f_idx| {
+            const check_plane = &self.solid.faces.items[f_idx].plane;
+            const dist = check_plane.distanceToPoint(self.loc);
+            const angle_diff = check_plane.normal.dot(self.plane.normal);
+
+            // ignore hits behind us!
+            if (dist < -0.001 or angle_diff <= 0.0)
+                continue;
+
+            // save the new hit if it is closer
+            if (dist <= closest_face_dist and angle_diff >= closest_angle_diff) {
+                closest_face_idx = f_idx;
+                closest_face_dist = dist;
+                closest_angle_diff = angle_diff;
+            }
+        }
+
+        return &self.solid.faces.items[closest_face_idx];
+    }
 };
 
 pub const Property = struct {
@@ -395,6 +422,7 @@ pub const Solid = struct {
                         worldhit = .{
                             .loc = h,
                             .plane = p,
+                            .solid = self,
                         };
 
                         // convex, so should only have one collision
@@ -442,6 +470,7 @@ pub const Solid = struct {
                     worldhit = .{
                         .loc = h,
                         .plane = p,
+                        .solid = self,
                     };
 
                     // convex, so should only have one collision
@@ -486,6 +515,7 @@ pub const Solid = struct {
                     worldhit = .{
                         .loc = h.hit_pos,
                         .plane = p,
+                        .solid = self,
                     };
 
                     // convex, so should only have one collision
@@ -502,6 +532,8 @@ pub const QuakeMaterial = struct {
     material: graphics.Material,
     tex_size_x: i32 = 32,
     tex_size_y: i32 = 32,
+    custom_flags: u32 = 0, // eg: dirt, metal, etc
+    hidden: bool = false, // whether to add this to mesh builders
 };
 
 pub const QuakeMap = struct {
@@ -660,7 +692,7 @@ pub const QuakeMap = struct {
 
     /// Builds meshes for the map, bucketed by materials
     pub fn buildWorldMeshes(self: *const QuakeMap, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
-        return try buildMeshesForEntity(&self.worldspawn, allocator, transform, materials, fallback_material);
+        return try self.buildMeshesForEntity(&self.worldspawn, allocator, transform, materials, fallback_material);
     }
 
     /// Builds meshes for all entity solids - in a real scenario, you'll probably want to use buildMeshesForEntity instead
@@ -694,7 +726,9 @@ pub const QuakeMap = struct {
     }
 
     /// Builds meshes for a specific entity
-    pub fn buildMeshesForEntity(entity: *const Entity, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
+    pub fn buildMeshesForEntity(self: *const QuakeMap, entity: *const Entity, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
+        _ = self;
+
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
         defer mesh_builders.deinit();
@@ -760,6 +794,10 @@ pub const QuakeMap = struct {
         // first find our texture scaling
         var mat_tex_size = Vec2.new(32.0, 32.0);
         if (material) |mat| {
+            // skip this face if material is hidden
+            if (mat.hidden)
+                return;
+
             mat_tex_size.x = @floatFromInt(mat.tex_size_x);
             mat_tex_size.y = @floatFromInt(mat.tex_size_y);
         }
