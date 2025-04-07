@@ -82,7 +82,7 @@ pub fn runLine(lua_string: [:0]const u8) !void {
     };
 }
 
-pub fn openModule(comptime name: [:0]const u8, comptime open_func: zlua.ZigFn) void {
+pub fn openModule(comptime name: [:0]const u8, comptime open_func: anytype) void {
     lua.requireF(name, zlua.wrap(open_func), true);
     debug.log("Lua: registered module '{s}'", .{name});
 }

@@ -16,15 +16,14 @@ pub fn init() !void {
     // Start lua
     try lua_util.init();
 
-    // TODO fix this
     // Bind all the libraries using some meta programming magic at compile time
-    // try bindZigLibrary("assets", @import("../api/assets.zig"));
-    // try bindZigLibrary("display", @import("../api/display.zig"));
-    // try bindZigLibrary("draw", @import("../api/draw.zig"));
-    // try bindZigLibrary("text", @import("../api/text.zig"));
-    // try bindZigLibrary("graphics", @import("../api/graphics.zig"));
-    // try bindZigLibrary("input.mouse", @import("../api/mouse.zig"));
-    // try bindZigLibrary("input.keyboard", @import("../api/keyboard.zig"));
+    try bindZigLibrary("assets", @import("../api/assets.zig"));
+    try bindZigLibrary("display", @import("../api/display.zig"));
+    try bindZigLibrary("draw", @import("../api/draw.zig"));
+    try bindZigLibrary("text", @import("../api/text.zig"));
+    try bindZigLibrary("graphics", @import("../api/graphics.zig"));
+    try bindZigLibrary("input.mouse", @import("../api/mouse.zig"));
+    try bindZigLibrary("input.keyboard", @import("../api/keyboard.zig"));
 }
 
 pub fn deinit() void {
@@ -45,10 +44,8 @@ fn isModuleFunction(comptime name: [:0]const u8, comptime in_type: anytype) bool
 
 fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
     comptime {
-        const info = @typeInfo(module);
         // Get all the public declarations in this module
-        const decls = info.@"struct".decls;
-        @compileLog(@typeName(@TypeOf(module)));
+        const decls = @typeInfo(module).@"struct".decls;
         // filter out only the public functions
         var gen_fields: []const std.builtin.Type.Declaration = &[_]std.builtin.Type.Declaration{};
         for (decls) |d| {
