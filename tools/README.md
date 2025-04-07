@@ -1,0 +1,1 @@
+Download sokol-shdc from https://github.com/floooh/sokol-tools-bin/tree/bindings-cleanup
