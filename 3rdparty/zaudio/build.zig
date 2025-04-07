@@ -37,7 +37,7 @@ pub fn build(b: *std.Build) void {
 
     miniaudio.addCSourceFile(.{
         .file = b.path("src/zaudio.c"),
-        .flags = &.{if (target.result.isWasm()) "-std=gnu99" else "-std=c99"}, // DELVE FRAMEWORK EDIT: Need gnu99 for web audio
+        .flags = &.{if (target.result.cpu.arch.isWasm()) "-std=gnu99" else "-std=c99"}, // DELVE FRAMEWORK EDIT: Need gnu99 for web audio
     });
     miniaudio.addCSourceFile(.{
         .file = b.path("libs/miniaudio/miniaudio.c"),
@@ -48,7 +48,7 @@ pub fn build(b: *std.Build) void {
             "-DMA_NO_JACK",
             "-DMA_NO_DSOUND",
             "-DMA_NO_WINMM",
-            if (target.result.isWasm()) "-std=gnu99" else "-std=c99", // DELVE FRAMEWORK EDIT: Need gnu99 for web audio
+            if (target.result.cpu.arch.isWasm()) "-std=gnu99" else "-std=c99", // DELVE FRAMEWORK EDIT: Need gnu99 for web audio
             "-fno-sanitize=undefined",
             if (target.result.os.tag == .macos) "-DMA_NO_RUNTIME_LINKING" else "",
         },

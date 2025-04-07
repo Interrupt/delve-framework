@@ -4,13 +4,13 @@
 
     .dependencies = .{
         .cimgui = .{
-            .url = "git+https://github.com/cimgui/cimgui.git#1.90.7",
-            .hash = "1220d925a8374fbc3a21a5b46025fb867672d85b4099d2151bed607618e08b0cd71c",
+            .url = "git+https://github.com/floooh/dcimgui.git#3969c14f7c7abda0e4b59d2616b17b7fb9eb0827",
+            .hash = "cimgui-0.1.0-44ClkTt5hgBU8BelH8W_G8mso3ys_hrqNUWwJvaxXDs5",
         },
-        .imgui = .{
-            .url = "git+https://github.com/ocornut/imgui.git#v1.90.7",
-            .hash = "122072b125179c7cbdbbee8fa81d22a1050a950ad61cfeefee8dc0dca5423b5d05b9",
-        },
+        // .imgui = .{
+        //     .url = "git+https://github.com/ocornut/imgui.git#v1.90.7",
+        //     .hash = "122072b125179c7cbdbbee8fa81d22a1050a950ad61cfeefee8dc0dca5423b5d05b9",
+        // },
     },
     .paths = .{
         "",

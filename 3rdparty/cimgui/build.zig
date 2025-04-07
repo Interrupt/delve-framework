@@ -48,7 +48,7 @@ pub fn build(b: *std.Build) void {
     const cimgui_h = dep_cimgui.path("cimgui.h");
     const translateC = b.addTranslateC(.{
         .root_source_file = cimgui_h,
-        .target = b.host,
+        .target = b.graph.host,
         .optimize = optimize,
     });
     translateC.defineCMacroRaw("CIMGUI_DEFINE_ENUMS_AND_STRUCTS=\"\"");

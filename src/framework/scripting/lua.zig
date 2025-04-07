@@ -1,9 +1,9 @@
-const ziglua = @import("ziglua");
+const zlua = @import("zlua");
 const std = @import("std");
 const debug = @import("../debug.zig");
 const mem = @import("../mem.zig");
 
-const Lua = ziglua.Lua;
+const Lua = zlua.Lua;
 
 // Allocator for the Lua VM
 var lua_arena: std.heap.ArenaAllocator = undefined;
@@ -25,7 +25,7 @@ pub fn init() !void {
     lua_allocator = lua_arena.allocator();
 
     // Initialize the Lua VM!
-    lua = try Lua.init(&lua_allocator);
+    lua = try Lua.init(lua_allocator);
 
     // Turn on to get lua debug output
     if (enable_debug_logging)
@@ -75,15 +75,15 @@ pub fn runLine(lua_string: [:0]const u8) !void {
     };
 
     // Execute the new line
-    lua.protectedCall(0, 0, 0) catch |err| {
+    lua.protectedCall(.{ .args = 0 }) catch |err| {
         debug.log("{s}", .{try lua.toString(-1)});
         lua.pop(1);
         return err;
     };
 }
 
-pub fn openModule(comptime name: [:0]const u8, comptime open_func: ziglua.ZigFn) void {
-    lua.requireF(name, ziglua.wrap(open_func), true);
+pub fn openModule(comptime name: [:0]const u8, comptime open_func: zlua.ZigFn) void {
+    lua.requireF(name, zlua.wrap(open_func), true);
     debug.log("Lua: registered module '{s}'", .{name});
 }
 
@@ -107,7 +107,7 @@ pub fn callFunction(func_name: [:0]const u8) !void {
         return;
     }
 
-    lua.protectedCall(0, 0, 0) catch |err| {
+    lua.protectedCall(.{ .args = 0 }) catch |err| {
         debug.log("Lua: error calling func {s}: {!s} {}", .{ func_name, lua.toString(-1), err });
         lua.pop(1);
         return err;
@@ -117,7 +117,7 @@ pub fn callFunction(func_name: [:0]const u8) !void {
 pub fn setDebugHook() void {
     // create a debug hook to print state
     const hook = struct {
-        fn inner(l: *Lua, event: ziglua.Event, i: *ziglua.DebugInfo) void {
+        fn inner(l: *Lua, event: zlua.Event, i: *zlua.DebugInfo) void {
             const type_name = switch (event) {
                 .call => "call",
                 .line => "line",
@@ -135,7 +135,7 @@ pub fn setDebugHook() void {
         }
     }.inner;
 
-    lua.setHook(ziglua.wrap(hook), .{ .call = true, .line = true, .ret = true }, 0);
+    lua.setHook(zlua.wrap(hook), .{ .call = true, .line = true, .ret = true }, 0);
 }
 
 fn printDebug() void {

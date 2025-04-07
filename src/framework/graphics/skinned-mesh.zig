@@ -527,15 +527,16 @@ pub fn sampleAnimation(comptime T: type, sampler: zmesh.io.zcgltf.AnimationSampl
     }
 }
 
+// TODO check this
 /// Returns the index of the last sample less than `t`.
 fn stepInterpolation(samples: []const f32, t: f32) usize {
     std.debug.assert(samples.len > 0);
     const S = struct {
-        fn lessThan(_: void, lhs: f32, rhs: f32) bool {
-            return lhs < rhs;
+        fn compareF32(context: f32, item: f32) std.math.Order {
+            return std.math.order(context, item);
         }
     };
-    const i = std.sort.lowerBound(f32, t, samples, {}, S.lessThan);
+    const i = std.sort.lowerBound(f32, samples, @as(f32, t), S.compareF32);
     return if (i > 0) i - 1 else 0;
 }
 

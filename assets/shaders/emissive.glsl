@@ -8,7 +8,7 @@
 #pragma sokol @ctype mat4 m.Mat4
 
 #pragma sokol @vs vs
-uniform vs_params {
+layout(binding=0) uniform vs_params {
     mat4 u_projViewMatrix;
     mat4 u_modelMatrix;
     vec4 u_color;
@@ -38,10 +38,10 @@ void main() {
 #pragma sokol @end
 
 #pragma sokol @fs fs
-uniform texture2D tex;
-uniform texture2D tex_emissive;
-uniform sampler smp;
-uniform fs_params {
+layout(binding=1) uniform texture2D tex;
+layout(binding=2) uniform texture2D tex_emissive;
+layout(binding=1) uniform sampler smp;
+layout(binding=1) uniform fs_params {
     vec4 u_color_override;
     float u_alpha_cutoff;
 };
