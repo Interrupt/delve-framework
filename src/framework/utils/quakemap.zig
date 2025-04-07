@@ -549,7 +549,7 @@ pub const QuakeMap = struct {
 
         var worldspawn: ?Entity = null;
         var entities = std.ArrayList(Entity).init(allocator);
-        var iter = std.mem.tokenize(u8, data, "\r\n");
+        var iter = std.mem.tokenizeAny(u8, data, "\r\n");
 
         errdefer {
             for (entities.items) |*e| {

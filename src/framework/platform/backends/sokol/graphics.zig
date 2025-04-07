@@ -64,7 +64,10 @@ pub const BindingsImpl = struct {
         // maybe have a default material instead?
         const samplerDesc = convertFilterModeToSamplerDesc(.NEAREST);
         bindings.impl.default_sokol_sampler = sg.makeSampler(samplerDesc);
-        bindings.impl.sokol_bindings.?.fs.samplers[0] = bindings.impl.default_sokol_sampler;
+        // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
+        // 1 because in the glsl definitions we have only fs samplers and they are annotated with layout(binding=1)
+        // they start at 1
+        bindings.impl.sokol_bindings.?.samplers[1] = bindings.impl.default_sokol_sampler;
 
         return bindings;
     }
@@ -144,19 +147,28 @@ pub const BindingsImpl = struct {
             return;
 
         // set the texture to the default fragment shader image slot
-        self.impl.sokol_bindings.?.fs.images[0] = texture.sokol_image.?;
+        // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
+        // 1 because in the glsl definitions we have only fs tex and they are annotated with layout(binding=1)
+        // they start at 1
+        self.impl.sokol_bindings.?.images[1] = texture.sokol_image.?;
     }
 
     pub fn updateFromMaterial(self: *Bindings, material: *Material) void {
         for (0..material.state.textures.len) |i| {
             if (material.state.textures[i] != null)
-                self.impl.sokol_bindings.?.fs.images[i] = material.state.textures[i].?.sokol_image.?;
+                // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
+                // + 1 because in the glsl definitions we have only fs tex and they are annotated with layout(binding=1)
+                // they start at 1
+                self.impl.sokol_bindings.?.images[i + 1] = material.state.textures[i].?.sokol_image.?;
         }
 
         // bind samplers
         for (material.state.sokol_samplers, 0..) |sampler, i| {
             if (sampler) |s|
-                self.impl.sokol_bindings.?.fs.samplers[i] = s;
+                // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
+                // + 1 because in the glsl definitions we have only fs samplers and they are annotated with layout(binding=1)
+                // they start at 1
+                self.impl.sokol_bindings.?.samplers[i + 1] = s;
         }
 
         // also set shader uniforms here?
@@ -434,10 +446,10 @@ pub const ShaderImpl = struct {
         // fs images
         if (shader_program.fs.images) |imgs| {
             for (imgs) |img| {
-                desc.fs.images[img.slot].used = true;
-                desc.fs.images[img.slot].multisampled = stringBool(img.multisampled);
-                desc.fs.images[img.slot].image_type = stringImageTypeToSokolType(img.type);
-                desc.fs.images[img.slot].sample_type = stringImageSampleTypeToSokolType(img.sample_type);
+                desc.images[img.slot].used = true;
+                desc.images[img.slot].multisampled = stringBool(img.multisampled);
+                desc.images[img.slot].image_type = stringImageTypeToSokolType(img.type);
+                desc.images[img.slot].sample_type = stringImageSampleTypeToSokolType(img.sample_type);
                 try fs_images_hashmap.put(img.name, img.slot);
             }
         }
@@ -454,18 +466,18 @@ pub const ShaderImpl = struct {
         // fs sampler pairs
         if (shader_program.fs.image_sampler_pairs) |pairs| {
             for (pairs) |pair| {
-                desc.fs.image_sampler_pairs[pair.slot].used = true;
-                desc.fs.image_sampler_pairs[pair.slot].image_slot = @intCast(pair.slot);
-                desc.fs.image_sampler_pairs[pair.slot].sampler_slot = @intCast(pair.slot);
+                desc.image_sampler_pairs[pair.slot].used = true;
+                desc.image_sampler_pairs[pair.slot].image_slot = @intCast(pair.slot);
+                desc.image_sampler_pairs[pair.slot].sampler_slot = @intCast(pair.slot);
             }
         }
 
         // vs sampler pairs
         if (shader_program.fs.image_sampler_pairs) |pairs| {
             for (pairs) |pair| {
-                desc.fs.image_sampler_pairs[pair.slot].used = true;
-                desc.fs.image_sampler_pairs[pair.slot].image_slot = @intCast(fs_images_hashmap.get(pair.image_name).?);
-                desc.fs.image_sampler_pairs[pair.slot].sampler_slot = @intCast(fs_samplers_hashmap.get(pair.sampler_name).?);
+                desc.image_sampler_pairs[pair.slot].used = true;
+                desc.image_sampler_pairs[pair.slot].image_slot = @intCast(fs_images_hashmap.get(pair.image_name).?);
+                desc.image_sampler_pairs[pair.slot].sampler_slot = @intCast(fs_samplers_hashmap.get(pair.sampler_name).?);
             }
         }
 
@@ -498,12 +510,12 @@ pub const ShaderImpl = struct {
     /// Find the shader function in the builtin that can actually make the ShaderDesc
     fn getBuiltinSokolCreateFunction(comptime builtin: anytype) ?fn (sg.Backend) sg.ShaderDesc {
         comptime {
-            const decls = @typeInfo(builtin).Struct.decls;
+            const decls = @typeInfo(builtin).@"struct".decls;
             for (decls) |d| {
                 const field = @field(builtin, d.name);
                 const field_type = @typeInfo(@TypeOf(field));
-                if (field_type == .Fn) {
-                    const fn_info = field_type.Fn;
+                if (field_type == .@"fn") {
+                    const fn_info = field_type.@"fn";
                     if (fn_info.return_type == sg.ShaderDesc) {
                         return field;
                     }
@@ -561,9 +573,10 @@ pub const ShaderImpl = struct {
         debug.info("Creating shader: {d}", .{graphics.next_shader_handle});
         const shader = sg.makeShader(shader_desc);
 
+        // TODO check this
         var num_fs_images: u8 = 0;
         for (0..5) |i| {
-            if (shader_desc.fs.images[i].used) {
+            if (shader_desc.images[i].stage == sg.ShaderStage.FRAGMENT) {
                 num_fs_images += 1;
             } else {
                 break;
@@ -629,14 +642,16 @@ pub const ShaderImpl = struct {
         }
 
         // apply uniform blocks
-        for (self.vs_uniformblock_data, 0..) |block, i| {
+        for (self.vs_uniformblock_data) |block| {
             if (block) |b|
-                sg.applyUniforms(.VS, @intCast(i), sg.Range{ .ptr = b.ptr, .size = b.size });
+                // sg_apply_uniforms(0, &SG_RANGE(vs_params));
+                sg.applyUniforms(0, sg.Range{ .ptr = b.ptr, .size = b.size });
         }
 
-        for (self.fs_uniformblock_data, 0..) |block, i| {
+        for (self.fs_uniformblock_data) |block| {
             if (block) |b|
-                sg.applyUniforms(.FS, @intCast(i), sg.Range{ .ptr = b.ptr, .size = b.size });
+                // sg_apply_uniforms(1, &SG_RANGE(fs_params));
+                sg.applyUniforms(1, sg.Range{ .ptr = b.ptr, .size = b.size });
         }
 
         return true;

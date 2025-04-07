@@ -1,17 +1,15 @@
 const std = @import("std");
 const fmt = @import("fmt");
-const ziglua = @import("ziglua");
+const zlua = @import("zlua");
 const debug = @import("../debug.zig");
 
 var enable_debug_logging = false;
-
-pub var test_me: bool = true;
 
 pub fn set_resolution(res_x: i32, res_y: i32) void {
     // var scale_x: f32 = 1.0;
     // var scale_y: f32 = 1.0;
 
-    debug.log("set resolution: {d}x{d}", .{res_x, res_y});
+    debug.log("set resolution: {d}x{d}", .{ res_x, res_y });
     // _ = sdl.SDL_RenderGetScale(zigsdl.getRenderer(), &scale_x, &scale_y);
 
     // res_x *= @intFromFloat(scale_x);
@@ -39,5 +37,5 @@ pub fn set_resolution(res_x: i32, res_y: i32) void {
 // }
 
 pub fn set_size(one: i32, two: i32) void {
-    debug.log("Set size: {d}x{d}", .{one, two});
+    debug.log("Set size: {d}x{d}", .{ one, two });
 }
