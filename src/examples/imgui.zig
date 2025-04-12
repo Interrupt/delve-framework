@@ -61,8 +61,8 @@ pub fn on_init() !void {
     imgui_texture_1 = test_texture.makeImguiTexture();
 
     // make a material to use a different sampler mode
-    test_material = try delve.platform.graphics.Material.init(.{
-        .shader = delve.platform.graphics.getDefaultShader(),
+    test_material = try graphics.Material.init(.{
+        .shader = graphics.getDefaultShader(),
         .texture_0 = test_texture,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
@@ -119,7 +119,7 @@ pub fn on_tick(delta: f32) void {
     // end the window
     imgui.igEnd();
 
-    delve.platform.graphics.setClearColor(delve.colors.Color.fromArray(bg_color));
+    graphics.setClearColor(delve.colors.Color.fromArray(bg_color));
 }
 
 pub fn on_draw() void {
