@@ -67,8 +67,11 @@ pub fn on_init() !void {
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
 
-    // and make an imgui texture out of our material
-    imgui_texture_2 = test_material.makeImguiTexture();
+    // make an imgui image out of our material
+    // materials have more than one texture / sampler, have to pick which to use
+    const img_idx: usize = 0;
+    const sampler_idx: usize = 0;
+    imgui_texture_2 = test_material.makeImguiTexture(img_idx, sampler_idx);
 }
 
 fn on_cleanup() !void {

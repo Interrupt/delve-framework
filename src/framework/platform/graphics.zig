@@ -1049,8 +1049,11 @@ pub const Material = struct {
     }
 
     /// Returns an Imgui Texture ID from Texture 0 and Sampler 0 that can be used with Imgui
-    pub fn makeImguiTexture(self: *const Material) ?*anyopaque {
-        const img = simgui.makeImage(.{ .image = self.state.textures[0].?.sokol_image.?, .sampler = self.state.sokol_samplers[0].? });
+    pub fn makeImguiTexture(self: *const Material, texture_idx: usize, sampler_idx: usize) ?*anyopaque {
+        const img = simgui.makeImage(.{
+            .image = self.state.textures[texture_idx].?.sokol_image.?,
+            .sampler = self.state.sokol_samplers[sampler_idx].?,
+        });
         return simgui.imtextureid(img);
     }
 };
