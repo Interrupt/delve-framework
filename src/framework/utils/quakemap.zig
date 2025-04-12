@@ -7,7 +7,6 @@ const rays = @import("../spatial/rays.zig");
 const mesh = @import("../graphics/mesh.zig");
 const colors = @import("../colors.zig");
 const graphics = @import("../platform/graphics.zig");
-const assert = std.debug.assert;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
@@ -16,6 +15,7 @@ const Allocator = std.mem.Allocator;
 const TokenIterator = std.mem.TokenIterator;
 const Vec3 = math.Vec3;
 const Vec2 = math.Vec2;
+const Mat4 = math.Mat4;
 const Plane = plane.Plane;
 const Mesh = mesh.Mesh;
 const BoundingBox = boundingbox.BoundingBox;
@@ -31,6 +31,33 @@ pub const ErrorInfo = struct {
 pub const QuakeMapHit = struct {
     loc: Vec3,
     plane: Plane,
+    solid: *const Solid,
+
+    // Find which of our faces was hit by getting the closest one
+    pub fn getFace(self: *const QuakeMapHit) *Face {
+        var closest_face_idx: usize = 0;
+        var closest_face_dist: f32 = std.math.floatMax(f32);
+        var closest_angle_diff: f32 = 0;
+
+        for (0..self.solid.faces.items.len) |f_idx| {
+            const check_plane = &self.solid.faces.items[f_idx].plane;
+            const dist = check_plane.distanceToPoint(self.loc);
+            const angle_diff = check_plane.normal.dot(self.plane.normal);
+
+            // ignore hits behind us!
+            if (dist < -0.001 or angle_diff <= 0.0)
+                continue;
+
+            // save the new hit if it is closer
+            if (dist <= closest_face_dist and angle_diff >= closest_angle_diff) {
+                closest_face_idx = f_idx;
+                closest_face_dist = dist;
+                closest_angle_diff = angle_diff;
+            }
+        }
+
+        return &self.solid.faces.items[closest_face_idx];
+    }
 };
 
 pub const Property = struct {
@@ -51,8 +78,7 @@ pub const Face = struct {
     scale_y: f32,
     uv_direction: Vec3, // cache Closest Axis
     vertices: []Vec3,
-    transform: math.Mat4,
-    inv_transform: math.Mat4,
+    uvs: []Vec2,
 };
 
 pub const Entity = struct {
@@ -91,24 +117,35 @@ pub const Entity = struct {
         return self.indexOfProperty(key) != null;
     }
 
-    pub fn getStringProperty(self: Entity, key: []const u8) ![]const u8 {
-        const i = self.indexOfProperty(key) orelse return error.NotFound;
+    pub fn getStringProperty(self: Entity, key: []const u8) ?[]const u8 {
+        const i = self.indexOfProperty(key) orelse return null;
         return self.properties.items[i].value;
     }
 
-    pub fn getFloatProperty(self: Entity, key: []const u8) !f32 {
-        const string = try self.getStringProperty(key);
-        return try parseFloat(string);
+    pub fn getFloatProperty(self: Entity, key: []const u8) ?f32 {
+        const string_opt = self.getStringProperty(key);
+        if (string_opt == null) return null;
+        return parseFloat(string_opt.?) catch {
+            return null;
+        };
     }
 
-    pub fn getVec3Property(self: Entity, key: []const u8) !Vec3 {
-        const string = try self.getStringProperty(key);
-        var it = std.mem.tokenizeScalar(u8, string, ' ');
+    pub fn getVec3Property(self: Entity, key: []const u8) ?Vec3 {
+        const string_opt = self.getStringProperty(key);
+        if (string_opt == null) return null;
+
+        var it = std.mem.tokenizeScalar(u8, string_opt.?, ' ');
 
         var vec3: Vec3 = undefined;
-        vec3.x = try parseFloat(it.next() orelse return error.ExpectedFloat);
-        vec3.y = try parseFloat(it.next() orelse return error.ExpectedFloat);
-        vec3.z = try parseFloat(it.next() orelse return error.ExpectedFloat);
+        vec3.x = parseFloat(it.next() orelse return null) catch {
+            return null;
+        };
+        vec3.y = parseFloat(it.next() orelse return null) catch {
+            return null;
+        };
+        vec3.z = parseFloat(it.next() orelse return null) catch {
+            return null;
+        };
 
         return vec3;
     }
@@ -117,6 +154,7 @@ pub const Entity = struct {
 pub const Solid = struct {
     faces: std.ArrayList(Face),
     bounds: BoundingBox = undefined,
+    hidden: bool = false, // whether to add to meshes
     custom_flags: u32 = 0, // eg: water, lava, etc
 
     fn init(allocator: Allocator) Solid {
@@ -127,16 +165,13 @@ pub const Solid = struct {
         self.faces.deinit();
     }
 
-    fn computeVertices(self: *Solid, transform: math.Mat4) !void {
+    fn computeVertices(self: *Solid, transform: Mat4) !void {
         const allocator = self.faces.allocator;
         var vertices = try std.ArrayListUnmanaged(Vec3).initCapacity(allocator, 32);
         var clipped = try std.ArrayListUnmanaged(Vec3).initCapacity(allocator, 32);
 
         defer vertices.deinit(allocator);
         defer clipped.deinit(allocator);
-
-        // build a bounding box along the way too
-        var solid_bounds: BoundingBox = undefined;
 
         for (self.faces.items, 0..) |*face, i| {
             const quad = makeQuadWithRadius(face.untransformed_plane, 1000000.0);
@@ -153,24 +188,44 @@ pub const Solid = struct {
             }
 
             face.vertices = try allocator.dupe(Vec3, vertices.items);
+            face.uvs = try allocator.alloc(Vec2, face.vertices.len);
 
-            // now, transform the verts!
+            // now, transform the verts and make uvs!
             for (0..face.vertices.len) |vi| {
                 // round verts to the nearest int before transforming to fix cracks in seams
                 face.vertices[vi].x = std.math.round(face.vertices[vi].x);
                 face.vertices[vi].y = std.math.round(face.vertices[vi].y);
                 face.vertices[vi].z = std.math.round(face.vertices[vi].z);
+
+                var u_axis: Vec3 = undefined;
+                var v_axis: Vec3 = undefined;
+                calculateRotatedUV(face.*, &u_axis, &v_axis);
+
+                // compute UV coords
+                const vert = face.vertices[vi];
+                face.uvs[vi] = Vec2.new(
+                    (u_axis.dot(vert) + face.shift_x),
+                    (v_axis.dot(vert) + face.shift_y),
+                );
+
+                // apply final map transform
                 face.vertices[vi] = face.vertices[vi].mulMat4(transform);
             }
+        }
+    }
 
-            // create a bounding box out of these vertices
+    fn computeBounds(self: *Solid) void {
+        // calculate a bounding box for ourself
+        var solid_bounds: BoundingBox = undefined;
+
+        for (self.faces.items, 0..) |*face, i| {
             const face_bounds: BoundingBox = BoundingBox.initFromPositions(face.vertices);
             if (i == 0) {
                 solid_bounds = face_bounds;
                 continue;
             }
 
-            // expand our solid's bounding box by the new face bounds
+            // expand the solid's bounding box by the new face bounds
             solid_bounds.min = Vec3.min(solid_bounds.min, face_bounds.min);
             solid_bounds.max = Vec3.max(solid_bounds.max, face_bounds.max);
         }
@@ -367,6 +422,7 @@ pub const Solid = struct {
                         worldhit = .{
                             .loc = h,
                             .plane = p,
+                            .solid = self,
                         };
 
                         // convex, so should only have one collision
@@ -414,6 +470,7 @@ pub const Solid = struct {
                     worldhit = .{
                         .loc = h,
                         .plane = p,
+                        .solid = self,
                     };
 
                     // convex, so should only have one collision
@@ -458,6 +515,7 @@ pub const Solid = struct {
                     worldhit = .{
                         .loc = h.hit_pos,
                         .plane = p,
+                        .solid = self,
                     };
 
                     // convex, so should only have one collision
@@ -474,15 +532,18 @@ pub const QuakeMaterial = struct {
     material: graphics.Material,
     tex_size_x: i32 = 32,
     tex_size_y: i32 = 32,
+    custom_flags: u32 = 0, // eg: dirt, metal, etc
+    hidden: bool = false, // whether to add this to mesh builders
 };
 
 pub const QuakeMap = struct {
     arena_allocator: ArenaAllocator,
     worldspawn: Entity,
     entities: std.ArrayList(Entity),
-    map_transform: math.Mat4,
+    map_transform: Mat4,
+    inv_map_transform: Mat4,
 
-    pub fn read(in_allocator: Allocator, data: []const u8, transform: math.Mat4, error_info: *ErrorInfo) !QuakeMap {
+    pub fn read(in_allocator: Allocator, data: []const u8, transform: Mat4, error_info: *ErrorInfo) !QuakeMap {
         var arena = ArenaAllocator.init(in_allocator);
         const allocator = arena.allocator();
 
@@ -523,6 +584,7 @@ pub const QuakeMap = struct {
             .worldspawn = worldspawn orelse return error.WorldSpawnNotFound,
             .entities = entities,
             .map_transform = transform,
+            .inv_map_transform = transform.invert(),
         };
     }
 
@@ -530,7 +592,7 @@ pub const QuakeMap = struct {
         self.arena_allocator.deinit();
     }
 
-    fn readEntity(allocator: Allocator, iter: *TokenIterator(u8, .any), transform: math.Mat4, error_info: *ErrorInfo) !Entity {
+    fn readEntity(allocator: Allocator, iter: *TokenIterator(u8, .any), transform: Mat4, error_info: *ErrorInfo) !Entity {
         var entity = Entity.init(allocator);
         errdefer entity.deinit();
 
@@ -565,7 +627,7 @@ pub const QuakeMap = struct {
         return property;
     }
 
-    fn readSolid(allocator: Allocator, iter: *TokenIterator(u8, .any), transform: math.Mat4, error_info: *ErrorInfo) !Solid {
+    fn readSolid(allocator: Allocator, iter: *TokenIterator(u8, .any), transform: Mat4, error_info: *ErrorInfo) !Solid {
         var solid = Solid.init(allocator);
         errdefer solid.deinit();
 
@@ -579,19 +641,20 @@ pub const QuakeMap = struct {
             }
         }
         try solid.computeVertices(transform);
+        solid.computeBounds();
         return solid;
     }
 
-    fn readFace(line: []const u8, transform: math.Mat4) !Face {
+    fn readFace(line: []const u8, transform: Mat4) !Face {
         var face: Face = undefined;
         var iter = std.mem.tokenizeScalar(u8, line, ' ');
-        const v0 = try readPoint(&iter, math.Mat4.identity);
-        const v1 = try readPoint(&iter, math.Mat4.identity);
-        const v2 = try readPoint(&iter, math.Mat4.identity);
+        const v0 = try readPoint(&iter, Mat4.identity);
+        const v1 = try readPoint(&iter, Mat4.identity);
+        const v2 = try readPoint(&iter, Mat4.identity);
 
         // map planes are clockwise, flip them around when computing the plane to get a counter-clockwise plane
-        face.plane = Plane.initFromTriangle(v2.mulMat4(transform), v1.mulMat4(transform), v0.mulMat4(transform));
         face.untransformed_plane = Plane.initFromTriangle(v2, v1, v0);
+        face.plane = face.untransformed_plane.mulMat4(transform);
         face.uv_direction = closestAxis(face.untransformed_plane.normal);
         face.u_axis = if (face.uv_direction.x == 1) Vec3.new(0, 1, 0) else Vec3.new(1, 0, 0);
         face.v_axis = if (face.uv_direction.z == 1) Vec3.new(0, -1, 0) else Vec3.new(0, 0, -1);
@@ -601,13 +664,11 @@ pub const QuakeMap = struct {
         face.rotation = try readDecimal(&iter);
         face.scale_x = try readDecimal(&iter);
         face.scale_y = try readDecimal(&iter);
-        face.transform = transform;
-        face.inv_transform = transform.invert();
 
         return face;
     }
 
-    fn readPoint(iter: *TokenIterator(u8, .scalar), transform: math.Mat4) !Vec3 {
+    fn readPoint(iter: *TokenIterator(u8, .scalar), transform: Mat4) !Vec3 {
         var point: Vec3 = undefined;
         if (!std.mem.eql(u8, iter.next() orelse return error.UnexpectedEof, "(")) return error.ExpectedOpenParanthesis;
         point.x = try readDecimal(iter);
@@ -630,12 +691,12 @@ pub const QuakeMap = struct {
     }
 
     /// Builds meshes for the map, bucketed by materials
-    pub fn buildWorldMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
+    pub fn buildWorldMeshes(self: *const QuakeMap, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
         return try self.buildMeshesForEntity(&self.worldspawn, allocator, transform, materials, fallback_material);
     }
 
     /// Builds meshes for all entity solids - in a real scenario, you'll probably want to use buildMeshesForEntity instead
-    pub fn buildEntityMeshes(self: *const QuakeMap, allocator: Allocator, transform: math.Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
+    pub fn buildEntityMeshes(self: *const QuakeMap, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
 
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
@@ -644,6 +705,9 @@ pub const QuakeMap = struct {
         // Add the solids for all of the entities
         for (self.entities.items) |*entity| {
             for (entity.solids.items) |solid| {
+                if (solid.hidden)
+                    continue;
+
                 try addSolidToMeshBuilders(allocator, &mesh_builders, solid, materials, transform);
             }
         }
@@ -662,7 +726,7 @@ pub const QuakeMap = struct {
     }
 
     /// Builds meshes for a specific entity
-    pub fn buildMeshesForEntity(self: *const QuakeMap, entity: *const Entity, allocator: Allocator, transform: math.Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
+    pub fn buildMeshesForEntity(self: *const QuakeMap, entity: *const Entity, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
         _ = self;
 
         // Make our mesh buckets - we'll make a new mesh per material!
@@ -671,6 +735,9 @@ pub const QuakeMap = struct {
 
         // Add our solids
         for (entity.solids.items) |solid| {
+            if (solid.hidden)
+                continue;
+
             try addSolidToMeshBuilders(allocator, &mesh_builders, solid, materials, transform);
         }
 
@@ -705,7 +772,7 @@ pub const QuakeMap = struct {
     }
 
     /// Adds all of the faces of a solid to a list of MeshBuilders, based on the face's texture name
-    pub fn addSolidToMeshBuilders(allocator: std.mem.Allocator, builders: *std.StringHashMap(mesh.MeshBuilder), solid: Solid, materials: *std.StringHashMap(QuakeMaterial), transform: math.Mat4) !void {
+    pub fn addSolidToMeshBuilders(allocator: std.mem.Allocator, builders: *std.StringHashMap(mesh.MeshBuilder), solid: Solid, materials: *std.StringHashMap(QuakeMaterial), transform: Mat4) !void {
         for (solid.faces.items) |face| {
             const found_builder = builders.getPtr(face.texture_name);
             var builder: *mesh.MeshBuilder = undefined;
@@ -723,45 +790,71 @@ pub const QuakeMap = struct {
         }
     }
 
-    pub fn addFaceToMeshBuilder(builder: *mesh.MeshBuilder, face: Face, material: ?QuakeMaterial, transform: math.Mat4) !void {
-        var u_axis: Vec3 = undefined;
-        var v_axis: Vec3 = undefined;
-        calculateRotatedUV(face, &u_axis, &v_axis);
-
-        var tex_size_x: f32 = 32;
-        var tex_size_y: f32 = 32;
+    pub fn addFaceToMeshBuilder(builder: *mesh.MeshBuilder, face: Face, material: ?QuakeMaterial, transform: Mat4) !void {
+        // first find our texture scaling
+        var mat_tex_size = Vec2.new(32.0, 32.0);
         if (material) |mat| {
-            tex_size_x = @floatFromInt(mat.tex_size_x);
-            tex_size_y = @floatFromInt(mat.tex_size_y);
+            // skip this face if material is hidden
+            if (mat.hidden)
+                return;
+
+            mat_tex_size.x = @floatFromInt(mat.tex_size_x);
+            mat_tex_size.y = @floatFromInt(mat.tex_size_y);
         }
 
+        const tex_scale = Vec2.new(1.0 / mat_tex_size.x, 1.0 / mat_tex_size.y);
+
+        // now add all the vertices after transforming them
         for (0..face.vertices.len - 2) |i| {
-            const pos_0 = Vec3.new(face.vertices[0].x, face.vertices[0].y, face.vertices[0].z);
-            const inv_pos_0 = pos_0.mulMat4(face.inv_transform);
-            const uv_0 = Vec2.new(
-                (u_axis.dot(inv_pos_0) + face.shift_x) / tex_size_x,
-                (v_axis.dot(inv_pos_0) + face.shift_y) / tex_size_y,
-            );
+            const pos_0 = face.vertices[0].mulMat4(transform);
+            const uv_0 = face.uvs[0].mul(tex_scale);
 
-            const pos_1 = Vec3.new(face.vertices[i + 1].x, face.vertices[i + 1].y, face.vertices[i + 1].z);
-            const inv_pos_1 = pos_1.mulMat4(face.inv_transform);
-            const uv_1 = Vec2.new(
-                (u_axis.dot(inv_pos_1) + face.shift_x) / tex_size_x,
-                (v_axis.dot(inv_pos_1) + face.shift_y) / tex_size_y,
-            );
+            const pos_1 = face.vertices[i + 1].mulMat4(transform);
+            const uv_1 = face.uvs[i + 1].mul(tex_scale);
 
-            const pos_2 = Vec3.new(face.vertices[i + 2].x, face.vertices[i + 2].y, face.vertices[i + 2].z);
-            const inv_pos_2 = pos_2.mulMat4(face.inv_transform);
-            const uv_2 = Vec2.new(
-                (u_axis.dot(inv_pos_2) + face.shift_x) / tex_size_x,
-                (v_axis.dot(inv_pos_2) + face.shift_y) / tex_size_y,
-            );
+            const pos_2 = face.vertices[i + 2].mulMat4(transform);
+            const uv_2 = face.uvs[i + 2].mul(tex_scale);
 
-            const v0: graphics.Vertex = .{ .pos = pos_0, .uv = uv_0, .normal = face.plane.normal };
-            const v1: graphics.Vertex = .{ .pos = pos_1, .uv = uv_1, .normal = face.plane.normal };
-            const v2: graphics.Vertex = .{ .pos = pos_2, .uv = uv_2, .normal = face.plane.normal };
+            const t_plane = face.plane.mulMat4(transform);
+            const v0: graphics.Vertex = .{ .pos = pos_0, .uv = uv_0, .normal = t_plane.normal };
+            const v1: graphics.Vertex = .{ .pos = pos_1, .uv = uv_1, .normal = t_plane.normal };
+            const v2: graphics.Vertex = .{ .pos = pos_2, .uv = uv_2, .normal = t_plane.normal };
 
-            try builder.addTriangleFromVertices(v0.mulMat4(transform), v1.mulMat4(transform), v2.mulMat4(transform));
+            try builder.addTriangleFromVertices(v0, v1, v2);
+        }
+    }
+
+    pub fn applyTransform(self: *QuakeMap, t: Mat4) void {
+        self.map_transform = self.map_transform.mul(t);
+        self.inv_map_transform = self.map_transform.invert();
+
+        // apply a new transform matrix to our solids
+        for (self.worldspawn.solids.items) |*solid| {
+            for (solid.faces.items) |*face| {
+                face.plane = face.plane.mulMat4(t);
+
+                for (0..face.vertices.len) |vi| {
+                    face.vertices[vi] = face.vertices[vi].mulMat4(t);
+                }
+            }
+
+            // solid verts changed, update our bounds
+            solid.computeBounds();
+        }
+
+        for (self.entities.items) |*entity| {
+            for (entity.solids.items) |*solid| {
+                for (solid.faces.items) |*face| {
+                    face.plane = face.plane.mulMat4(t);
+
+                    for (0..face.vertices.len) |vi| {
+                        face.vertices[vi] = face.vertices[vi].mulMat4(t);
+                    }
+                }
+
+                // solid verts changed, update our bounds
+                solid.computeBounds();
+            }
         }
     }
 };
@@ -820,12 +913,14 @@ fn calculateRotatedUV(face: Face, u_axis: *Vec3, v_axis: *Vec3) void {
     const scaled_v_axis = face.v_axis.scale(1.0 / face.scale_y);
 
     // const axis = closestAxis(face.plane.normal);
-    const rotation = math.Mat4.rotate(face.rotation, face.uv_direction);
+    const rotation = Mat4.rotate(face.rotation, face.uv_direction);
     u_axis.* = scaled_u_axis.mulMat4(rotation);
     v_axis.* = scaled_v_axis.mulMat4(rotation);
 }
 
 test "QuakeMap.read" {
+    const testing = std.testing;
+
     // Test loading a very simple Quake map!
     // This is the example from https://quakewiki.org/wiki/Quake_Map_Format
 
@@ -847,41 +942,44 @@ test "QuakeMap.read" {
         \\"spawnflags" "0"
         \\"classname" "info_player_start"
         \\"origin" "32 32 24"
+        \\"test_string" "hello"
         \\}
     ;
 
     const allocator = gpa.allocator();
 
     var err: ErrorInfo = undefined;
-    const map = try QuakeMap.read(allocator, test_map_file, math.Mat4.identity, &err);
+    const map = try QuakeMap.read(allocator, test_map_file, Mat4.identity, &err);
 
     // Check to see if we have a world
-    assert(std.mem.eql(u8, map.worldspawn.classname, "worldspawn"));
-    assert(map.worldspawn.solids.items.len == 1);
-    assert(map.worldspawn.solids.items[0].faces.items.len == 6);
+    try testing.expectEqualSlices(u8, "worldspawn", map.worldspawn.classname);
+    try testing.expect(map.worldspawn.solids.items.len == 1);
+    try testing.expect(map.worldspawn.solids.items[0].faces.items.len == 6);
 
     // Check to see that our one solid is a cube!
     for (0..6) |idx| {
         const face = map.worldspawn.solids.items[0].faces.items[idx];
-        assert(face.vertices.len == 4);
+        try testing.expect(face.vertices.len == 4);
     }
 
     // Check our first face to see if it looks accurate
     const first_face = map.worldspawn.solids.items[0].faces.items[0];
-    assert(std.mem.eql(u8, first_face.texture_name, "mmetal1_2"));
-    assert(first_face.shift_x == 0);
-    assert(first_face.shift_y == 0);
-    assert(first_face.rotation == 0);
-    assert(first_face.scale_x == 1);
-    assert(first_face.scale_y == 1);
-    assert(std.meta.eql(first_face.vertices[0], Vec3.new(256, 0, 0)));
-    assert(std.meta.eql(first_face.vertices[1], Vec3.new(256, 0, -64)));
-    assert(std.meta.eql(first_face.vertices[2], Vec3.new(256, 256, -64)));
-    assert(std.meta.eql(first_face.vertices[3], Vec3.new(256, 256, 0)));
+    try testing.expectEqualSlices(u8, "mmetal1_2", first_face.texture_name);
+    try testing.expect(first_face.shift_x == 0);
+    try testing.expect(first_face.shift_y == 0);
+    try testing.expect(first_face.rotation == 0);
+    try testing.expect(first_face.scale_x == 1);
+    try testing.expect(first_face.scale_y == 1);
+    try testing.expectEqual(first_face.vertices[0], Vec3.new(256, 0, 0));
+    try testing.expectEqual(first_face.vertices[1], Vec3.new(256, 0, -64));
+    try testing.expectEqual(first_face.vertices[2], Vec3.new(256, 256, -64));
+    try testing.expectEqual(first_face.vertices[3], Vec3.new(256, 256, 0));
 
     // Check our one entity
-    assert(map.entities.items.len == 1);
-    assert(std.mem.eql(u8, map.entities.items[0].classname, "info_player_start"));
-    assert(map.entities.items[0].spawnflags == 0);
-    assert(std.meta.eql(map.entities.items[0].getVec3Property("origin"), Vec3.new(32, 32, 24)));
+    try testing.expect(map.entities.items.len == 1);
+    try testing.expectEqualSlices(u8, "info_player_start", map.entities.items[0].classname);
+    try testing.expect(map.entities.items[0].spawnflags == 0);
+    try testing.expectEqual(map.entities.items[0].getVec3Property("origin"), Vec3.new(32, 32, 24));
+    try testing.expectEqual(map.entities.items[0].getFloatProperty("bogus"), null);
+    try testing.expectEqualSlices(u8, "hello", map.entities.items[0].getStringProperty("test_string").?);
 }
