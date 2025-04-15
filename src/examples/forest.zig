@@ -2,7 +2,7 @@ const std = @import("std");
 const delve = @import("delve");
 const app = delve.app;
 
-const RndGen = std.rand.DefaultPrng;
+const RndGen = std.Random.DefaultPrng;
 
 const batcher = delve.graphics.batcher;
 const debug = delve.debug;

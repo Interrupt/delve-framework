@@ -100,7 +100,7 @@ pub const Ray = struct {
         }
 
         // we should probably be caching this in the oriented bounding box
-        const inv_transform = bounds.transform.invert();
+        const inv_transform = bounds.transform_matrix.invert();
 
         // get a point pointing down our direction
         const downrange = self.pos.add(self.dir);
@@ -123,7 +123,7 @@ pub const Ray = struct {
             if (intersection) |i| {
                 const h = i.hit_pos;
                 if (h.y <= bounds.max.y and h.y >= bounds.min.y and h.z <= bounds.max.z and h.z >= bounds.min.z) {
-                    return .{ .hit_pos = h.mulMat4(bounds.transform), .normal = p.normal };
+                    return .{ .hit_pos = h.mulMat4(bounds.transform_matrix), .normal = p.normal };
                 }
             }
         }
@@ -135,7 +135,7 @@ pub const Ray = struct {
             if (intersection) |i| {
                 const h = i.hit_pos;
                 if (h.x <= bounds.max.x and h.x >= bounds.min.x and h.z <= bounds.max.z and h.z >= bounds.min.z) {
-                    return .{ .hit_pos = h.mulMat4(bounds.transform), .normal = p.normal };
+                    return .{ .hit_pos = h.mulMat4(bounds.transform_matrix), .normal = p.normal };
                 }
             }
         }
@@ -147,7 +147,7 @@ pub const Ray = struct {
             if (intersection) |i| {
                 const h = i.hit_pos;
                 if (h.y <= bounds.max.y and h.y >= bounds.min.y and h.x <= bounds.max.x and h.x >= bounds.min.x) {
-                    return .{ .hit_pos = h.mulMat4(bounds.transform), .normal = p.normal };
+                    return .{ .hit_pos = h.mulMat4(bounds.transform_matrix), .normal = p.normal };
                 }
             }
         }

@@ -1,5 +1,5 @@
 const std = @import("std");
-const ziglua = @import("ziglua");
+const zlua = @import("zlua");
 const app = @import("../app.zig");
 const papp = @import("../platform/app.zig");
 const debug = @import("../debug.zig");
