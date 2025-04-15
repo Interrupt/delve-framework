@@ -32,15 +32,15 @@ const m = @import("../../math.zig");
 //            Image type: ._2D
 //            Sample type: .FLOAT
 //            Multisampled: false
-//            Bind slot: IMG_tex => 1
+//            Bind slot: IMG_tex => 0
 //        Image 'tex_emissive':
 //            Image type: ._2D
 //            Sample type: .FLOAT
 //            Multisampled: false
-//            Bind slot: IMG_tex_emissive => 2
+//            Bind slot: IMG_tex_emissive => 1
 //        Sampler 'smp':
 //            Type: .FILTERING
-//            Bind slot: SMP_smp => 1
+//            Bind slot: SMP_smp => 0
 //
 pub const ATTR_emissive_pos = 0;
 pub const ATTR_emissive_color0 = 1;
@@ -49,9 +49,9 @@ pub const ATTR_emissive_normals = 3;
 pub const ATTR_emissive_tangents = 4;
 pub const UB_vs_params = 0;
 pub const UB_fs_params = 1;
-pub const IMG_tex = 1;
-pub const IMG_tex_emissive = 2;
-pub const SMP_smp = 1;
+pub const IMG_tex = 0;
+pub const IMG_tex_emissive = 1;
+pub const SMP_smp = 0;
 pub const VsParams = extern struct {
     u_projViewMatrix: m.Mat4 align(16),
     u_modelMatrix: m.Mat4 align(1),
@@ -1852,23 +1852,23 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.uniform_blocks[1].glsl_uniforms[0].type = .FLOAT4;
             desc.uniform_blocks[1].glsl_uniforms[0].array_count = 2;
             desc.uniform_blocks[1].glsl_uniforms[0].glsl_name = "fs_params";
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
             desc.images[1].stage = .FRAGMENT;
             desc.images[1].multisampled = false;
             desc.images[1].image_type = ._2D;
             desc.images[1].sample_type = .FLOAT;
-            desc.images[2].stage = .FRAGMENT;
-            desc.images[2].multisampled = false;
-            desc.images[2].image_type = ._2D;
-            desc.images[2].sample_type = .FLOAT;
-            desc.samplers[1].stage = .FRAGMENT;
-            desc.samplers[1].sampler_type = .FILTERING;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
             desc.image_sampler_pairs[0].stage = .FRAGMENT;
-            desc.image_sampler_pairs[0].image_slot = 1;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
             desc.image_sampler_pairs[0].glsl_name = "tex_smp";
             desc.image_sampler_pairs[1].stage = .FRAGMENT;
-            desc.image_sampler_pairs[1].image_slot = 2;
-            desc.image_sampler_pairs[1].sampler_slot = 1;
+            desc.image_sampler_pairs[1].image_slot = 1;
+            desc.image_sampler_pairs[1].sampler_slot = 0;
             desc.image_sampler_pairs[1].glsl_name = "tex_emissive_smp";
         },
         .GLES3 => {
@@ -1898,23 +1898,23 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.uniform_blocks[1].glsl_uniforms[0].type = .FLOAT4;
             desc.uniform_blocks[1].glsl_uniforms[0].array_count = 2;
             desc.uniform_blocks[1].glsl_uniforms[0].glsl_name = "fs_params";
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
             desc.images[1].stage = .FRAGMENT;
             desc.images[1].multisampled = false;
             desc.images[1].image_type = ._2D;
             desc.images[1].sample_type = .FLOAT;
-            desc.images[2].stage = .FRAGMENT;
-            desc.images[2].multisampled = false;
-            desc.images[2].image_type = ._2D;
-            desc.images[2].sample_type = .FLOAT;
-            desc.samplers[1].stage = .FRAGMENT;
-            desc.samplers[1].sampler_type = .FILTERING;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
             desc.image_sampler_pairs[0].stage = .FRAGMENT;
-            desc.image_sampler_pairs[0].image_slot = 1;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
             desc.image_sampler_pairs[0].glsl_name = "tex_smp";
             desc.image_sampler_pairs[1].stage = .FRAGMENT;
-            desc.image_sampler_pairs[1].image_slot = 2;
-            desc.image_sampler_pairs[1].sampler_slot = 1;
+            desc.image_sampler_pairs[1].image_slot = 1;
+            desc.image_sampler_pairs[1].sampler_slot = 0;
             desc.image_sampler_pairs[1].glsl_name = "tex_emissive_smp";
         },
         .D3D11 => {
@@ -1947,25 +1947,25 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.uniform_blocks[1].layout = .STD140;
             desc.uniform_blocks[1].size = 32;
             desc.uniform_blocks[1].hlsl_register_b_n = 0;
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
+            desc.images[0].hlsl_register_t_n = 0;
             desc.images[1].stage = .FRAGMENT;
             desc.images[1].multisampled = false;
             desc.images[1].image_type = ._2D;
             desc.images[1].sample_type = .FLOAT;
-            desc.images[1].hlsl_register_t_n = 0;
-            desc.images[2].stage = .FRAGMENT;
-            desc.images[2].multisampled = false;
-            desc.images[2].image_type = ._2D;
-            desc.images[2].sample_type = .FLOAT;
-            desc.images[2].hlsl_register_t_n = 1;
-            desc.samplers[1].stage = .FRAGMENT;
-            desc.samplers[1].sampler_type = .FILTERING;
-            desc.samplers[1].hlsl_register_s_n = 0;
+            desc.images[1].hlsl_register_t_n = 1;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.samplers[0].hlsl_register_s_n = 0;
             desc.image_sampler_pairs[0].stage = .FRAGMENT;
-            desc.image_sampler_pairs[0].image_slot = 1;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
             desc.image_sampler_pairs[1].stage = .FRAGMENT;
-            desc.image_sampler_pairs[1].image_slot = 2;
-            desc.image_sampler_pairs[1].sampler_slot = 1;
+            desc.image_sampler_pairs[1].image_slot = 1;
+            desc.image_sampler_pairs[1].sampler_slot = 0;
         },
         .METAL_MACOS => {
             desc.vertex_func.source = &vs_source_metal_macos;
@@ -1985,25 +1985,25 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.uniform_blocks[1].layout = .STD140;
             desc.uniform_blocks[1].size = 32;
             desc.uniform_blocks[1].msl_buffer_n = 0;
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
+            desc.images[0].msl_texture_n = 0;
             desc.images[1].stage = .FRAGMENT;
             desc.images[1].multisampled = false;
             desc.images[1].image_type = ._2D;
             desc.images[1].sample_type = .FLOAT;
-            desc.images[1].msl_texture_n = 0;
-            desc.images[2].stage = .FRAGMENT;
-            desc.images[2].multisampled = false;
-            desc.images[2].image_type = ._2D;
-            desc.images[2].sample_type = .FLOAT;
-            desc.images[2].msl_texture_n = 1;
-            desc.samplers[1].stage = .FRAGMENT;
-            desc.samplers[1].sampler_type = .FILTERING;
-            desc.samplers[1].msl_sampler_n = 0;
+            desc.images[1].msl_texture_n = 1;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.samplers[0].msl_sampler_n = 0;
             desc.image_sampler_pairs[0].stage = .FRAGMENT;
-            desc.image_sampler_pairs[0].image_slot = 1;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
             desc.image_sampler_pairs[1].stage = .FRAGMENT;
-            desc.image_sampler_pairs[1].image_slot = 2;
-            desc.image_sampler_pairs[1].sampler_slot = 1;
+            desc.image_sampler_pairs[1].image_slot = 1;
+            desc.image_sampler_pairs[1].sampler_slot = 0;
         },
         .METAL_IOS => {
             desc.vertex_func.source = &vs_source_metal_ios;
@@ -2023,25 +2023,25 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.uniform_blocks[1].layout = .STD140;
             desc.uniform_blocks[1].size = 32;
             desc.uniform_blocks[1].msl_buffer_n = 0;
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
+            desc.images[0].msl_texture_n = 0;
             desc.images[1].stage = .FRAGMENT;
             desc.images[1].multisampled = false;
             desc.images[1].image_type = ._2D;
             desc.images[1].sample_type = .FLOAT;
-            desc.images[1].msl_texture_n = 0;
-            desc.images[2].stage = .FRAGMENT;
-            desc.images[2].multisampled = false;
-            desc.images[2].image_type = ._2D;
-            desc.images[2].sample_type = .FLOAT;
-            desc.images[2].msl_texture_n = 1;
-            desc.samplers[1].stage = .FRAGMENT;
-            desc.samplers[1].sampler_type = .FILTERING;
-            desc.samplers[1].msl_sampler_n = 0;
+            desc.images[1].msl_texture_n = 1;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.samplers[0].msl_sampler_n = 0;
             desc.image_sampler_pairs[0].stage = .FRAGMENT;
-            desc.image_sampler_pairs[0].image_slot = 1;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
             desc.image_sampler_pairs[1].stage = .FRAGMENT;
-            desc.image_sampler_pairs[1].image_slot = 2;
-            desc.image_sampler_pairs[1].sampler_slot = 1;
+            desc.image_sampler_pairs[1].image_slot = 1;
+            desc.image_sampler_pairs[1].sampler_slot = 0;
         },
         .METAL_SIMULATOR => {
             desc.vertex_func.source = &vs_source_metal_sim;
@@ -2061,25 +2061,25 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.uniform_blocks[1].layout = .STD140;
             desc.uniform_blocks[1].size = 32;
             desc.uniform_blocks[1].msl_buffer_n = 0;
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
+            desc.images[0].msl_texture_n = 0;
             desc.images[1].stage = .FRAGMENT;
             desc.images[1].multisampled = false;
             desc.images[1].image_type = ._2D;
             desc.images[1].sample_type = .FLOAT;
-            desc.images[1].msl_texture_n = 0;
-            desc.images[2].stage = .FRAGMENT;
-            desc.images[2].multisampled = false;
-            desc.images[2].image_type = ._2D;
-            desc.images[2].sample_type = .FLOAT;
-            desc.images[2].msl_texture_n = 1;
-            desc.samplers[1].stage = .FRAGMENT;
-            desc.samplers[1].sampler_type = .FILTERING;
-            desc.samplers[1].msl_sampler_n = 0;
+            desc.images[1].msl_texture_n = 1;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.samplers[0].msl_sampler_n = 0;
             desc.image_sampler_pairs[0].stage = .FRAGMENT;
-            desc.image_sampler_pairs[0].image_slot = 1;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
             desc.image_sampler_pairs[1].stage = .FRAGMENT;
-            desc.image_sampler_pairs[1].image_slot = 2;
-            desc.image_sampler_pairs[1].sampler_slot = 1;
+            desc.image_sampler_pairs[1].image_slot = 1;
+            desc.image_sampler_pairs[1].sampler_slot = 0;
         },
         .WGPU => {
             desc.vertex_func.source = &vs_source_wgsl;
@@ -2099,25 +2099,25 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.uniform_blocks[1].layout = .STD140;
             desc.uniform_blocks[1].size = 32;
             desc.uniform_blocks[1].wgsl_group0_binding_n = 8;
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
+            desc.images[0].wgsl_group1_binding_n = 64;
             desc.images[1].stage = .FRAGMENT;
             desc.images[1].multisampled = false;
             desc.images[1].image_type = ._2D;
             desc.images[1].sample_type = .FLOAT;
-            desc.images[1].wgsl_group1_binding_n = 64;
-            desc.images[2].stage = .FRAGMENT;
-            desc.images[2].multisampled = false;
-            desc.images[2].image_type = ._2D;
-            desc.images[2].sample_type = .FLOAT;
-            desc.images[2].wgsl_group1_binding_n = 65;
-            desc.samplers[1].stage = .FRAGMENT;
-            desc.samplers[1].sampler_type = .FILTERING;
-            desc.samplers[1].wgsl_group1_binding_n = 80;
+            desc.images[1].wgsl_group1_binding_n = 65;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.samplers[0].wgsl_group1_binding_n = 80;
             desc.image_sampler_pairs[0].stage = .FRAGMENT;
-            desc.image_sampler_pairs[0].image_slot = 1;
-            desc.image_sampler_pairs[0].sampler_slot = 1;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
             desc.image_sampler_pairs[1].stage = .FRAGMENT;
-            desc.image_sampler_pairs[1].image_slot = 2;
-            desc.image_sampler_pairs[1].sampler_slot = 1;
+            desc.image_sampler_pairs[1].image_slot = 1;
+            desc.image_sampler_pairs[1].sampler_slot = 0;
         },
         else => {},
     }
@@ -2143,16 +2143,16 @@ pub fn emissiveAttrSlot(attr_name: []const u8) ?usize {
 }
 pub fn emissiveImageSlot(img_name: []const u8) ?usize {
     if (std.mem.eql(u8, img_name, "tex")) {
-        return 1;
+        return 0;
     }
     if (std.mem.eql(u8, img_name, "tex_emissive")) {
-        return 2;
+        return 1;
     }
     return null;
 }
 pub fn emissiveSamplerSlot(smp_name: []const u8) ?usize {
     if (std.mem.eql(u8, smp_name, "smp")) {
-        return 1;
+        return 0;
     }
     return null;
 }

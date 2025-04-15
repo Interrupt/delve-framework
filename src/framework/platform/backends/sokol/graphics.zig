@@ -65,9 +65,9 @@ pub const BindingsImpl = struct {
         const samplerDesc = convertFilterModeToSamplerDesc(.NEAREST);
         bindings.impl.default_sokol_sampler = sg.makeSampler(samplerDesc);
         // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
-        // 1 because in the glsl definitions we have only fs samplers and they are annotated with layout(binding=1)
-        // they start at 1
-        bindings.impl.sokol_bindings.?.samplers[1] = bindings.impl.default_sokol_sampler;
+        // 0 because in the glsl definitions we have only fs samplers and they are annotated with layout(binding=0)
+        // they start at 0
+        bindings.impl.sokol_bindings.?.samplers[0] = bindings.impl.default_sokol_sampler;
 
         return bindings;
     }
@@ -148,26 +148,26 @@ pub const BindingsImpl = struct {
 
         // set the texture to the default fragment shader image slot
         // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
-        // 1 because in the glsl definitions we have only fs tex and they are annotated with layout(binding=1)
-        // they start at 1
-        self.impl.sokol_bindings.?.images[1] = texture.sokol_image.?;
+        // 0 because in the glsl definitions we have only fs tex and they are annotated with layout(binding=0)
+        // they start at 0
+        self.impl.sokol_bindings.?.images[0] = texture.sokol_image.?;
     }
 
     pub fn updateFromMaterial(self: *Bindings, material: *Material) void {
         for (0..material.state.textures.len) |i| {
             if (material.state.textures[i] != null)
                 // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
-                // + 1 because in the glsl definitions we have only fs tex and they are annotated with layout(binding=1)
-                // they start at 1
-                self.impl.sokol_bindings.?.images[i + 1] = material.state.textures[i].?.sokol_image.?;
+                // i because in the glsl definitions we have only fs tex and they are annotated with layout(binding=0)
+                // they start at 0
+                self.impl.sokol_bindings.?.images[i] = material.state.textures[i].?.sokol_image.?;
         }
 
         // bind samplers
         for (material.state.sokol_samplers, 0..) |sampler, i| {
             if (sampler) |s|
                 // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
-                // + 1 because in the glsl definitions we have only fs samplers and they are annotated with layout(binding=1)
-                // they start at 1
+                // i because in the glsl definitions we have only fs samplers and they are annotated with layout(binding=0)
+                // they start at 0
                 self.impl.sokol_bindings.?.samplers[i + 1] = s;
         }
 

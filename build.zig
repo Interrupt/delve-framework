@@ -95,7 +95,6 @@ pub fn build(b: *std.Build) !void {
         dep_zmesh.artifact("zmesh"),
         dep_zstbi.artifact("zstbi"),
         dep_zaudio.artifact("miniaudio"),
-        dep_zlua.artifact("lua"),
         dep_cimgui.artifact("cimgui_clib"),
         dep_stb_truetype.artifact("stb_truetype"),
     };

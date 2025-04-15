@@ -59,9 +59,9 @@ void main() {
 #pragma sokol @end
 
 #pragma sokol @fs fs
-layout(binding=1) uniform texture2D tex;
-layout(binding=2) uniform texture2D tex_emissive;
-layout(binding=1) uniform sampler smp;
+layout(binding=0) uniform texture2D tex;
+layout(binding=1) uniform texture2D tex_emissive;
+layout(binding=0) uniform sampler smp;
 layout(binding=1) uniform fs_params {
     vec4 u_color_override;
     float u_alpha_cutoff;
