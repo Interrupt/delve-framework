@@ -122,6 +122,7 @@ zig build run-skinned-meshes
 zig build run-sprite-animation
 zig build run-sprites
 zig build run-stresstest
+zig build run-multiple-materials
 ```
 
 ### Set optimization

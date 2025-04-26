@@ -755,19 +755,21 @@ pub const QuakeMap = struct {
     }
 
     /// builds meshes out of a map of MeshBuilders, and adds them to an ArrayList
-    pub fn buildMeshes(builders: *const std.StringHashMap(mesh.MeshBuilder), materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial, out_meshes: *std.ArrayList(mesh.Mesh)) !void {
+    pub fn buildMeshes(builders: *const std.StringHashMap(mesh.MeshBuilder), materials_map: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial, out_meshes: *std.ArrayList(mesh.Mesh)) !void {
         var it = builders.iterator();
         while (it.next()) |builder| {
             const b = builder.value_ptr;
             if (b.indices.items.len == 0)
                 continue;
 
-            const found_material = materials.getPtr(builder.key_ptr.*);
+            const found_material = materials_map.getPtr(builder.key_ptr.*);
+            var m: Mesh = undefined;
             if (found_material == null) {
-                try out_meshes.append(b.buildMesh(fallback_material.?.material));
+                m = try b.buildMesh(fallback_material.?.material);
             } else {
-                try out_meshes.append(b.buildMesh(found_material.?.material));
+                m = try b.buildMesh(found_material.?.material);
             }
+            try out_meshes.append(m);
         }
     }
 

@@ -76,6 +76,8 @@ pub const BindingsImpl = struct {
 
         self.length = length;
 
+        // here
+
         for (self.config.vertex_layout.attributes, 0..) |attr, idx| {
             self.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
                 .data = switch (attr.binding) {

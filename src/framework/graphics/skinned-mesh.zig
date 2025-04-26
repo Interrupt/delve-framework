@@ -173,9 +173,9 @@ pub const SkinnedMesh = struct {
     // the index at which a named joint lives
     bone_indices: std.StringHashMap(usize) = undefined,
 
-    /// Load a mesh with animation data from a gltf file
-    pub fn initFromFile(allocator: std.mem.Allocator, filename: [:0]const u8, cfg: MeshConfig) ?SkinnedMesh {
-        const loaded_mesh = Mesh.initFromFile(allocator, filename, cfg);
+    /// Load a mesh with animation data from gltf data
+    pub fn initFromData(allocator: std.mem.Allocator, data: *zmesh.io.zcgltf.Data, mesh_index: usize, cfg: MeshConfig) ?SkinnedMesh {
+        const loaded_mesh = Mesh.initFromData(allocator, data, mesh_index, cfg);
         if (loaded_mesh) |loaded| {
             var transforms = std.ArrayList(AnimationTransform).init(allocator);
             for (0..max_joints) |_| {
@@ -220,8 +220,11 @@ pub const SkinnedMesh = struct {
         if (self.joint_locations_dirty)
             self.applySkeletonTransforms();
 
-        self.mesh.material.state.params.joints = &self.joint_locations;
-        graphics.drawWithMaterial(&self.mesh.bindings, &self.mesh.material, cam_matrices, model_matrix);
+        // TODO check this because was from mesh only had one material
+        self.mesh.materials.items[0].state.params.joints = &self.joint_locations;
+        for (self.mesh.bindings_list.items, self.mesh.materials.items) |*bindings, *material| {
+            graphics.drawWithMaterial(bindings, material, cam_matrices, model_matrix);
+        }
     }
 
     /// Draw this mesh, using the specified material instead of the set one
@@ -229,8 +232,11 @@ pub const SkinnedMesh = struct {
         if (self.joint_locations_dirty)
             self.applySkeletonTransforms();
 
-        self.mesh.material.state.params.joints = &self.joint_locations;
-        graphics.drawWithMaterial(&self.mesh.bindings, material, cam_matrices, model_matrix);
+        // TODO check this because was from mesh only had one material
+        self.mesh.materials[0].state.params.joints = &self.joint_locations;
+        for (self.mesh.bindings_list.items) |*bindings| {
+            graphics.drawWithMaterial(bindings, material, cam_matrices, model_matrix);
+        }
     }
 
     /// Resets all joints back to their identity matrix
