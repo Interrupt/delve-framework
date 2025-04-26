@@ -28,7 +28,7 @@ const FSParams = graphics.FSDefaultUniforms;
 const vertex_layout = getVertexLayout();
 
 pub const MeshConfig = struct {
-    material: graphics.Material,
+    materials: std.ArrayList(graphics.Material),
 };
 
 pub fn init() !void {
@@ -42,185 +42,181 @@ pub fn deinit() void {
 /// A mesh is a drawable set of vertex positions, normals, tangents, and uvs.
 /// These can be created on the fly, using a MeshBuilder, or loaded from GLTF files.
 pub const Mesh = struct {
-    bindings: graphics.Bindings = undefined,
-    material: graphics.Material = undefined,
+    bindings_list: std.ArrayList(graphics.Bindings) = undefined,
+    materials: std.ArrayList(graphics.Material) = undefined,
     bounds: boundingbox.BoundingBox = undefined,
 
     has_skin: bool = false,
 
     zmesh_data: ?*zmesh.io.zcgltf.Data = null,
 
-    pub fn initFromFile(allocator: std.mem.Allocator, filename: [:0]const u8, cfg: MeshConfig) ?Mesh {
-        const data = zmesh.io.parseAndLoadFile(filename) catch {
-            debug.log("Could not load mesh file {s}", .{filename});
-            return null;
-        };
+    pub fn initFromData(allocator: std.mem.Allocator, data: *zmesh.io.zcgltf.Data, mesh_index: usize, cfg: MeshConfig) ?Mesh {
+        var bindings_list = std.ArrayList(graphics.Bindings).init(allocator);
 
-        var mesh_indices: ArrayListUnmanaged(u32) = .empty;
-        var mesh_positions: ArrayListUnmanaged([3]f32) = .empty;
-        var mesh_normals: ArrayListUnmanaged([3]f32) = .empty;
-        var mesh_texcoords: ArrayListUnmanaged([2]f32) = .empty;
-        var mesh_tangents: ArrayListUnmanaged([4]f32) = .empty;
+        var vertices = std.ArrayList(PackedVertex).init(allocator);
+        defer vertices.deinit();
 
-        var mesh_joints: ArrayListUnmanaged([4]f32) = .empty;
-        var mesh_weights: ArrayListUnmanaged([4]f32) = .empty;
+        var any_submesh_had_joints: bool = false;
 
-        defer mesh_indices.deinit(allocator);
-        defer mesh_positions.deinit(allocator);
-        defer mesh_normals.deinit(allocator);
-        defer mesh_texcoords.deinit(allocator);
-        defer mesh_tangents.deinit(allocator);
-        defer mesh_joints.deinit(allocator);
-        defer mesh_weights.deinit(allocator);
+        // vertices is global but need partial for each bindings
+        var vertices_start: usize = 0;
 
-        for (0..data.meshes_count) |i| {
-            const mesh = data.meshes.?[i];
-            for (0..mesh.primitives_count) |pi| {
-                zmeshutils.appendMeshPrimitive(
-                    allocator,
-                    data, // *zmesh.io.cgltf.Data
-                    @intCast(i), // mesh index
-                    @intCast(pi), // gltf primitive index (submesh index)
-                    &mesh_indices,
-                    &mesh_positions,
-                    &mesh_normals, // normals (optional)
-                    &mesh_texcoords, // texcoords (optional)
-                    &mesh_tangents, // tangents (optional)
-                    &mesh_joints, // joints (optional)
-                    &mesh_weights, // weights (optional)
-                ) catch {
+        const mesh = data.meshes.?[mesh_index];
+        for (0..mesh.primitives_count) |primitive_index| {
+            var mesh_indices = std.ArrayList(u32).init(allocator);
+            var mesh_positions = std.ArrayList([3]f32).init(allocator);
+            var mesh_normals = std.ArrayList([3]f32).init(allocator);
+            var mesh_texcoords = std.ArrayList([2]f32).init(allocator);
+            var mesh_tangents = std.ArrayList([4]f32).init(allocator);
+
+            var mesh_joints = std.ArrayList([4]f32).init(allocator);
+            var mesh_weights = std.ArrayList([4]f32).init(allocator);
+
+            defer mesh_indices.deinit();
+            defer mesh_positions.deinit();
+            defer mesh_normals.deinit();
+            defer mesh_texcoords.deinit();
+            defer mesh_tangents.deinit();
+            defer mesh_joints.deinit();
+            defer mesh_weights.deinit();
+
+            zmesh.io.appendMeshPrimitive(
+                data, // *zmesh.io.cgltf.Data
+                @intCast(mesh_index), // mesh index
+                @intCast(primitive_index), // gltf primitive index (submesh index)
+                &mesh_indices,
+                &mesh_positions,
+                &mesh_normals, // normals (optional)
+                &mesh_texcoords, // texcoords (optional)
+                &mesh_tangents, // tangents (optional)
+                &mesh_joints, // joints (optional)
+                &mesh_weights, // weights (optional)
+            ) catch {
+                debug.log("Could not process mesh file!", .{});
+                return null;
+            };
+
+            const white_color = colors.white.toArray();
+
+            for (mesh_positions.items, 0..) |vert, i| {
+                var u_textcoord: f32 = 0.0;
+                var v_textcoord: f32 = 0.0;
+
+                if (mesh_texcoords.items.len > i) {
+                    u_textcoord = mesh_texcoords.items[i][0];
+                    v_textcoord = mesh_texcoords.items[i][1];
+                }
+
+                vertices.append(.{ .x = vert[0], .y = vert[1], .z = vert[2], .u = u_textcoord, .v = v_textcoord, .color = white_color }) catch {
                     debug.log("Could not process mesh file!", .{});
                     return null;
                 };
             }
-        }
 
-        debug.log("Loaded mesh file {s} with {d} indices", .{ filename, mesh_indices.items.len });
+            // Fill in normals if none were given, to match vertex layout
+            if (mesh_normals.items.len == 0) {
+                for (0..mesh_positions.items.len) |_| {
+                    const empty = [3]f32{ 0.0, 0.0, 0.0 };
+                    mesh_normals.append(empty) catch {
+                        return null;
+                    };
+                }
+            }
 
-        var vertices = allocator.alloc(PackedVertex, mesh_positions.items.len) catch {
-            debug.log("Could not process mesh file!", .{});
-            return null;
-        };
-        defer allocator.free(vertices);
+            // Fill in tangents if none were given, to match vertex layout
+            if (mesh_tangents.items.len == 0) {
+                for (0..mesh_positions.items.len) |_| {
+                    const empty = [4]f32{ 0.0, 0.0, 0.0, 0.0 };
+                    mesh_tangents.append(empty) catch {
+                        return null;
+                    };
+                }
+            }
 
-        const white_color = colors.white.toArray();
+            // Fill in joints, if none were given, to match vertex layout
+            any_submesh_had_joints = mesh_joints.items.len > 0 and mesh_weights.items.len > 0;
 
-        for (mesh_positions.items, 0..) |vert, i| {
-            vertices[i].x = vert[0];
-            vertices[i].y = vert[1];
-            vertices[i].z = vert[2];
+            var bindings: graphics.Bindings = undefined;
 
-            vertices[i].color = white_color;
+            if (any_submesh_had_joints) {
+                debug.log("Creating skinned mesh: {d} indices", .{mesh_indices.items.len});
 
-            if (mesh_texcoords.items.len > i) {
-                vertices[i].u = mesh_texcoords.items[i][0];
-                vertices[i].v = mesh_texcoords.items[i][1];
+                const layout = getSkinnedVertexLayout();
+                bindings = graphics.Bindings.init(.{
+                    .index_len = mesh_indices.items.len,
+                    .vert_len = vertices.items.len,
+                    .vertex_layout = layout,
+                });
+
+                bindings.setWithJoints(vertices.items[vertices_start..], mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_joints.items, mesh_weights.items, mesh_indices.items.len);
             } else {
-                vertices[i].u = 0.0;
-                vertices[i].v = 0.0;
+                bindings = graphics.Bindings.init(.{
+                    .index_len = mesh_indices.items.len,
+                    .vert_len = vertices.items.len,
+                    .vertex_layout = vertex_layout,
+                });
+
+                bindings.set(vertices.items[vertices_start..], mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_indices.items.len);
             }
+
+            bindings_list.append(bindings) catch {
+                return null;
+            };
+
+            vertices_start = vertices.items.len;
         }
 
-        const material: graphics.Material = cfg.material;
-
-        // Fill in normals if none were given, to match vertex layout
-        if (mesh_normals.items.len == 0) {
-            for (0..mesh_positions.items.len) |_| {
-                const empty = [3]f32{ 0.0, 0.0, 0.0 };
-                mesh_normals.append(allocator, empty) catch {
-                    return null;
-                };
-            }
+        if (any_submesh_had_joints) {
+            return createSkinnedMesh(vertices.items, bindings_list, cfg.materials, data);
         }
 
-        // Fill in tangents if none were given, to match vertex layout
-        if (mesh_tangents.items.len == 0) {
-            for (0..mesh_positions.items.len) |_| {
-                const empty = [4]f32{ 0.0, 0.0, 0.0, 0.0 };
-                mesh_tangents.append(allocator, empty) catch {
-                    return null;
-                };
-            }
-        }
-
-        // Fill in joints, if none were given, to match vertex layout
-        const had_joints = mesh_joints.items.len > 0 and mesh_weights.items.len > 0;
-
-        if (had_joints) {
-            return createSkinnedMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_joints.items, mesh_weights.items, material, data);
-        }
-
-        // only skinned meshes need to keep the model metadata around
-        zmesh.io.freeData(data);
-
-        return createMesh(vertices, mesh_indices.items, mesh_normals.items, mesh_tangents.items, material);
+        return createMesh(vertices.items, bindings_list, cfg.materials);
     }
 
     pub fn deinit(self: *Mesh) void {
-        if (self.zmesh_data) |mesh_data| {
-            zmesh.io.freeData(mesh_data);
+        for (self.bindings_list.items) |*b| {
+            b.destroy();
         }
-        self.bindings.destroy();
+        self.bindings_list.deinit();
     }
 
     /// Draw this mesh
     pub fn draw(self: *Mesh, cam_matrices: CameraMatrices, model_matrix: math.Mat4) void {
-        graphics.drawWithMaterial(&self.bindings, &self.material, cam_matrices, model_matrix);
+        for (self.bindings_list.items, self.materials.items) |*bindings, *material| {
+            graphics.drawWithMaterial(bindings, material, cam_matrices, model_matrix);
+        }
     }
 
-    /// Draw this mesh, using the specified material instead of the set one
-    pub fn drawWithMaterial(self: *Mesh, material: graphics.Material, cam_matrices: CameraMatrices, model_matrix: math.Mat4) void {
-        graphics.drawWithMaterial(&self.bindings, @constCast(&material), cam_matrices, model_matrix);
+    /// Draw this mesh, using the specified materials instead of the set ones
+    pub fn drawWithMaterials(self: *Mesh, materials: []graphics.Material, cam_matrices: CameraMatrices, model_matrix: math.Mat4) void {
+        for (self.bindings_list.items, materials) |*bindings, *material| {
+            graphics.drawWithMaterial(bindings, material, cam_matrices, model_matrix);
+        }
     }
 };
 
 /// Create a mesh out of some vertex data
-pub fn createMesh(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: graphics.Material) Mesh {
+pub fn createMesh(vertices: []PackedVertex, bindings_list: std.ArrayList(graphics.Bindings), materials: std.ArrayList(graphics.Material)) Mesh {
     // create a mesh with the default vertex layout
-    return createMeshWithLayout(vertices, indices, normals, tangents, material, vertex_layout);
-}
-
-pub fn createSkinnedMesh(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, joints: [][4]f32, weights: [][4]f32, material: graphics.Material, data: *zmesh.io.zcgltf.Data) Mesh {
-    // create a mesh with the default vertex layout
-    // debug.log("Creating skinned mesh: {d} indices, {d} normals, {d}tangents, {d} joints, {d} weights", .{ indices.len, normals.len, tangents.len, joints.len, weights.len });
-
-    debug.log("Creating skinned mesh: {d} indices", .{indices.len});
-
-    const layout = getSkinnedVertexLayout();
-    var bindings = graphics.Bindings.init(.{
-        .index_len = indices.len,
-        .vert_len = vertices.len,
-        .vertex_layout = layout,
-    });
-
-    bindings.setWithJoints(vertices, indices, normals, tangents, joints, weights, indices.len);
 
     const m: Mesh = Mesh{
-        .bindings = bindings,
-        .material = material,
+        .bindings_list = bindings_list,
+        .materials = materials,
         .bounds = boundingbox.BoundingBox.initFromVerts(vertices),
-        .zmesh_data = data,
-        .has_skin = true,
     };
     return m;
 }
 
-/// Create a mesh out of some vertex data with a given vertex layout
-pub fn createMeshWithLayout(vertices: []PackedVertex, indices: []u32, normals: [][3]f32, tangents: [][4]f32, material: graphics.Material, layout: graphics.VertexLayout) Mesh {
-    // debug.log("Creating mesh: {d} indices", .{indices.len});
-
-    var bindings = graphics.Bindings.init(.{
-        .index_len = indices.len,
-        .vert_len = vertices.len,
-        .vertex_layout = layout,
-    });
-
-    bindings.set(vertices, indices, normals, tangents, indices.len);
+pub fn createSkinnedMesh(vertices: []PackedVertex, bindings_list: std.ArrayList(graphics.Bindings), materials: std.ArrayList(graphics.Material), data: *zmesh.io.zcgltf.Data) Mesh {
+    // create a mesh with the default vertex layout
+    // debug.log("Creating skinned mesh: {d} indices, {d} normals, {d}tangents, {d} joints, {d} weights", .{ indices.len, normals.len, tangents.len, joints.len, weights.len });
 
     const m: Mesh = Mesh{
-        .bindings = bindings,
-        .material = material,
+        .bindings_list = bindings_list,
+        .materials = materials,
         .bounds = boundingbox.BoundingBox.initFromVerts(vertices),
+        .zmesh_data = data,
+        .has_skin = true,
     };
     return m;
 }
@@ -283,17 +279,19 @@ pub fn getSkinnedShaderAttributes() []const graphics.ShaderAttribute {
 
 /// MeshBuilder is a helper for making runtime meshes
 pub const MeshBuilder = struct {
-    vertices: ArrayList(PackedVertex) = undefined,
-    indices: ArrayList(u32) = undefined,
-    normals: ArrayList([3]f32) = undefined,
-    tangents: ArrayList([4]f32) = undefined,
+    vertices: std.ArrayList(PackedVertex) = undefined,
+    indices: std.ArrayList(u32) = undefined,
+    normals: std.ArrayList([3]f32) = undefined,
+    tangents: std.ArrayList([4]f32) = undefined,
+    allocator: std.mem.Allocator = undefined,
 
     pub fn init(allocator: std.mem.Allocator) MeshBuilder {
         return MeshBuilder{
-            .vertices = ArrayList(PackedVertex).init(allocator),
-            .indices = ArrayList(u32).init(allocator),
-            .normals = ArrayList([3]f32).init(allocator),
-            .tangents = ArrayList([4]f32).init(allocator),
+            .vertices = std.ArrayList(PackedVertex).init(allocator),
+            .indices = std.ArrayList(u32).init(allocator),
+            .normals = std.ArrayList([3]f32).init(allocator),
+            .tangents = std.ArrayList([4]f32).init(allocator),
+            .allocator = allocator,
         };
     }
 
@@ -473,13 +471,26 @@ pub const MeshBuilder = struct {
     }
 
     /// Bakes a mesh out of the mesh builder from the current state
-    pub fn buildMesh(self: *const MeshBuilder, material: graphics.Material) Mesh {
-        const layout = getVertexLayout();
-        return createMeshWithLayout(self.vertices.items, self.indices.items, self.normals.items, self.tangents.items, material, layout);
+    pub fn buildMesh(self: *const MeshBuilder, material: graphics.Material) !Mesh {
+        var bindings = graphics.Bindings.init(.{
+            .index_len = self.indices.items.len,
+            .vert_len = self.vertices.items.len,
+            .vertex_layout = vertex_layout,
+        });
+
+        bindings.set(self.vertices.items, self.indices.items, self.normals.items, self.tangents.items, self.indices.items.len);
+
+        var bindings_list = std.ArrayList(graphics.Bindings).init(self.allocator);
+        try bindings_list.append(bindings);
+        var materials = std.ArrayList(graphics.Material).init(self.allocator);
+        try materials.append(material);
+
+        return createMesh(self.vertices.items, bindings_list, materials);
     }
 
     /// Cleans up a mesh builder
     pub fn deinit(self: *MeshBuilder) void {
+        // maybe use arena here
         self.vertices.deinit();
         self.indices.deinit();
         self.normals.deinit();

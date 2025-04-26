@@ -14,6 +14,7 @@ const input = delve.platform.input;
 const math = delve.math;
 const modules = delve.modules;
 const skinned_mesh = delve.graphics.skinned_mesh;
+const gltf = delve.assets.gltf;
 
 // easy access to some types
 const Vec3 = math.Vec3;
@@ -23,13 +24,16 @@ const Color = colors.Color;
 const shader_builtin = delve.shaders.default_skinned;
 
 var material: delve.platform.graphics.Material = undefined;
+var materials: std.ArrayList(delve.platform.graphics.Material) = undefined;
 var mesh_test: skinned_mesh.SkinnedMesh = undefined;
 var animation: skinned_mesh.PlayingAnimation = undefined;
 
 var time: f32 = 0.0;
 var camera: cam.Camera = undefined;
 
-const mesh_file = "assets/meshes/CesiumMan.gltf";
+var gltf_data: *gltf.Data = undefined;
+
+const mesh_file = "CesiumMan.gltf";
 const mesh_texture_file = "assets/meshes/CesiumMan.png";
 
 // currently playing animation
@@ -96,8 +100,13 @@ fn on_init() !void {
         .default_vs_uniform_layout = delve.platform.graphics.default_skinned_mesh_vs_uniforms,
     });
 
+    materials = std.ArrayList(delve.platform.graphics.Material).init(delve.mem.getAllocator());
+    try materials.append(material);
+
+    gltf_data = try gltf.loadData(mesh_file, "assets/meshes/");
+
     // Load our mesh!
-    const loaded = skinned_mesh.SkinnedMesh.initFromFile(delve.mem.getAllocator(), mesh_file, .{ .material = material });
+    const loaded = skinned_mesh.SkinnedMesh.initFromData(delve.mem.getAllocator(), gltf_data, 0, .{ .materials = materials });
 
     if (loaded == null) {
         debug.fatal("Could not load skinned mesh!", .{});
@@ -171,7 +180,10 @@ fn on_draw() void {
 fn on_cleanup() !void {
     debug.log("Skinned mesh example module cleaning up", .{});
 
+    gltf.freeData(gltf_data);
+
     material.deinit();
+    materials.deinit();
     animation.deinit();
     mesh_test.deinit();
 }

@@ -150,6 +150,7 @@ pub const CameraMatrices = struct {
 };
 
 /// A packed mesh vertex
+/// This structure is tied to sokol, changing or adding any type breaks rendering as this is transformed into a sokol vertex_buffer
 pub const PackedVertex = struct {
     x: f32,
     y: f32,
