@@ -338,5 +338,8 @@ pub fn on_cleanup() !void {
     materials.deinit();
     shader.destroy();
 
+    cube_mesh.materials.deinit();
+    cube_mesh.deinit();
+
     quake_map.deinit();
 }

@@ -178,6 +178,7 @@ pub fn build(b: *std.Build) !void {
         "rays",
         "skinned-meshes",
         "stresstest",
+        "multiple-materials",
     };
 
     for (examples) |example_item| {

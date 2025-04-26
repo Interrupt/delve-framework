@@ -66,6 +66,10 @@ pub const spatial = struct {
     pub const Rect = @import("spatial/rect.zig").Rect;
 };
 
+pub const assets = struct {
+    pub const gltf = @import("assets/gltf.zig");
+};
+
 pub const utils = struct {
     pub const interpolation = @import("utils/interpolation.zig");
     pub const quakemap = @import("utils/quakemap.zig");
