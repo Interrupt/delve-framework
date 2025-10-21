@@ -1,6 +1,7 @@
 .{
-    .name = "delve",
+    .name = .delve,
     .version = "0.0.2",
+    .fingerprint = 0xa3185842c6ab2a18,
     .paths = .{
         "src",
         "3rdparty",
@@ -10,18 +11,13 @@
         "ROADMAP.md",
     },
     .dependencies = .{
-        .ziglua = .{
-            .url = "git+https://github.com/interrupt/ziglua#3d7532ec73202bddfbeba1933d43fe427ca6d80d",
-            .hash = "12207a933b3cca4e301c711acbdb045a50c1d90f9525ab6544e409427b9672a6821f",
-        },
-        // needed because Lua is a lazy dependency inside of ziglua
-        .lua54 = .{
-            .url = "https://www.lua.org/ftp/lua-5.4.6.tar.gz",
-            .hash = "1220f93ada1fa077ab096bf88a5b159ad421dbf6a478edec78ddb186d0c21d3476d9",
+        .zlua = .{
+            .url = "git+https://github.com/natecraddock/ziglua#891945ef9c2bffcd06050c4836d414428ed7d95a",
+            .hash = "zlua-0.1.0-hGRpC2rgBACFhBjc9s9dGN37ZaTu7rNVZZqduwitv4O7",
         },
         .sokol = .{
-            .url = "git+https://github.com/floooh/sokol-zig.git#d3e21f76498213d6d58179065756f5f2ed9b90cf",
-            .hash = "122052a192829b377c637ce242ee8c9121e03d8cd10c889758dc6fb176368de7d67b",
+            .url = "git+https://github.com/floooh/sokol-zig.git#d8c1205a4dd9ad28da411f998102ce520cdef6bc",
+            .hash = "sokol-0.1.0-pb1HK5mGLABB7_Vt66xb8nbn8sJN_ULvd4v0wg8WypJ_",
         },
         .ymlz = .{
             .url = "git+https://github.com/pwbh/ymlz#bd3ce82da20844117f3da76d0cd40453936b1b66",
@@ -37,7 +33,8 @@
             .path = "3rdparty/zaudio",
         },
         .cimgui = .{
-            .path = "3rdparty/cimgui",
+            .url = "git+https://github.com/floooh/dcimgui.git#a174810b90366b56038789be55dfe803b5a255df",
+            .hash = "cimgui-0.1.0-44ClkS2AhgDokTzMqSuIJjYs2v802ZjjWWN1vKuMHCqq",
         },
         .system_sdk = .{
             .path = "3rdparty/system-sdk",

@@ -1,0 +1,91 @@
+diagnostic(off, derivative_uniformity);
+
+struct fs_params {
+  /* @offset(0) */
+  u_color_override : vec4f,
+  /* @offset(16) */
+  u_alpha_cutoff : f32,
+}
+
+@group(1) @binding(64) var tex : texture_2d<f32>;
+
+@group(1) @binding(80) var smp : sampler;
+
+var<private> uv : vec2f;
+
+var<private> color : vec4f;
+
+@group(0) @binding(8) var<uniform> x_36 : fs_params;
+
+@group(1) @binding(65) var tex_emissive : texture_2d<f32>;
+
+var<private> frag_color : vec4f;
+
+var<private> normal : vec3f;
+
+var<private> tangent : vec4f;
+
+var<private> joint : vec4f;
+
+var<private> weight : vec4f;
+
+fn main_1() {
+  var c : vec4f;
+  var e : vec4f;
+  var e_amt : f32;
+  var override_mod : f32;
+  let x_23 : vec2f = uv;
+  let x_24 : vec4f = textureSample(tex, smp, x_23);
+  let x_27 : vec4f = color;
+  c = (x_24 * x_27);
+  let x_33 : f32 = c.w;
+  let x_41 : f32 = x_36.u_alpha_cutoff;
+  if ((x_33 <= x_41)) {
+    discard;
+  }
+  let x_52 : vec2f = uv;
+  let x_53 : vec4f = textureSample(tex_emissive, smp, x_52);
+  e = x_53;
+  let x_57 : f32 = e.x;
+  let x_60 : f32 = e.y;
+  let x_64 : f32 = e.z;
+  e_amt = min(((x_57 + x_60) + x_64), 1.0f);
+  let x_69 : vec4f = c;
+  let x_71 : f32 = e_amt;
+  let x_74 : vec4f = e;
+  let x_76 : vec3f = ((vec3f(x_69.x, x_69.y, x_69.z) * (1.0f - x_71)) + vec3f(x_74.x, x_74.y, x_74.z));
+  c.x = x_76.x;
+  c.y = x_76.y;
+  c.z = x_76.z;
+  let x_86 : f32 = x_36.u_color_override.w;
+  override_mod = (1.0f - x_86);
+  let x_88 : vec4f = c;
+  let x_90 : f32 = override_mod;
+  let x_94 : vec4f = x_36.u_color_override;
+  let x_97 : f32 = x_36.u_color_override.w;
+  let x_99 : vec3f = ((vec3f(x_88.x, x_88.y, x_88.z) * x_90) + (vec3f(x_94.x, x_94.y, x_94.z) * x_97));
+  c.x = x_99.x;
+  c.y = x_99.y;
+  c.z = x_99.z;
+  let x_108 : vec4f = c;
+  frag_color = x_108;
+  return;
+}
+
+struct main_out {
+  @location(0)
+  frag_color_1 : vec4f,
+}
+
+@fragment
+fn main(@location(1) uv_param : vec2f, @location(0) color_param : vec4f, @location(2) normal_param : vec3f, @location(3) tangent_param : vec4f, @location(4) joint_param : vec4f, @location(5) weight_param : vec4f) -> main_out {
+  uv = uv_param;
+  color = color_param;
+  normal = normal_param;
+  tangent = tangent_param;
+  joint = joint_param;
+  weight = weight_param;
+  main_1();
+  return main_out(frag_color);
+}
+

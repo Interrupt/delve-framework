@@ -1,0 +1,59 @@
+diagnostic(off, derivative_uniformity);
+
+struct vs_params {
+  /* @offset(0) */
+  u_projViewMatrix : mat4x4f,
+  /* @offset(64) */
+  u_modelMatrix : mat4x4f,
+  /* @offset(128) */
+  u_color : vec4f,
+  /* @offset(144) */
+  u_tex_pan : vec4f,
+}
+
+@group(0) @binding(0) var<uniform> x_19 : vs_params;
+
+var<private> pos : vec4f;
+
+var<private> color : vec4f;
+
+var<private> color0 : vec4f;
+
+var<private> uv : vec2f;
+
+var<private> texcoord0 : vec2f;
+
+var<private> gl_Position : vec4f;
+
+fn main_1() {
+  let x_22 : mat4x4f = x_19.u_projViewMatrix;
+  let x_25 : mat4x4f = x_19.u_modelMatrix;
+  let x_29 : vec4f = pos;
+  gl_Position = ((x_22 * x_25) * x_29);
+  let x_35 : vec4f = color0;
+  let x_39 : vec4f = x_19.u_color;
+  color = (x_35 * x_39);
+  let x_46 : vec2f = texcoord0;
+  let x_49 : vec4f = x_19.u_tex_pan;
+  uv = (x_46 + vec2f(x_49.x, x_49.y));
+  return;
+}
+
+struct main_out {
+  @builtin(position)
+  gl_Position : vec4f,
+  @location(0)
+  color_1 : vec4f,
+  @location(1)
+  uv_1 : vec2f,
+}
+
+@vertex
+fn main(@location(0) pos_param : vec4f, @location(1) color0_param : vec4f, @location(2) texcoord0_param : vec2f) -> main_out {
+  pos = pos_param;
+  color0 = color0_param;
+  texcoord0 = texcoord0_param;
+  main_1();
+  return main_out(gl_Position, color, uv);
+}
+

@@ -13,37 +13,38 @@ const m = @import("../../math.zig");
 //    =========
 //    Shader program: 'default':
 //        Get shader desc: shd.defaultShaderDesc(sg.queryBackend());
-//        Vertex shader: vs
-//            Attributes:
-//                ATTR_vs_pos => 0
-//                ATTR_vs_color0 => 1
-//                ATTR_vs_texcoord0 => 2
-//            Uniform block 'vs_params':
-//                Zig struct: VsParams
-//                Bind slot: SLOT_vs_params => 0
-//        Fragment shader: fs
-//            Uniform block 'fs_params':
-//                Zig struct: FsParams
-//                Bind slot: SLOT_fs_params => 0
-//            Image 'tex':
-//                Image type: ._2D
-//                Sample type: .FLOAT
-//                Multisampled: false
-//                Bind slot: SLOT_tex => 0
-//            Sampler 'smp':
-//                Type: .FILTERING
-//                Bind slot: SLOT_smp => 0
-//            Image Sampler Pair 'tex_smp':
-//                Image: tex
-//                Sampler: smp
+//        Vertex Shader: vs
+//        Fragment Shader: fs
+//        Attributes:
+//            ATTR_default_pos => 0
+//            ATTR_default_color0 => 1
+//            ATTR_default_texcoord0 => 2
+//    Bindings:
+//        Uniform block 'vs_params':
+//            Zig struct: VsParams
+//            Bind slot: UB_vs_params => 0
+//        Uniform block 'fs_params':
+//            Zig struct: FsParams
+//            Bind slot: UB_fs_params => 1
+//        Image 'tex':
+//            Image type: ._2D
+//            Sample type: .FLOAT
+//            Multisampled: false
+//            Bind slot: IMG_tex => 0
+//        Sampler 'smp':
+//            Type: .FILTERING
+//            Bind slot: SMP_smp => 0
+//        Image Sampler Pair 'tex_smp':
+//            Image: tex
+//            Sampler: smp
 //
-pub const ATTR_vs_pos = 0;
-pub const ATTR_vs_color0 = 1;
-pub const ATTR_vs_texcoord0 = 2;
-pub const SLOT_vs_params = 0;
-pub const SLOT_fs_params = 0;
-pub const SLOT_tex = 0;
-pub const SLOT_smp = 0;
+pub const ATTR_default_pos = 0;
+pub const ATTR_default_color0 = 1;
+pub const ATTR_default_texcoord0 = 2;
+pub const UB_vs_params = 0;
+pub const UB_fs_params = 1;
+pub const IMG_tex = 0;
+pub const SMP_smp = 0;
 pub const VsParams = extern struct {
     u_projViewMatrix: m.Mat4 align(16),
     u_modelMatrix: m.Mat4 align(1),
@@ -109,7 +110,7 @@ const vs_source_glsl430 = [467]u8 {
 //    #version 430
 //
 //    uniform vec4 fs_params[2];
-//    layout(binding = 0) uniform sampler2D tex_smp;
+//    layout(binding = 16) uniform sampler2D tex_smp;
 //
 //    layout(location = 1) in vec2 uv;
 //    layout(location = 0) in vec4 color;
@@ -134,43 +135,43 @@ const vs_source_glsl430 = [467]u8 {
 //    }
 //
 //
-const fs_source_glsl430 = [563]u8 {
+const fs_source_glsl430 = [564]u8 {
     0x23,0x76,0x65,0x72,0x73,0x69,0x6f,0x6e,0x20,0x34,0x33,0x30,0x0a,0x0a,0x75,0x6e,
     0x69,0x66,0x6f,0x72,0x6d,0x20,0x76,0x65,0x63,0x34,0x20,0x66,0x73,0x5f,0x70,0x61,
     0x72,0x61,0x6d,0x73,0x5b,0x32,0x5d,0x3b,0x0a,0x6c,0x61,0x79,0x6f,0x75,0x74,0x28,
-    0x62,0x69,0x6e,0x64,0x69,0x6e,0x67,0x20,0x3d,0x20,0x30,0x29,0x20,0x75,0x6e,0x69,
-    0x66,0x6f,0x72,0x6d,0x20,0x73,0x61,0x6d,0x70,0x6c,0x65,0x72,0x32,0x44,0x20,0x74,
-    0x65,0x78,0x5f,0x73,0x6d,0x70,0x3b,0x0a,0x0a,0x6c,0x61,0x79,0x6f,0x75,0x74,0x28,
-    0x6c,0x6f,0x63,0x61,0x74,0x69,0x6f,0x6e,0x20,0x3d,0x20,0x31,0x29,0x20,0x69,0x6e,
-    0x20,0x76,0x65,0x63,0x32,0x20,0x75,0x76,0x3b,0x0a,0x6c,0x61,0x79,0x6f,0x75,0x74,
-    0x28,0x6c,0x6f,0x63,0x61,0x74,0x69,0x6f,0x6e,0x20,0x3d,0x20,0x30,0x29,0x20,0x69,
-    0x6e,0x20,0x76,0x65,0x63,0x34,0x20,0x63,0x6f,0x6c,0x6f,0x72,0x3b,0x0a,0x6c,0x61,
-    0x79,0x6f,0x75,0x74,0x28,0x6c,0x6f,0x63,0x61,0x74,0x69,0x6f,0x6e,0x20,0x3d,0x20,
-    0x30,0x29,0x20,0x6f,0x75,0x74,0x20,0x76,0x65,0x63,0x34,0x20,0x66,0x72,0x61,0x67,
-    0x5f,0x63,0x6f,0x6c,0x6f,0x72,0x3b,0x0a,0x0a,0x76,0x6f,0x69,0x64,0x20,0x6d,0x61,
-    0x69,0x6e,0x28,0x29,0x0a,0x7b,0x0a,0x20,0x20,0x20,0x20,0x76,0x65,0x63,0x34,0x20,
-    0x5f,0x32,0x38,0x20,0x3d,0x20,0x74,0x65,0x78,0x74,0x75,0x72,0x65,0x28,0x74,0x65,
-    0x78,0x5f,0x73,0x6d,0x70,0x2c,0x20,0x75,0x76,0x29,0x20,0x2a,0x20,0x63,0x6f,0x6c,
-    0x6f,0x72,0x3b,0x0a,0x20,0x20,0x20,0x20,0x76,0x65,0x63,0x34,0x20,0x63,0x20,0x3d,
-    0x20,0x5f,0x32,0x38,0x3b,0x0a,0x20,0x20,0x20,0x20,0x69,0x66,0x20,0x28,0x5f,0x32,
-    0x38,0x2e,0x77,0x20,0x3c,0x3d,0x20,0x66,0x73,0x5f,0x70,0x61,0x72,0x61,0x6d,0x73,
-    0x5b,0x31,0x5d,0x2e,0x78,0x29,0x0a,0x20,0x20,0x20,0x20,0x7b,0x0a,0x20,0x20,0x20,
-    0x20,0x20,0x20,0x20,0x20,0x64,0x69,0x73,0x63,0x61,0x72,0x64,0x3b,0x0a,0x20,0x20,
-    0x20,0x20,0x7d,0x0a,0x20,0x20,0x20,0x20,0x76,0x65,0x63,0x34,0x20,0x5f,0x35,0x34,
-    0x20,0x3d,0x20,0x63,0x3b,0x0a,0x20,0x20,0x20,0x20,0x76,0x65,0x63,0x33,0x20,0x5f,
-    0x36,0x35,0x20,0x3d,0x20,0x28,0x5f,0x35,0x34,0x2e,0x78,0x79,0x7a,0x20,0x2a,0x20,
-    0x28,0x31,0x2e,0x30,0x20,0x2d,0x20,0x66,0x73,0x5f,0x70,0x61,0x72,0x61,0x6d,0x73,
-    0x5b,0x30,0x5d,0x2e,0x77,0x29,0x29,0x20,0x2b,0x20,0x28,0x66,0x73,0x5f,0x70,0x61,
-    0x72,0x61,0x6d,0x73,0x5b,0x30,0x5d,0x2e,0x78,0x79,0x7a,0x20,0x2a,0x20,0x66,0x73,
-    0x5f,0x70,0x61,0x72,0x61,0x6d,0x73,0x5b,0x30,0x5d,0x2e,0x77,0x29,0x3b,0x0a,0x20,
-    0x20,0x20,0x20,0x76,0x65,0x63,0x34,0x20,0x5f,0x38,0x30,0x20,0x3d,0x20,0x5f,0x35,
-    0x34,0x3b,0x0a,0x20,0x20,0x20,0x20,0x5f,0x38,0x30,0x2e,0x78,0x20,0x3d,0x20,0x5f,
-    0x36,0x35,0x2e,0x78,0x3b,0x0a,0x20,0x20,0x20,0x20,0x5f,0x38,0x30,0x2e,0x79,0x20,
-    0x3d,0x20,0x5f,0x36,0x35,0x2e,0x79,0x3b,0x0a,0x20,0x20,0x20,0x20,0x5f,0x38,0x30,
-    0x2e,0x7a,0x20,0x3d,0x20,0x5f,0x36,0x35,0x2e,0x7a,0x3b,0x0a,0x20,0x20,0x20,0x20,
-    0x63,0x20,0x3d,0x20,0x5f,0x38,0x30,0x3b,0x0a,0x20,0x20,0x20,0x20,0x66,0x72,0x61,
-    0x67,0x5f,0x63,0x6f,0x6c,0x6f,0x72,0x20,0x3d,0x20,0x5f,0x38,0x30,0x3b,0x0a,0x7d,
-    0x0a,0x0a,0x00,
+    0x62,0x69,0x6e,0x64,0x69,0x6e,0x67,0x20,0x3d,0x20,0x31,0x36,0x29,0x20,0x75,0x6e,
+    0x69,0x66,0x6f,0x72,0x6d,0x20,0x73,0x61,0x6d,0x70,0x6c,0x65,0x72,0x32,0x44,0x20,
+    0x74,0x65,0x78,0x5f,0x73,0x6d,0x70,0x3b,0x0a,0x0a,0x6c,0x61,0x79,0x6f,0x75,0x74,
+    0x28,0x6c,0x6f,0x63,0x61,0x74,0x69,0x6f,0x6e,0x20,0x3d,0x20,0x31,0x29,0x20,0x69,
+    0x6e,0x20,0x76,0x65,0x63,0x32,0x20,0x75,0x76,0x3b,0x0a,0x6c,0x61,0x79,0x6f,0x75,
+    0x74,0x28,0x6c,0x6f,0x63,0x61,0x74,0x69,0x6f,0x6e,0x20,0x3d,0x20,0x30,0x29,0x20,
+    0x69,0x6e,0x20,0x76,0x65,0x63,0x34,0x20,0x63,0x6f,0x6c,0x6f,0x72,0x3b,0x0a,0x6c,
+    0x61,0x79,0x6f,0x75,0x74,0x28,0x6c,0x6f,0x63,0x61,0x74,0x69,0x6f,0x6e,0x20,0x3d,
+    0x20,0x30,0x29,0x20,0x6f,0x75,0x74,0x20,0x76,0x65,0x63,0x34,0x20,0x66,0x72,0x61,
+    0x67,0x5f,0x63,0x6f,0x6c,0x6f,0x72,0x3b,0x0a,0x0a,0x76,0x6f,0x69,0x64,0x20,0x6d,
+    0x61,0x69,0x6e,0x28,0x29,0x0a,0x7b,0x0a,0x20,0x20,0x20,0x20,0x76,0x65,0x63,0x34,
+    0x20,0x5f,0x32,0x38,0x20,0x3d,0x20,0x74,0x65,0x78,0x74,0x75,0x72,0x65,0x28,0x74,
+    0x65,0x78,0x5f,0x73,0x6d,0x70,0x2c,0x20,0x75,0x76,0x29,0x20,0x2a,0x20,0x63,0x6f,
+    0x6c,0x6f,0x72,0x3b,0x0a,0x20,0x20,0x20,0x20,0x76,0x65,0x63,0x34,0x20,0x63,0x20,
+    0x3d,0x20,0x5f,0x32,0x38,0x3b,0x0a,0x20,0x20,0x20,0x20,0x69,0x66,0x20,0x28,0x5f,
+    0x32,0x38,0x2e,0x77,0x20,0x3c,0x3d,0x20,0x66,0x73,0x5f,0x70,0x61,0x72,0x61,0x6d,
+    0x73,0x5b,0x31,0x5d,0x2e,0x78,0x29,0x0a,0x20,0x20,0x20,0x20,0x7b,0x0a,0x20,0x20,
+    0x20,0x20,0x20,0x20,0x20,0x20,0x64,0x69,0x73,0x63,0x61,0x72,0x64,0x3b,0x0a,0x20,
+    0x20,0x20,0x20,0x7d,0x0a,0x20,0x20,0x20,0x20,0x76,0x65,0x63,0x34,0x20,0x5f,0x35,
+    0x34,0x20,0x3d,0x20,0x63,0x3b,0x0a,0x20,0x20,0x20,0x20,0x76,0x65,0x63,0x33,0x20,
+    0x5f,0x36,0x35,0x20,0x3d,0x20,0x28,0x5f,0x35,0x34,0x2e,0x78,0x79,0x7a,0x20,0x2a,
+    0x20,0x28,0x31,0x2e,0x30,0x20,0x2d,0x20,0x66,0x73,0x5f,0x70,0x61,0x72,0x61,0x6d,
+    0x73,0x5b,0x30,0x5d,0x2e,0x77,0x29,0x29,0x20,0x2b,0x20,0x28,0x66,0x73,0x5f,0x70,
+    0x61,0x72,0x61,0x6d,0x73,0x5b,0x30,0x5d,0x2e,0x78,0x79,0x7a,0x20,0x2a,0x20,0x66,
+    0x73,0x5f,0x70,0x61,0x72,0x61,0x6d,0x73,0x5b,0x30,0x5d,0x2e,0x77,0x29,0x3b,0x0a,
+    0x20,0x20,0x20,0x20,0x76,0x65,0x63,0x34,0x20,0x5f,0x38,0x30,0x20,0x3d,0x20,0x5f,
+    0x35,0x34,0x3b,0x0a,0x20,0x20,0x20,0x20,0x5f,0x38,0x30,0x2e,0x78,0x20,0x3d,0x20,
+    0x5f,0x36,0x35,0x2e,0x78,0x3b,0x0a,0x20,0x20,0x20,0x20,0x5f,0x38,0x30,0x2e,0x79,
+    0x20,0x3d,0x20,0x5f,0x36,0x35,0x2e,0x79,0x3b,0x0a,0x20,0x20,0x20,0x20,0x5f,0x38,
+    0x30,0x2e,0x7a,0x20,0x3d,0x20,0x5f,0x36,0x35,0x2e,0x7a,0x3b,0x0a,0x20,0x20,0x20,
+    0x20,0x63,0x20,0x3d,0x20,0x5f,0x38,0x30,0x3b,0x0a,0x20,0x20,0x20,0x20,0x66,0x72,
+    0x61,0x67,0x5f,0x63,0x6f,0x6c,0x6f,0x72,0x20,0x3d,0x20,0x5f,0x38,0x30,0x3b,0x0a,
+    0x7d,0x0a,0x0a,0x00,
 };
 //
 //    #version 300 es
@@ -1260,15 +1261,15 @@ const vs_source_wgsl = [1253]u8 {
 //      u_alpha_cutoff : f32,
 //    }
 //
-//    @group(1) @binding(48) var tex : texture_2d<f32>;
+//    @group(1) @binding(64) var tex : texture_2d<f32>;
 //
-//    @group(1) @binding(64) var smp : sampler;
+//    @group(1) @binding(80) var smp : sampler;
 //
 //    var<private> uv : vec2f;
 //
 //    var<private> color : vec4f;
 //
-//    @group(0) @binding(4) var<uniform> x_36 : fs_params;
+//    @group(0) @binding(8) var<uniform> x_36 : fs_params;
 //
 //    var<private> frag_color : vec4f;
 //
@@ -1324,17 +1325,17 @@ const fs_source_wgsl = [1354]u8 {
     0x40,0x6f,0x66,0x66,0x73,0x65,0x74,0x28,0x31,0x36,0x29,0x20,0x2a,0x2f,0x0a,0x20,
     0x20,0x75,0x5f,0x61,0x6c,0x70,0x68,0x61,0x5f,0x63,0x75,0x74,0x6f,0x66,0x66,0x20,
     0x3a,0x20,0x66,0x33,0x32,0x2c,0x0a,0x7d,0x0a,0x0a,0x40,0x67,0x72,0x6f,0x75,0x70,
-    0x28,0x31,0x29,0x20,0x40,0x62,0x69,0x6e,0x64,0x69,0x6e,0x67,0x28,0x34,0x38,0x29,
+    0x28,0x31,0x29,0x20,0x40,0x62,0x69,0x6e,0x64,0x69,0x6e,0x67,0x28,0x36,0x34,0x29,
     0x20,0x76,0x61,0x72,0x20,0x74,0x65,0x78,0x20,0x3a,0x20,0x74,0x65,0x78,0x74,0x75,
     0x72,0x65,0x5f,0x32,0x64,0x3c,0x66,0x33,0x32,0x3e,0x3b,0x0a,0x0a,0x40,0x67,0x72,
     0x6f,0x75,0x70,0x28,0x31,0x29,0x20,0x40,0x62,0x69,0x6e,0x64,0x69,0x6e,0x67,0x28,
-    0x36,0x34,0x29,0x20,0x76,0x61,0x72,0x20,0x73,0x6d,0x70,0x20,0x3a,0x20,0x73,0x61,
+    0x38,0x30,0x29,0x20,0x76,0x61,0x72,0x20,0x73,0x6d,0x70,0x20,0x3a,0x20,0x73,0x61,
     0x6d,0x70,0x6c,0x65,0x72,0x3b,0x0a,0x0a,0x76,0x61,0x72,0x3c,0x70,0x72,0x69,0x76,
     0x61,0x74,0x65,0x3e,0x20,0x75,0x76,0x20,0x3a,0x20,0x76,0x65,0x63,0x32,0x66,0x3b,
     0x0a,0x0a,0x76,0x61,0x72,0x3c,0x70,0x72,0x69,0x76,0x61,0x74,0x65,0x3e,0x20,0x63,
     0x6f,0x6c,0x6f,0x72,0x20,0x3a,0x20,0x76,0x65,0x63,0x34,0x66,0x3b,0x0a,0x0a,0x40,
     0x67,0x72,0x6f,0x75,0x70,0x28,0x30,0x29,0x20,0x40,0x62,0x69,0x6e,0x64,0x69,0x6e,
-    0x67,0x28,0x34,0x29,0x20,0x76,0x61,0x72,0x3c,0x75,0x6e,0x69,0x66,0x6f,0x72,0x6d,
+    0x67,0x28,0x38,0x29,0x20,0x76,0x61,0x72,0x3c,0x75,0x6e,0x69,0x66,0x6f,0x72,0x6d,
     0x3e,0x20,0x78,0x5f,0x33,0x36,0x20,0x3a,0x20,0x66,0x73,0x5f,0x70,0x61,0x72,0x61,
     0x6d,0x73,0x3b,0x0a,0x0a,0x76,0x61,0x72,0x3c,0x70,0x72,0x69,0x76,0x61,0x74,0x65,
     0x3e,0x20,0x66,0x72,0x61,0x67,0x5f,0x63,0x6f,0x6c,0x6f,0x72,0x20,0x3a,0x20,0x76,
@@ -1405,165 +1406,199 @@ pub fn defaultShaderDesc(backend: sg.Backend) sg.ShaderDesc {
     desc.label = "default_shader";
     switch (backend) {
         .GLCORE => {
-            desc.attrs[0].name = "pos";
-            desc.attrs[1].name = "color0";
-            desc.attrs[2].name = "texcoord0";
-            desc.vs.source = &vs_source_glsl430;
-            desc.vs.entry = "main";
-            desc.vs.uniform_blocks[0].size = 160;
-            desc.vs.uniform_blocks[0].layout = .STD140;
-            desc.vs.uniform_blocks[0].uniforms[0].name = "vs_params";
-            desc.vs.uniform_blocks[0].uniforms[0].type = .FLOAT4;
-            desc.vs.uniform_blocks[0].uniforms[0].array_count = 10;
-            desc.fs.source = &fs_source_glsl430;
-            desc.fs.entry = "main";
-            desc.fs.uniform_blocks[0].size = 32;
-            desc.fs.uniform_blocks[0].layout = .STD140;
-            desc.fs.uniform_blocks[0].uniforms[0].name = "fs_params";
-            desc.fs.uniform_blocks[0].uniforms[0].type = .FLOAT4;
-            desc.fs.uniform_blocks[0].uniforms[0].array_count = 2;
-            desc.fs.images[0].used = true;
-            desc.fs.images[0].multisampled = false;
-            desc.fs.images[0].image_type = ._2D;
-            desc.fs.images[0].sample_type = .FLOAT;
-            desc.fs.samplers[0].used = true;
-            desc.fs.samplers[0].sampler_type = .FILTERING;
-            desc.fs.image_sampler_pairs[0].used = true;
-            desc.fs.image_sampler_pairs[0].image_slot = 0;
-            desc.fs.image_sampler_pairs[0].sampler_slot = 0;
-            desc.fs.image_sampler_pairs[0].glsl_name = "tex_smp";
+            desc.vertex_func.source = &vs_source_glsl430;
+            desc.vertex_func.entry = "main";
+            desc.fragment_func.source = &fs_source_glsl430;
+            desc.fragment_func.entry = "main";
+            desc.attrs[0].glsl_name = "pos";
+            desc.attrs[1].glsl_name = "color0";
+            desc.attrs[2].glsl_name = "texcoord0";
+            desc.uniform_blocks[0].stage = .VERTEX;
+            desc.uniform_blocks[0].layout = .STD140;
+            desc.uniform_blocks[0].size = 160;
+            desc.uniform_blocks[0].glsl_uniforms[0].type = .FLOAT4;
+            desc.uniform_blocks[0].glsl_uniforms[0].array_count = 10;
+            desc.uniform_blocks[0].glsl_uniforms[0].glsl_name = "vs_params";
+            desc.uniform_blocks[1].stage = .FRAGMENT;
+            desc.uniform_blocks[1].layout = .STD140;
+            desc.uniform_blocks[1].size = 32;
+            desc.uniform_blocks[1].glsl_uniforms[0].type = .FLOAT4;
+            desc.uniform_blocks[1].glsl_uniforms[0].array_count = 2;
+            desc.uniform_blocks[1].glsl_uniforms[0].glsl_name = "fs_params";
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.image_sampler_pairs[0].stage = .FRAGMENT;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
+            desc.image_sampler_pairs[0].glsl_name = "tex_smp";
         },
         .GLES3 => {
-            desc.attrs[0].name = "pos";
-            desc.attrs[1].name = "color0";
-            desc.attrs[2].name = "texcoord0";
-            desc.vs.source = &vs_source_glsl300es;
-            desc.vs.entry = "main";
-            desc.vs.uniform_blocks[0].size = 160;
-            desc.vs.uniform_blocks[0].layout = .STD140;
-            desc.vs.uniform_blocks[0].uniforms[0].name = "vs_params";
-            desc.vs.uniform_blocks[0].uniforms[0].type = .FLOAT4;
-            desc.vs.uniform_blocks[0].uniforms[0].array_count = 10;
-            desc.fs.source = &fs_source_glsl300es;
-            desc.fs.entry = "main";
-            desc.fs.uniform_blocks[0].size = 32;
-            desc.fs.uniform_blocks[0].layout = .STD140;
-            desc.fs.uniform_blocks[0].uniforms[0].name = "fs_params";
-            desc.fs.uniform_blocks[0].uniforms[0].type = .FLOAT4;
-            desc.fs.uniform_blocks[0].uniforms[0].array_count = 2;
-            desc.fs.images[0].used = true;
-            desc.fs.images[0].multisampled = false;
-            desc.fs.images[0].image_type = ._2D;
-            desc.fs.images[0].sample_type = .FLOAT;
-            desc.fs.samplers[0].used = true;
-            desc.fs.samplers[0].sampler_type = .FILTERING;
-            desc.fs.image_sampler_pairs[0].used = true;
-            desc.fs.image_sampler_pairs[0].image_slot = 0;
-            desc.fs.image_sampler_pairs[0].sampler_slot = 0;
-            desc.fs.image_sampler_pairs[0].glsl_name = "tex_smp";
+            desc.vertex_func.source = &vs_source_glsl300es;
+            desc.vertex_func.entry = "main";
+            desc.fragment_func.source = &fs_source_glsl300es;
+            desc.fragment_func.entry = "main";
+            desc.attrs[0].glsl_name = "pos";
+            desc.attrs[1].glsl_name = "color0";
+            desc.attrs[2].glsl_name = "texcoord0";
+            desc.uniform_blocks[0].stage = .VERTEX;
+            desc.uniform_blocks[0].layout = .STD140;
+            desc.uniform_blocks[0].size = 160;
+            desc.uniform_blocks[0].glsl_uniforms[0].type = .FLOAT4;
+            desc.uniform_blocks[0].glsl_uniforms[0].array_count = 10;
+            desc.uniform_blocks[0].glsl_uniforms[0].glsl_name = "vs_params";
+            desc.uniform_blocks[1].stage = .FRAGMENT;
+            desc.uniform_blocks[1].layout = .STD140;
+            desc.uniform_blocks[1].size = 32;
+            desc.uniform_blocks[1].glsl_uniforms[0].type = .FLOAT4;
+            desc.uniform_blocks[1].glsl_uniforms[0].array_count = 2;
+            desc.uniform_blocks[1].glsl_uniforms[0].glsl_name = "fs_params";
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.image_sampler_pairs[0].stage = .FRAGMENT;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
+            desc.image_sampler_pairs[0].glsl_name = "tex_smp";
         },
         .D3D11 => {
-            desc.attrs[0].sem_name = "TEXCOORD";
-            desc.attrs[0].sem_index = 0;
-            desc.attrs[1].sem_name = "TEXCOORD";
-            desc.attrs[1].sem_index = 1;
-            desc.attrs[2].sem_name = "TEXCOORD";
-            desc.attrs[2].sem_index = 2;
-            desc.vs.source = &vs_source_hlsl4;
-            desc.vs.d3d11_target = "vs_4_0";
-            desc.vs.entry = "main";
-            desc.vs.uniform_blocks[0].size = 160;
-            desc.vs.uniform_blocks[0].layout = .STD140;
-            desc.fs.source = &fs_source_hlsl4;
-            desc.fs.d3d11_target = "ps_4_0";
-            desc.fs.entry = "main";
-            desc.fs.uniform_blocks[0].size = 32;
-            desc.fs.uniform_blocks[0].layout = .STD140;
-            desc.fs.images[0].used = true;
-            desc.fs.images[0].multisampled = false;
-            desc.fs.images[0].image_type = ._2D;
-            desc.fs.images[0].sample_type = .FLOAT;
-            desc.fs.samplers[0].used = true;
-            desc.fs.samplers[0].sampler_type = .FILTERING;
-            desc.fs.image_sampler_pairs[0].used = true;
-            desc.fs.image_sampler_pairs[0].image_slot = 0;
-            desc.fs.image_sampler_pairs[0].sampler_slot = 0;
+            desc.vertex_func.source = &vs_source_hlsl4;
+            desc.vertex_func.d3d11_target = "vs_4_0";
+            desc.vertex_func.entry = "main";
+            desc.fragment_func.source = &fs_source_hlsl4;
+            desc.fragment_func.d3d11_target = "ps_4_0";
+            desc.fragment_func.entry = "main";
+            desc.attrs[0].hlsl_sem_name = "TEXCOORD";
+            desc.attrs[0].hlsl_sem_index = 0;
+            desc.attrs[1].hlsl_sem_name = "TEXCOORD";
+            desc.attrs[1].hlsl_sem_index = 1;
+            desc.attrs[2].hlsl_sem_name = "TEXCOORD";
+            desc.attrs[2].hlsl_sem_index = 2;
+            desc.uniform_blocks[0].stage = .VERTEX;
+            desc.uniform_blocks[0].layout = .STD140;
+            desc.uniform_blocks[0].size = 160;
+            desc.uniform_blocks[0].hlsl_register_b_n = 0;
+            desc.uniform_blocks[1].stage = .FRAGMENT;
+            desc.uniform_blocks[1].layout = .STD140;
+            desc.uniform_blocks[1].size = 32;
+            desc.uniform_blocks[1].hlsl_register_b_n = 0;
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
+            desc.images[0].hlsl_register_t_n = 0;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.samplers[0].hlsl_register_s_n = 0;
+            desc.image_sampler_pairs[0].stage = .FRAGMENT;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
         },
         .METAL_MACOS => {
-            desc.vs.source = &vs_source_metal_macos;
-            desc.vs.entry = "main0";
-            desc.vs.uniform_blocks[0].size = 160;
-            desc.vs.uniform_blocks[0].layout = .STD140;
-            desc.fs.source = &fs_source_metal_macos;
-            desc.fs.entry = "main0";
-            desc.fs.uniform_blocks[0].size = 32;
-            desc.fs.uniform_blocks[0].layout = .STD140;
-            desc.fs.images[0].used = true;
-            desc.fs.images[0].multisampled = false;
-            desc.fs.images[0].image_type = ._2D;
-            desc.fs.images[0].sample_type = .FLOAT;
-            desc.fs.samplers[0].used = true;
-            desc.fs.samplers[0].sampler_type = .FILTERING;
-            desc.fs.image_sampler_pairs[0].used = true;
-            desc.fs.image_sampler_pairs[0].image_slot = 0;
-            desc.fs.image_sampler_pairs[0].sampler_slot = 0;
+            desc.vertex_func.source = &vs_source_metal_macos;
+            desc.vertex_func.entry = "main0";
+            desc.fragment_func.source = &fs_source_metal_macos;
+            desc.fragment_func.entry = "main0";
+            desc.uniform_blocks[0].stage = .VERTEX;
+            desc.uniform_blocks[0].layout = .STD140;
+            desc.uniform_blocks[0].size = 160;
+            desc.uniform_blocks[0].msl_buffer_n = 0;
+            desc.uniform_blocks[1].stage = .FRAGMENT;
+            desc.uniform_blocks[1].layout = .STD140;
+            desc.uniform_blocks[1].size = 32;
+            desc.uniform_blocks[1].msl_buffer_n = 0;
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
+            desc.images[0].msl_texture_n = 0;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.samplers[0].msl_sampler_n = 0;
+            desc.image_sampler_pairs[0].stage = .FRAGMENT;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
         },
         .METAL_IOS => {
-            desc.vs.source = &vs_source_metal_ios;
-            desc.vs.entry = "main0";
-            desc.vs.uniform_blocks[0].size = 160;
-            desc.vs.uniform_blocks[0].layout = .STD140;
-            desc.fs.source = &fs_source_metal_ios;
-            desc.fs.entry = "main0";
-            desc.fs.uniform_blocks[0].size = 32;
-            desc.fs.uniform_blocks[0].layout = .STD140;
-            desc.fs.images[0].used = true;
-            desc.fs.images[0].multisampled = false;
-            desc.fs.images[0].image_type = ._2D;
-            desc.fs.images[0].sample_type = .FLOAT;
-            desc.fs.samplers[0].used = true;
-            desc.fs.samplers[0].sampler_type = .FILTERING;
-            desc.fs.image_sampler_pairs[0].used = true;
-            desc.fs.image_sampler_pairs[0].image_slot = 0;
-            desc.fs.image_sampler_pairs[0].sampler_slot = 0;
+            desc.vertex_func.source = &vs_source_metal_ios;
+            desc.vertex_func.entry = "main0";
+            desc.fragment_func.source = &fs_source_metal_ios;
+            desc.fragment_func.entry = "main0";
+            desc.uniform_blocks[0].stage = .VERTEX;
+            desc.uniform_blocks[0].layout = .STD140;
+            desc.uniform_blocks[0].size = 160;
+            desc.uniform_blocks[0].msl_buffer_n = 0;
+            desc.uniform_blocks[1].stage = .FRAGMENT;
+            desc.uniform_blocks[1].layout = .STD140;
+            desc.uniform_blocks[1].size = 32;
+            desc.uniform_blocks[1].msl_buffer_n = 0;
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
+            desc.images[0].msl_texture_n = 0;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.samplers[0].msl_sampler_n = 0;
+            desc.image_sampler_pairs[0].stage = .FRAGMENT;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
         },
         .METAL_SIMULATOR => {
-            desc.vs.source = &vs_source_metal_sim;
-            desc.vs.entry = "main0";
-            desc.vs.uniform_blocks[0].size = 160;
-            desc.vs.uniform_blocks[0].layout = .STD140;
-            desc.fs.source = &fs_source_metal_sim;
-            desc.fs.entry = "main0";
-            desc.fs.uniform_blocks[0].size = 32;
-            desc.fs.uniform_blocks[0].layout = .STD140;
-            desc.fs.images[0].used = true;
-            desc.fs.images[0].multisampled = false;
-            desc.fs.images[0].image_type = ._2D;
-            desc.fs.images[0].sample_type = .FLOAT;
-            desc.fs.samplers[0].used = true;
-            desc.fs.samplers[0].sampler_type = .FILTERING;
-            desc.fs.image_sampler_pairs[0].used = true;
-            desc.fs.image_sampler_pairs[0].image_slot = 0;
-            desc.fs.image_sampler_pairs[0].sampler_slot = 0;
+            desc.vertex_func.source = &vs_source_metal_sim;
+            desc.vertex_func.entry = "main0";
+            desc.fragment_func.source = &fs_source_metal_sim;
+            desc.fragment_func.entry = "main0";
+            desc.uniform_blocks[0].stage = .VERTEX;
+            desc.uniform_blocks[0].layout = .STD140;
+            desc.uniform_blocks[0].size = 160;
+            desc.uniform_blocks[0].msl_buffer_n = 0;
+            desc.uniform_blocks[1].stage = .FRAGMENT;
+            desc.uniform_blocks[1].layout = .STD140;
+            desc.uniform_blocks[1].size = 32;
+            desc.uniform_blocks[1].msl_buffer_n = 0;
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
+            desc.images[0].msl_texture_n = 0;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.samplers[0].msl_sampler_n = 0;
+            desc.image_sampler_pairs[0].stage = .FRAGMENT;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
         },
         .WGPU => {
-            desc.vs.source = &vs_source_wgsl;
-            desc.vs.entry = "main";
-            desc.vs.uniform_blocks[0].size = 160;
-            desc.vs.uniform_blocks[0].layout = .STD140;
-            desc.fs.source = &fs_source_wgsl;
-            desc.fs.entry = "main";
-            desc.fs.uniform_blocks[0].size = 32;
-            desc.fs.uniform_blocks[0].layout = .STD140;
-            desc.fs.images[0].used = true;
-            desc.fs.images[0].multisampled = false;
-            desc.fs.images[0].image_type = ._2D;
-            desc.fs.images[0].sample_type = .FLOAT;
-            desc.fs.samplers[0].used = true;
-            desc.fs.samplers[0].sampler_type = .FILTERING;
-            desc.fs.image_sampler_pairs[0].used = true;
-            desc.fs.image_sampler_pairs[0].image_slot = 0;
-            desc.fs.image_sampler_pairs[0].sampler_slot = 0;
+            desc.vertex_func.source = &vs_source_wgsl;
+            desc.vertex_func.entry = "main";
+            desc.fragment_func.source = &fs_source_wgsl;
+            desc.fragment_func.entry = "main";
+            desc.uniform_blocks[0].stage = .VERTEX;
+            desc.uniform_blocks[0].layout = .STD140;
+            desc.uniform_blocks[0].size = 160;
+            desc.uniform_blocks[0].wgsl_group0_binding_n = 0;
+            desc.uniform_blocks[1].stage = .FRAGMENT;
+            desc.uniform_blocks[1].layout = .STD140;
+            desc.uniform_blocks[1].size = 32;
+            desc.uniform_blocks[1].wgsl_group0_binding_n = 8;
+            desc.images[0].stage = .FRAGMENT;
+            desc.images[0].multisampled = false;
+            desc.images[0].image_type = ._2D;
+            desc.images[0].sample_type = .FLOAT;
+            desc.images[0].wgsl_group1_binding_n = 64;
+            desc.samplers[0].stage = .FRAGMENT;
+            desc.samplers[0].sampler_type = .FILTERING;
+            desc.samplers[0].wgsl_group1_binding_n = 80;
+            desc.image_sampler_pairs[0].stage = .FRAGMENT;
+            desc.image_sampler_pairs[0].image_slot = 0;
+            desc.image_sampler_pairs[0].sampler_slot = 0;
         },
         else => {},
     }
@@ -1581,132 +1616,111 @@ pub fn defaultAttrSlot(attr_name: []const u8) ?usize {
     }
     return null;
 }
-pub fn defaultImageSlot(stage: sg.ShaderStage, img_name: []const u8) ?usize {
-    if (sg.ShaderStage.FS == stage) {
-        if (std.mem.eql(u8, img_name, "tex")) {
+pub fn defaultImageSlot(img_name: []const u8) ?usize {
+    if (std.mem.eql(u8, img_name, "tex")) {
+        return 0;
+    }
+    return null;
+}
+pub fn defaultSamplerSlot(smp_name: []const u8) ?usize {
+    if (std.mem.eql(u8, smp_name, "smp")) {
+        return 0;
+    }
+    return null;
+}
+pub fn defaultUniformblockSlot(ub_name: []const u8) ?usize {
+    if (std.mem.eql(u8, ub_name, "vs_params")) {
+        return 0;
+    }
+    if (std.mem.eql(u8, ub_name, "fs_params")) {
+        return 1;
+    }
+    return null;
+}
+pub fn defaultUniformblockSize(ub_name: []const u8) ?usize {
+    if (std.mem.eql(u8, ub_name, "vs_params")) {
+        return @sizeOf(VsParams);
+    }
+    if (std.mem.eql(u8, ub_name, "fs_params")) {
+        return @sizeOf(FsParams);
+    }
+    return null;
+}
+pub fn defaultUniformOffset(ub_name: []const u8, u_name: []const u8) ?usize {
+    if (std.mem.eql(u8, ub_name, "vs_params")) {
+        if (std.mem.eql(u8, u_name, "u_projViewMatrix")) {
             return 0;
         }
+        if (std.mem.eql(u8, u_name, "u_modelMatrix")) {
+            return 64;
+        }
+        if (std.mem.eql(u8, u_name, "u_color")) {
+            return 128;
+        }
+        if (std.mem.eql(u8, u_name, "u_tex_pan")) {
+            return 144;
+        }
     }
-    return null;
-}
-pub fn defaultSamplerSlot(stage: sg.ShaderStage, smp_name: []const u8) ?usize {
-    if (sg.ShaderStage.FS == stage) {
-        if (std.mem.eql(u8, smp_name, "smp")) {
+    if (std.mem.eql(u8, ub_name, "fs_params")) {
+        if (std.mem.eql(u8, u_name, "u_color_override")) {
             return 0;
         }
-    }
-    return null;
-}
-pub fn defaultUniformblockSlot(stage: sg.ShaderStage, ub_name: []const u8) ?usize {
-    if (sg.ShaderStage.VS == stage) {
-        if (std.mem.eql(u8, ub_name, "vs_params")) {
-            return 0;
-        }
-    }
-    if (sg.ShaderStage.FS == stage) {
-        if (std.mem.eql(u8, ub_name, "fs_params")) {
-            return 0;
+        if (std.mem.eql(u8, u_name, "u_alpha_cutoff")) {
+            return 16;
         }
     }
     return null;
 }
-pub fn defaultUniformblockSize(stage: sg.ShaderStage, ub_name: []const u8) ?usize {
-    if (sg.ShaderStage.VS == stage) {
-        if (std.mem.eql(u8, ub_name, "vs_params")) {
-            return @sizeOf(VsParams);
+pub fn defaultUniformDesc(ub_name: []const u8, u_name: []const u8) ?sg.GlslShaderUniformDesc {
+    if (std.mem.eql(u8, ub_name, "vs_params")) {
+        if (std.mem.eql(u8, u_name, "u_projViewMatrix")) {
+            var desc: sg.ShaderUniformDesc = .{};
+            desc.type = .MAT4;
+            desc.array_count = 0;
+            desc.glsl_name = "u_projViewMatrix";
+            return desc;
+        }
+        if (std.mem.eql(u8, u_name, "u_modelMatrix")) {
+            var desc: sg.ShaderUniformDesc = .{};
+            desc.type = .MAT4;
+            desc.array_count = 0;
+            desc.glsl_name = "u_modelMatrix";
+            return desc;
+        }
+        if (std.mem.eql(u8, u_name, "u_color")) {
+            var desc: sg.ShaderUniformDesc = .{};
+            desc.type = .FLOAT4;
+            desc.array_count = 0;
+            desc.glsl_name = "u_color";
+            return desc;
+        }
+        if (std.mem.eql(u8, u_name, "u_tex_pan")) {
+            var desc: sg.ShaderUniformDesc = .{};
+            desc.type = .FLOAT4;
+            desc.array_count = 0;
+            desc.glsl_name = "u_tex_pan";
+            return desc;
         }
     }
-    if (sg.ShaderStage.FS == stage) {
-        if (std.mem.eql(u8, ub_name, "fs_params")) {
-            return @sizeOf(FsParams);
+    if (std.mem.eql(u8, ub_name, "fs_params")) {
+        if (std.mem.eql(u8, u_name, "u_color_override")) {
+            var desc: sg.ShaderUniformDesc = .{};
+            desc.type = .FLOAT4;
+            desc.array_count = 0;
+            desc.glsl_name = "u_color_override";
+            return desc;
         }
-    }
-    return null;
-}
-pub fn defaultUniformOffset(stage: sg.ShaderStage, ub_name: []const u8, u_name: []const u8) ?usize {
-    if (sg.ShaderStage.VS == stage) {
-        if (std.mem.eql(u8, ub_name, "vs_params")) {
-            if (std.mem.eql(u8, u_name, "u_projViewMatrix")) {
-                return 0;
-            }
-            if (std.mem.eql(u8, u_name, "u_modelMatrix")) {
-                return 64;
-            }
-            if (std.mem.eql(u8, u_name, "u_color")) {
-                return 128;
-            }
-            if (std.mem.eql(u8, u_name, "u_tex_pan")) {
-                return 144;
-            }
-        }
-    }
-    if (sg.ShaderStage.FS == stage) {
-        if (std.mem.eql(u8, ub_name, "fs_params")) {
-            if (std.mem.eql(u8, u_name, "u_color_override")) {
-                return 0;
-            }
-            if (std.mem.eql(u8, u_name, "u_alpha_cutoff")) {
-                return 16;
-            }
-        }
-    }
-    return null;
-}
-pub fn defaultUniformDesc(stage: sg.ShaderStage, ub_name: []const u8, u_name: []const u8) ?sg.ShaderUniformDesc {
-    if (sg.ShaderStage.VS == stage) {
-        if (std.mem.eql(u8, ub_name, "vs_params")) {
-            if (std.mem.eql(u8, u_name, "u_projViewMatrix")) {
-                var desc: sg.ShaderUniformDesc = .{};
-                desc.name = "u_projViewMatrix";
-                desc.type = .MAT4;
-                desc.array_count = 0;
-                return desc;
-            }
-            if (std.mem.eql(u8, u_name, "u_modelMatrix")) {
-                var desc: sg.ShaderUniformDesc = .{};
-                desc.name = "u_modelMatrix";
-                desc.type = .MAT4;
-                desc.array_count = 0;
-                return desc;
-            }
-            if (std.mem.eql(u8, u_name, "u_color")) {
-                var desc: sg.ShaderUniformDesc = .{};
-                desc.name = "u_color";
-                desc.type = .FLOAT4;
-                desc.array_count = 0;
-                return desc;
-            }
-            if (std.mem.eql(u8, u_name, "u_tex_pan")) {
-                var desc: sg.ShaderUniformDesc = .{};
-                desc.name = "u_tex_pan";
-                desc.type = .FLOAT4;
-                desc.array_count = 0;
-                return desc;
-            }
-        }
-    }
-    if (sg.ShaderStage.FS == stage) {
-        if (std.mem.eql(u8, ub_name, "fs_params")) {
-            if (std.mem.eql(u8, u_name, "u_color_override")) {
-                var desc: sg.ShaderUniformDesc = .{};
-                desc.name = "u_color_override";
-                desc.type = .FLOAT4;
-                desc.array_count = 0;
-                return desc;
-            }
-            if (std.mem.eql(u8, u_name, "u_alpha_cutoff")) {
-                var desc: sg.ShaderUniformDesc = .{};
-                desc.name = "u_alpha_cutoff";
-                desc.type = .FLOAT;
-                desc.array_count = 0;
-                return desc;
-            }
+        if (std.mem.eql(u8, u_name, "u_alpha_cutoff")) {
+            var desc: sg.ShaderUniformDesc = .{};
+            desc.type = .FLOAT;
+            desc.array_count = 0;
+            desc.glsl_name = "u_alpha_cutoff";
+            return desc;
         }
     }
     return null;
 }
-pub fn defaultStoragebufferSlot(stage: sg.ShaderStage, sbuf_name: []const u8) ?usize {
-    _ = stage;
+pub fn defaultStoragebufferSlot(sbuf_name: []const u8) ?usize {
     _ = sbuf_name;
     return null;
 }

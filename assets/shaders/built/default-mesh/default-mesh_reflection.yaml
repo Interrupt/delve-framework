@@ -1,0 +1,734 @@
+shaders:
+  -
+    slang: glsl430
+    programs:
+      -
+        name: default
+        vertex_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_glsl430_vertex.glsl
+          is_binary: false
+          entry_point: main
+        fragment_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_glsl430_fragment.glsl
+          is_binary: false
+          entry_point: main
+        attrs:
+          -
+            slot: 0
+            type: vec4
+            glsl_name: pos
+          -
+            slot: 1
+            type: vec4
+            glsl_name: color0
+          -
+            slot: 2
+            type: vec2
+            glsl_name: texcoord0
+          -
+            slot: 3
+            type: vec3
+            glsl_name: normals
+          -
+            slot: 4
+            type: vec4
+            glsl_name: tangents
+        uniform_blocks:
+          -
+            slot: 0
+            stage: vertex
+            size: 160
+            struct_name: vs_params
+            inst_name: _19
+            glsl_uniforms:
+              -
+                type: vec4
+                array_count: 10
+                offset: 0
+                glsl_name: vs_params
+            members:
+              -
+                name: u_projViewMatrix
+                type: mat4
+                array_count: 0
+                offset: 0
+              -
+                name: u_modelMatrix
+                type: mat4
+                array_count: 0
+                offset: 64
+              -
+                name: u_color
+                type: vec4
+                array_count: 0
+                offset: 128
+              -
+                name: u_tex_pan
+                type: vec4
+                array_count: 0
+                offset: 144
+          -
+            slot: 1
+            stage: fragment
+            size: 32
+            struct_name: fs_params
+            inst_name: _36
+            glsl_uniforms:
+              -
+                type: vec4
+                array_count: 2
+                offset: 0
+                glsl_name: fs_params
+            members:
+              -
+                name: u_color_override
+                type: vec4
+                array_count: 0
+                offset: 0
+              -
+                name: u_alpha_cutoff
+                type: float
+                array_count: 0
+                offset: 16
+        images:
+          -
+            slot: 0
+            stage: fragment
+            name: tex
+            multisampled: false
+            type: 2d
+            sample_type: float
+        samplers:
+          -
+            slot: 0
+            stage: fragment
+            name: smp
+            sampler_type: filtering
+        image_sampler_pairs:
+          -
+            slot: 0
+            stage: fragment
+            name: tex_smp
+            image_name: tex
+            sampler_name: smp
+            glsl_name: tex_smp
+  -
+    slang: glsl300es
+    programs:
+      -
+        name: default
+        vertex_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_glsl300es_vertex.glsl
+          is_binary: false
+          entry_point: main
+        fragment_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_glsl300es_fragment.glsl
+          is_binary: false
+          entry_point: main
+        attrs:
+          -
+            slot: 0
+            type: vec4
+            glsl_name: pos
+          -
+            slot: 1
+            type: vec4
+            glsl_name: color0
+          -
+            slot: 2
+            type: vec2
+            glsl_name: texcoord0
+          -
+            slot: 3
+            type: vec3
+            glsl_name: normals
+          -
+            slot: 4
+            type: vec4
+            glsl_name: tangents
+        uniform_blocks:
+          -
+            slot: 0
+            stage: vertex
+            size: 160
+            struct_name: vs_params
+            inst_name: _19
+            glsl_uniforms:
+              -
+                type: vec4
+                array_count: 10
+                offset: 0
+                glsl_name: vs_params
+            members:
+              -
+                name: u_projViewMatrix
+                type: mat4
+                array_count: 0
+                offset: 0
+              -
+                name: u_modelMatrix
+                type: mat4
+                array_count: 0
+                offset: 64
+              -
+                name: u_color
+                type: vec4
+                array_count: 0
+                offset: 128
+              -
+                name: u_tex_pan
+                type: vec4
+                array_count: 0
+                offset: 144
+          -
+            slot: 1
+            stage: fragment
+            size: 32
+            struct_name: fs_params
+            inst_name: _36
+            glsl_uniforms:
+              -
+                type: vec4
+                array_count: 2
+                offset: 0
+                glsl_name: fs_params
+            members:
+              -
+                name: u_color_override
+                type: vec4
+                array_count: 0
+                offset: 0
+              -
+                name: u_alpha_cutoff
+                type: float
+                array_count: 0
+                offset: 16
+        images:
+          -
+            slot: 0
+            stage: fragment
+            name: tex
+            multisampled: false
+            type: 2d
+            sample_type: float
+        samplers:
+          -
+            slot: 0
+            stage: fragment
+            name: smp
+            sampler_type: filtering
+        image_sampler_pairs:
+          -
+            slot: 0
+            stage: fragment
+            name: tex_smp
+            image_name: tex
+            sampler_name: smp
+            glsl_name: tex_smp
+  -
+    slang: hlsl4
+    programs:
+      -
+        name: default
+        vertex_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_hlsl4_vertex.hlsl
+          is_binary: false
+          entry_point: main
+          d3d11_target: vs_4_0
+        fragment_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_hlsl4_fragment.hlsl
+          is_binary: false
+          entry_point: main
+          d3d11_target: ps_4_0
+        attrs:
+          -
+            slot: 0
+            type: vec4
+            hlsl_sem_name: TEXCOORD
+            hlsl_sem_index: 0
+          -
+            slot: 1
+            type: vec4
+            hlsl_sem_name: TEXCOORD
+            hlsl_sem_index: 1
+          -
+            slot: 2
+            type: vec2
+            hlsl_sem_name: TEXCOORD
+            hlsl_sem_index: 2
+          -
+            slot: 3
+            type: vec3
+            hlsl_sem_name: TEXCOORD
+            hlsl_sem_index: 3
+          -
+            slot: 4
+            type: vec4
+            hlsl_sem_name: TEXCOORD
+            hlsl_sem_index: 4
+        uniform_blocks:
+          -
+            slot: 0
+            stage: vertex
+            size: 160
+            struct_name: vs_params
+            inst_name: _19
+            hlsl_register_b_n: 0
+            members:
+              -
+                name: u_projViewMatrix
+                type: mat4
+                array_count: 0
+                offset: 0
+              -
+                name: u_modelMatrix
+                type: mat4
+                array_count: 0
+                offset: 64
+              -
+                name: u_color
+                type: vec4
+                array_count: 0
+                offset: 128
+              -
+                name: u_tex_pan
+                type: vec4
+                array_count: 0
+                offset: 144
+          -
+            slot: 1
+            stage: fragment
+            size: 32
+            struct_name: fs_params
+            inst_name: _36
+            hlsl_register_b_n: 0
+            members:
+              -
+                name: u_color_override
+                type: vec4
+                array_count: 0
+                offset: 0
+              -
+                name: u_alpha_cutoff
+                type: float
+                array_count: 0
+                offset: 16
+        images:
+          -
+            slot: 0
+            stage: fragment
+            name: tex
+            multisampled: false
+            type: 2d
+            sample_type: float
+            hlsl_register_t_n: 0
+        samplers:
+          -
+            slot: 0
+            stage: fragment
+            name: smp
+            sampler_type: filtering
+            hlsl_register_s_n: 0
+        image_sampler_pairs:
+          -
+            slot: 0
+            stage: fragment
+            name: tex_smp
+            image_name: tex
+            sampler_name: smp
+  -
+    slang: metal_macos
+    programs:
+      -
+        name: default
+        vertex_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_metal_macos_vertex.metal
+          is_binary: false
+          entry_point: main0
+        fragment_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_metal_macos_fragment.metal
+          is_binary: false
+          entry_point: main0
+        attrs:
+          -
+            slot: 0
+            type: vec4
+          -
+            slot: 1
+            type: vec4
+          -
+            slot: 2
+            type: vec2
+          -
+            slot: 3
+            type: vec3
+          -
+            slot: 4
+            type: vec4
+        uniform_blocks:
+          -
+            slot: 0
+            stage: vertex
+            size: 160
+            struct_name: vs_params
+            inst_name: _19
+            msl_buffer_n: 0
+            members:
+              -
+                name: u_projViewMatrix
+                type: mat4
+                array_count: 0
+                offset: 0
+              -
+                name: u_modelMatrix
+                type: mat4
+                array_count: 0
+                offset: 64
+              -
+                name: u_color
+                type: vec4
+                array_count: 0
+                offset: 128
+              -
+                name: u_tex_pan
+                type: vec4
+                array_count: 0
+                offset: 144
+          -
+            slot: 1
+            stage: fragment
+            size: 32
+            struct_name: fs_params
+            inst_name: _36
+            msl_buffer_n: 0
+            members:
+              -
+                name: u_color_override
+                type: vec4
+                array_count: 0
+                offset: 0
+              -
+                name: u_alpha_cutoff
+                type: float
+                array_count: 0
+                offset: 16
+        images:
+          -
+            slot: 0
+            stage: fragment
+            name: tex
+            multisampled: false
+            type: 2d
+            sample_type: float
+            msl_texture_n: 0
+        samplers:
+          -
+            slot: 0
+            stage: fragment
+            name: smp
+            sampler_type: filtering
+            msl_sampler_n: 0
+        image_sampler_pairs:
+          -
+            slot: 0
+            stage: fragment
+            name: tex_smp
+            image_name: tex
+            sampler_name: smp
+  -
+    slang: metal_ios
+    programs:
+      -
+        name: default
+        vertex_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_metal_ios_vertex.metal
+          is_binary: false
+          entry_point: main0
+        fragment_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_metal_ios_fragment.metal
+          is_binary: false
+          entry_point: main0
+        attrs:
+          -
+            slot: 0
+            type: vec4
+          -
+            slot: 1
+            type: vec4
+          -
+            slot: 2
+            type: vec2
+          -
+            slot: 3
+            type: vec3
+          -
+            slot: 4
+            type: vec4
+        uniform_blocks:
+          -
+            slot: 0
+            stage: vertex
+            size: 160
+            struct_name: vs_params
+            inst_name: _19
+            msl_buffer_n: 0
+            members:
+              -
+                name: u_projViewMatrix
+                type: mat4
+                array_count: 0
+                offset: 0
+              -
+                name: u_modelMatrix
+                type: mat4
+                array_count: 0
+                offset: 64
+              -
+                name: u_color
+                type: vec4
+                array_count: 0
+                offset: 128
+              -
+                name: u_tex_pan
+                type: vec4
+                array_count: 0
+                offset: 144
+          -
+            slot: 1
+            stage: fragment
+            size: 32
+            struct_name: fs_params
+            inst_name: _36
+            msl_buffer_n: 0
+            members:
+              -
+                name: u_color_override
+                type: vec4
+                array_count: 0
+                offset: 0
+              -
+                name: u_alpha_cutoff
+                type: float
+                array_count: 0
+                offset: 16
+        images:
+          -
+            slot: 0
+            stage: fragment
+            name: tex
+            multisampled: false
+            type: 2d
+            sample_type: float
+            msl_texture_n: 0
+        samplers:
+          -
+            slot: 0
+            stage: fragment
+            name: smp
+            sampler_type: filtering
+            msl_sampler_n: 0
+        image_sampler_pairs:
+          -
+            slot: 0
+            stage: fragment
+            name: tex_smp
+            image_name: tex
+            sampler_name: smp
+  -
+    slang: metal_sim
+    programs:
+      -
+        name: default
+        vertex_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_metal_sim_vertex.metal
+          is_binary: false
+          entry_point: main0
+        fragment_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_metal_sim_fragment.metal
+          is_binary: false
+          entry_point: main0
+        attrs:
+          -
+            slot: 0
+            type: vec4
+          -
+            slot: 1
+            type: vec4
+          -
+            slot: 2
+            type: vec2
+          -
+            slot: 3
+            type: vec3
+          -
+            slot: 4
+            type: vec4
+        uniform_blocks:
+          -
+            slot: 0
+            stage: vertex
+            size: 160
+            struct_name: vs_params
+            inst_name: _19
+            msl_buffer_n: 0
+            members:
+              -
+                name: u_projViewMatrix
+                type: mat4
+                array_count: 0
+                offset: 0
+              -
+                name: u_modelMatrix
+                type: mat4
+                array_count: 0
+                offset: 64
+              -
+                name: u_color
+                type: vec4
+                array_count: 0
+                offset: 128
+              -
+                name: u_tex_pan
+                type: vec4
+                array_count: 0
+                offset: 144
+          -
+            slot: 1
+            stage: fragment
+            size: 32
+            struct_name: fs_params
+            inst_name: _36
+            msl_buffer_n: 0
+            members:
+              -
+                name: u_color_override
+                type: vec4
+                array_count: 0
+                offset: 0
+              -
+                name: u_alpha_cutoff
+                type: float
+                array_count: 0
+                offset: 16
+        images:
+          -
+            slot: 0
+            stage: fragment
+            name: tex
+            multisampled: false
+            type: 2d
+            sample_type: float
+            msl_texture_n: 0
+        samplers:
+          -
+            slot: 0
+            stage: fragment
+            name: smp
+            sampler_type: filtering
+            msl_sampler_n: 0
+        image_sampler_pairs:
+          -
+            slot: 0
+            stage: fragment
+            name: tex_smp
+            image_name: tex
+            sampler_name: smp
+  -
+    slang: wgsl
+    programs:
+      -
+        name: default
+        vertex_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_wgsl_vertex
+          is_binary: false
+          entry_point: main
+        fragment_func:
+          path: assets/shaders/built/default-mesh/default-mesh_default_wgsl_fragment
+          is_binary: false
+          entry_point: main
+        attrs:
+          -
+            slot: 0
+            type: vec4
+          -
+            slot: 1
+            type: vec4
+          -
+            slot: 2
+            type: vec2
+          -
+            slot: 3
+            type: vec3
+          -
+            slot: 4
+            type: vec4
+        uniform_blocks:
+          -
+            slot: 0
+            stage: vertex
+            size: 160
+            struct_name: vs_params
+            inst_name: _19
+            wgsl_group0_binding_n: 0
+            members:
+              -
+                name: u_projViewMatrix
+                type: mat4
+                array_count: 0
+                offset: 0
+              -
+                name: u_modelMatrix
+                type: mat4
+                array_count: 0
+                offset: 64
+              -
+                name: u_color
+                type: vec4
+                array_count: 0
+                offset: 128
+              -
+                name: u_tex_pan
+                type: vec4
+                array_count: 0
+                offset: 144
+          -
+            slot: 1
+            stage: fragment
+            size: 32
+            struct_name: fs_params
+            inst_name: _36
+            wgsl_group0_binding_n: 8
+            members:
+              -
+                name: u_color_override
+                type: vec4
+                array_count: 0
+                offset: 0
+              -
+                name: u_alpha_cutoff
+                type: float
+                array_count: 0
+                offset: 16
+        images:
+          -
+            slot: 0
+            stage: fragment
+            name: tex
+            multisampled: false
+            type: 2d
+            sample_type: float
+            wgsl_group1_binding_n: 64
+        samplers:
+          -
+            slot: 0
+            stage: fragment
+            name: smp
+            sampler_type: filtering
+            wgsl_group1_binding_n: 80
+        image_sampler_pairs:
+          -
+            slot: 0
+            stage: fragment
+            name: tex_smp
+            image_name: tex
+            sampler_name: smp

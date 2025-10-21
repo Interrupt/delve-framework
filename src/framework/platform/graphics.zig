@@ -380,7 +380,7 @@ pub const Shader = struct {
     }
 
     pub fn initFromShaderInfo(cfg: ShaderConfig, shader_info: shaders.ShaderInfo) !Shader {
-        var shader = try ShaderImpl.initFromShaderInfo(cfg, shader_info);
+        const shader = try ShaderImpl.initFromShaderInfo(cfg, shader_info);
         shader.makeCommonPipelines();
         return shader;
     }
@@ -1342,14 +1342,14 @@ fn convertFilterModeToSamplerDesc(filter: FilterMode) sg.SamplerDesc {
 pub fn asAnything(val: anytype) Anything {
     const type_info = @typeInfo(@TypeOf(val));
     switch (type_info) {
-        .Pointer => {
-            switch (type_info.Pointer.size) {
-                .One => return .{ .ptr = val, .size = @sizeOf(type_info.Pointer.child) },
-                .Slice => return .{ .ptr = val.ptr, .size = @sizeOf(type_info.Pointer.child) * val.len },
+        .pointer => {
+            switch (type_info.pointer.size) {
+                .one => return .{ .ptr = val, .size = @sizeOf(type_info.pointer.child) },
+                .slice => return .{ .ptr = val.ptr, .size = @sizeOf(type_info.pointer.child) * val.len },
                 else => @compileError("FIXME: Pointer type!"),
             }
         },
-        .Struct, .Array => {
+        .@"struct", .array => {
             @compileError("Structs and arrays must be passed as pointers to asAnything");
         },
         else => {

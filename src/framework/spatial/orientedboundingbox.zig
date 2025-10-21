@@ -17,7 +17,7 @@ pub const OrientedBoundingBox = struct {
     min: Vec3,
     max: Vec3,
     center: Vec3,
-    transform: Mat4 = math.Mat4.identity,
+    transform_matrix: Mat4 = math.Mat4.identity,
 
     // transformed axes and vertex positions will get cached on update
     vertices: [8]Vec3 = undefined,
@@ -30,7 +30,7 @@ pub const OrientedBoundingBox = struct {
             .center = position,
             .min = position.sub(half_size),
             .max = position.add(half_size),
-            .transform = transform_matrix,
+            .transform_matrix = transform_matrix,
         };
 
         ret.update();
@@ -76,7 +76,7 @@ pub const OrientedBoundingBox = struct {
     /// Transforms this bounding box by a matrix
     pub fn transform(self: *const OrientedBoundingBox, transform_mat: math.Mat4) OrientedBoundingBox {
         var ret = self.*;
-        ret.transform = self.transform.mul(transform_mat);
+        ret.transform_matrix = self.transform_matrix.mul(transform_mat);
         ret.update();
         return ret;
     }
@@ -174,14 +174,14 @@ pub const OrientedBoundingBox = struct {
     /// Returns locations of all the corners
     pub fn getCorners(self: *const OrientedBoundingBox) [8]Vec3 {
         return [8]Vec3{
-            Vec3.new(self.min.x, self.max.y, self.min.z).mulMat4(self.transform),
-            Vec3.new(self.max.x, self.max.y, self.max.z).mulMat4(self.transform),
-            Vec3.new(self.max.x, self.max.y, self.min.z).mulMat4(self.transform),
-            Vec3.new(self.min.x, self.max.y, self.max.z).mulMat4(self.transform),
-            Vec3.new(self.min.x, self.min.y, self.min.z).mulMat4(self.transform),
-            Vec3.new(self.max.x, self.min.y, self.max.z).mulMat4(self.transform),
-            Vec3.new(self.max.x, self.min.y, self.min.z).mulMat4(self.transform),
-            Vec3.new(self.min.x, self.min.y, self.max.z).mulMat4(self.transform),
+            Vec3.new(self.min.x, self.max.y, self.min.z).mulMat4(self.transform_matrix),
+            Vec3.new(self.max.x, self.max.y, self.max.z).mulMat4(self.transform_matrix),
+            Vec3.new(self.max.x, self.max.y, self.min.z).mulMat4(self.transform_matrix),
+            Vec3.new(self.min.x, self.max.y, self.max.z).mulMat4(self.transform_matrix),
+            Vec3.new(self.min.x, self.min.y, self.min.z).mulMat4(self.transform_matrix),
+            Vec3.new(self.max.x, self.min.y, self.max.z).mulMat4(self.transform_matrix),
+            Vec3.new(self.max.x, self.min.y, self.min.z).mulMat4(self.transform_matrix),
+            Vec3.new(self.min.x, self.min.y, self.max.z).mulMat4(self.transform_matrix),
         };
     }
 
@@ -189,12 +189,12 @@ pub const OrientedBoundingBox = struct {
     pub fn getPlanes(self: *const OrientedBoundingBox) [6]Plane {
         const axes = self.getAxes();
         return [6]Plane{
-            Plane.init(axes[0], Vec3.new(self.max.x, self.center.y, self.center.z).mulMat4(self.transform)),
-            Plane.init(axes[0].scale(-1.0), Vec3.new(self.min.x, self.center.y, self.center.z).mulMat4(self.transform)),
-            Plane.init(axes[1], Vec3.new(self.center.x, self.max.y, self.center.z).mulMat4(self.transform)),
-            Plane.init(axes[1].scale(-1.0), Vec3.new(self.center.x, self.min.y, self.center.z).mulMat4(self.transform)),
-            Plane.init(axes[2], Vec3.new(self.center.x, self.center.y, self.max.z).mulMat4(self.transform)),
-            Plane.init(axes[2].scale(-1.0), Vec3.new(self.center.x, self.center.y, self.min.z).mulMat4(self.transform)),
+            Plane.init(axes[0], Vec3.new(self.max.x, self.center.y, self.center.z).mulMat4(self.transform_matrix)),
+            Plane.init(axes[0].scale(-1.0), Vec3.new(self.min.x, self.center.y, self.center.z).mulMat4(self.transform_matrix)),
+            Plane.init(axes[1], Vec3.new(self.center.x, self.max.y, self.center.z).mulMat4(self.transform_matrix)),
+            Plane.init(axes[1].scale(-1.0), Vec3.new(self.center.x, self.min.y, self.center.z).mulMat4(self.transform_matrix)),
+            Plane.init(axes[2], Vec3.new(self.center.x, self.center.y, self.max.z).mulMat4(self.transform_matrix)),
+            Plane.init(axes[2].scale(-1.0), Vec3.new(self.center.x, self.center.y, self.min.z).mulMat4(self.transform_matrix)),
         };
     }
 
@@ -213,22 +213,22 @@ pub const OrientedBoundingBox = struct {
     /// Get the X, Y, and Z normals transformed by our transform matrix
     pub fn getAxes(self: *const OrientedBoundingBox) [3]Vec3 {
         return [_]Vec3{
-            Vec3.new(self.transform.m[0][0], self.transform.m[0][1], self.transform.m[0][2]).norm(),
-            Vec3.new(self.transform.m[1][0], self.transform.m[1][1], self.transform.m[1][2]).norm(),
-            Vec3.new(self.transform.m[2][0], self.transform.m[2][1], self.transform.m[2][2]).norm(),
+            Vec3.new(self.transform_matrix.m[0][0], self.transform_matrix.m[0][1], self.transform_matrix.m[0][2]).norm(),
+            Vec3.new(self.transform_matrix.m[1][0], self.transform_matrix.m[1][1], self.transform_matrix.m[1][2]).norm(),
+            Vec3.new(self.transform_matrix.m[2][0], self.transform_matrix.m[2][1], self.transform_matrix.m[2][2]).norm(),
         };
     }
 
     /// Check to see if this bounding box contains a point
     pub fn contains(self: *const OrientedBoundingBox, point: Vec3) bool {
-        const p = point.mulMat4(self.transform.invert());
+        const p = point.mulMat4(self.transform_matrix.invert());
         return p.x >= self.min.x and p.y >= self.min.y and p.z >= self.min.z and
             p.x <= self.max.x and p.y <= self.max.y and p.z <= self.max.z;
     }
 
     /// Check to see if this bounding box completely encloses another
     pub fn containsOBB(self: *const OrientedBoundingBox, other: OrientedBoundingBox) bool {
-        const inverse_transform = self.transform.invert();
+        const inverse_transform = self.transform_matrix.invert();
         for (other.vertices) |point| {
             const p = point.mulMat4(inverse_transform);
             const in = p.x >= self.min.x and p.y >= self.min.y and p.z >= self.min.z and
@@ -241,7 +241,7 @@ pub const OrientedBoundingBox = struct {
     }
 
     pub fn containsAABB(self: *const OrientedBoundingBox, other: BoundingBox) bool {
-        const inverse_transform = self.transform.invert();
+        const inverse_transform = self.transform_matrix.invert();
         for (other.getCorners()) |point| {
             const p = point.mulMat4(inverse_transform);
             const in = p.x >= self.min.x and p.y >= self.min.y and p.z >= self.min.z and
