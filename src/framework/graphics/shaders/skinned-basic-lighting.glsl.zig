@@ -43,6 +43,12 @@ const m = @import("../../math.zig");
 //        Sampler 'smp':
 //            Type: .FILTERING
 //            Bind slot: SMP_smp => 0
+//        Image Sampler Pair 'tex_smp':
+//            Image: tex
+//            Sampler: smp
+//        Image Sampler Pair 'tex_emissive_smp':
+//            Image: tex_emissive
+//            Sampler: smp
 //
 pub const ATTR_emissive_pos = 0;
 pub const ATTR_emissive_color0 = 1;
@@ -4112,19 +4118,12 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.vertex_func.entry = "main";
             desc.fragment_func.source = &fs_source_glsl430;
             desc.fragment_func.entry = "main";
-            desc.attrs[0].base_type = .FLOAT;
             desc.attrs[0].glsl_name = "pos";
-            desc.attrs[1].base_type = .FLOAT;
             desc.attrs[1].glsl_name = "color0";
-            desc.attrs[2].base_type = .FLOAT;
             desc.attrs[2].glsl_name = "texcoord0";
-            desc.attrs[3].base_type = .FLOAT;
             desc.attrs[3].glsl_name = "normals";
-            desc.attrs[4].base_type = .FLOAT;
             desc.attrs[4].glsl_name = "tangents";
-            desc.attrs[5].base_type = .FLOAT;
             desc.attrs[5].glsl_name = "joints";
-            desc.attrs[6].base_type = .FLOAT;
             desc.attrs[6].glsl_name = "weights";
             desc.uniform_blocks[0].stage = .VERTEX;
             desc.uniform_blocks[0].layout = .STD140;
@@ -4162,19 +4161,12 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.vertex_func.entry = "main";
             desc.fragment_func.source = &fs_source_glsl300es;
             desc.fragment_func.entry = "main";
-            desc.attrs[0].base_type = .FLOAT;
             desc.attrs[0].glsl_name = "pos";
-            desc.attrs[1].base_type = .FLOAT;
             desc.attrs[1].glsl_name = "color0";
-            desc.attrs[2].base_type = .FLOAT;
             desc.attrs[2].glsl_name = "texcoord0";
-            desc.attrs[3].base_type = .FLOAT;
             desc.attrs[3].glsl_name = "normals";
-            desc.attrs[4].base_type = .FLOAT;
             desc.attrs[4].glsl_name = "tangents";
-            desc.attrs[5].base_type = .FLOAT;
             desc.attrs[5].glsl_name = "joints";
-            desc.attrs[6].base_type = .FLOAT;
             desc.attrs[6].glsl_name = "weights";
             desc.uniform_blocks[0].stage = .VERTEX;
             desc.uniform_blocks[0].layout = .STD140;
@@ -4214,25 +4206,18 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.fragment_func.source = &fs_source_hlsl4;
             desc.fragment_func.d3d11_target = "ps_4_0";
             desc.fragment_func.entry = "main";
-            desc.attrs[0].base_type = .FLOAT;
             desc.attrs[0].hlsl_sem_name = "TEXCOORD";
             desc.attrs[0].hlsl_sem_index = 0;
-            desc.attrs[1].base_type = .FLOAT;
             desc.attrs[1].hlsl_sem_name = "TEXCOORD";
             desc.attrs[1].hlsl_sem_index = 1;
-            desc.attrs[2].base_type = .FLOAT;
             desc.attrs[2].hlsl_sem_name = "TEXCOORD";
             desc.attrs[2].hlsl_sem_index = 2;
-            desc.attrs[3].base_type = .FLOAT;
             desc.attrs[3].hlsl_sem_name = "TEXCOORD";
             desc.attrs[3].hlsl_sem_index = 3;
-            desc.attrs[4].base_type = .FLOAT;
             desc.attrs[4].hlsl_sem_name = "TEXCOORD";
             desc.attrs[4].hlsl_sem_index = 4;
-            desc.attrs[5].base_type = .FLOAT;
             desc.attrs[5].hlsl_sem_name = "TEXCOORD";
             desc.attrs[5].hlsl_sem_index = 5;
-            desc.attrs[6].base_type = .FLOAT;
             desc.attrs[6].hlsl_sem_name = "TEXCOORD";
             desc.attrs[6].hlsl_sem_index = 6;
             desc.uniform_blocks[0].stage = .VERTEX;
@@ -4268,13 +4253,6 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.vertex_func.entry = "main0";
             desc.fragment_func.source = &fs_source_metal_macos;
             desc.fragment_func.entry = "main0";
-            desc.attrs[0].base_type = .FLOAT;
-            desc.attrs[1].base_type = .FLOAT;
-            desc.attrs[2].base_type = .FLOAT;
-            desc.attrs[3].base_type = .FLOAT;
-            desc.attrs[4].base_type = .FLOAT;
-            desc.attrs[5].base_type = .FLOAT;
-            desc.attrs[6].base_type = .FLOAT;
             desc.uniform_blocks[0].stage = .VERTEX;
             desc.uniform_blocks[0].layout = .STD140;
             desc.uniform_blocks[0].size = 4256;
@@ -4308,13 +4286,6 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.vertex_func.entry = "main0";
             desc.fragment_func.source = &fs_source_metal_ios;
             desc.fragment_func.entry = "main0";
-            desc.attrs[0].base_type = .FLOAT;
-            desc.attrs[1].base_type = .FLOAT;
-            desc.attrs[2].base_type = .FLOAT;
-            desc.attrs[3].base_type = .FLOAT;
-            desc.attrs[4].base_type = .FLOAT;
-            desc.attrs[5].base_type = .FLOAT;
-            desc.attrs[6].base_type = .FLOAT;
             desc.uniform_blocks[0].stage = .VERTEX;
             desc.uniform_blocks[0].layout = .STD140;
             desc.uniform_blocks[0].size = 4256;
@@ -4348,13 +4319,6 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.vertex_func.entry = "main0";
             desc.fragment_func.source = &fs_source_metal_sim;
             desc.fragment_func.entry = "main0";
-            desc.attrs[0].base_type = .FLOAT;
-            desc.attrs[1].base_type = .FLOAT;
-            desc.attrs[2].base_type = .FLOAT;
-            desc.attrs[3].base_type = .FLOAT;
-            desc.attrs[4].base_type = .FLOAT;
-            desc.attrs[5].base_type = .FLOAT;
-            desc.attrs[6].base_type = .FLOAT;
             desc.uniform_blocks[0].stage = .VERTEX;
             desc.uniform_blocks[0].layout = .STD140;
             desc.uniform_blocks[0].size = 4256;
@@ -4388,13 +4352,6 @@ pub fn emissiveShaderDesc(backend: sg.Backend) sg.ShaderDesc {
             desc.vertex_func.entry = "main";
             desc.fragment_func.source = &fs_source_wgsl;
             desc.fragment_func.entry = "main";
-            desc.attrs[0].base_type = .FLOAT;
-            desc.attrs[1].base_type = .FLOAT;
-            desc.attrs[2].base_type = .FLOAT;
-            desc.attrs[3].base_type = .FLOAT;
-            desc.attrs[4].base_type = .FLOAT;
-            desc.attrs[5].base_type = .FLOAT;
-            desc.attrs[6].base_type = .FLOAT;
             desc.uniform_blocks[0].stage = .VERTEX;
             desc.uniform_blocks[0].layout = .STD140;
             desc.uniform_blocks[0].size = 4256;
@@ -4536,38 +4493,38 @@ pub fn emissiveUniformOffset(ub_name: []const u8, u_name: []const u8) ?usize {
     }
     return null;
 }
-pub fn emissiveUniformDesc(ub_name: []const u8, u_name: []const u8) ?sg.GlslShaderUniform {
+pub fn emissiveUniformDesc(ub_name: []const u8, u_name: []const u8) ?sg.GlslShaderUniformDesc {
     if (std.mem.eql(u8, ub_name, "vs_params")) {
         if (std.mem.eql(u8, u_name, "u_projViewMatrix")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .MAT4;
             desc.array_count = 0;
             desc.glsl_name = "u_projViewMatrix";
             return desc;
         }
         if (std.mem.eql(u8, u_name, "u_modelMatrix")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .MAT4;
             desc.array_count = 0;
             desc.glsl_name = "u_modelMatrix";
             return desc;
         }
         if (std.mem.eql(u8, u_name, "u_color")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .FLOAT4;
             desc.array_count = 0;
             desc.glsl_name = "u_color";
             return desc;
         }
         if (std.mem.eql(u8, u_name, "u_joints")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .MAT4;
             desc.array_count = 64;
             desc.glsl_name = "u_joints";
             return desc;
         }
         if (std.mem.eql(u8, u_name, "u_tex_pan")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .FLOAT4;
             desc.array_count = 0;
             desc.glsl_name = "u_tex_pan";
@@ -4576,70 +4533,70 @@ pub fn emissiveUniformDesc(ub_name: []const u8, u_name: []const u8) ?sg.GlslShad
     }
     if (std.mem.eql(u8, ub_name, "fs_params")) {
         if (std.mem.eql(u8, u_name, "u_cameraPos")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .FLOAT4;
             desc.array_count = 0;
             desc.glsl_name = "u_cameraPos";
             return desc;
         }
         if (std.mem.eql(u8, u_name, "u_color_override")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .FLOAT4;
             desc.array_count = 0;
             desc.glsl_name = "u_color_override";
             return desc;
         }
         if (std.mem.eql(u8, u_name, "u_alpha_cutoff")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .FLOAT;
             desc.array_count = 0;
             desc.glsl_name = "u_alpha_cutoff";
             return desc;
         }
         if (std.mem.eql(u8, u_name, "u_ambient_light")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .FLOAT4;
             desc.array_count = 0;
             desc.glsl_name = "u_ambient_light";
             return desc;
         }
         if (std.mem.eql(u8, u_name, "u_dir_light_dir")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .FLOAT4;
             desc.array_count = 0;
             desc.glsl_name = "u_dir_light_dir";
             return desc;
         }
         if (std.mem.eql(u8, u_name, "u_dir_light_color")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .FLOAT4;
             desc.array_count = 0;
             desc.glsl_name = "u_dir_light_color";
             return desc;
         }
         if (std.mem.eql(u8, u_name, "u_num_point_lights")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .FLOAT;
             desc.array_count = 0;
             desc.glsl_name = "u_num_point_lights";
             return desc;
         }
         if (std.mem.eql(u8, u_name, "u_point_light_data")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .FLOAT4;
             desc.array_count = 32;
             desc.glsl_name = "u_point_light_data";
             return desc;
         }
         if (std.mem.eql(u8, u_name, "u_fog_data")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .FLOAT4;
             desc.array_count = 0;
             desc.glsl_name = "u_fog_data";
             return desc;
         }
         if (std.mem.eql(u8, u_name, "u_fog_color")) {
-            var desc: sg.GlslShaderUniform = .{};
+            var desc: sg.ShaderUniformDesc = .{};
             desc.type = .FLOAT4;
             desc.array_count = 0;
             desc.glsl_name = "u_fog_color";

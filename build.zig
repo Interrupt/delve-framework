@@ -33,7 +33,6 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
         .lang = .lua54,
-        // .can_use_jmp = !target.result.cpu.arch.isWasm(),
     });
 
     const dep_zmesh = b.dependency("zmesh", .{
@@ -85,7 +84,6 @@ pub fn build(b: *std.Build) !void {
         zmesh_item,
         zstbi_item,
         zaudio_item,
-        zlua_item,
         cimgui_item,
         stb_truetype_item,
         ymlz_item,
@@ -116,6 +114,11 @@ pub fn build(b: *std.Build) !void {
 
     for (build_collection.add_imports) |build_import| {
         delve_mod.addImport(build_import.name, build_import.module);
+    }
+
+    // Only add Lua for non-web builds
+    if (!target.result.cpu.arch.isWasm()) {
+        delve_mod.addImport(zlua_item.name, zlua_item.module);
     }
 
     for (build_collection.link_libraries) |lib| {

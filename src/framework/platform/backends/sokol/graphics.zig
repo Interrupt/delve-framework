@@ -168,7 +168,7 @@ pub const BindingsImpl = struct {
                 // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
                 // i because in the glsl definitions we have only fs samplers and they are annotated with layout(binding=0)
                 // they start at 0
-                self.impl.sokol_bindings.?.samplers[i + 1] = s;
+                self.impl.sokol_bindings.?.samplers[i] = s;
         }
 
         // also set shader uniforms here?
@@ -548,6 +548,7 @@ pub const ShaderImpl = struct {
             // Find which binding slot we should use by looking at our layout
             for (layout.attributes) |la| {
                 if (attr.binding == la.binding) {
+                    // debug.log("Found buffer slot {}:{}: {}", .{ idx, la_idx, la.buffer_slot });
                     pipe_desc.layout.attrs[idx].buffer_index = la.buffer_slot;
                     break;
                 }
@@ -615,7 +616,7 @@ pub const ShaderImpl = struct {
 
     /// Cache our common pipelines, as an optimization step
     pub fn makeCommonPipelines(self: *Shader) void {
-        for (graphics.getCommonVertexLayouts()) |l| {
+        for (common_vertex_layouts) |l| {
             _ = self.impl.makePipeline(l);
         }
     }

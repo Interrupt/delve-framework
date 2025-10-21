@@ -1,4 +1,6 @@
-const zlua = @import("zlua");
+const builtin = @import("builtin");
+
+const zlua = if (builtin.target.os.tag != .emscripten) @import("zlua") else @compileError("Scripting is currently not supported on web builds.");
 const std = @import("std");
 const debug = @import("../debug.zig");
 const mem = @import("../mem.zig");

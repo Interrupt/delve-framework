@@ -380,7 +380,7 @@ pub const Shader = struct {
     }
 
     pub fn initFromShaderInfo(cfg: ShaderConfig, shader_info: shaders.ShaderInfo) !Shader {
-        var shader = try ShaderImpl.initFromShaderInfo(cfg, shader_info);
+        const shader = try ShaderImpl.initFromShaderInfo(cfg, shader_info);
         shader.makeCommonPipelines();
         return shader;
     }
