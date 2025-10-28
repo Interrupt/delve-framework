@@ -28,7 +28,8 @@
             .hash = "zstbi-0.11.0-dev-L0Ea_yaWBwAHwFoCuyjkFyaiSsbjt4UOrkntR0c_nmzz",
         },
         .zmesh = .{
-            .path = "3rdparty/zmesh",
+            .url = "git+https://github.com/zig-gamedev/zmesh.git#36ec42e7e77b2cade7776eb3e91e3e290293a864",
+            .hash = "zmesh-0.11.0-dev-oO3A5rR7CgCTMzfdKOhWW-OIyL4-7mlxXzBef_62fbHb",
         },
         .zaudio = .{
             .url = "git+https://github.com/zig-gamedev/zaudio.git#dd1f002f8d90fc255409b58b89326813354562e3",

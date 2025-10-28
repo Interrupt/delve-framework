@@ -1,5 +1,6 @@
 .{
-    .name = "zmesh",
+    .name = .zmesh,
+    .fingerprint = 0xb56bea39fc6c615c,
     .version = "0.10.0",
     .paths = .{
         "build.zig",
