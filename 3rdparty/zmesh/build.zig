@@ -23,34 +23,31 @@ pub fn build(b: *std.Build) void {
     }
 
     const options_module = options_step.createModule();
-
-    _ = b.addModule("root", .{
+    const zmesh_module = b.addModule("root", .{
         .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
         .imports = &.{
             .{ .name = "zmesh_options", .module = options_module },
         },
     });
 
-    const zmesh_lib = if (options.shared) blk: {
-        // TODO addLibrary
-        const lib = b.addSharedLibrary(.{
-            .name = "zmesh",
+    const zmesh_lib = b.addLibrary(.{
+        .name = "zmesh",
+        .linkage = if (options.shared) .dynamic else .static,
+        .root_module = b.createModule(.{
             .target = target,
             .optimize = optimize,
-        });
-
-        if (target.result.os.tag == .windows) {
-            lib.root_module.addCMacro("CGLTF_API", "__declspec(dllexport)");
-            lib.root_module.addCMacro("MESHOPTIMIZER_API", "__declspec(dllexport)");
-            lib.root_module.addCMacro("ZMESH_API", "__declspec(dllexport)");
-        }
-
-        break :blk lib;
-    } else b.addStaticLibrary(.{
-        .name = "zmesh",
-        .target = target,
-        .optimize = optimize,
+        }),
     });
+
+    if (options.shared and target.result.os.tag == .windows) {
+        zmesh_lib.root_module.addCMacro("PAR_SHAPES_API", "__declspec(dllexport)");
+        zmesh_lib.root_module.addCMacro("CGLTF_API", "__declspec(dllexport)");
+        zmesh_lib.root_module.addCMacro("MESHOPTIMIZER_API", "__declspec(dllexport)");
+        zmesh_lib.root_module.addCMacro("ZMESH_API", "__declspec(dllexport)");
+    }
+
     b.installArtifact(zmesh_lib);
 
     zmesh_lib.linkLibC();
@@ -93,9 +90,7 @@ pub fn build(b: *std.Build) void {
 
     const tests = b.addTest(.{
         .name = "zmesh-tests",
-        .root_source_file = b.path("src/main.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = zmesh_module,
     });
     b.installArtifact(tests);
 

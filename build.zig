@@ -91,7 +91,7 @@ pub fn build(b: *std.Build) !void {
 
     const link_libraries = [_]*Build.Step.Compile{
         dep_zmesh.artifact("zmesh"),
-        dep_zstbi.artifact("zstbi"),
+        // dep_zstbi.artifact("zstbi"),
         dep_zaudio.artifact("miniaudio"),
         dep_cimgui.artifact("cimgui_clib"),
         dep_stb_truetype.artifact("stb_truetype"),
@@ -145,12 +145,17 @@ pub fn build(b: *std.Build) !void {
         }
     }
 
-    // Delve Static Library artifact
-    const delve_lib = b.addStaticLibrary(.{
+    const root_module = b.createModule(.{
+        .root_source_file = b.path("src/framework/delve.zig"),
         .target = target,
         .optimize = optimize,
+    });
+
+    // Delve Static Library artifact
+    const delve_lib = b.addLibrary(.{
         .name = "delve",
-        .root_source_file = b.path("src/framework/delve.zig"),
+        .root_module = root_module,
+        .linkage = .static,
     });
 
     b.installArtifact(delve_lib);
@@ -190,9 +195,7 @@ pub fn build(b: *std.Build) !void {
 
     // TESTS
     const exe_tests = b.addTest(.{
-        .root_source_file = b.path("src/framework/delve.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = root_module,
     });
 
     const test_step = b.step("test", "Run unit tests");
@@ -204,21 +207,24 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
     var root_source_buffer = [_]u8{undefined} ** 256;
     const root_source_file = try std.fmt.bufPrint(&root_source_buffer, "src/examples/{s}.zig", .{name});
 
+    const root_module = b.createModule(.{
+        .root_source_file = b.path(root_source_file),
+        .target = target,
+        .optimize = optimize,
+    });
+
     var app: *Build.Step.Compile = undefined;
     // special case handling for native vs web build
     if (target.result.cpu.arch.isWasm()) {
-        app = b.addStaticLibrary(.{
-            .target = target,
-            .optimize = optimize,
+        app = b.addLibrary(.{
             .name = name,
-            .root_source_file = b.path(root_source_file),
+            .root_module = root_module,
+            .linkage = .static,
         });
     } else {
         app = b.addExecutable(.{
-            .target = target,
-            .optimize = optimize,
             .name = name,
-            .root_source_file = b.path(root_source_file),
+            .root_module = root_module,
         });
     }
 

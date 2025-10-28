@@ -12,29 +12,31 @@
     },
     .dependencies = .{
         .zlua = .{
-            .url = "git+https://github.com/natecraddock/ziglua#891945ef9c2bffcd06050c4836d414428ed7d95a",
-            .hash = "zlua-0.1.0-hGRpC2rgBACFhBjc9s9dGN37ZaTu7rNVZZqduwitv4O7",
+            .url = "git+https://github.com/natecraddock/ziglua#39f8df588d0864070deffa308ef575bf492777a0",
+            .hash = "zlua-0.1.0-hGRpC6E9BQDBGKPqzmCRsI6Xd8jH9KohccmX69-L6HyS",
         },
         .sokol = .{
-            .url = "git+https://github.com/floooh/sokol-zig.git#d8c1205a4dd9ad28da411f998102ce520cdef6bc",
-            .hash = "sokol-0.1.0-pb1HK5mGLABB7_Vt66xb8nbn8sJN_ULvd4v0wg8WypJ_",
+            .url = "git+https://github.com/floooh/sokol-zig.git#76d4afd25adfae9666d76a0d324cdb70ad178a88",
+            .hash = "sokol-0.1.0-pb1HK3TYLgCx8lOxdLVWIVDcAzacxO8YDfyw2Er-_2nN",
         },
         .ymlz = .{
-            .url = "git+https://github.com/pwbh/ymlz#bd3ce82da20844117f3da76d0cd40453936b1b66",
-            .hash = "122066bde791372e092cf04ccf2b827e9b1164a2ea23c7187d71d2d2f39252777f25",
+            .url = "git+https://github.com/pwbh/ymlz.git#b6479fa848104c57a06e9d93dbe1dac16907f443",
+            .hash = "ymlz-0.5.0-TG82aXqrAAC-NtiqbYQC2cNo4Qr9L9LDKEKMYRjtK6vT",
         },
         .zstbi = .{
-            .path = "3rdparty/zstbi",
+            .url = "git+https://github.com/zig-gamedev/zstbi#2c4b3100ccb7aed90ecc9439030899764e2a8d47",
+            .hash = "zstbi-0.11.0-dev-L0Ea_yaWBwAHwFoCuyjkFyaiSsbjt4UOrkntR0c_nmzz",
         },
         .zmesh = .{
             .path = "3rdparty/zmesh",
         },
         .zaudio = .{
-            .path = "3rdparty/zaudio",
+            .url = "git+https://github.com/zig-gamedev/zaudio.git#dd1f002f8d90fc255409b58b89326813354562e3",
+            .hash = "zaudio-0.11.0-dev-_M-91pBlPwDkibUGXKZxd_I_kEIUMJp6CfhwlX4sBEp-",
         },
         .cimgui = .{
-            .url = "git+https://github.com/floooh/dcimgui.git#a174810b90366b56038789be55dfe803b5a255df",
-            .hash = "cimgui-0.1.0-44ClkS2AhgDokTzMqSuIJjYs2v802ZjjWWN1vKuMHCqq",
+            .url = "git+https://github.com/floooh/dcimgui.git#d5fb4e3d27b79062dc5981db3631dadc4f204654",
+            .hash = "cimgui-0.1.0-44Clkd6YlAAYULKHDwsDX9EPmka-VAVEjUl-o6ve307E",
         },
         .system_sdk = .{
             .path = "3rdparty/system-sdk",
