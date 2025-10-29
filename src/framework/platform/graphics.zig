@@ -460,7 +460,7 @@ pub const Texture = struct {
             .pixel_format = .RGBA8,
         };
 
-        img_desc.data.subimage[0][0] = sg.asRange(image.data);
+        img_desc.data.mip_levels[0] = sg.asRange(image.data);
 
         return Texture{
             .width = image.width,
@@ -480,7 +480,7 @@ pub const Texture = struct {
             .pixel_format = .RGBA8,
         };
 
-        img_desc.data.subimage[0][0] = sg.asRange(image_bytes);
+        img_desc.data.mip_levels[0] = sg.asRange(image_bytes);
 
         return Texture{
             .width = width,

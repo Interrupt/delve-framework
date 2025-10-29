@@ -49,15 +49,14 @@ pub const BindingsImpl = struct {
         if (cfg.updatable) {
             for (cfg.vertex_layout.attributes, 0..) |attr, idx| {
                 bindings.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
-                    .usage = .STREAM,
+                    .usage = .{ .vertex_buffer = true, .stream_update = true },
                     .size = cfg.vert_len * attr.item_size,
                 });
             }
 
             if (cfg.vertex_layout.has_index_buffer) {
                 bindings.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                    .usage = .STREAM,
-                    .type = .INDEXBUFFER,
+                    .usage = .{ .index_buffer = true, .stream_update = true },
                     .size = cfg.index_len * bindingsImpl.index_type_size,
                 });
             }
@@ -94,7 +93,7 @@ pub const BindingsImpl = struct {
 
         if (self.config.vertex_layout.has_index_buffer) {
             self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                .type = .INDEXBUFFER,
+                .usage = .{ .index_buffer = true },
                 .data = sg.asRange(indices),
             });
         }
@@ -121,7 +120,7 @@ pub const BindingsImpl = struct {
 
         if (self.config.vertex_layout.has_index_buffer) {
             self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                .type = .INDEXBUFFER,
+                .usage = .{ .index_buffer = true },
                 .data = sg.asRange(indices),
             });
         }
@@ -209,8 +208,7 @@ pub const BindingsImpl = struct {
         // create new index buffer
         if (vert_layout.has_index_buffer) {
             self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                .usage = .STREAM,
-                .type = .INDEXBUFFER,
+                .usage = .{ .index_buffer = true, .stream_update = true },
                 .size = index_len * self.impl.index_type_size,
             });
         }
@@ -218,7 +216,7 @@ pub const BindingsImpl = struct {
         // create new vertex buffers
         for (vert_layout.attributes, 0..) |attr, idx| {
             self.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
-                .usage = .STREAM,
+                .usage = .{ .vertex_buffer = true, .stream_update = true },
                 .size = vertex_len * attr.item_size,
             });
         }
