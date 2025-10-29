@@ -1,6 +1,6 @@
 # Delve Framework
 
-Delve is a simple framework for building games written in Zig using Lua for scripting. Currently updated to `Zig 0.13.0`
+Delve is a simple framework for building games written in Zig using Lua for scripting. Currently targeting `Zig 0.14.x`
 
 *This is in early development and the api is still coming together, so be warned!*
 
