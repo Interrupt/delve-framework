@@ -27,7 +27,7 @@ highp float attenuate_light(highp float _distance, highp float radius, highp flo
     }
     highp float param = _30;
     highp float param_1 = 1.0 - sqr(param);
-    return (max_intensity * sqr(param_1)) / (falloff * _30 + 1.0);
+    return (max_intensity * sqr(param_1)) / (1.0 + (falloff * _30));
 }
 
 highp float calcFogFactor(highp float distance_to_eye)

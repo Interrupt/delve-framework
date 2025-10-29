@@ -16,30 +16,37 @@ shaders:
           -
             slot: 0
             type: vec4
+            base_type: Float
             glsl_name: pos
           -
             slot: 1
             type: vec4
+            base_type: Float
             glsl_name: color0
           -
             slot: 2
             type: vec2
+            base_type: Float
             glsl_name: texcoord0
           -
             slot: 3
             type: vec3
+            base_type: Float
             glsl_name: normals
           -
             slot: 4
             type: vec4
+            base_type: Float
             glsl_name: tangents
           -
             slot: 5
             type: vec4
+            base_type: Float
             glsl_name: joints
           -
             slot: 6
             type: vec4
+            base_type: Float
             glsl_name: weights
         uniform_blocks:
           -
@@ -103,41 +110,47 @@ shaders:
                 type: float
                 array_count: 0
                 offset: 16
-        images:
+        views:
           -
-            slot: 0
-            stage: fragment
-            name: tex
-            multisampled: false
-            type: 2d
-            sample_type: float
+            texture:
+              slot: 0
+              stage: fragment
+              name: tex
+              multisampled: false
+              type: 2d
+              sample_type: float
           -
-            slot: 1
-            stage: fragment
-            name: tex_emissive
-            multisampled: false
-            type: 2d
-            sample_type: float
+            texture:
+              slot: 1
+              stage: fragment
+              name: tex_emissive
+              multisampled: false
+              type: 2d
+              sample_type: float
         samplers:
           -
             slot: 0
             stage: fragment
             name: smp
             sampler_type: filtering
-        image_sampler_pairs:
+        texture_sampler_pairs:
           -
             slot: 0
             stage: fragment
             name: tex_smp
-            image_name: tex
+            view_name: tex
             sampler_name: smp
+            view_slot: 0
+            sampler_slot: 0
             glsl_name: tex_smp
           -
             slot: 1
             stage: fragment
             name: tex_emissive_smp
-            image_name: tex_emissive
+            view_name: tex_emissive
             sampler_name: smp
+            view_slot: 1
+            sampler_slot: 0
             glsl_name: tex_emissive_smp
   -
     slang: glsl300es
@@ -156,30 +169,37 @@ shaders:
           -
             slot: 0
             type: vec4
+            base_type: Float
             glsl_name: pos
           -
             slot: 1
             type: vec4
+            base_type: Float
             glsl_name: color0
           -
             slot: 2
             type: vec2
+            base_type: Float
             glsl_name: texcoord0
           -
             slot: 3
             type: vec3
+            base_type: Float
             glsl_name: normals
           -
             slot: 4
             type: vec4
+            base_type: Float
             glsl_name: tangents
           -
             slot: 5
             type: vec4
+            base_type: Float
             glsl_name: joints
           -
             slot: 6
             type: vec4
+            base_type: Float
             glsl_name: weights
         uniform_blocks:
           -
@@ -243,41 +263,47 @@ shaders:
                 type: float
                 array_count: 0
                 offset: 16
-        images:
+        views:
           -
-            slot: 0
-            stage: fragment
-            name: tex
-            multisampled: false
-            type: 2d
-            sample_type: float
+            texture:
+              slot: 0
+              stage: fragment
+              name: tex
+              multisampled: false
+              type: 2d
+              sample_type: float
           -
-            slot: 1
-            stage: fragment
-            name: tex_emissive
-            multisampled: false
-            type: 2d
-            sample_type: float
+            texture:
+              slot: 1
+              stage: fragment
+              name: tex_emissive
+              multisampled: false
+              type: 2d
+              sample_type: float
         samplers:
           -
             slot: 0
             stage: fragment
             name: smp
             sampler_type: filtering
-        image_sampler_pairs:
+        texture_sampler_pairs:
           -
             slot: 0
             stage: fragment
             name: tex_smp
-            image_name: tex
+            view_name: tex
             sampler_name: smp
+            view_slot: 0
+            sampler_slot: 0
             glsl_name: tex_smp
           -
             slot: 1
             stage: fragment
             name: tex_emissive_smp
-            image_name: tex_emissive
+            view_name: tex_emissive
             sampler_name: smp
+            view_slot: 1
+            sampler_slot: 0
             glsl_name: tex_emissive_smp
   -
     slang: hlsl4
@@ -298,36 +324,43 @@ shaders:
           -
             slot: 0
             type: vec4
+            base_type: Float
             hlsl_sem_name: TEXCOORD
             hlsl_sem_index: 0
           -
             slot: 1
             type: vec4
+            base_type: Float
             hlsl_sem_name: TEXCOORD
             hlsl_sem_index: 1
           -
             slot: 2
             type: vec2
+            base_type: Float
             hlsl_sem_name: TEXCOORD
             hlsl_sem_index: 2
           -
             slot: 3
             type: vec3
+            base_type: Float
             hlsl_sem_name: TEXCOORD
             hlsl_sem_index: 3
           -
             slot: 4
             type: vec4
+            base_type: Float
             hlsl_sem_name: TEXCOORD
             hlsl_sem_index: 4
           -
             slot: 5
             type: vec4
+            base_type: Float
             hlsl_sem_name: TEXCOORD
             hlsl_sem_index: 5
           -
             slot: 6
             type: vec4
+            base_type: Float
             hlsl_sem_name: TEXCOORD
             hlsl_sem_index: 6
         uniform_blocks:
@@ -370,7 +403,7 @@ shaders:
             size: 32
             struct_name: fs_params
             inst_name: _36
-            hlsl_register_b_n: 0
+            hlsl_register_b_n: 1
             members:
               -
                 name: u_color_override
@@ -382,23 +415,25 @@ shaders:
                 type: float
                 array_count: 0
                 offset: 16
-        images:
+        views:
           -
-            slot: 0
-            stage: fragment
-            name: tex
-            multisampled: false
-            type: 2d
-            sample_type: float
-            hlsl_register_t_n: 0
+            texture:
+              slot: 0
+              stage: fragment
+              name: tex
+              multisampled: false
+              type: 2d
+              sample_type: float
+              hlsl_register_t_n: 0
           -
-            slot: 1
-            stage: fragment
-            name: tex_emissive
-            multisampled: false
-            type: 2d
-            sample_type: float
-            hlsl_register_t_n: 1
+            texture:
+              slot: 1
+              stage: fragment
+              name: tex_emissive
+              multisampled: false
+              type: 2d
+              sample_type: float
+              hlsl_register_t_n: 1
         samplers:
           -
             slot: 0
@@ -406,19 +441,23 @@ shaders:
             name: smp
             sampler_type: filtering
             hlsl_register_s_n: 0
-        image_sampler_pairs:
+        texture_sampler_pairs:
           -
             slot: 0
             stage: fragment
             name: tex_smp
-            image_name: tex
+            view_name: tex
             sampler_name: smp
+            view_slot: 0
+            sampler_slot: 0
           -
             slot: 1
             stage: fragment
             name: tex_emissive_smp
-            image_name: tex_emissive
+            view_name: tex_emissive
             sampler_name: smp
+            view_slot: 1
+            sampler_slot: 0
   -
     slang: metal_macos
     programs:
@@ -436,24 +475,31 @@ shaders:
           -
             slot: 0
             type: vec4
+            base_type: Float
           -
             slot: 1
             type: vec4
+            base_type: Float
           -
             slot: 2
             type: vec2
+            base_type: Float
           -
             slot: 3
             type: vec3
+            base_type: Float
           -
             slot: 4
             type: vec4
+            base_type: Float
           -
             slot: 5
             type: vec4
+            base_type: Float
           -
             slot: 6
             type: vec4
+            base_type: Float
         uniform_blocks:
           -
             slot: 0
@@ -494,7 +540,7 @@ shaders:
             size: 32
             struct_name: fs_params
             inst_name: _36
-            msl_buffer_n: 0
+            msl_buffer_n: 1
             members:
               -
                 name: u_color_override
@@ -506,23 +552,25 @@ shaders:
                 type: float
                 array_count: 0
                 offset: 16
-        images:
+        views:
           -
-            slot: 0
-            stage: fragment
-            name: tex
-            multisampled: false
-            type: 2d
-            sample_type: float
-            msl_texture_n: 0
+            texture:
+              slot: 0
+              stage: fragment
+              name: tex
+              multisampled: false
+              type: 2d
+              sample_type: float
+              msl_texture_n: 0
           -
-            slot: 1
-            stage: fragment
-            name: tex_emissive
-            multisampled: false
-            type: 2d
-            sample_type: float
-            msl_texture_n: 1
+            texture:
+              slot: 1
+              stage: fragment
+              name: tex_emissive
+              multisampled: false
+              type: 2d
+              sample_type: float
+              msl_texture_n: 1
         samplers:
           -
             slot: 0
@@ -530,19 +578,23 @@ shaders:
             name: smp
             sampler_type: filtering
             msl_sampler_n: 0
-        image_sampler_pairs:
+        texture_sampler_pairs:
           -
             slot: 0
             stage: fragment
             name: tex_smp
-            image_name: tex
+            view_name: tex
             sampler_name: smp
+            view_slot: 0
+            sampler_slot: 0
           -
             slot: 1
             stage: fragment
             name: tex_emissive_smp
-            image_name: tex_emissive
+            view_name: tex_emissive
             sampler_name: smp
+            view_slot: 1
+            sampler_slot: 0
   -
     slang: metal_ios
     programs:
@@ -560,24 +612,31 @@ shaders:
           -
             slot: 0
             type: vec4
+            base_type: Float
           -
             slot: 1
             type: vec4
+            base_type: Float
           -
             slot: 2
             type: vec2
+            base_type: Float
           -
             slot: 3
             type: vec3
+            base_type: Float
           -
             slot: 4
             type: vec4
+            base_type: Float
           -
             slot: 5
             type: vec4
+            base_type: Float
           -
             slot: 6
             type: vec4
+            base_type: Float
         uniform_blocks:
           -
             slot: 0
@@ -618,7 +677,7 @@ shaders:
             size: 32
             struct_name: fs_params
             inst_name: _36
-            msl_buffer_n: 0
+            msl_buffer_n: 1
             members:
               -
                 name: u_color_override
@@ -630,23 +689,25 @@ shaders:
                 type: float
                 array_count: 0
                 offset: 16
-        images:
+        views:
           -
-            slot: 0
-            stage: fragment
-            name: tex
-            multisampled: false
-            type: 2d
-            sample_type: float
-            msl_texture_n: 0
+            texture:
+              slot: 0
+              stage: fragment
+              name: tex
+              multisampled: false
+              type: 2d
+              sample_type: float
+              msl_texture_n: 0
           -
-            slot: 1
-            stage: fragment
-            name: tex_emissive
-            multisampled: false
-            type: 2d
-            sample_type: float
-            msl_texture_n: 1
+            texture:
+              slot: 1
+              stage: fragment
+              name: tex_emissive
+              multisampled: false
+              type: 2d
+              sample_type: float
+              msl_texture_n: 1
         samplers:
           -
             slot: 0
@@ -654,19 +715,23 @@ shaders:
             name: smp
             sampler_type: filtering
             msl_sampler_n: 0
-        image_sampler_pairs:
+        texture_sampler_pairs:
           -
             slot: 0
             stage: fragment
             name: tex_smp
-            image_name: tex
+            view_name: tex
             sampler_name: smp
+            view_slot: 0
+            sampler_slot: 0
           -
             slot: 1
             stage: fragment
             name: tex_emissive_smp
-            image_name: tex_emissive
+            view_name: tex_emissive
             sampler_name: smp
+            view_slot: 1
+            sampler_slot: 0
   -
     slang: metal_sim
     programs:
@@ -684,24 +749,31 @@ shaders:
           -
             slot: 0
             type: vec4
+            base_type: Float
           -
             slot: 1
             type: vec4
+            base_type: Float
           -
             slot: 2
             type: vec2
+            base_type: Float
           -
             slot: 3
             type: vec3
+            base_type: Float
           -
             slot: 4
             type: vec4
+            base_type: Float
           -
             slot: 5
             type: vec4
+            base_type: Float
           -
             slot: 6
             type: vec4
+            base_type: Float
         uniform_blocks:
           -
             slot: 0
@@ -742,7 +814,7 @@ shaders:
             size: 32
             struct_name: fs_params
             inst_name: _36
-            msl_buffer_n: 0
+            msl_buffer_n: 1
             members:
               -
                 name: u_color_override
@@ -754,23 +826,25 @@ shaders:
                 type: float
                 array_count: 0
                 offset: 16
-        images:
+        views:
           -
-            slot: 0
-            stage: fragment
-            name: tex
-            multisampled: false
-            type: 2d
-            sample_type: float
-            msl_texture_n: 0
+            texture:
+              slot: 0
+              stage: fragment
+              name: tex
+              multisampled: false
+              type: 2d
+              sample_type: float
+              msl_texture_n: 0
           -
-            slot: 1
-            stage: fragment
-            name: tex_emissive
-            multisampled: false
-            type: 2d
-            sample_type: float
-            msl_texture_n: 1
+            texture:
+              slot: 1
+              stage: fragment
+              name: tex_emissive
+              multisampled: false
+              type: 2d
+              sample_type: float
+              msl_texture_n: 1
         samplers:
           -
             slot: 0
@@ -778,54 +852,65 @@ shaders:
             name: smp
             sampler_type: filtering
             msl_sampler_n: 0
-        image_sampler_pairs:
+        texture_sampler_pairs:
           -
             slot: 0
             stage: fragment
             name: tex_smp
-            image_name: tex
+            view_name: tex
             sampler_name: smp
+            view_slot: 0
+            sampler_slot: 0
           -
             slot: 1
             stage: fragment
             name: tex_emissive_smp
-            image_name: tex_emissive
+            view_name: tex_emissive
             sampler_name: smp
+            view_slot: 1
+            sampler_slot: 0
   -
     slang: wgsl
     programs:
       -
         name: emissive
         vertex_func:
-          path: assets/shaders/built/skinned/skinned_emissive_wgsl_vertex
+          path: assets/shaders/built/skinned/skinned_emissive_wgsl_vertex.wgsl
           is_binary: false
           entry_point: main
         fragment_func:
-          path: assets/shaders/built/skinned/skinned_emissive_wgsl_fragment
+          path: assets/shaders/built/skinned/skinned_emissive_wgsl_fragment.wgsl
           is_binary: false
           entry_point: main
         attrs:
           -
             slot: 0
             type: vec4
+            base_type: Float
           -
             slot: 1
             type: vec4
+            base_type: Float
           -
             slot: 2
             type: vec2
+            base_type: Float
           -
             slot: 3
             type: vec3
+            base_type: Float
           -
             slot: 4
             type: vec4
+            base_type: Float
           -
             slot: 5
             type: vec4
+            base_type: Float
           -
             slot: 6
             type: vec4
+            base_type: Float
         uniform_blocks:
           -
             slot: 0
@@ -866,7 +951,7 @@ shaders:
             size: 32
             struct_name: fs_params
             inst_name: _36
-            wgsl_group0_binding_n: 8
+            wgsl_group0_binding_n: 9
             members:
               -
                 name: u_color_override
@@ -878,40 +963,46 @@ shaders:
                 type: float
                 array_count: 0
                 offset: 16
-        images:
+        views:
           -
-            slot: 0
-            stage: fragment
-            name: tex
-            multisampled: false
-            type: 2d
-            sample_type: float
-            wgsl_group1_binding_n: 64
+            texture:
+              slot: 0
+              stage: fragment
+              name: tex
+              multisampled: false
+              type: 2d
+              sample_type: float
+              wgsl_group1_binding_n: 64
           -
-            slot: 1
-            stage: fragment
-            name: tex_emissive
-            multisampled: false
-            type: 2d
-            sample_type: float
-            wgsl_group1_binding_n: 65
+            texture:
+              slot: 1
+              stage: fragment
+              name: tex_emissive
+              multisampled: false
+              type: 2d
+              sample_type: float
+              wgsl_group1_binding_n: 65
         samplers:
           -
             slot: 0
             stage: fragment
             name: smp
             sampler_type: filtering
-            wgsl_group1_binding_n: 80
-        image_sampler_pairs:
+            wgsl_group1_binding_n: 66
+        texture_sampler_pairs:
           -
             slot: 0
             stage: fragment
             name: tex_smp
-            image_name: tex
+            view_name: tex
             sampler_name: smp
+            view_slot: 0
+            sampler_slot: 0
           -
             slot: 1
             stage: fragment
             name: tex_emissive_smp
-            image_name: tex_emissive
+            view_name: tex_emissive
             sampler_name: smp
+            view_slot: 1
+            sampler_slot: 0

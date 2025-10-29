@@ -7,6 +7,8 @@ const mem = @import("../mem.zig");
 const colors = @import("../colors.zig");
 const boundingbox = @import("../spatial/boundingbox.zig");
 
+const ArrayList = std.array_list.Managed;
+
 const PackedVertex = graphics.PackedVertex;
 const Vertex = graphics.Vertex;
 const CameraMatrices = graphics.CameraMatrices;
@@ -52,14 +54,14 @@ pub const Mesh = struct {
             return null;
         };
 
-        var mesh_indices = std.ArrayList(u32).init(allocator);
-        var mesh_positions = std.ArrayList([3]f32).init(allocator);
-        var mesh_normals = std.ArrayList([3]f32).init(allocator);
-        var mesh_texcoords = std.ArrayList([2]f32).init(allocator);
-        var mesh_tangents = std.ArrayList([4]f32).init(allocator);
+        var mesh_indices = ArrayList(u32).init(allocator);
+        var mesh_positions = ArrayList([3]f32).init(allocator);
+        var mesh_normals = ArrayList([3]f32).init(allocator);
+        var mesh_texcoords = ArrayList([2]f32).init(allocator);
+        var mesh_tangents = ArrayList([4]f32).init(allocator);
 
-        var mesh_joints = std.ArrayList([4]f32).init(allocator);
-        var mesh_weights = std.ArrayList([4]f32).init(allocator);
+        var mesh_joints = ArrayList([4]f32).init(allocator);
+        var mesh_weights = ArrayList([4]f32).init(allocator);
 
         defer mesh_indices.deinit();
         defer mesh_positions.deinit();
@@ -278,17 +280,17 @@ pub fn getSkinnedShaderAttributes() []const graphics.ShaderAttribute {
 
 /// MeshBuilder is a helper for making runtime meshes
 pub const MeshBuilder = struct {
-    vertices: std.ArrayList(PackedVertex) = undefined,
-    indices: std.ArrayList(u32) = undefined,
-    normals: std.ArrayList([3]f32) = undefined,
-    tangents: std.ArrayList([4]f32) = undefined,
+    vertices: ArrayList(PackedVertex) = undefined,
+    indices: ArrayList(u32) = undefined,
+    normals: ArrayList([3]f32) = undefined,
+    tangents: ArrayList([4]f32) = undefined,
 
     pub fn init(allocator: std.mem.Allocator) MeshBuilder {
         return MeshBuilder{
-            .vertices = std.ArrayList(PackedVertex).init(allocator),
-            .indices = std.ArrayList(u32).init(allocator),
-            .normals = std.ArrayList([3]f32).init(allocator),
-            .tangents = std.ArrayList([4]f32).init(allocator),
+            .vertices = ArrayList(PackedVertex).init(allocator),
+            .indices = ArrayList(u32).init(allocator),
+            .normals = ArrayList([3]f32).init(allocator),
+            .tangents = ArrayList([4]f32).init(allocator),
         };
     }
 

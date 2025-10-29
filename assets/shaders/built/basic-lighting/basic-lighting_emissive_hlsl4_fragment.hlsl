@@ -1,4 +1,4 @@
-cbuffer fs_params : register(b0)
+cbuffer fs_params : register(b1)
 {
     float4 _63_u_cameraPos : packoffset(c0);
     float4 _63_u_color_override : packoffset(c1);
@@ -51,7 +51,7 @@ float attenuate_light(float _distance, float radius, float max_intensity, float 
     }
     float param = _30;
     float param_1 = 1.0f - sqr(param);
-    return (max_intensity * sqr(param_1)) / mad(falloff, _30, 1.0f);
+    return (max_intensity * sqr(param_1)) / (1.0f + (falloff * _30));
 }
 
 float calcFogFactor(float distance_to_eye)

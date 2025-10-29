@@ -6,6 +6,8 @@ const papp = @import("platform/app.zig");
 const text_module = @import("api/text.zig");
 const draw_module = @import("api/draw.zig");
 
+const ArrayList = std.array_list.Managed;
+
 pub const ConsoleCommandFunc = union(enum) {
     fn_float: *const fn (f32) void,
     fn_int: *const fn (i32) void,
@@ -46,7 +48,7 @@ var allocator: std.mem.Allocator = undefined;
 
 // List types
 const StringLinkedList = std.DoublyLinkedList([:0]const u8);
-const char_array = std.ArrayList(u8);
+const char_array = ArrayList(u8);
 
 // Lists for log history and command history
 var log_history_list: LogList = undefined;
@@ -56,7 +58,7 @@ var cmd_history_list: LogList = undefined;
 var cmd_history_item: ?*StringLinkedList.Node = undefined;
 var cmd_history_last_direction: i32 = 0;
 
-var pending_cmd: std.ArrayList(u8) = undefined;
+var pending_cmd: ArrayList(u8) = undefined;
 
 var last_text_height: i32 = 0;
 
@@ -221,7 +223,7 @@ fn addLogEntry(comptime fmt: []const u8, args: anytype, level: LogLevel) void {
     }
 
     // Use an array list to write our string
-    var string_writer = std.ArrayList(u8).init(allocator);
+    var string_writer = ArrayList(u8).init(allocator);
     defer string_writer.deinit();
 
     string_writer.writer().print(fmt, args) catch {
@@ -462,7 +464,7 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) CommandResult {
     }
 
     // collect all of the arguments into a list of arguments for commands to use
-    var arg_list = std.ArrayList([]const u8).init(allocator);
+    var arg_list = ArrayList([]const u8).init(allocator);
     defer arg_list.clearAndFree();
 
     while (it.next()) |arg| {

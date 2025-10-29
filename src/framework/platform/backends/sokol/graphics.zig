@@ -12,6 +12,8 @@ const sg = sokol.gfx;
 const sapp = sokol.app;
 const debugtext = sokol.debugtext;
 
+const ArrayList = std.array_list.Managed;
+
 pub const Bindings = graphics.Bindings;
 pub const Material = graphics.Material;
 pub const Vertex = graphics.Vertex;
@@ -251,7 +253,7 @@ pub const ShaderImpl = struct {
     is_instance: bool = false,
 
     // One shader can have many pipelines, so different VertexLayouts can apply it
-    sokol_pipelines: std.ArrayList(PipelineBinding),
+    sokol_pipelines: ArrayList(PipelineBinding),
 
     /// Create a new shader using the default
     pub fn initDefault(cfg: graphics.ShaderConfig) !Shader {
@@ -494,7 +496,7 @@ pub const ShaderImpl = struct {
         // Make a new implementation that uses our existing loaded shader, but a fresh pipeline list
         // Mark it as being an instance, so we don't clean up our parent shader on destroy
         impl.* = .{
-            .sokol_pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator),
+            .sokol_pipelines = ArrayList(PipelineBinding).init(graphics.allocator),
             .sokol_shader = shader.impl.sokol_shader,
             .sokol_shader_desc = shader.impl.sokol_shader_desc,
             .cfg = cfg,
@@ -587,7 +589,7 @@ pub const ShaderImpl = struct {
         const impl = try graphics.allocator.create(ShaderImpl);
         errdefer graphics.allocator.destroy(impl);
         impl.* = .{
-            .sokol_pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator),
+            .sokol_pipelines = ArrayList(PipelineBinding).init(graphics.allocator),
             .sokol_shader = shader,
             .sokol_shader_desc = shader_desc,
             .cfg = cfg,

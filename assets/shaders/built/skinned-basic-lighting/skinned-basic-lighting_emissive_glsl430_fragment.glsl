@@ -1,8 +1,8 @@
 #version 430
 
 uniform vec4 fs_params[41];
-layout(binding = 16) uniform sampler2D tex_smp;
-layout(binding = 17) uniform sampler2D tex_emissive_smp;
+layout(binding = 0) uniform sampler2D tex_smp;
+layout(binding = 1) uniform sampler2D tex_emissive_smp;
 
 layout(location = 1) in vec2 uv;
 layout(location = 5) in vec4 baseDiffuse;
@@ -26,7 +26,7 @@ float attenuate_light(float _distance, float radius, float max_intensity, float 
     }
     float param = _30;
     float param_1 = 1.0 - sqr(param);
-    return (max_intensity * sqr(param_1)) / fma(falloff, _30, 1.0);
+    return (max_intensity * sqr(param_1)) / (1.0 + (falloff * _30));
 }
 
 float calcFogFactor(float distance_to_eye)

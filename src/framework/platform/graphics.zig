@@ -16,6 +16,8 @@ const sapp = sokol.app;
 const sglue = sokol.glue;
 const debugtext = sokol.debugtext;
 
+const ArrayList = std.array_list.Managed;
+
 pub var allocator: std.mem.Allocator = undefined;
 
 // compile built-in shaders via:
@@ -696,7 +698,7 @@ pub const UniformBlockType = enum(i32) { BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, V
 /// Holds the data for and builds a uniform block that can be passed to a shader
 pub const MaterialUniformBlock = struct {
     size: u64 = 0,
-    bytes: std.ArrayList(u8),
+    bytes: ArrayList(u8),
     last_type: UniformBlockType = undefined,
 
     // TODO: Maybe the material uniform blocks should be mapped up front, data allocated, and then
@@ -704,7 +706,7 @@ pub const MaterialUniformBlock = struct {
 
     pub fn init() MaterialUniformBlock {
         return MaterialUniformBlock{
-            .bytes = std.ArrayList(u8).init(allocator),
+            .bytes = ArrayList(u8).init(allocator),
         };
     }
 

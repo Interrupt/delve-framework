@@ -1,4 +1,4 @@
-cbuffer fs_params : register(b0)
+cbuffer fs_params : register(b1)
 {
     float4 _36_u_color_override : packoffset(c0);
     float _36_u_alpha_cutoff : packoffset(c1);
