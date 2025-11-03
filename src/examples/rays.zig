@@ -132,10 +132,10 @@ pub fn on_draw() void {
             const rayhit = ray.intersectOrientedBoundingBox(bounds);
 
             if (rayhit != null) {
-                cube_mesh.drawWithMaterial(material_highlight, view_mats, cube_model_matrix);
+                cube_mesh.drawWithMaterials((&material_highlight)[0..1], view_mats, cube_model_matrix);
 
                 const hit_model_matrix = delve.math.Mat4.translate(rayhit.?.hit_pos);
-                hit_mesh.drawWithMaterial(material_hitpoint, view_mats, hit_model_matrix);
+                hit_mesh.drawWithMaterials((&material_hitpoint)[0..1], view_mats, hit_model_matrix);
             } else {
                 cube_mesh.draw(view_mats, cube_model_matrix);
             }
