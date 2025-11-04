@@ -151,7 +151,14 @@ pub const BindingsImpl = struct {
         // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
         // 0 because in the glsl definitions we have only fs tex and they are annotated with layout(binding=0)
         // they start at 0
-        self.impl.sokol_bindings.?.images[0] = texture.sokol_image.?;
+        // self.impl.sokol_bindings.?.images[0] = texture.sokol_image.?;
+
+        // TODO! Hack! Don't make a new view every time!
+        const new_view = sg.makeView(.{
+            .texture = .{ .image = texture.sokol_image.? },
+        });
+
+        self.impl.sokol_bindings.?.views[0] = new_view;
     }
 
     pub fn updateFromMaterial(self: *Bindings, material: *Material) void {
@@ -577,7 +584,7 @@ pub const ShaderImpl = struct {
         // TODO check this
         var num_fs_images: u8 = 0;
         for (0..5) |i| {
-            if (shader_desc.images[i].stage == sg.ShaderStage.FRAGMENT) {
+            if (shader_desc.views[i].texture.stage == sg.ShaderStage.FRAGMENT) {
                 num_fs_images += 1;
             } else {
                 break;
