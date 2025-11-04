@@ -462,11 +462,14 @@ pub const Texture = struct {
         };
 
         img_desc.data.mip_levels[0] = sg.asRange(image.data);
+        const sokol_image = sg.makeImage(img_desc);
+        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
 
         return Texture{
             .width = image.width,
             .height = image.height,
-            .sokol_image = sg.makeImage(img_desc),
+            .sokol_image = sokol_image,
+            .sokol_view = sokol_view,
             .handle = next_texture_handle,
         };
     }
