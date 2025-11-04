@@ -151,23 +151,19 @@ pub const BindingsImpl = struct {
         // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
         // 0 because in the glsl definitions we have only fs tex and they are annotated with layout(binding=0)
         // they start at 0
-        // self.impl.sokol_bindings.?.images[0] = texture.sokol_image.?;
 
-        // TODO! Hack! Don't make a new view every time!
-        const new_view = sg.makeView(.{
-            .texture = .{ .image = texture.sokol_image.? },
-        });
-
-        self.impl.sokol_bindings.?.views[0] = new_view;
+        self.impl.sokol_bindings.?.views[0] = texture.sokol_view.?;
     }
 
     pub fn updateFromMaterial(self: *Bindings, material: *Material) void {
         for (0..material.state.textures.len) |i| {
-            if (material.state.textures[i] != null)
+            if (material.state.textures[i] != null) {
                 // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
                 // i because in the glsl definitions we have only fs tex and they are annotated with layout(binding=0)
                 // they start at 0
-                self.impl.sokol_bindings.?.images[i] = material.state.textures[i].?.sokol_image.?;
+
+                self.impl.sokol_bindings.?.views[i] = material.state.textures[i].?.sokol_view.?;
+            }
         }
 
         // bind samplers

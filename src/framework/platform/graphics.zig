@@ -449,6 +449,7 @@ pub const Texture = struct {
     is_render_target: bool = false,
 
     sokol_image: ?sg.Image,
+    sokol_view: ?sg.View,
 
     /// Creates a new texture from an Image
     pub fn init(image: images.Image) Texture {
@@ -481,11 +482,14 @@ pub const Texture = struct {
         };
 
         img_desc.data.mip_levels[0] = sg.asRange(image_bytes);
+        const sokol_image = sg.makeImage(img_desc);
+        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
 
         return Texture{
             .width = width,
             .height = height,
-            .sokol_image = sg.makeImage(img_desc),
+            .sokol_image = sokol_image,
+            .sokol_view = sokol_view,
             .handle = next_texture_handle,
         };
     }
@@ -504,10 +508,14 @@ pub const Texture = struct {
         if (is_depth)
             img_desc.pixel_format = .DEPTH_STENCIL;
 
+        const sokol_image = sg.makeImage(img_desc);
+        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
+
         return Texture{
             .width = width,
             .height = height,
-            .sokol_image = sg.makeImage(img_desc),
+            .sokol_image = sokol_image,
+            .sokol_view = sokol_view,
             .handle = next_texture_handle,
             .is_render_target = true,
         };
