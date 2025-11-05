@@ -634,7 +634,8 @@ pub fn showErrorScreen(error_header: [:0]const u8) void {
     const log_history = getLogHistory();
     var error_desc: [:0]const u8 = undefined;
     if (log_history.last()) |last_log| {
-        error_desc = last_log.data;
+        const string_node: *StringLinkedListNode = @fieldParentPtr("node", last_log);
+        error_desc = string_node.data;
     } else {
         error_desc = "Something bad happened!";
     }
