@@ -6,8 +6,10 @@ const math = @import("../math.zig");
 const mem = @import("../mem.zig");
 const colors = @import("../colors.zig");
 const boundingbox = @import("../spatial/boundingbox.zig");
+const zmeshutils = @import("../utils/zmesh.zig");
 
 const ArrayList = std.array_list.Managed;
+const ArrayListUnmanaged = std.ArrayList;
 
 const PackedVertex = graphics.PackedVertex;
 const Vertex = graphics.Vertex;
@@ -54,27 +56,28 @@ pub const Mesh = struct {
             return null;
         };
 
-        var mesh_indices = ArrayList(u32).init(allocator);
-        var mesh_positions = ArrayList([3]f32).init(allocator);
-        var mesh_normals = ArrayList([3]f32).init(allocator);
-        var mesh_texcoords = ArrayList([2]f32).init(allocator);
-        var mesh_tangents = ArrayList([4]f32).init(allocator);
+        var mesh_indices: ArrayListUnmanaged(u32) = .empty;
+        var mesh_positions: ArrayListUnmanaged([3]f32) = .empty;
+        var mesh_normals: ArrayListUnmanaged([3]f32) = .empty;
+        var mesh_texcoords: ArrayListUnmanaged([2]f32) = .empty;
+        var mesh_tangents: ArrayListUnmanaged([4]f32) = .empty;
 
-        var mesh_joints = ArrayList([4]f32).init(allocator);
-        var mesh_weights = ArrayList([4]f32).init(allocator);
+        var mesh_joints: ArrayListUnmanaged([4]f32) = .empty;
+        var mesh_weights: ArrayListUnmanaged([4]f32) = .empty;
 
-        defer mesh_indices.deinit();
-        defer mesh_positions.deinit();
-        defer mesh_normals.deinit();
-        defer mesh_texcoords.deinit();
-        defer mesh_tangents.deinit();
-        defer mesh_joints.deinit();
-        defer mesh_weights.deinit();
+        defer mesh_indices.deinit(allocator);
+        defer mesh_positions.deinit(allocator);
+        defer mesh_normals.deinit(allocator);
+        defer mesh_texcoords.deinit(allocator);
+        defer mesh_tangents.deinit(allocator);
+        defer mesh_joints.deinit(allocator);
+        defer mesh_weights.deinit(allocator);
 
         for (0..data.meshes_count) |i| {
             const mesh = data.meshes.?[i];
             for (0..mesh.primitives_count) |pi| {
-                zmesh.io.appendMeshPrimitive(
+                zmeshutils.appendMeshPrimitive(
+                    allocator,
                     data, // *zmesh.io.cgltf.Data
                     @intCast(i), // mesh index
                     @intCast(pi), // gltf primitive index (submesh index)
@@ -124,7 +127,7 @@ pub const Mesh = struct {
         if (mesh_normals.items.len == 0) {
             for (0..mesh_positions.items.len) |_| {
                 const empty = [3]f32{ 0.0, 0.0, 0.0 };
-                mesh_normals.append(empty) catch {
+                mesh_normals.append(allocator, empty) catch {
                     return null;
                 };
             }
@@ -134,7 +137,7 @@ pub const Mesh = struct {
         if (mesh_tangents.items.len == 0) {
             for (0..mesh_positions.items.len) |_| {
                 const empty = [4]f32{ 0.0, 0.0, 0.0, 0.0 };
-                mesh_tangents.append(empty) catch {
+                mesh_tangents.append(allocator, empty) catch {
                     return null;
                 };
             }

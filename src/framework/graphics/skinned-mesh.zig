@@ -9,6 +9,8 @@ const boundingbox = @import("../spatial/boundingbox.zig");
 const mesh = @import("mesh.zig");
 const interpolation = @import("../utils/interpolation.zig");
 
+const zmeshutils = @import("../utils/zmesh.zig");
+
 const Vertex = graphics.Vertex;
 const CameraMatrices = graphics.CameraMatrices;
 const Color = colors.Color;
@@ -266,7 +268,7 @@ pub const SkinnedMesh = struct {
 
         // save the duration
         const animation = self.mesh.zmesh_data.?.animations.?[anim_idx];
-        new_anim.duration = zmesh.io.computeAnimationDuration(&animation);
+        new_anim.duration = zmeshutils.computeAnimationDuration(&animation);
 
         return new_anim;
     }
@@ -434,7 +436,7 @@ pub const SkinnedMesh = struct {
         }
 
         // apply the inverse bind matrices
-        const inverse_bind_mat_data = zmesh.io.getAnimationSamplerData(self.mesh.zmesh_data.?.skins.?[0].inverse_bind_matrices.?);
+        const inverse_bind_mat_data = zmeshutils.getAnimationSamplerData(self.mesh.zmesh_data.?.skins.?[0].inverse_bind_matrices.?);
         for (0..nodes_count) |i| {
             const inverse_mat = access(math.Mat4, inverse_bind_mat_data, i);
             self.joint_locations[i] = self.joint_transform_mats[i].mul(inverse_mat);
@@ -505,8 +507,8 @@ pub const SkinnedMesh = struct {
 
 /// Use a gltf sampler to get animation data from a track
 pub fn sampleAnimation(comptime T: type, sampler: zmesh.io.zcgltf.AnimationSampler, t: f32) T {
-    const samples = zmesh.io.getAnimationSamplerData(sampler.input);
-    const data = zmesh.io.getAnimationSamplerData(sampler.output);
+    const samples = zmeshutils.getAnimationSamplerData(sampler.input);
+    const data = zmeshutils.getAnimationSamplerData(sampler.output);
 
     switch (sampler.interpolation) {
         .step => {
