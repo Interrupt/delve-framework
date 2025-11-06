@@ -4,6 +4,7 @@ const app = delve.app;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
+const ArrayList = std.array_list.Managed;
 const graphics = delve.platform.graphics;
 const math = delve.math;
 
@@ -14,8 +15,8 @@ var fallback_quake_material: delve.utils.quakemap.QuakeMaterial = undefined;
 var materials: std.StringHashMap(delve.utils.quakemap.QuakeMaterial) = undefined;
 
 var quake_map: delve.utils.quakemap.QuakeMap = undefined;
-var map_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined;
-var entity_meshes: std.ArrayList(delve.graphics.mesh.Mesh) = undefined;
+var map_meshes: ArrayList(delve.graphics.mesh.Mesh) = undefined;
+var entity_meshes: ArrayList(delve.graphics.mesh.Mesh) = undefined;
 
 var cube_mesh: delve.graphics.mesh.Mesh = undefined;
 
@@ -172,8 +173,8 @@ pub fn on_init() !void {
 
     for (quake_map.worldspawn.solids.items) |solid| {
         for (solid.faces.items) |face| {
-            var mat_name = std.ArrayList(u8).init(allocator);
-            var tex_path = std.ArrayList(u8).init(allocator);
+            var mat_name = ArrayList(u8).init(allocator);
+            var tex_path = ArrayList(u8).init(allocator);
             try mat_name.writer().print("{s}", .{face.texture_name});
             try mat_name.append(0);
             try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});

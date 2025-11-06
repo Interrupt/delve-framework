@@ -10,6 +10,7 @@ const graphics = @import("../platform/graphics.zig");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
+const ArrayList = std.array_list.Managed;
 const ArenaAllocator = std.heap.ArenaAllocator;
 const Allocator = std.mem.Allocator;
 const TokenIterator = std.mem.TokenIterator;
@@ -84,15 +85,15 @@ pub const Face = struct {
 pub const Entity = struct {
     classname: []const u8,
     spawnflags: u32,
-    properties: std.ArrayList(Property),
-    solids: std.ArrayList(Solid),
+    properties: ArrayList(Property),
+    solids: ArrayList(Solid),
 
     fn init(allocator: Allocator) Entity {
         return .{
             .classname = &.{},
             .spawnflags = 0,
-            .properties = std.ArrayList(Property).init(allocator),
-            .solids = std.ArrayList(Solid).init(allocator),
+            .properties = ArrayList(Property).init(allocator),
+            .solids = ArrayList(Solid).init(allocator),
         };
     }
 
@@ -152,13 +153,13 @@ pub const Entity = struct {
 };
 
 pub const Solid = struct {
-    faces: std.ArrayList(Face),
+    faces: ArrayList(Face),
     bounds: BoundingBox = undefined,
     hidden: bool = false, // whether to add to meshes
     custom_flags: u32 = 0, // eg: water, lava, etc
 
     fn init(allocator: Allocator) Solid {
-        return .{ .faces = std.ArrayList(Face).init(allocator) };
+        return .{ .faces = ArrayList(Face).init(allocator) };
     }
 
     fn deinit(self: *Solid) void {
@@ -167,8 +168,8 @@ pub const Solid = struct {
 
     fn computeVertices(self: *Solid, transform: Mat4) !void {
         const allocator = self.faces.allocator;
-        var vertices = try std.ArrayListUnmanaged(Vec3).initCapacity(allocator, 32);
-        var clipped = try std.ArrayListUnmanaged(Vec3).initCapacity(allocator, 32);
+        var vertices = try std.ArrayList(Vec3).initCapacity(allocator, 32);
+        var clipped = try std.ArrayList(Vec3).initCapacity(allocator, 32);
 
         defer vertices.deinit(allocator);
         defer clipped.deinit(allocator);
@@ -184,7 +185,7 @@ pub const Solid = struct {
                 clipped.clearRetainingCapacity();
                 try clip(allocator, vertices, clip_face.untransformed_plane, &clipped);
                 if (clipped.items.len < 3) return error.DegenerateFace;
-                std.mem.swap(std.ArrayListUnmanaged(Vec3), &vertices, &clipped);
+                std.mem.swap(std.ArrayList(Vec3), &vertices, &clipped);
             }
 
             face.vertices = try allocator.dupe(Vec3, vertices.items);
@@ -233,10 +234,10 @@ pub const Solid = struct {
         self.bounds = solid_bounds;
     }
 
-    fn clip(allocator: Allocator, vertices: std.ArrayListUnmanaged(Vec3), clip_plane: Plane, clipped: *std.ArrayListUnmanaged(Vec3)) !void {
+    fn clip(allocator: Allocator, vertices: std.ArrayList(Vec3), clip_plane: Plane, clipped: *std.ArrayList(Vec3)) !void {
         const epsilon = 0.0001;
 
-        var distances = try std.ArrayListUnmanaged(f32).initCapacity(allocator, 32);
+        var distances = try std.ArrayList(f32).initCapacity(allocator, 32);
         defer distances.deinit(allocator);
 
         var cb: usize = 0;
@@ -539,7 +540,7 @@ pub const QuakeMaterial = struct {
 pub const QuakeMap = struct {
     arena_allocator: ArenaAllocator,
     worldspawn: Entity,
-    entities: std.ArrayList(Entity),
+    entities: ArrayList(Entity),
     map_transform: Mat4,
     inv_map_transform: Mat4,
 
@@ -548,7 +549,7 @@ pub const QuakeMap = struct {
         const allocator = arena.allocator();
 
         var worldspawn: ?Entity = null;
-        var entities = std.ArrayList(Entity).init(allocator);
+        var entities = ArrayList(Entity).init(allocator);
         var iter = std.mem.tokenizeAny(u8, data, "\r\n");
 
         errdefer {
@@ -691,12 +692,12 @@ pub const QuakeMap = struct {
     }
 
     /// Builds meshes for the map, bucketed by materials
-    pub fn buildWorldMeshes(self: *const QuakeMap, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
+    pub fn buildWorldMeshes(self: *const QuakeMap, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !ArrayList(Mesh) {
         return try self.buildMeshesForEntity(&self.worldspawn, allocator, transform, materials, fallback_material);
     }
 
     /// Builds meshes for all entity solids - in a real scenario, you'll probably want to use buildMeshesForEntity instead
-    pub fn buildEntityMeshes(self: *const QuakeMap, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
+    pub fn buildEntityMeshes(self: *const QuakeMap, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !ArrayList(Mesh) {
 
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
@@ -713,7 +714,7 @@ pub const QuakeMap = struct {
         }
 
         // We're ready to build all of our mesh builders now!
-        var meshes = std.ArrayList(mesh.Mesh).init(allocator);
+        var meshes = ArrayList(mesh.Mesh).init(allocator);
         try buildMeshes(&mesh_builders, materials, fallback_material, &meshes);
 
         // clear our mesh builders
@@ -726,7 +727,7 @@ pub const QuakeMap = struct {
     }
 
     /// Builds meshes for a specific entity
-    pub fn buildMeshesForEntity(self: *const QuakeMap, entity: *const Entity, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
+    pub fn buildMeshesForEntity(self: *const QuakeMap, entity: *const Entity, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !ArrayList(Mesh) {
         _ = self;
 
         // Make our mesh buckets - we'll make a new mesh per material!
@@ -742,7 +743,7 @@ pub const QuakeMap = struct {
         }
 
         // We're ready to build all of our mesh builders now!
-        var meshes = std.ArrayList(mesh.Mesh).init(allocator);
+        var meshes = ArrayList(mesh.Mesh).init(allocator);
         try buildMeshes(&mesh_builders, materials, fallback_material, &meshes);
 
         // clear our mesh builders
@@ -755,7 +756,7 @@ pub const QuakeMap = struct {
     }
 
     /// builds meshes out of a map of MeshBuilders, and adds them to an ArrayList
-    pub fn buildMeshes(builders: *const std.StringHashMap(mesh.MeshBuilder), materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial, out_meshes: *std.ArrayList(mesh.Mesh)) !void {
+    pub fn buildMeshes(builders: *const std.StringHashMap(mesh.MeshBuilder), materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial, out_meshes: *ArrayList(mesh.Mesh)) !void {
         var it = builders.iterator();
         while (it.next()) |builder| {
             const b = builder.value_ptr;
