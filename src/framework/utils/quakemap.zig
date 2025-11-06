@@ -692,12 +692,12 @@ pub const QuakeMap = struct {
     }
 
     /// Builds meshes for the map, bucketed by materials
-    pub fn buildWorldMeshes(self: *const QuakeMap, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !ArrayList(Mesh) {
+    pub fn buildWorldMeshes(self: *const QuakeMap, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
         return try self.buildMeshesForEntity(&self.worldspawn, allocator, transform, materials, fallback_material);
     }
 
     /// Builds meshes for all entity solids - in a real scenario, you'll probably want to use buildMeshesForEntity instead
-    pub fn buildEntityMeshes(self: *const QuakeMap, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !ArrayList(Mesh) {
+    pub fn buildEntityMeshes(self: *const QuakeMap, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
 
         // Make our mesh buckets - we'll make a new mesh per material!
         var mesh_builders = std.StringHashMap(mesh.MeshBuilder).init(allocator);
@@ -714,8 +714,8 @@ pub const QuakeMap = struct {
         }
 
         // We're ready to build all of our mesh builders now!
-        var meshes = ArrayList(mesh.Mesh).init(allocator);
-        try buildMeshes(&mesh_builders, materials, fallback_material, &meshes);
+        var meshes: std.ArrayList(mesh.Mesh) = .empty;
+        try buildMeshes(allocator, &mesh_builders, materials, fallback_material, &meshes);
 
         // clear our mesh builders
         var it = mesh_builders.valueIterator();
@@ -727,7 +727,7 @@ pub const QuakeMap = struct {
     }
 
     /// Builds meshes for a specific entity
-    pub fn buildMeshesForEntity(self: *const QuakeMap, entity: *const Entity, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !ArrayList(Mesh) {
+    pub fn buildMeshesForEntity(self: *const QuakeMap, entity: *const Entity, allocator: Allocator, transform: Mat4, materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial) !std.ArrayList(Mesh) {
         _ = self;
 
         // Make our mesh buckets - we'll make a new mesh per material!
@@ -743,8 +743,8 @@ pub const QuakeMap = struct {
         }
 
         // We're ready to build all of our mesh builders now!
-        var meshes = ArrayList(mesh.Mesh).init(allocator);
-        try buildMeshes(&mesh_builders, materials, fallback_material, &meshes);
+        var meshes: std.ArrayList(mesh.Mesh) = .empty;
+        try buildMeshes(allocator, &mesh_builders, materials, fallback_material, &meshes);
 
         // clear our mesh builders
         var it = mesh_builders.valueIterator();
@@ -756,7 +756,7 @@ pub const QuakeMap = struct {
     }
 
     /// builds meshes out of a map of MeshBuilders, and adds them to an ArrayList
-    pub fn buildMeshes(builders: *const std.StringHashMap(mesh.MeshBuilder), materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial, out_meshes: *ArrayList(mesh.Mesh)) !void {
+    pub fn buildMeshes(allocator: std.mem.Allocator, builders: *const std.StringHashMap(mesh.MeshBuilder), materials: *std.StringHashMap(QuakeMaterial), fallback_material: ?*QuakeMaterial, out_meshes: *std.ArrayList(mesh.Mesh)) !void {
         var it = builders.iterator();
         while (it.next()) |builder| {
             const b = builder.value_ptr;
@@ -765,9 +765,9 @@ pub const QuakeMap = struct {
 
             const found_material = materials.getPtr(builder.key_ptr.*);
             if (found_material == null) {
-                try out_meshes.append(b.buildMesh(fallback_material.?.material));
+                try out_meshes.append(allocator, b.buildMesh(fallback_material.?.material));
             } else {
-                try out_meshes.append(b.buildMesh(found_material.?.material));
+                try out_meshes.append(allocator, b.buildMesh(found_material.?.material));
             }
         }
     }
