@@ -282,7 +282,6 @@ pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build
         .use_filesystem = true,
         .shell_file_path = dep_sokol.path("src/sokol/web/shell.html"),
         .extra_args = &.{
-            "-sUSE_OFFSET_CONVERTER=1",
             "-sTOTAL_STACK=16MB",
             "--preload-file=assets/",
             "-sALLOW_MEMORY_GROWTH=1",
