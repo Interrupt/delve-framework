@@ -139,7 +139,7 @@ const grass_state = struct {
 
 // color palette!
 var sky_color = colors.Color.newBytes(218, 203, 168, 255);
-var ground_color = colors.Color.newBytes(255, 179, 105, 255).mul(colors.light_grey);
+var ground_color = colors.Color.newBytes(255, 179, 105, 255);
 var foliage_tint = colors.white;
 var cloud_tint = colors.white;
 

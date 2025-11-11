@@ -4,6 +4,7 @@ const app = delve.app;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
+const ArrayListManaged = std.array_list.Managed;
 const graphics = delve.platform.graphics;
 const math = delve.math;
 
@@ -172,8 +173,8 @@ pub fn on_init() !void {
 
     for (quake_map.worldspawn.solids.items) |solid| {
         for (solid.faces.items) |face| {
-            var mat_name = std.ArrayList(u8).init(allocator);
-            var tex_path = std.ArrayList(u8).init(allocator);
+            var mat_name = ArrayListManaged(u8).init(allocator);
+            var tex_path = ArrayListManaged(u8).init(allocator);
             try mat_name.writer().print("{s}", .{face.texture_name});
             try mat_name.append(0);
             try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
@@ -208,8 +209,9 @@ pub fn on_init() !void {
     }
 
     // make meshes out of the quake map, one per material
-    map_meshes = try quake_map.buildWorldMeshes(allocator, math.Mat4.identity, &materials, &fallback_quake_material);
-    entity_meshes = try quake_map.buildEntityMeshes(allocator, math.Mat4.identity, &materials, &fallback_quake_material);
+    const delve_allocator = delve.mem.getAllocator();
+    map_meshes = try quake_map.buildWorldMeshes(delve_allocator, math.Mat4.identity, &materials, &fallback_quake_material);
+    entity_meshes = try quake_map.buildEntityMeshes(delve_allocator, math.Mat4.identity, &materials, &fallback_quake_material);
 
     // make a bounding box cube
     cube_mesh = try delve.graphics.mesh.createCube(math.Vec3.new(0, 0, 0), bounding_box_size, delve.colors.red, fallback_material);
@@ -331,6 +333,11 @@ pub fn setGravityCmd(new_gravity: f32) void {
 }
 
 pub fn on_cleanup() !void {
+    const allocator = delve.mem.getAllocator();
+
+    map_meshes.deinit(allocator);
+    entity_meshes.deinit(allocator);
+
     var it = materials.valueIterator();
     while (it.next()) |mat_ptr| {
         mat_ptr.material.deinit();

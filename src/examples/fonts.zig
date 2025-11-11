@@ -95,7 +95,7 @@ fn on_pre_draw() void {
 
     const message = "This is some text!\nHello World!\n[]'.@%#$<>?;:-=_+'";
 
-    const font_name_string = std.fmt.allocPrintZ(delve.mem.getAllocator(), "Drawing from {s}", .{font_to_use}) catch {
+    const font_name_string = std.fmt.allocPrint(delve.mem.getAllocator(), "Drawing from {s}", .{font_to_use}) catch {
         return;
     };
     defer delve.mem.getAllocator().free(font_name_string);

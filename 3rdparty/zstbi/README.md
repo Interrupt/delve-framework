@@ -1,4 +1,6 @@
-# zstbi v0.10.0 - stb image bindings
+# [zstbi](https://github.com/zig-gamedev/zstbi)
+
+Zig bindings and build package for stb_image, stb_image_resize and stb_image_write from [Sean Barrett's stb single-file C libraries](https://github.com/nothings/stb)
 
 ## Features
 
@@ -11,19 +13,20 @@
 
 ## Getting started
 
-Copy `zstbi` to a subdirectory of your project and add the following to your `build.zig.zon` .dependencies:
-```zig
-    .zstbi = .{ .path = "libs/zstbi" },
+Add `zstbi` to your `build.zig.zon` .dependencies with:
+
+```
+zig fetch --save git+https://github.com/zig-gamedev/zstbi
 ```
 
-Then in your `build.zig` add:
+and in your `build.zig` add:
+
 ```zig
 pub fn build(b: *std.Build) void {
     const exe = b.addExecutable(.{ ... });
 
     const zstbi = b.dependency("zstbi", .{});
     exe.root_module.addImport("zstbi", zstbi.module("root"));
-    exe.linkLibrary(zstbi.artifact("zstbi"));
 }
 ```
 Now in your code you may import and use `zstbi`.

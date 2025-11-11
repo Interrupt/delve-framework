@@ -9,6 +9,8 @@ const boundingbox = @import("../spatial/boundingbox.zig");
 const mesh = @import("mesh.zig");
 const interpolation = @import("../utils/interpolation.zig");
 
+const zmeshutils = @import("../utils/zmesh.zig");
+
 const Vertex = graphics.Vertex;
 const CameraMatrices = graphics.CameraMatrices;
 const Color = colors.Color;
@@ -18,6 +20,8 @@ const Vec3 = math.Vec3;
 const Vec2 = math.Vec2;
 const Mesh = mesh.Mesh;
 const MeshConfig = mesh.MeshConfig;
+
+const ArrayList = std.array_list.Managed;
 
 // For now, support just 64 bones
 pub const max_joints: usize = 64;
@@ -45,10 +49,10 @@ pub const PlayingAnimation = struct {
     duration: f32 = 0.0,
 
     // calced transforms of all joints in the animation (excluding skeleton)
-    joint_transforms: ?std.ArrayList(AnimationTransform) = null,
+    joint_transforms: ?ArrayList(AnimationTransform) = null,
 
     // calced transform matrices of all joints (including skeleton)
-    joint_calced_matrices: ?std.ArrayList(math.Mat4) = null,
+    joint_calced_matrices: ?ArrayList(math.Mat4) = null,
 
     // parent mesh
     parent_mesh: *const SkinnedMesh = undefined,
@@ -116,8 +120,8 @@ pub const PlayingAnimation = struct {
     pub fn init(self: *PlayingAnimation, num_joints: usize) !void {
         const allocator = mem.getAllocator();
 
-        self.joint_transforms = std.ArrayList(AnimationTransform).init(allocator);
-        self.joint_calced_matrices = std.ArrayList(math.Mat4).init(allocator);
+        self.joint_transforms = ArrayList(AnimationTransform).init(allocator);
+        self.joint_calced_matrices = ArrayList(math.Mat4).init(allocator);
 
         for (0..num_joints) |_| {
             try self.joint_transforms.?.append(.{});
@@ -163,7 +167,7 @@ pub const SkinnedMesh = struct {
     mesh: Mesh = undefined,
 
     // local space joint locations
-    joint_transforms: ?std.ArrayList(AnimationTransform) = null,
+    joint_transforms: ?ArrayList(AnimationTransform) = null,
     joint_transform_mats: [max_joints]math.Mat4 = [_]math.Mat4{math.Mat4.identity} ** max_joints,
 
     // the world space joint locations, with the skeleton's heirarchy applied
@@ -177,7 +181,7 @@ pub const SkinnedMesh = struct {
     pub fn initFromFile(allocator: std.mem.Allocator, filename: [:0]const u8, cfg: MeshConfig) ?SkinnedMesh {
         const loaded_mesh = Mesh.initFromFile(allocator, filename, cfg);
         if (loaded_mesh) |loaded| {
-            var transforms = std.ArrayList(AnimationTransform).init(allocator);
+            var transforms = ArrayList(AnimationTransform).init(allocator);
             for (0..max_joints) |_| {
                 transforms.append(.{}) catch {};
             }
@@ -264,7 +268,7 @@ pub const SkinnedMesh = struct {
 
         // save the duration
         const animation = self.mesh.zmesh_data.?.animations.?[anim_idx];
-        new_anim.duration = zmesh.io.computeAnimationDuration(&animation);
+        new_anim.duration = zmeshutils.computeAnimationDuration(&animation);
 
         return new_anim;
     }
@@ -272,7 +276,7 @@ pub const SkinnedMesh = struct {
     /// Creates a new animation that can be played and applied to this mesh, looked up by name
     pub fn createAnimationByName(self: *const SkinnedMesh, anim_name: []const u8, speed: f32, loop: bool) !PlayingAnimation {
         // convert to a sentinel terminated pointer
-        const anim_name_z = @as([*:0]u8, @constCast(@ptrCast(anim_name)));
+        const anim_name_z = @as([*:0]u8, @ptrCast(@constCast(anim_name)));
 
         // Go find the animation whose name matches
         for (0..self.mesh.zmesh_data.?.animations_count) |i| {
@@ -432,7 +436,7 @@ pub const SkinnedMesh = struct {
         }
 
         // apply the inverse bind matrices
-        const inverse_bind_mat_data = zmesh.io.getAnimationSamplerData(self.mesh.zmesh_data.?.skins.?[0].inverse_bind_matrices.?);
+        const inverse_bind_mat_data = zmeshutils.getAnimationSamplerData(self.mesh.zmesh_data.?.skins.?[0].inverse_bind_matrices.?);
         for (0..nodes_count) |i| {
             const inverse_mat = access(math.Mat4, inverse_bind_mat_data, i);
             self.joint_locations[i] = self.joint_transform_mats[i].mul(inverse_mat);
@@ -503,8 +507,8 @@ pub const SkinnedMesh = struct {
 
 /// Use a gltf sampler to get animation data from a track
 pub fn sampleAnimation(comptime T: type, sampler: zmesh.io.zcgltf.AnimationSampler, t: f32) T {
-    const samples = zmesh.io.getAnimationSamplerData(sampler.input);
-    const data = zmesh.io.getAnimationSamplerData(sampler.output);
+    const samples = zmeshutils.getAnimationSamplerData(sampler.input);
+    const data = zmeshutils.getAnimationSamplerData(sampler.output);
 
     switch (sampler.interpolation) {
         .step => {

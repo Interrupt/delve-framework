@@ -48,7 +48,7 @@ float attenuate_light(thread const float& _distance, thread const float& radius,
     }
     float param = _30;
     float param_1 = 1.0 - sqr(param);
-    return (max_intensity * sqr(param_1)) / fma(falloff, _30, 1.0);
+    return (max_intensity * sqr(param_1)) / (1.0 + (falloff * _30));
 }
 
 static inline __attribute__((always_inline))
@@ -57,7 +57,7 @@ float calcFogFactor(thread const float& distance_to_eye, constant fs_params& _63
     return fast::clamp(((distance_to_eye - _63.u_fog_data.x) / (_63.u_fog_data.y - _63.u_fog_data.x)) * _63.u_fog_color.w, 0.0, 1.0);
 }
 
-fragment main0_out main0(main0_in in [[stage_in]], constant fs_params& _63 [[buffer(0)]], texture2d<float> tex [[texture(0)]], texture2d<float> tex_emissive [[texture(1)]], sampler smp [[sampler(0)]])
+fragment main0_out main0(main0_in in [[stage_in]], constant fs_params& _63 [[buffer(1)]], texture2d<float> tex [[texture(0)]], texture2d<float> tex_emissive [[texture(1)]], sampler smp [[sampler(0)]])
 {
     main0_out out = {};
     float4 _113 = tex.sample(smp, in.uv) * in.baseDiffuse;

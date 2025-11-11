@@ -6,6 +6,8 @@ const papp = @import("platform/app.zig");
 const text_module = @import("api/text.zig");
 const draw_module = @import("api/draw.zig");
 
+const ArrayList = std.array_list.Managed;
+
 pub const ConsoleCommandFunc = union(enum) {
     fn_float: *const fn (f32) void,
     fn_int: *const fn (i32) void,
@@ -45,18 +47,23 @@ var stack_fallback_allocator: std.heap.StackFallbackAllocator(256) = undefined;
 var allocator: std.mem.Allocator = undefined;
 
 // List types
-const StringLinkedList = std.DoublyLinkedList([:0]const u8);
-const char_array = std.ArrayList(u8);
+const StringLinkedList = std.DoublyLinkedList;
+const StringLinkedListNode = struct {
+    data: [:0]const u8,
+    node: std.DoublyLinkedList.Node,
+};
+
+const char_array = ArrayList(u8);
 
 // Lists for log history and command history
 var log_history_list: LogList = undefined;
 var cmd_history_list: LogList = undefined;
 
 // Keep track of a specific command for scrolling through history
-var cmd_history_item: ?*StringLinkedList.Node = undefined;
+var cmd_history_item: ?*std.DoublyLinkedList.Node = undefined;
 var cmd_history_last_direction: i32 = 0;
 
-var pending_cmd: std.ArrayList(u8) = undefined;
+var pending_cmd: ArrayList(u8) = undefined;
 
 var last_text_height: i32 = 0;
 
@@ -82,6 +89,7 @@ const LogList = struct {
     items: StringLinkedList = StringLinkedList{},
     log_allocator: std.mem.Allocator = undefined,
     max_len: usize = 100,
+    len: usize = 0,
 
     /// Creates a new LogList
     pub fn init(in_allocator: std.mem.Allocator) LogList {
@@ -99,33 +107,39 @@ const LogList = struct {
         std.mem.copyForwards(u8, log_mem, log_string);
         log_mem[log_mem.len - 1] = 0x00; // Ensure the sentinel
 
-        var node: *StringLinkedList.Node = self.log_allocator.create(StringLinkedList.Node) catch {
+        var node: *StringLinkedListNode = self.log_allocator.create(StringLinkedListNode) catch {
             return;
         };
 
         node.data = log_mem[0 .. log_mem.len - 1 :0];
-        self.items.append(node);
+        node.node = .{};
+        self.items.append(&node.node);
 
         // Never go over max!
-        if (self.items.len > self.max_len) {
+        if (self.len + 1 > self.max_len) {
             self.removeFirst();
         }
+
+        self.len += 1;
     }
 
     /// Remove the first item from the list, cleaning up data
     pub fn removeFirst(self: *LogList) void {
         const node = self.items.popFirst();
-        self.log_allocator.free(node.?.data);
-        self.log_allocator.destroy(node.?);
+        const string_node: *StringLinkedListNode = @fieldParentPtr("node", node.?);
+        self.log_allocator.free(string_node.data);
+        self.log_allocator.destroy(string_node);
     }
 
     /// Free all memory
     pub fn deinit(self: *LogList) void {
         var cur = self.items.first;
         while (cur) |node| {
+            const string_node: *StringLinkedListNode = @fieldParentPtr("node", node);
+
             // First, free the node's data
-            self.log_allocator.free(node.data);
-            const to_delete = node;
+            self.log_allocator.free(string_node.data);
+            const to_delete = string_node;
             cur = node.next;
 
             // Finally, clean up the node itself
@@ -133,16 +147,12 @@ const LogList = struct {
         }
     }
 
-    pub fn first(self: *LogList) ?*StringLinkedList.Node {
+    pub fn first(self: *LogList) ?*std.DoublyLinkedList.Node {
         return self.items.first;
     }
 
-    pub fn last(self: *LogList) ?*StringLinkedList.Node {
+    pub fn last(self: *LogList) ?*std.DoublyLinkedList.Node {
         return self.items.last;
-    }
-
-    pub fn len(self: *LogList) usize {
-        return self.items.len;
     }
 };
 
@@ -221,7 +231,7 @@ fn addLogEntry(comptime fmt: []const u8, args: anytype, level: LogLevel) void {
     }
 
     // Use an array list to write our string
-    var string_writer = std.ArrayList(u8).init(allocator);
+    var string_writer = ArrayList(u8).init(allocator);
     defer string_writer.deinit();
 
     string_writer.writer().print(fmt, args) catch {
@@ -255,7 +265,7 @@ pub fn trackCommand(command: [:0]const u8) void {
 }
 
 pub fn scrollCommandFromHistory(direction: i32) void {
-    if (cmd_history_list.len() == 0)
+    if (cmd_history_list.len == 0)
         return;
 
     // Keep track of this direction for the next scroll
@@ -282,8 +292,10 @@ pub fn scrollCommandFromHistory(direction: i32) void {
     if (cmd_history_item == null)
         return;
 
+    const string_node: *StringLinkedListNode = @fieldParentPtr("node", cmd_history_item.?);
+
     // Within bounds, use the old command
-    pending_cmd.appendSlice(cmd_history_item.?.data) catch {};
+    pending_cmd.appendSlice(string_node.data) catch {};
 }
 
 pub fn drawConsole(draw_bg: bool) void {
@@ -334,7 +346,8 @@ pub fn drawConsole(draw_bg: bool) void {
         if (y_draw_pos <= 0)
             break;
 
-        const line = node.data;
+        const string_node: *StringLinkedListNode = @fieldParentPtr("node", node);
+        const line = string_node.data;
         const text_height = text_module.getTextHeight(line, res_w);
         text_module.draw_wrapped(line, padding, y_draw_pos - text_height, res_w, white_pal_idx);
         y_draw_pos -= text_height + 1;
@@ -462,7 +475,7 @@ pub fn tryRegisteredCommands(command_with_args: [:0]u8) CommandResult {
     }
 
     // collect all of the arguments into a list of arguments for commands to use
-    var arg_list = std.ArrayList([]const u8).init(allocator);
+    var arg_list = ArrayList([]const u8).init(allocator);
     defer arg_list.clearAndFree();
 
     while (it.next()) |arg| {
@@ -621,7 +634,8 @@ pub fn showErrorScreen(error_header: [:0]const u8) void {
     const log_history = getLogHistory();
     var error_desc: [:0]const u8 = undefined;
     if (log_history.last()) |last_log| {
-        error_desc = last_log.data;
+        const string_node: *StringLinkedListNode = @fieldParentPtr("node", last_log);
+        error_desc = string_node.data;
     } else {
         error_desc = "Something bad happened!";
     }

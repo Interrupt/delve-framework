@@ -1,8 +1,8 @@
 #version 430
 
 uniform vec4 fs_params[2];
-layout(binding = 16) uniform sampler2D tex_smp;
-layout(binding = 17) uniform sampler2D tex_emissive_smp;
+layout(binding = 0) uniform sampler2D tex_smp;
+layout(binding = 1) uniform sampler2D tex_emissive_smp;
 
 layout(location = 1) in vec2 uv;
 layout(location = 0) in vec4 color;

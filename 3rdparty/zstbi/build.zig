@@ -4,19 +4,14 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
 
-    _ = b.addModule("root", .{
+    const zstbi = b.addModule("root", .{
         .root_source_file = b.path("src/zstbi.zig"),
     });
 
-    const zstbi_lib = b.addStaticLibrary(.{
-        .name = "zstbi",
-        .target = target,
-        .optimize = optimize,
-    });
-    zstbi_lib.addIncludePath(b.path("libs/stbi"));
+    zstbi.addIncludePath(b.path("libs/stbi"));
     if (optimize == .Debug) {
         // TODO: Workaround for Zig bug.
-        zstbi_lib.addCSourceFile(.{
+        zstbi.addCSourceFile(.{
             .file = b.path("src/zstbi.c"),
             .flags = &.{
                 "-std=c99",
@@ -26,7 +21,7 @@ pub fn build(b: *std.Build) void {
             },
         });
     } else {
-        zstbi_lib.addCSourceFile(.{
+        zstbi.addCSourceFile(.{
             .file = b.path("src/zstbi.c"),
             .flags = &.{
                 "-std=c99",
@@ -34,18 +29,28 @@ pub fn build(b: *std.Build) void {
             },
         });
     }
-    zstbi_lib.linkLibC();
-    b.installArtifact(zstbi_lib);
+
+    // [DelveFramework] Fixing emscripten build bug
+    // if (target.result.os.tag != .emscripten) {
+    //     zstbi.addIncludePath(.{
+    //         .cwd_relative = b.pathJoin(&.{ b.sysroot.?, "/include" }),
+    //     });
+    // } else {
+    //     zstbi.link_libc = true;
+    // }
+    zstbi.link_libc = true;
 
     const test_step = b.step("test", "Run zstbi tests");
 
     const tests = b.addTest(.{
         .name = "zstbi-tests",
-        .root_source_file = b.path("src/zstbi.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/zstbi.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
-    tests.linkLibrary(zstbi_lib);
+    tests.root_module.addImport("zstbi", zstbi);
     b.installArtifact(tests);
 
     test_step.dependOn(&b.addRunArtifact(tests).step);

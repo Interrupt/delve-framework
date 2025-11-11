@@ -65,12 +65,14 @@ fn on_draw() void {
         allocator.free(last_fps_str.?);
 
     // Harder case, build the string again
-    const fps_string = std.fmt.allocPrintZ(allocator, "FPS: {d}", .{fps}) catch {
+    const fps_string = std.fmt.allocPrint(allocator, "FPS: {d}\x00", .{fps}) catch {
         return;
     };
-    last_fps_str = fps_string;
 
-    drawFPS(fps_string);
+    const null_terminated_fps = fps_string[0..(fps_string.len - 1) :0];
+    last_fps_str = null_terminated_fps;
+
+    drawFPS(null_terminated_fps);
 }
 
 fn drawFPS(fps_string: [:0]u8) void {

@@ -12,6 +12,8 @@ const sg = sokol.gfx;
 const sapp = sokol.app;
 const debugtext = sokol.debugtext;
 
+const ArrayList = std.array_list.Managed;
+
 pub const Bindings = graphics.Bindings;
 pub const Material = graphics.Material;
 pub const Vertex = graphics.Vertex;
@@ -47,15 +49,14 @@ pub const BindingsImpl = struct {
         if (cfg.updatable) {
             for (cfg.vertex_layout.attributes, 0..) |attr, idx| {
                 bindings.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
-                    .usage = .STREAM,
+                    .usage = .{ .vertex_buffer = true, .stream_update = true },
                     .size = cfg.vert_len * attr.item_size,
                 });
             }
 
             if (cfg.vertex_layout.has_index_buffer) {
                 bindings.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                    .usage = .STREAM,
-                    .type = .INDEXBUFFER,
+                    .usage = .{ .index_buffer = true, .stream_update = true },
                     .size = cfg.index_len * bindingsImpl.index_type_size,
                 });
             }
@@ -92,7 +93,7 @@ pub const BindingsImpl = struct {
 
         if (self.config.vertex_layout.has_index_buffer) {
             self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                .type = .INDEXBUFFER,
+                .usage = .{ .index_buffer = true },
                 .data = sg.asRange(indices),
             });
         }
@@ -119,7 +120,7 @@ pub const BindingsImpl = struct {
 
         if (self.config.vertex_layout.has_index_buffer) {
             self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                .type = .INDEXBUFFER,
+                .usage = .{ .index_buffer = true },
                 .data = sg.asRange(indices),
             });
         }
@@ -150,16 +151,19 @@ pub const BindingsImpl = struct {
         // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
         // 0 because in the glsl definitions we have only fs tex and they are annotated with layout(binding=0)
         // they start at 0
-        self.impl.sokol_bindings.?.images[0] = texture.sokol_image.?;
+
+        self.impl.sokol_bindings.?.views[0] = texture.sokol_view.?;
     }
 
     pub fn updateFromMaterial(self: *Bindings, material: *Material) void {
         for (0..material.state.textures.len) |i| {
-            if (material.state.textures[i] != null)
+            if (material.state.textures[i] != null) {
                 // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
                 // i because in the glsl definitions we have only fs tex and they are annotated with layout(binding=0)
                 // they start at 0
-                self.impl.sokol_bindings.?.images[i] = material.state.textures[i].?.sokol_image.?;
+
+                self.impl.sokol_bindings.?.views[i] = material.state.textures[i].?.sokol_view.?;
+            }
         }
 
         // bind samplers
@@ -207,8 +211,7 @@ pub const BindingsImpl = struct {
         // create new index buffer
         if (vert_layout.has_index_buffer) {
             self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                .usage = .STREAM,
-                .type = .INDEXBUFFER,
+                .usage = .{ .index_buffer = true, .stream_update = true },
                 .size = index_len * self.impl.index_type_size,
             });
         }
@@ -216,7 +219,7 @@ pub const BindingsImpl = struct {
         // create new vertex buffers
         for (vert_layout.attributes, 0..) |attr, idx| {
             self.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
-                .usage = .STREAM,
+                .usage = .{ .vertex_buffer = true, .stream_update = true },
                 .size = vertex_len * attr.item_size,
             });
         }
@@ -251,7 +254,7 @@ pub const ShaderImpl = struct {
     is_instance: bool = false,
 
     // One shader can have many pipelines, so different VertexLayouts can apply it
-    sokol_pipelines: std.ArrayList(PipelineBinding),
+    sokol_pipelines: ArrayList(PipelineBinding),
 
     /// Create a new shader using the default
     pub fn initDefault(cfg: graphics.ShaderConfig) !Shader {
@@ -494,7 +497,7 @@ pub const ShaderImpl = struct {
         // Make a new implementation that uses our existing loaded shader, but a fresh pipeline list
         // Mark it as being an instance, so we don't clean up our parent shader on destroy
         impl.* = .{
-            .sokol_pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator),
+            .sokol_pipelines = ArrayList(PipelineBinding).init(graphics.allocator),
             .sokol_shader = shader.impl.sokol_shader,
             .sokol_shader_desc = shader.impl.sokol_shader_desc,
             .cfg = cfg,
@@ -577,7 +580,7 @@ pub const ShaderImpl = struct {
         // TODO check this
         var num_fs_images: u8 = 0;
         for (0..5) |i| {
-            if (shader_desc.images[i].stage == sg.ShaderStage.FRAGMENT) {
+            if (shader_desc.views[i].texture.stage == sg.ShaderStage.FRAGMENT) {
                 num_fs_images += 1;
             } else {
                 break;
@@ -587,7 +590,7 @@ pub const ShaderImpl = struct {
         const impl = try graphics.allocator.create(ShaderImpl);
         errdefer graphics.allocator.destroy(impl);
         impl.* = .{
-            .sokol_pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator),
+            .sokol_pipelines = ArrayList(PipelineBinding).init(graphics.allocator),
             .sokol_shader = shader,
             .sokol_shader_desc = shader_desc,
             .cfg = cfg,

@@ -195,7 +195,7 @@ fn limitFps() bool {
 
     const frame_len_ns = initial_frame_ns + NS_FPS_LIMIT_OVERHEAD;
     if (frame_len_ns < state.target_fps_ns) {
-        time.sleep(state.target_fps_ns - frame_len_ns);
+        std.Thread.sleep(state.target_fps_ns - frame_len_ns);
     }
 
     // Eat up the rest of the time in a busy loop to ensure consistent frame pacing
