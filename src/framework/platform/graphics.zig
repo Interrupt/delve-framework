@@ -448,6 +448,7 @@ pub const Texture = struct {
     handle: u32,
     is_render_target: bool = false,
 
+    // TODO: Pull the sokol specific stuff out to the backend layer
     sokol_image: ?sg.Image,
     sokol_view: ?sg.View,
     sokol_attachment_view: ?sg.View = null,
@@ -558,8 +559,6 @@ pub const RenderPass = struct {
     render_texture_color: ?Texture,
     render_texture_depth: ?Texture,
     config: RenderPassConfig,
-
-    // sokol_attachments: ?sg.Attachments,
 
     pub fn init(config: RenderPassConfig) RenderPass {
         var color_attachment: ?Texture = null;
