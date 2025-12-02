@@ -35,6 +35,11 @@ pub fn build(b: *std.Build) !void {
         .lang = .lua54,
     });
 
+    const dep_lua = b.dependency("lua", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     const dep_zmesh = b.dependency("zmesh", .{
         .target = target,
         .optimize = optimize,
@@ -78,6 +83,7 @@ pub fn build(b: *std.Build) !void {
     const cimgui_item: ModuleImport = .{ .module = dep_cimgui.module("cimgui"), .name = "cimgui" };
     const stb_truetype_item: ModuleImport = .{ .module = dep_stb_truetype.module("root"), .name = "stb_truetype" };
     const ymlz_item: ModuleImport = .{ .module = dep_yamlz.module("root"), .name = "ymlz" };
+    const lua_item: ModuleImport = .{ .module = dep_lua.module("lua"), .name = "lua" };
 
     const delve_module_imports = [_]ModuleImport{
         sokol_item,
@@ -87,6 +93,7 @@ pub fn build(b: *std.Build) !void {
         cimgui_item,
         stb_truetype_item,
         ymlz_item,
+        lua_item,
     };
 
     const link_libraries = [_]*Build.Step.Compile{

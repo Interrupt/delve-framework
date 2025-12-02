@@ -41,6 +41,9 @@
         .stb_truetype = .{
             .path = "3rdparty/stb_truetype",
         },
+        .lua = .{
+            .path = "3rdparty/lua",
+        },
         .zstbi = .{
             // .url = "git+https://github.com/zig-gamedev/zstbi#2c4b3100ccb7aed90ecc9439030899764e2a8d47",
             // .hash = "zstbi-0.11.0-dev-L0Ea_yaWBwAHwFoCuyjkFyaiSsbjt4UOrkntR0c_nmzz",
