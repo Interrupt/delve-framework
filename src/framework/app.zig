@@ -14,6 +14,8 @@ const audio = @import("platform/audio.zig");
 
 pub var assets_path: [:0]const u8 = "assets";
 
+const lua = @import("lua");
+
 pub const AppConfig = struct {
     title: [:0]const u8 = "Delve Framework",
 
@@ -47,6 +49,8 @@ pub fn start(config: AppConfig) !void {
     debug.init();
 
     debug.log("Delve Framework Starting!", .{});
+
+    lua.init();
 
     // App backend init
     try app_backend.init();
