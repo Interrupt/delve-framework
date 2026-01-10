@@ -106,6 +106,12 @@ pub fn getAspectRatio() f32 {
     return @as(f32, @floatFromInt(getWidth())) / @as(f32, @floatFromInt(getHeight()));
 }
 
+/// Returns the maximum size of the clipboard buffer, or null if the clipboard
+/// is not enabled.
+pub fn getClipboardSize() ?i32 {
+    return AppBackend.getClipboardSize();
+}
+
 fn on_init() void {
     // Start graphics first
     gfx.init() catch {
