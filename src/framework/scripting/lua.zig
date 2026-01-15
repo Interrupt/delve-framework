@@ -1,6 +1,6 @@
 const builtin = @import("builtin");
 
-const zlua = if (builtin.target.os.tag != .emscripten) @import("zlua") else @compileError("Scripting is currently not supported on web builds.");
+const zlua = @import("zlua");
 const std = @import("std");
 const debug = @import("../debug.zig");
 const mem = @import("../mem.zig");
@@ -32,6 +32,20 @@ pub fn init() !void {
     // Turn on to get lua debug output
     if (enable_debug_logging)
         setDebugHook();
+
+    // Enable a custom panic handler for web where setjmp / longjmp are not supported yet
+    if (builtin.target.os.tag == .emscripten) {
+        const panicFn = zlua.wrap(struct {
+            fn inner(l: *Lua) i32 {
+                const lua_error = l.toString(-1) catch {
+                    @panic("Lua panic! Could not get error string!");
+                };
+                debug.warning("{s}", .{lua_error});
+                defer @panic("Lua panic! longjmp and setjmp are not supported for web builds yet.");
+            }
+        }.inner);
+        _ = lua.atPanic(panicFn);
+    }
 
     lua.openLibs(); // open standard libs
 
@@ -110,7 +124,7 @@ pub fn callFunction(func_name: [:0]const u8) !void {
     }
 
     lua.protectedCall(.{ .args = 0 }) catch |err| {
-        debug.log("Lua: error calling func {s}: {!s} {}", .{ func_name, lua.toString(-1), err });
+        debug.log("Lua: error calling func {s}: {!s} {any}", .{ func_name, lua.toString(-1), err });
         lua.pop(1);
         return err;
     };
@@ -133,7 +147,7 @@ pub fn setDebugHook() void {
                 .n = true,
                 .S = true,
             }, i);
-            debug.log("LuaDebug: {s} ({s}:{?d} {?s} {})", .{ type_name, i.source, i.current_line, i.name, i.what });
+            debug.log("LuaDebug: {s} ({s}:{?d} {?s} {any})", .{ type_name, i.source, i.current_line, i.name, i.what });
         }
     }.inner;
 
@@ -145,7 +159,7 @@ fn printDebug() void {
     if (lua_debug) |stack| {
         debug.log("Lua: stack debug: {?s} {?s}.", .{ stack.source, stack.name });
     } else |err| {
-        debug.log("Lua: stack is empty {}.", .{err});
+        debug.log("Lua: stack is empty {any}.", .{err});
     }
 }
 
