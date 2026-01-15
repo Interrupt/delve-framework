@@ -12,8 +12,8 @@
     },
     .dependencies = .{
         .zlua = .{
-            .url = "git+https://github.com/natecraddock/ziglua#39f8df588d0864070deffa308ef575bf492777a0",
-            .hash = "zlua-0.1.0-hGRpC6E9BQDBGKPqzmCRsI6Xd8jH9KohccmX69-L6HyS",
+            .url = "git+https://github.com/interrupt/ziglua#dbd18db031e7152271bd5addad5383416b6ebfee",
+            .hash = "zlua-0.1.0-hGRpC2hFBQAOzVQRoZUH3TrPbpWLJe3yO1jv2js6p7ra",
         },
         .sokol = .{
             .url = "git+https://github.com/floooh/sokol-zig.git#76d4afd25adfae9666d76a0d324cdb70ad178a88",
