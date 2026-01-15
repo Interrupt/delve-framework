@@ -151,6 +151,8 @@ pub const App = struct {
                 .func = slog.func,
             },
             // .win32_console_attach = true,
+            .enable_clipboard = config.enable_clipboard,
+            .clipboard_size = config.clipboard_size,
         });
     }
 
@@ -164,6 +166,15 @@ pub const App = struct {
 
     pub fn captureMouse(captured: bool) void {
         sapp.lockMouse(captured);
+    }
+
+    pub fn getClipboardSize() ?i32 {
+        const desc = sapp.queryDesc();
+
+        if (!desc.enable_clipboard) {
+            return null;
+        }
+        return desc.clipboard_size;
     }
 };
 

@@ -26,6 +26,9 @@ pub const AppConfig = struct {
     use_fixed_timestep: bool = false,
     fixed_timestep_delta: f32 = 1.0 / 60.0,
 
+    enable_clipboard: bool = false,
+    clipboard_size: i32 = 0, // 0 means use sokol default (8kB)
+
     // maximum sizes for graphics buffers
     buffer_pool_size: i32 = 512,
     shader_pool_size: i32 = 512,
