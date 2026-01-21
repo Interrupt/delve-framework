@@ -10,6 +10,7 @@ const sokol_gfx_backend = @import("backends/sokol/graphics.zig");
 const shaders = @import("../graphics/shaders.zig");
 
 const sokol = @import("sokol");
+const simgui = sokol.imgui;
 const slog = sokol.log;
 const sg = sokol.gfx;
 const sapp = sokol.app;
@@ -539,6 +540,11 @@ pub const Texture = struct {
         sg.destroyImage(self.sokol_image.?);
         self.sokol_image = null;
     }
+
+    /// Returns an Imgui Texture ID that can be used with Imgui
+    pub fn makeImguiTexture(self: *const Texture) u64 {
+        return simgui.imtextureidWithSampler(self.sokol_view.?, state.debug_material.state.sokol_samplers[0].?);
+    }
 };
 
 pub const RenderPassConfig = struct {
@@ -1058,6 +1064,11 @@ pub const Material = struct {
         if (self.state.material_params_fs_uniformblock_data) |*data| {
             self.state.shader.applyUniformBlockByName(.FS, "fs_params", asAnything(data.bytes.items));
         }
+    }
+
+    /// Returns an Imgui Texture ID that can be used Imgui
+    pub fn makeImguiTexture(self: *const Material, texture_idx: usize, sampler_idx: usize) u64 {
+        return simgui.imtextureidWithSampler(self.state.textures[texture_idx].?.sokol_view.?, self.state.sokol_samplers[sampler_idx].?);
     }
 };
 
