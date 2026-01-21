@@ -1,10 +1,10 @@
 const std = @import("std");
-const ziglua = @import("ziglua");
+const zlua = @import("zlua");
 const input = @import("../platform/input.zig");
 const Tuple = std.meta.Tuple;
 
 // Get Mouse Position
-pub fn position() Tuple(&.{f32, f32}) {
+pub fn position() Tuple(&.{ f32, f32 }) {
     const mouse_pos = input.getMousePosition();
     return .{ mouse_pos.x, mouse_pos.y };
 }

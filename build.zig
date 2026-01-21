@@ -1,7 +1,7 @@
 const std = @import("std");
 const Build = std.Build;
 const builtin = @import("builtin");
-const ziglua = @import("ziglua");
+const zlua = @import("zlua");
 const sokol = @import("sokol");
 const system_sdk = @import("system-sdk");
 const fs = std.fs;
@@ -29,11 +29,15 @@ pub fn build(b: *std.Build) !void {
         .with_sokol_imgui = true,
     });
 
-    const dep_ziglua = b.dependency("ziglua", .{
+    const emsdk_include_path = getEmsdkSystemIncludePath(dep_sokol);
+    b.addSearchPrefix(emsdk_include_path.getPath(b));
+
+    const dep_zlua = b.dependency("zlua", .{
         .target = target,
         .optimize = optimize,
         .lang = .lua54,
-        .can_use_jmp = !target.result.isWasm(),
+        .additional_system_headers = emsdk_include_path.getPath(b),
+        .can_use_jmp = !target.result.cpu.arch.isWasm(),
     });
 
     const dep_zmesh = b.dependency("zmesh", .{
@@ -67,36 +71,37 @@ pub fn build(b: *std.Build) !void {
     });
 
     // inject the cimgui header search path into the sokol C library compile step
-    const cimgui_root = dep_cimgui.namedWriteFiles("cimgui").getDirectory();
-    dep_sokol.artifact("sokol_clib").addIncludePath(cimgui_root);
+    dep_sokol.artifact("sokol_clib").addIncludePath(dep_cimgui.path("src"));
 
     dep_stb_truetype.artifact("stb_truetype").addIncludePath(b.path("3rdparty/stb_truetype/libs"));
 
-    const sokol_item = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
-    const ziglua_item = .{ .module = dep_ziglua.module("ziglua"), .name = "ziglua" };
-    const zmesh_item = .{ .module = dep_zmesh.module("root"), .name = "zmesh" };
-    const zstbi_item = .{ .module = dep_zstbi.module("root"), .name = "zstbi" };
-    const zaudio_item = .{ .module = dep_zaudio.module("root"), .name = "zaudio" };
-    const cimgui_item = .{ .module = dep_cimgui.module("cimgui"), .name = "cimgui" };
-    const stb_truetype_item = .{ .module = dep_stb_truetype.module("root"), .name = "stb_truetype" };
-    const ymlz_item = .{ .module = dep_yamlz.module("root"), .name = "ymlz" };
+    const sokol_item: ModuleImport = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
+    const zlua_item: ModuleImport = .{ .module = dep_zlua.module("zlua"), .name = "zlua" };
+    const zmesh_item: ModuleImport = .{ .module = dep_zmesh.module("root"), .name = "zmesh" };
+    const zstbi_item: ModuleImport = .{ .module = dep_zstbi.module("root"), .name = "zstbi" };
+    const zaudio_item: ModuleImport = .{ .module = dep_zaudio.module("root"), .name = "zaudio" };
+    const cimgui_item: ModuleImport = .{ .module = dep_cimgui.module("cimgui"), .name = "cimgui" };
+    const stb_truetype_item: ModuleImport = .{ .module = dep_stb_truetype.module("root"), .name = "stb_truetype" };
+    const ymlz_item: ModuleImport = .{ .module = dep_yamlz.module("root"), .name = "ymlz" };
 
     const delve_module_imports = [_]ModuleImport{
         sokol_item,
+        zlua_item,
         zmesh_item,
         zstbi_item,
         zaudio_item,
-        ziglua_item,
         cimgui_item,
         stb_truetype_item,
         ymlz_item,
     };
 
+    dep_zlua.artifact("lua").addSystemIncludePath(emsdk_include_path);
+
     const link_libraries = [_]*Build.Step.Compile{
         dep_zmesh.artifact("zmesh"),
-        dep_zstbi.artifact("zstbi"),
+        dep_zlua.artifact("lua"),
+        // dep_zstbi.artifact("zstbi"),
         dep_zaudio.artifact("miniaudio"),
-        dep_ziglua.artifact("lua"),
         dep_cimgui.artifact("cimgui_clib"),
         dep_stb_truetype.artifact("stb_truetype"),
     };
@@ -121,7 +126,7 @@ pub fn build(b: *std.Build) !void {
     }
 
     for (build_collection.link_libraries) |lib| {
-        if (target.result.isWasm()) {
+        if (target.result.cpu.arch.isWasm()) {
             // ensure these libs all depend on the emcc C lib
             lib.step.dependOn(&dep_sokol.artifact("sokol_clib").step);
         }
@@ -130,8 +135,7 @@ pub fn build(b: *std.Build) !void {
     }
 
     // For web builds, add the Emscripten system headers so C libraries can find the stdlib headers
-    if (target.result.isWasm()) {
-        const emsdk_include_path = getEmsdkSystemIncludePath(dep_sokol);
+    if (target.result.cpu.arch.isWasm()) {
         delve_mod.addSystemIncludePath(emsdk_include_path);
 
         // add these new system includes to all the libs and modules
@@ -144,12 +148,17 @@ pub fn build(b: *std.Build) !void {
         }
     }
 
-    // Delve Static Library artifact
-    const delve_lib = b.addStaticLibrary(.{
+    const root_module = b.createModule(.{
+        .root_source_file = b.path("src/framework/delve.zig"),
         .target = target,
         .optimize = optimize,
+    });
+
+    // Delve Static Library artifact
+    const delve_lib = b.addLibrary(.{
         .name = "delve",
-        .root_source_file = b.path("src/framework/delve.zig"),
+        .root_module = root_module,
+        .linkage = .static,
     });
 
     b.installArtifact(delve_lib);
@@ -168,6 +177,7 @@ pub fn build(b: *std.Build) !void {
         "framepacing",
         "frustums",
         "imgui",
+        "clipboard",
         "lighting",
         "lua",
         "meshbuilder",
@@ -189,9 +199,7 @@ pub fn build(b: *std.Build) !void {
 
     // TESTS
     const exe_tests = b.addTest(.{
-        .root_source_file = b.path("src/framework/delve.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = root_module,
     });
 
     const test_step = b.step("test", "Run unit tests");
@@ -203,28 +211,31 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
     var root_source_buffer = [_]u8{undefined} ** 256;
     const root_source_file = try std.fmt.bufPrint(&root_source_buffer, "src/examples/{s}.zig", .{name});
 
+    const root_module = b.createModule(.{
+        .root_source_file = b.path(root_source_file),
+        .target = target,
+        .optimize = optimize,
+    });
+
     var app: *Build.Step.Compile = undefined;
     // special case handling for native vs web build
-    if (target.result.isWasm()) {
-        app = b.addStaticLibrary(.{
-            .target = target,
-            .optimize = optimize,
+    if (target.result.cpu.arch.isWasm()) {
+        app = b.addLibrary(.{
             .name = name,
-            .root_source_file = b.path(root_source_file),
+            .root_module = root_module,
+            .linkage = .static,
         });
     } else {
         app = b.addExecutable(.{
-            .target = target,
-            .optimize = optimize,
             .name = name,
-            .root_source_file = b.path(root_source_file),
+            .root_module = root_module,
         });
     }
 
     app.root_module.addImport("delve", delve_module);
     app.linkLibrary(delve_lib);
 
-    if (target.result.isWasm()) {
+    if (target.result.cpu.arch.isWasm()) {
         const dep_sokol = b.dependency("sokol", .{
             .target = target,
             .optimize = optimize,
@@ -256,7 +267,7 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
 }
 
 pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build.Dependency) !*Build.Step.InstallDir {
-    app.defineCMacro("__EMSCRIPTEN__", "1");
+    app.root_module.addCMacro("__EMSCRIPTEN__", "1");
 
     const emsdk = dep_sokol.builder.dependency("emsdk", .{});
 
@@ -273,9 +284,8 @@ pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build
         .release_use_closure = false, // causing errors with miniaudio? might need to add a custom exerns file for closure
         .use_emmalloc = true,
         .use_filesystem = true,
-        .shell_file_path = dep_sokol.path("src/sokol/web/shell.html").getPath(b),
+        .shell_file_path = dep_sokol.path("src/sokol/web/shell.html"),
         .extra_args = &.{
-            "-sUSE_OFFSET_CONVERTER=1",
             "-sTOTAL_STACK=16MB",
             "--preload-file=assets/",
             "-sALLOW_MEMORY_GROWTH=1",

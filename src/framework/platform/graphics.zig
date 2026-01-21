@@ -17,6 +17,8 @@ const sapp = sokol.app;
 const sglue = sokol.glue;
 const debugtext = sokol.debugtext;
 
+const ArrayList = std.array_list.Managed;
+
 pub var allocator: std.mem.Allocator = undefined;
 
 // compile built-in shaders via:
@@ -381,7 +383,7 @@ pub const Shader = struct {
     }
 
     pub fn initFromShaderInfo(cfg: ShaderConfig, shader_info: shaders.ShaderInfo) !Shader {
-        var shader = try ShaderImpl.initFromShaderInfo(cfg, shader_info);
+        const shader = try ShaderImpl.initFromShaderInfo(cfg, shader_info);
         shader.makeCommonPipelines();
         return shader;
     }
@@ -447,7 +449,10 @@ pub const Texture = struct {
     handle: u32,
     is_render_target: bool = false,
 
+    // TODO: Pull the sokol specific stuff out to the backend layer
     sokol_image: ?sg.Image,
+    sokol_view: ?sg.View,
+    sokol_attachment_view: ?sg.View = null,
 
     /// Creates a new texture from an Image
     pub fn init(image: images.Image) Texture {
@@ -459,12 +464,15 @@ pub const Texture = struct {
             .pixel_format = .RGBA8,
         };
 
-        img_desc.data.subimage[0][0] = sg.asRange(image.data);
+        img_desc.data.mip_levels[0] = sg.asRange(image.data);
+        const sokol_image = sg.makeImage(img_desc);
+        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
 
         return Texture{
             .width = image.width,
             .height = image.height,
-            .sokol_image = sg.makeImage(img_desc),
+            .sokol_image = sokol_image,
+            .sokol_view = sokol_view,
             .handle = next_texture_handle,
         };
     }
@@ -479,12 +487,15 @@ pub const Texture = struct {
             .pixel_format = .RGBA8,
         };
 
-        img_desc.data.subimage[0][0] = sg.asRange(image_bytes);
+        img_desc.data.mip_levels[0] = sg.asRange(image_bytes);
+        const sokol_image = sg.makeImage(img_desc);
+        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
 
         return Texture{
             .width = width,
             .height = height,
-            .sokol_image = sg.makeImage(img_desc),
+            .sokol_image = sokol_image,
+            .sokol_view = sokol_view,
             .handle = next_texture_handle,
         };
     }
@@ -494,19 +505,30 @@ pub const Texture = struct {
         defer next_texture_handle += 1;
 
         var img_desc: sg.ImageDesc = .{
+            .usage = .{ .color_attachment = !is_depth, .depth_stencil_attachment = is_depth },
             .width = @intCast(width),
             .height = @intCast(height),
-            .render_target = true,
             .sample_count = 1,
         };
 
         if (is_depth)
             img_desc.pixel_format = .DEPTH_STENCIL;
 
+        const sokol_image = sg.makeImage(img_desc);
+        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
+
+        const attachment_view = if (!is_depth) sg.makeView(.{
+            .color_attachment = .{ .image = sokol_image },
+        }) else sg.makeView(.{
+            .depth_stencil_attachment = .{ .image = sokol_image },
+        });
+
         return Texture{
             .width = width,
             .height = height,
-            .sokol_image = sg.makeImage(img_desc),
+            .sokol_image = sokol_image,
+            .sokol_view = sokol_view,
+            .sokol_attachment_view = attachment_view,
             .handle = next_texture_handle,
             .is_render_target = true,
         };
@@ -520,9 +542,8 @@ pub const Texture = struct {
     }
 
     /// Returns an Imgui Texture ID that can be used with Imgui
-    pub fn makeImguiTexture(self: *const Texture) ?*anyopaque {
-        const img = simgui.makeImage(.{ .image = self.sokol_image.?, .sampler = state.debug_material.state.sokol_samplers[0].? });
-        return simgui.imtextureid(img);
+    pub fn makeImguiTexture(self: *const Texture) u64 {
+        return simgui.imtextureidWithSampler(self.sokol_view.?, state.debug_material.state.sokol_samplers[0].?);
     }
 };
 
@@ -545,29 +566,22 @@ pub const RenderPass = struct {
     render_texture_depth: ?Texture,
     config: RenderPassConfig,
 
-    sokol_attachments: ?sg.Attachments,
-
     pub fn init(config: RenderPassConfig) RenderPass {
-        var atts_desc: sg.AttachmentsDesc = .{};
-
         var color_attachment: ?Texture = null;
         var depth_attachment: ?Texture = null;
 
         if (config.include_color) {
             color_attachment = Texture.initRenderTexture(config.width, config.height, false);
-            atts_desc.colors[0].image = color_attachment.?.sokol_image.?;
         }
 
         if (config.include_depth) {
             depth_attachment = Texture.initRenderTexture(config.width, config.height, true);
-            atts_desc.depth_stencil.image = depth_attachment.?.sokol_image.?;
         }
 
         return RenderPass{
             .config = config,
             .render_texture_color = color_attachment,
             .render_texture_depth = depth_attachment,
-            .sokol_attachments = sg.makeAttachments(atts_desc),
         };
     }
 
@@ -581,11 +595,6 @@ pub const RenderPass = struct {
         if (self.render_texture_depth != null) {
             self.render_texture_depth.?.destroy();
             self.render_texture_depth = null;
-        }
-
-        if (self.sokol_attachments != null) {
-            sg.destroyAttachments(self.sokol_attachments.?);
-            self.sokol_attachments = null;
         }
     }
 };
@@ -627,7 +636,16 @@ pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
         pass_action.colors[0].clear_value = .{ .r = clear_color.?.r, .g = clear_color.?.g, .b = clear_color.?.b, .a = clear_color.?.a };
     }
 
-    sg.beginPass(.{ .action = pass_action, .attachments = render_pass.sokol_attachments.? });
+    // Attach any render textures
+    var attachments: sg.Attachments = .{};
+    if (render_pass.render_texture_color != null) {
+        attachments.colors[0] = render_pass.render_texture_color.?.sokol_attachment_view.?;
+    }
+    if (render_pass.render_texture_depth != null) {
+        attachments.depth_stencil = render_pass.render_texture_depth.?.sokol_attachment_view.?;
+    }
+
+    sg.beginPass(.{ .action = pass_action, .attachments = attachments });
 }
 
 /// Ends the current render pass, and resumes the default
@@ -703,7 +721,7 @@ pub const UniformBlockType = enum(i32) { BOOL, INT, UINT, FLOAT, DOUBLE, VEC2, V
 /// Holds the data for and builds a uniform block that can be passed to a shader
 pub const MaterialUniformBlock = struct {
     size: u64 = 0,
-    bytes: std.ArrayList(u8),
+    bytes: ArrayList(u8),
     last_type: UniformBlockType = undefined,
 
     // TODO: Maybe the material uniform blocks should be mapped up front, data allocated, and then
@@ -711,7 +729,7 @@ pub const MaterialUniformBlock = struct {
 
     pub fn init() MaterialUniformBlock {
         return MaterialUniformBlock{
-            .bytes = std.ArrayList(u8).init(allocator),
+            .bytes = ArrayList(u8).init(allocator),
         };
     }
 
@@ -1048,13 +1066,9 @@ pub const Material = struct {
         }
     }
 
-    /// Returns an Imgui Texture ID from Texture 0 and Sampler 0 that can be used with Imgui
-    pub fn makeImguiTexture(self: *const Material, texture_idx: usize, sampler_idx: usize) ?*anyopaque {
-        const img = simgui.makeImage(.{
-            .image = self.state.textures[texture_idx].?.sokol_image.?,
-            .sampler = self.state.sokol_samplers[sampler_idx].?,
-        });
-        return simgui.imtextureid(img);
+    /// Returns an Imgui Texture ID that can be used Imgui
+    pub fn makeImguiTexture(self: *const Material, texture_idx: usize, sampler_idx: usize) u64 {
+        return simgui.imtextureidWithSampler(self.state.textures[texture_idx].?.sokol_view.?, self.state.sokol_samplers[sampler_idx].?);
     }
 };
 
@@ -1358,14 +1372,14 @@ fn convertFilterModeToSamplerDesc(filter: FilterMode) sg.SamplerDesc {
 pub fn asAnything(val: anytype) Anything {
     const type_info = @typeInfo(@TypeOf(val));
     switch (type_info) {
-        .Pointer => {
-            switch (type_info.Pointer.size) {
-                .One => return .{ .ptr = val, .size = @sizeOf(type_info.Pointer.child) },
-                .Slice => return .{ .ptr = val.ptr, .size = @sizeOf(type_info.Pointer.child) * val.len },
+        .pointer => {
+            switch (type_info.pointer.size) {
+                .one => return .{ .ptr = val, .size = @sizeOf(type_info.pointer.child) },
+                .slice => return .{ .ptr = val.ptr, .size = @sizeOf(type_info.pointer.child) * val.len },
                 else => @compileError("FIXME: Pointer type!"),
             }
         },
-        .Struct, .Array => {
+        .@"struct", .array => {
             @compileError("Structs and arrays must be passed as pointers to asAnything");
         },
         else => {

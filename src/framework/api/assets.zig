@@ -1,6 +1,6 @@
 const std = @import("std");
 const math = std.math;
-const ziglua = @import("ziglua");
+const zlua = @import("zlua");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
 const graphics = @import("../platform/graphics.zig");

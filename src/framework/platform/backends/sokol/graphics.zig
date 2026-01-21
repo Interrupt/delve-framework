@@ -12,6 +12,8 @@ const sg = sokol.gfx;
 const sapp = sokol.app;
 const debugtext = sokol.debugtext;
 
+const ArrayList = std.array_list.Managed;
+
 pub const Bindings = graphics.Bindings;
 pub const Material = graphics.Material;
 pub const Vertex = graphics.Vertex;
@@ -47,15 +49,14 @@ pub const BindingsImpl = struct {
         if (cfg.updatable) {
             for (cfg.vertex_layout.attributes, 0..) |attr, idx| {
                 bindings.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
-                    .usage = .STREAM,
+                    .usage = .{ .vertex_buffer = true, .stream_update = true },
                     .size = cfg.vert_len * attr.item_size,
                 });
             }
 
             if (cfg.vertex_layout.has_index_buffer) {
                 bindings.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                    .usage = .STREAM,
-                    .type = .INDEXBUFFER,
+                    .usage = .{ .index_buffer = true, .stream_update = true },
                     .size = cfg.index_len * bindingsImpl.index_type_size,
                 });
             }
@@ -64,7 +65,10 @@ pub const BindingsImpl = struct {
         // maybe have a default material instead?
         const samplerDesc = convertFilterModeToSamplerDesc(.NEAREST);
         bindings.impl.default_sokol_sampler = sg.makeSampler(samplerDesc);
-        bindings.impl.sokol_bindings.?.fs.samplers[0] = bindings.impl.default_sokol_sampler;
+        // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
+        // 0 because in the glsl definitions we have only fs samplers and they are annotated with layout(binding=0)
+        // they start at 0
+        bindings.impl.sokol_bindings.?.samplers[0] = bindings.impl.default_sokol_sampler;
 
         return bindings;
     }
@@ -89,7 +93,7 @@ pub const BindingsImpl = struct {
 
         if (self.config.vertex_layout.has_index_buffer) {
             self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                .type = .INDEXBUFFER,
+                .usage = .{ .index_buffer = true },
                 .data = sg.asRange(indices),
             });
         }
@@ -116,7 +120,7 @@ pub const BindingsImpl = struct {
 
         if (self.config.vertex_layout.has_index_buffer) {
             self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                .type = .INDEXBUFFER,
+                .usage = .{ .index_buffer = true },
                 .data = sg.asRange(indices),
             });
         }
@@ -144,19 +148,31 @@ pub const BindingsImpl = struct {
             return;
 
         // set the texture to the default fragment shader image slot
-        self.impl.sokol_bindings.?.fs.images[0] = texture.sokol_image.?;
+        // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
+        // 0 because in the glsl definitions we have only fs tex and they are annotated with layout(binding=0)
+        // they start at 0
+
+        self.impl.sokol_bindings.?.views[0] = texture.sokol_view.?;
     }
 
     pub fn updateFromMaterial(self: *Bindings, material: *Material) void {
         for (0..material.state.textures.len) |i| {
-            if (material.state.textures[i] != null)
-                self.impl.sokol_bindings.?.fs.images[i] = material.state.textures[i].?.sokol_image.?;
+            if (material.state.textures[i] != null) {
+                // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
+                // i because in the glsl definitions we have only fs tex and they are annotated with layout(binding=0)
+                // they start at 0
+
+                self.impl.sokol_bindings.?.views[i] = material.state.textures[i].?.sokol_view.?;
+            }
         }
 
         // bind samplers
         for (material.state.sokol_samplers, 0..) |sampler, i| {
             if (sampler) |s|
-                self.impl.sokol_bindings.?.fs.samplers[i] = s;
+                // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
+                // i because in the glsl definitions we have only fs samplers and they are annotated with layout(binding=0)
+                // they start at 0
+                self.impl.sokol_bindings.?.samplers[i] = s;
         }
 
         // also set shader uniforms here?
@@ -195,8 +211,7 @@ pub const BindingsImpl = struct {
         // create new index buffer
         if (vert_layout.has_index_buffer) {
             self.impl.sokol_bindings.?.index_buffer = sg.makeBuffer(.{
-                .usage = .STREAM,
-                .type = .INDEXBUFFER,
+                .usage = .{ .index_buffer = true, .stream_update = true },
                 .size = index_len * self.impl.index_type_size,
             });
         }
@@ -204,7 +219,7 @@ pub const BindingsImpl = struct {
         // create new vertex buffers
         for (vert_layout.attributes, 0..) |attr, idx| {
             self.impl.sokol_bindings.?.vertex_buffers[idx] = sg.makeBuffer(.{
-                .usage = .STREAM,
+                .usage = .{ .vertex_buffer = true, .stream_update = true },
                 .size = vertex_len * attr.item_size,
             });
         }
@@ -239,7 +254,7 @@ pub const ShaderImpl = struct {
     is_instance: bool = false,
 
     // One shader can have many pipelines, so different VertexLayouts can apply it
-    sokol_pipelines: std.ArrayList(PipelineBinding),
+    sokol_pipelines: ArrayList(PipelineBinding),
 
     /// Create a new shader using the default
     pub fn initDefault(cfg: graphics.ShaderConfig) !Shader {
@@ -434,10 +449,10 @@ pub const ShaderImpl = struct {
         // fs images
         if (shader_program.fs.images) |imgs| {
             for (imgs) |img| {
-                desc.fs.images[img.slot].used = true;
-                desc.fs.images[img.slot].multisampled = stringBool(img.multisampled);
-                desc.fs.images[img.slot].image_type = stringImageTypeToSokolType(img.type);
-                desc.fs.images[img.slot].sample_type = stringImageSampleTypeToSokolType(img.sample_type);
+                desc.images[img.slot].used = true;
+                desc.images[img.slot].multisampled = stringBool(img.multisampled);
+                desc.images[img.slot].image_type = stringImageTypeToSokolType(img.type);
+                desc.images[img.slot].sample_type = stringImageSampleTypeToSokolType(img.sample_type);
                 try fs_images_hashmap.put(img.name, img.slot);
             }
         }
@@ -454,18 +469,18 @@ pub const ShaderImpl = struct {
         // fs sampler pairs
         if (shader_program.fs.image_sampler_pairs) |pairs| {
             for (pairs) |pair| {
-                desc.fs.image_sampler_pairs[pair.slot].used = true;
-                desc.fs.image_sampler_pairs[pair.slot].image_slot = @intCast(pair.slot);
-                desc.fs.image_sampler_pairs[pair.slot].sampler_slot = @intCast(pair.slot);
+                desc.image_sampler_pairs[pair.slot].used = true;
+                desc.image_sampler_pairs[pair.slot].image_slot = @intCast(pair.slot);
+                desc.image_sampler_pairs[pair.slot].sampler_slot = @intCast(pair.slot);
             }
         }
 
         // vs sampler pairs
         if (shader_program.fs.image_sampler_pairs) |pairs| {
             for (pairs) |pair| {
-                desc.fs.image_sampler_pairs[pair.slot].used = true;
-                desc.fs.image_sampler_pairs[pair.slot].image_slot = @intCast(fs_images_hashmap.get(pair.image_name).?);
-                desc.fs.image_sampler_pairs[pair.slot].sampler_slot = @intCast(fs_samplers_hashmap.get(pair.sampler_name).?);
+                desc.image_sampler_pairs[pair.slot].used = true;
+                desc.image_sampler_pairs[pair.slot].image_slot = @intCast(fs_images_hashmap.get(pair.image_name).?);
+                desc.image_sampler_pairs[pair.slot].sampler_slot = @intCast(fs_samplers_hashmap.get(pair.sampler_name).?);
             }
         }
 
@@ -482,7 +497,7 @@ pub const ShaderImpl = struct {
         // Make a new implementation that uses our existing loaded shader, but a fresh pipeline list
         // Mark it as being an instance, so we don't clean up our parent shader on destroy
         impl.* = .{
-            .sokol_pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator),
+            .sokol_pipelines = ArrayList(PipelineBinding).init(graphics.allocator),
             .sokol_shader = shader.impl.sokol_shader,
             .sokol_shader_desc = shader.impl.sokol_shader_desc,
             .cfg = cfg,
@@ -498,12 +513,12 @@ pub const ShaderImpl = struct {
     /// Find the shader function in the builtin that can actually make the ShaderDesc
     fn getBuiltinSokolCreateFunction(comptime builtin: anytype) ?fn (sg.Backend) sg.ShaderDesc {
         comptime {
-            const decls = @typeInfo(builtin).Struct.decls;
+            const decls = @typeInfo(builtin).@"struct".decls;
             for (decls) |d| {
                 const field = @field(builtin, d.name);
                 const field_type = @typeInfo(@TypeOf(field));
-                if (field_type == .Fn) {
-                    const fn_info = field_type.Fn;
+                if (field_type == .@"fn") {
+                    const fn_info = field_type.@"fn";
                     if (fn_info.return_type == sg.ShaderDesc) {
                         return field;
                     }
@@ -536,6 +551,7 @@ pub const ShaderImpl = struct {
             // Find which binding slot we should use by looking at our layout
             for (layout.attributes) |la| {
                 if (attr.binding == la.binding) {
+                    // debug.log("Found buffer slot {}:{}: {}", .{ idx, la_idx, la.buffer_slot });
                     pipe_desc.layout.attrs[idx].buffer_index = la.buffer_slot;
                     break;
                 }
@@ -561,9 +577,10 @@ pub const ShaderImpl = struct {
         debug.info("Creating shader: {d}", .{graphics.next_shader_handle});
         const shader = sg.makeShader(shader_desc);
 
+        // TODO check this
         var num_fs_images: u8 = 0;
         for (0..5) |i| {
-            if (shader_desc.fs.images[i].used) {
+            if (shader_desc.views[i].texture.stage == sg.ShaderStage.FRAGMENT) {
                 num_fs_images += 1;
             } else {
                 break;
@@ -573,7 +590,7 @@ pub const ShaderImpl = struct {
         const impl = try graphics.allocator.create(ShaderImpl);
         errdefer graphics.allocator.destroy(impl);
         impl.* = .{
-            .sokol_pipelines = std.ArrayList(PipelineBinding).init(graphics.allocator),
+            .sokol_pipelines = ArrayList(PipelineBinding).init(graphics.allocator),
             .sokol_shader = shader,
             .sokol_shader_desc = shader_desc,
             .cfg = cfg,
@@ -602,7 +619,7 @@ pub const ShaderImpl = struct {
 
     /// Cache our common pipelines, as an optimization step
     pub fn makeCommonPipelines(self: *Shader) void {
-        for (graphics.getCommonVertexLayouts()) |l| {
+        for (common_vertex_layouts) |l| {
             _ = self.impl.makePipeline(l);
         }
     }
@@ -629,14 +646,16 @@ pub const ShaderImpl = struct {
         }
 
         // apply uniform blocks
-        for (self.vs_uniformblock_data, 0..) |block, i| {
+        for (self.vs_uniformblock_data) |block| {
             if (block) |b|
-                sg.applyUniforms(.VS, @intCast(i), sg.Range{ .ptr = b.ptr, .size = b.size });
+                // sg_apply_uniforms(0, &SG_RANGE(vs_params));
+                sg.applyUniforms(0, sg.Range{ .ptr = b.ptr, .size = b.size });
         }
 
-        for (self.fs_uniformblock_data, 0..) |block, i| {
+        for (self.fs_uniformblock_data) |block| {
             if (block) |b|
-                sg.applyUniforms(.FS, @intCast(i), sg.Range{ .ptr = b.ptr, .size = b.size });
+                // sg_apply_uniforms(1, &SG_RANGE(fs_params));
+                sg.applyUniforms(1, sg.Range{ .ptr = b.ptr, .size = b.size });
         }
 
         return true;

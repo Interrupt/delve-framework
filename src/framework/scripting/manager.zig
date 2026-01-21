@@ -3,13 +3,13 @@ const fmt = @import("fmt");
 const debug = @import("../debug.zig");
 const lua_util = @import("lua.zig");
 const modules = @import("../modules.zig");
-const ziglua = @import("ziglua");
+const zlua = @import("zlua");
 
-const Lua = ziglua.Lua;
+const Lua = zlua.Lua;
 
 pub const ScriptFn = struct {
     name: [*:0]const u8,
-    luaFn: ziglua.FnReg,
+    luaFn: zlua.FnReg,
 };
 
 pub fn init() !void {
@@ -39,14 +39,13 @@ fn isModuleFunction(comptime name: [:0]const u8, comptime in_type: anytype) bool
     if (name[0] == '_')
         return false;
 
-    return @typeInfo(in_type) == .Fn;
+    return @typeInfo(in_type) == .@"fn";
 }
 
 fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
     comptime {
         // Get all the public declarations in this module
-        const decls = @typeInfo(module).Struct.decls;
-
+        const decls = @typeInfo(module).@"struct".decls;
         // filter out only the public functions
         var gen_fields: []const std.builtin.Type.Declaration = &[_]std.builtin.Type.Declaration{};
         for (decls) |d| {
@@ -115,7 +114,7 @@ fn bindLibrary(comptime name: [:0]const u8, comptime funcs: []const ScriptFn) vo
 fn makeLuaOpenLibFn(comptime funcs: []const ScriptFn) fn (*Lua) i32 {
     return opaque {
         pub fn inner(lua: *Lua) i32 {
-            var lib_funcs: [funcs.len]ziglua.FnReg = undefined;
+            var lib_funcs: [funcs.len]zlua.FnReg = undefined;
 
             inline for (funcs, 0..) |f, i| {
                 lib_funcs[i] = f.luaFn;
@@ -127,8 +126,8 @@ fn makeLuaOpenLibFn(comptime funcs: []const ScriptFn) fn (*Lua) i32 {
     }.inner;
 }
 
-fn makeLuaBinding(name: [:0]const u8, comptime function: anytype) ziglua.FnReg {
-    return ziglua.FnReg{ .name = name, .func = ziglua.wrap(bindFuncLua(function)) };
+fn makeLuaBinding(name: [:0]const u8, comptime function: anytype) zlua.FnReg {
+    return zlua.FnReg{ .name = name, .func = zlua.wrap(bindFuncLua(function)) };
 }
 
 fn bindFuncLua(comptime function: anytype) fn (lua: *Lua) i32 {
@@ -138,7 +137,7 @@ fn bindFuncLua(comptime function: anytype) fn (lua: *Lua) i32 {
             const ArgsTuple = std.meta.ArgsTuple(@TypeOf(function));
             var args: ArgsTuple = undefined;
 
-            const fn_info = @typeInfo(@TypeOf(function)).Fn;
+            const fn_info = @typeInfo(@TypeOf(function)).@"fn";
             const params = fn_info.params;
 
             inline for (params, 0..) |param, i| {

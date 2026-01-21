@@ -1,5 +1,6 @@
 .{
-    .name = "stb_truetype",
+    .name = .stb_truetype,
+    .fingerprint = 0xea495ce20c6b4018,
     .version = "0.1.0",
     .paths = .{
         "build.zig",

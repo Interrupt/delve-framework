@@ -106,6 +106,12 @@ pub fn getAspectRatio() f32 {
     return @as(f32, @floatFromInt(getWidth())) / @as(f32, @floatFromInt(getHeight()));
 }
 
+/// Returns the maximum size of the clipboard buffer, or null if the clipboard
+/// is not enabled.
+pub fn getClipboardSize() ?i32 {
+    return AppBackend.getClipboardSize();
+}
+
 fn on_init() void {
     // Start graphics first
     gfx.init() catch {
@@ -195,7 +201,7 @@ fn limitFps() bool {
 
     const frame_len_ns = initial_frame_ns + NS_FPS_LIMIT_OVERHEAD;
     if (frame_len_ns < state.target_fps_ns) {
-        time.sleep(state.target_fps_ns - frame_len_ns);
+        std.Thread.sleep(state.target_fps_ns - frame_len_ns);
     }
 
     // Eat up the rest of the time in a busy loop to ensure consistent frame pacing

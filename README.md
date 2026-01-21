@@ -1,6 +1,6 @@
 # Delve Framework
 
-Delve is a simple framework for building games written in Zig using Lua for scripting. Currently updated to `Zig 0.13.0`
+Delve is a simple framework for building games written in Zig using Lua for scripting. Currently targeting `Zig 0.15.x`
 
 *This is in early development and the api is still coming together, so be warned!*
 
@@ -68,36 +68,21 @@ Some example modules are included automatically to exercise some code paths, the
 * [Mesh Drawing Example](src/examples/meshes.zig)
 * [Debug Drawing Example](src/examples/debugdraw.zig)
 
-## Building the examples
+## Getting started
 
-- Add dependency repository link
+### Add delve-framework as a dependency
 
-`build.zig.zon`
-```
-.{
-    .name = "my_project",
-    .version = "0.0.1",
-    .dependencies = .{
-        .delve = .{
-            .url = "git+https://github.com/Interrupt/delve-framework/tree/0.12.x.git#___COMMIT_HASH___",
-            // add compilers suggested line about .hash
-        },
-    },
-}
-```
-- Link dependency module
-`build.zig`
-```
-    const delve = b.dependency("delve", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    exe.root_module.addImport("delve", delve.module("delve"));
-```
+This repository demonstrates how to include and use the Delve Framework in another Zig project using Zig's package manager.
 
-- Just build
-```java
-zig build run
+https://github.com/Interrupt/delve-framework-example
+
+
+
+## Examples
+
+List examples (and other build-steps)
+```
+zig build --list-steps
 ```
 
 ### Build and run examples

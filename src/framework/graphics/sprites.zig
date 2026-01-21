@@ -5,6 +5,7 @@ const mem = @import("../mem.zig");
 
 const Vec2 = math.Vec2;
 const AnimationHashMap = std.StringHashMap(SpriteAnimation);
+const ArrayList = std.array_list.Managed;
 
 /// Keeps track of a sub region of a texture
 /// Origin is in the upper left, x axis points right, and y axis points down
@@ -137,7 +138,7 @@ pub const AnimatedSpriteSheet = struct {
             const reg_v = row_idx_f / rows_f;
             const reg_v_2 = (row_idx_f + 1) / rows_f;
 
-            var frames = try std.ArrayList(AnimationFrame).initCapacity(allocator, cols);
+            var frames = try ArrayList(AnimationFrame).initCapacity(allocator, cols);
             errdefer frames.deinit();
 
             for (0..cols) |col_idx| {
@@ -156,7 +157,7 @@ pub const AnimatedSpriteSheet = struct {
             // when converting an ArrayList to an owned slice, we don't need to deinit it
             const animation = SpriteAnimation{ .frames = try frames.toOwnedSlice() };
 
-            var string_writer = std.ArrayList(u8).init(allocator);
+            var string_writer = ArrayList(u8).init(allocator);
             errdefer string_writer.deinit();
 
             try string_writer.writer().print("{s}{d}", .{ anim_name_prefix, row_idx });

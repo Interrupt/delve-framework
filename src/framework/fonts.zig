@@ -94,7 +94,11 @@ pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, fon
     defer file.close();
 
     const stat = try file.stat();
-    const font_mem = try file.reader().readAllAlloc(allocator, @intCast(stat.size));
+
+    const font_mem = try allocator.alloc(u8, stat.size);
+
+    _ = try file.pread(font_mem, 0);
+    // debug.log("Loading font with size {d}, read {d}", .{ stat.size, read });
 
     // set some sizes for loading
     const font_atlas_size = tex_size;
@@ -165,6 +169,11 @@ pub fn addStringToSpriteBatchWithKerning(font: *LoadedFont, sprite_batch: *batch
     const orig_x: f32 = x_pos.*;
 
     for (string) |char| {
+        // stop when we hit the null terminator
+        if (char == '\x00') {
+            return;
+        }
+
         if (char == '\n') {
             x_pos.* = orig_x;
             y_pos.* += font.font_size + line_height_mod;

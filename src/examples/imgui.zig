@@ -9,8 +9,8 @@ const test_image_asset = @embedFile("static/test.png");
 var test_texture: graphics.Texture = undefined;
 var test_material: graphics.Material = undefined;
 
-var imgui_texture_1: ?*anyopaque = undefined;
-var imgui_texture_2: ?*anyopaque = undefined;
+var imgui_texture_1: u64 = undefined;
+var imgui_texture_2: u64 = undefined;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
@@ -89,10 +89,10 @@ pub fn on_tick(delta: f32) void {
 
     delve.platform.app.startImguiFrame();
 
-    imgui.igSetNextWindowPos(.{ .x = 40, .y = 60 }, imgui.ImGuiCond_Once, .{ .x = 0, .y = 0 });
+    // start a window
+    imgui.igSetNextWindowPos(.{ .x = 40, .y = 60 }, imgui.ImGuiCond_Once);
     imgui.igSetNextWindowSize(.{ .x = 400, .y = 300 }, imgui.ImGuiCond_Once);
 
-    // start a window
     _ = imgui.igBegin("Hello Dear ImGui!", 0, imgui.ImGuiWindowFlags_None);
 
     _ = imgui.igColorEdit3("Background", &bg_color[0], imgui.ImGuiColorEditFlags_None);
@@ -100,23 +100,15 @@ pub fn on_tick(delta: f32) void {
     _ = imgui.igSpacing();
 
     _ = imgui.igImage(
-        imgui_texture_1,
-        .{ .x = 80, .y = 80 }, // size
-        .{ .x = 0, .y = 0 }, // u
-        .{ .x = 1.0, .y = 1.0 }, // v
-        .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 1.0 }, // tint color
-        .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 1.0 }, // border color
+        .{ ._TexID = imgui_texture_1 },
+        .{ .x = 80, .y = 80 },
     );
 
     _ = imgui.igSpacing();
 
     _ = imgui.igImage(
-        imgui_texture_2,
-        .{ .x = 140, .y = 140 }, // size
-        .{ .x = 0, .y = 0 }, // u
-        .{ .x = 1.0, .y = 1.0 }, // v
-        .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 1.0 }, // tint color
-        .{ .x = 1.0, .y = 1.0, .z = 1.0, .w = 1.0 }, // border color
+        .{ ._TexID = imgui_texture_2 },
+        .{ .x = 140, .y = 140 },
     );
 
     // end the window

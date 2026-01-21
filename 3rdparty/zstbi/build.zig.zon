@@ -1,6 +1,8 @@
 .{
-    .name = "zstbi",
-    .version = "0.10.0",
+    .name = .zstbi,
+    .fingerprint = 0x3c971054ff1a412f,
+    .version = "0.11.0-dev",
+    .minimum_zig_version = "0.15.1",
     .paths = .{
         "build.zig",
         "build.zig.zon",

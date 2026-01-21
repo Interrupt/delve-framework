@@ -312,7 +312,7 @@ pub const Image = struct {
 
     pub fn writeToFn(
         image: Image,
-        write_fn: *const fn (ctx: ?*anyopaque, data: ?*anyopaque, size: c_int) callconv(.C) void,
+        write_fn: *const fn (ctx: ?*anyopaque, data: ?*anyopaque, size: c_int) callconv(.c) void,
         context: ?*anyopaque,
         image_format: ImageWriteFormat,
     ) ImageWriteError!void {
@@ -382,16 +382,16 @@ var mem_allocations: ?std.AutoHashMap(usize, usize) = null;
 var mem_mutex: std.Thread.Mutex = .{};
 const mem_alignment = 16;
 
-extern var zstbiMallocPtr: ?*const fn (size: usize) callconv(.C) ?*anyopaque;
-extern var zstbiwMallocPtr: ?*const fn (size: usize) callconv(.C) ?*anyopaque;
+extern var zstbiMallocPtr: ?*const fn (size: usize) callconv(.c) ?*anyopaque;
+extern var zstbiwMallocPtr: ?*const fn (size: usize) callconv(.c) ?*anyopaque;
 
-fn zstbiMalloc(size: usize) callconv(.C) ?*anyopaque {
+fn zstbiMalloc(size: usize) callconv(.c) ?*anyopaque {
     mem_mutex.lock();
     defer mem_mutex.unlock();
 
     const mem = mem_allocator.?.alignedAlloc(
         u8,
-        mem_alignment,
+        .fromByteUnits(mem_alignment),
         size,
     ) catch @panic("zstbi: out of memory");
 
@@ -400,10 +400,10 @@ fn zstbiMalloc(size: usize) callconv(.C) ?*anyopaque {
     return mem.ptr;
 }
 
-extern var zstbiReallocPtr: ?*const fn (ptr: ?*anyopaque, size: usize) callconv(.C) ?*anyopaque;
-extern var zstbiwReallocPtr: ?*const fn (ptr: ?*anyopaque, size: usize) callconv(.C) ?*anyopaque;
+extern var zstbiReallocPtr: ?*const fn (ptr: ?*anyopaque, size: usize) callconv(.c) ?*anyopaque;
+extern var zstbiwReallocPtr: ?*const fn (ptr: ?*anyopaque, size: usize) callconv(.c) ?*anyopaque;
 
-fn zstbiRealloc(ptr: ?*anyopaque, size: usize) callconv(.C) ?*anyopaque {
+fn zstbiRealloc(ptr: ?*anyopaque, size: usize) callconv(.c) ?*anyopaque {
     mem_mutex.lock();
     defer mem_mutex.unlock();
 
@@ -425,10 +425,10 @@ fn zstbiRealloc(ptr: ?*anyopaque, size: usize) callconv(.C) ?*anyopaque {
     return new_mem.ptr;
 }
 
-extern var zstbiFreePtr: ?*const fn (maybe_ptr: ?*anyopaque) callconv(.C) void;
-extern var zstbiwFreePtr: ?*const fn (maybe_ptr: ?*anyopaque) callconv(.C) void;
+extern var zstbiFreePtr: ?*const fn (maybe_ptr: ?*anyopaque) callconv(.c) void;
+extern var zstbiwFreePtr: ?*const fn (maybe_ptr: ?*anyopaque) callconv(.c) void;
 
-fn zstbiFree(maybe_ptr: ?*anyopaque) callconv(.C) void {
+fn zstbiFree(maybe_ptr: ?*anyopaque) callconv(.c) void {
     if (maybe_ptr) |ptr| {
         mem_mutex.lock();
         defer mem_mutex.unlock();
@@ -439,15 +439,15 @@ fn zstbiFree(maybe_ptr: ?*anyopaque) callconv(.C) void {
     }
 }
 
-extern var zstbirMallocPtr: ?*const fn (size: usize, maybe_context: ?*anyopaque) callconv(.C) ?*anyopaque;
+extern var zstbirMallocPtr: ?*const fn (size: usize, maybe_context: ?*anyopaque) callconv(.c) ?*anyopaque;
 
-fn zstbirMalloc(size: usize, _: ?*anyopaque) callconv(.C) ?*anyopaque {
+fn zstbirMalloc(size: usize, _: ?*anyopaque) callconv(.c) ?*anyopaque {
     return zstbiMalloc(size);
 }
 
-extern var zstbirFreePtr: ?*const fn (maybe_ptr: ?*anyopaque, maybe_context: ?*anyopaque) callconv(.C) void;
+extern var zstbirFreePtr: ?*const fn (maybe_ptr: ?*anyopaque, maybe_context: ?*anyopaque) callconv(.c) void;
 
-fn zstbirFree(maybe_ptr: ?*anyopaque, _: ?*anyopaque) callconv(.C) void {
+fn zstbirFree(maybe_ptr: ?*anyopaque, _: ?*anyopaque) callconv(.c) void {
     zstbiFree(maybe_ptr);
 }
 
@@ -540,7 +540,7 @@ extern fn stbi_write_png(
 ) c_int;
 
 extern fn stbi_write_png_to_func(
-    func: *const fn (?*anyopaque, ?*anyopaque, c_int) callconv(.C) void,
+    func: *const fn (?*anyopaque, ?*anyopaque, c_int) callconv(.c) void,
     context: ?*anyopaque,
     w: c_int,
     h: c_int,
@@ -550,7 +550,7 @@ extern fn stbi_write_png_to_func(
 ) c_int;
 
 extern fn stbi_write_jpg_to_func(
-    func: *const fn (?*anyopaque, ?*anyopaque, c_int) callconv(.C) void,
+    func: *const fn (?*anyopaque, ?*anyopaque, c_int) callconv(.c) void,
     context: ?*anyopaque,
     x: c_int,
     y: c_int,

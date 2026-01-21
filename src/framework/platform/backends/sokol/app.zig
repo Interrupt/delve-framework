@@ -58,7 +58,6 @@ pub const App = struct {
             .image_pool_size = app_config.image_pool_size, // sokol default is 128
             .pipeline_pool_size = app_config.pipeline_pool_size, // sokol default is 64
             .sampler_pool_size = app_config.sampler_pool_size, // sokol default is 64
-            .attachments_pool_size = app_config.pass_pool_size, // sokol default is 16,
         });
 
         simgui.setup(.{
@@ -152,6 +151,8 @@ pub const App = struct {
                 .func = slog.func,
             },
             // .win32_console_attach = true,
+            .enable_clipboard = config.enable_clipboard,
+            .clipboard_size = config.clipboard_size,
         });
     }
 
@@ -165,6 +166,15 @@ pub const App = struct {
 
     pub fn captureMouse(captured: bool) void {
         sapp.lockMouse(captured);
+    }
+
+    pub fn getClipboardSize() ?i32 {
+        const desc = sapp.queryDesc();
+
+        if (!desc.enable_clipboard) {
+            return null;
+        }
+        return desc.clipboard_size;
     }
 };
 

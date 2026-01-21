@@ -4,16 +4,16 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
     const target = b.standardTargetOptions(.{});
 
-    const root = b.addModule("root", .{
+    const root_module = b.addModule("root", .{
         .root_source_file = b.path("src/stb_truetype.zig"),
-    });
-
-    root.addIncludePath(b.path("libs"));
-
-    const lib = b.addStaticLibrary(.{
         .target = target,
         .optimize = optimize,
+    });
+
+    const lib = b.addLibrary(.{
         .name = "stb_truetype",
+        .linkage = .static,
+        .root_module = root_module,
     });
 
     lib.addCSourceFile(.{
@@ -32,9 +32,11 @@ pub fn build(b: *std.Build) void {
 
     const tests = b.addTest(.{
         .name = "stb-truetype-tests",
-        .root_source_file = b.path("src/stb_truetype.zig"),
-        .target = target,
-        .optimize = optimize,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/stb_truetype.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
     });
 
     tests.linkLibrary(lib);
