@@ -21,7 +21,12 @@ pub fn main() !void {
         try delve.init(delve.mem.createDefaultAllocator());
     }
 
-    try lua_module.registerModule();
+    // The simple lua module emulates a Pico-8 style app.
+    // It will call the lua file's _init on startup, _update on tick, _draw when drawing,
+    // and _shutdown at the end.
+    try lua_module.registerModule("assets/main.lua");
+
     try fps_module.registerModule();
+
     try app.start(app.AppConfig{ .title = "Delve Framework - Lua Example" });
 }

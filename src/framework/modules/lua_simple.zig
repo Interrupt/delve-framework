@@ -7,8 +7,10 @@ const modules = @import("../modules.zig");
 // It will call _init on startup, _update on tick, _draw when drawing,
 // and _shutdown at the end.
 
+var luaFile: [:0]const u8 = undefined;
+
 /// Registers this module
-pub fn registerModule() !void {
+pub fn registerModule(luaFileToRun: [:0]const u8) !void {
     const luaSimpleLifecycle = modules.Module{
         .name = "lua_simple_lifecycle",
         .start_fn = on_game_start,
@@ -19,6 +21,8 @@ pub fn registerModule() !void {
         .cleanup_fn = on_cleanup,
         .priority = modules.Priority.first,
     };
+
+    luaFile = luaFileToRun;
 
     try modules.registerModule(luaSimpleLifecycle);
 }
@@ -33,7 +37,7 @@ pub fn on_game_start() void {
     debug.log("Starting simple Lua lifecycle...", .{});
 
     // Load and run the main script
-    lua.runFile("assets/main.lua") catch {
+    lua.runFile(luaFile) catch {
         debug.showErrorScreen("Fatal error!");
         return;
     };
