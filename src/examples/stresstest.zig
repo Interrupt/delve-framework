@@ -36,7 +36,7 @@ pub fn main() !void {
     try audio_example.registerModule();
     try debugdraw_example.registerModule();
     try meshes_example.registerModule();
-    try lua_module.registerModule();
+    try lua_module.registerModule("assets/main.lua");
     try sprites_example.registerModule();
     try imgui_example.registerModule();
     try fonts_example.registerModule();
