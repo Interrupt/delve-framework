@@ -27,7 +27,7 @@ pub fn init() !void {
     lua_allocator = lua_arena.allocator();
 
     // Initialize the Lua VM!
-    lua = try Lua.init(lua_allocator);
+    lua = try initLua(lua_allocator);
 
     // Turn on to get lua debug output
     if (enable_debug_logging)
@@ -55,6 +55,16 @@ pub fn init() !void {
 
     // turn on scripting integration for the console
     debug.use_scripting_integration = true;
+}
+
+// Initialize a lua VM
+pub fn initLua(allocator: std.mem.Allocator) !*Lua {
+    return try Lua.init(allocator);
+}
+
+// Gets the pointer to our managed lua VM
+pub fn getLua() *Lua {
+    return lua;
 }
 
 pub fn runFile(lua_filename: [:0]const u8) !void {
