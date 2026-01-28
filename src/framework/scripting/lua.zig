@@ -57,6 +57,10 @@ pub fn init() !void {
     debug.use_scripting_integration = true;
 }
 
+pub fn getLua() *Lua {
+    return lua;
+}
+
 pub fn runFile(lua_filename: [:0]const u8) !void {
     debug.log("Lua: running file {s}", .{lua_filename});
 
