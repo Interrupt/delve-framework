@@ -29,14 +29,11 @@ pub fn build(b: *std.Build) !void {
         .with_sokol_imgui = true,
     });
 
-    const emsdk_include_path = getEmsdkSystemIncludePath(dep_sokol);
-    b.addSearchPrefix(emsdk_include_path.getPath(b));
-
     const dep_zlua = b.dependency("zlua", .{
         .target = target,
         .optimize = optimize,
         .lang = .lua54,
-        .additional_system_headers = emsdk_include_path.getPath(b),
+        .additional_system_headers = if (target.result.cpu.arch.isWasm()) getEmsdkSystemIncludePath(dep_sokol).getPath(b) else "",
         .can_use_jmp = !target.result.cpu.arch.isWasm(),
     });
 
@@ -95,12 +92,8 @@ pub fn build(b: *std.Build) !void {
         ymlz_item,
     };
 
-    dep_zlua.artifact("lua").addSystemIncludePath(emsdk_include_path);
-
     const link_libraries = [_]*Build.Step.Compile{
         dep_zmesh.artifact("zmesh"),
-        dep_zlua.artifact("lua"),
-        // dep_zstbi.artifact("zstbi"),
         dep_zaudio.artifact("miniaudio"),
         dep_cimgui.artifact("cimgui_clib"),
         dep_stb_truetype.artifact("stb_truetype"),
@@ -136,7 +129,15 @@ pub fn build(b: *std.Build) !void {
 
     // For web builds, add the Emscripten system headers so C libraries can find the stdlib headers
     if (target.result.cpu.arch.isWasm()) {
+        const emsdk_include_path = getEmsdkSystemIncludePath(dep_sokol);
+
+        b.addSearchPrefix(emsdk_include_path.getPath(b));
         delve_mod.addSystemIncludePath(emsdk_include_path);
+
+        // Ensure that Lua links under EMCC
+        const lua_artifact = dep_zlua.artifact("lua");
+        lua_artifact.step.dependOn(&dep_sokol.artifact("sokol_clib").step);
+        lua_artifact.addSystemIncludePath(emsdk_include_path);
 
         // add these new system includes to all the libs and modules
         for (build_collection.add_imports) |build_import| {

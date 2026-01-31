@@ -1,6 +1,6 @@
 .{
     .name = .delve,
-    .version = "0.0.2",
+    .version = "0.0.3",
     .fingerprint = 0xa3185842c6ab2a18,
     .paths = .{
         "src",
