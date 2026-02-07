@@ -211,8 +211,9 @@ pub const SkinnedMesh = struct {
     }
 
     /// Free a previously initialized skinned mesh
-    pub fn deinit(self: *SkinnedMesh) void {
-        self.mesh.deinit();
+    // TODO store a copy of the allocator
+    pub fn deinit(self: *SkinnedMesh, allocator: std.mem.Allocator) void {
+        self.mesh.deinit(allocator);
         if (self.joint_transforms) |transforms| {
             transforms.deinit();
         }

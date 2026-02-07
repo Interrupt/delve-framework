@@ -106,8 +106,8 @@ fn on_init() !void {
         .default_fs_uniform_layout = delve.platform.graphics.default_lit_fs_uniforms,
     });
 
-    skinned_mesh_materials = std.ArrayList(graphics.Material).init(delve.mem.getAllocator());
-    try skinned_mesh_materials.append(skinned_mesh_material);
+    skinned_mesh_materials = .empty;
+    try skinned_mesh_materials.append(delve.mem.getAllocator(), skinned_mesh_material);
 
     // Create a material out of the texture
     static_mesh_material = try graphics.Material.init(.{
@@ -196,14 +196,14 @@ fn on_cleanup() !void {
     static_shader.destroy();
 
     skinned_mesh_material.deinit();
-    skinned_mesh_materials.deinit();
+    skinned_mesh_materials.deinit(delve.mem.getAllocator());
     static_mesh_material.deinit();
 
-    cube1.materials.deinit();
-    cube1.deinit();
-    cube2.materials.deinit();
-    cube2.deinit();
+    cube1.materials.deinit(delve.mem.getAllocator());
+    cube1.deinit(delve.mem.getAllocator());
+    cube2.materials.deinit(delve.mem.getAllocator());
+    cube2.deinit(delve.mem.getAllocator());
 
     animation.deinit();
-    animated_mesh.deinit();
+    animated_mesh.deinit(delve.mem.getAllocator());
 }

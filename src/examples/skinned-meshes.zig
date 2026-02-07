@@ -183,7 +183,7 @@ fn on_cleanup() !void {
     gltf.freeData(gltf_data);
 
     material.deinit();
-    materials.deinit();
+    materials.deinit(delve.mem.getAllocator());
     animation.deinit();
-    mesh_test.deinit();
+    mesh_test.deinit(delve.mem.getAllocator());
 }

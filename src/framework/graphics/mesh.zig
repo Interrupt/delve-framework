@@ -281,16 +281,14 @@ pub fn getSkinnedShaderAttributes() []const graphics.ShaderAttribute {
 
 /// MeshBuilder is a helper for making runtime meshes
 pub const MeshBuilder = struct {
-    vertices: std.ArrayList(PackedVertex).empty,
-    indices: std.ArrayList(u32).empty,
-    normals: std.ArrayList([3]f32).empty,
-    tangents: std.ArrayList([4]f32).empty,
+    vertices: std.ArrayList(PackedVertex) = undefined,
+    indices: std.ArrayList(u32) = undefined,
+    normals: std.ArrayList([3]f32) = undefined,
+    tangents: std.ArrayList([4]f32) = undefined,
     allocator: std.mem.Allocator = undefined,
 
     pub fn init(allocator: std.mem.Allocator) MeshBuilder {
-        return MeshBuilder{
-            .allocator = allocator,
-        };
+        return MeshBuilder{ .vertices = .empty, .indices = .empty, .normals = .empty, .tangents = .empty, .allocator = allocator };
     }
 
     /// Adds a quad to the mesh builder
@@ -315,13 +313,13 @@ pub const MeshBuilder = struct {
         const tangent = math.Vec4.new(1.0, 0.0, 0.0, 1.0).mulMat4(transform).toArray();
 
         for (verts) |vert| {
-            try self.vertices.append(PackedVertex.mulMat4(vert, transform));
-            try self.normals.append(normal);
-            try self.tangents.append(tangent);
+            try self.vertices.append(self.allocator, PackedVertex.mulMat4(vert, transform));
+            try self.normals.append(self.allocator, normal);
+            try self.tangents.append(self.allocator, tangent);
         }
 
         for (indices) |idx| {
-            try self.indices.append(idx + v_pos);
+            try self.indices.append(self.allocator, idx + v_pos);
         }
     }
 
@@ -478,10 +476,10 @@ pub const MeshBuilder = struct {
 
         bindings.set(self.vertices.items, self.indices.items, self.normals.items, self.tangents.items, self.indices.items.len);
 
-        var bindings_list = std.ArrayList(graphics.Bindings).init(self.allocator);
-        try bindings_list.append(bindings);
-        var materials = std.ArrayList(graphics.Material).init(self.allocator);
-        try materials.append(material);
+        var bindings_list: std.ArrayList(graphics.Bindings) = .empty;
+        try bindings_list.append(self.allocator, bindings);
+        var materials: std.ArrayList(graphics.Material) = .empty;
+        try materials.append(self.allocator, material);
 
         return createMesh(self.vertices.items, bindings_list, materials);
     }
@@ -489,9 +487,9 @@ pub const MeshBuilder = struct {
     /// Cleans up a mesh builder
     pub fn deinit(self: *MeshBuilder) void {
         // maybe use arena here
-        self.vertices.deinit();
-        self.indices.deinit();
-        self.normals.deinit();
-        self.tangents.deinit();
+        self.vertices.deinit(self.allocator);
+        self.indices.deinit(self.allocator);
+        self.normals.deinit(self.allocator);
+        self.tangents.deinit(self.allocator);
     }
 };
