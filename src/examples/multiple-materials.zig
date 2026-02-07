@@ -84,7 +84,7 @@ fn on_init() !void {
 
     materials = .empty;
 
-    gltf.loadMaterials(gltf_data, 0, path, shader, &materials);
+    gltf.loadMaterials(allocator, gltf_data, 0, path, shader, &materials);
 
     std.debug.print("amount of materials {d} \n", .{materials.items.len});
 

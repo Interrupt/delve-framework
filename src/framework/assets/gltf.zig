@@ -5,7 +5,7 @@ const zmesh = @import("zmesh");
 const images = @import("../images.zig");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = gpa.allocator();
+var gpa_allocator = gpa.allocator();
 
 pub const Data = zmesh.io.zcgltf.Data;
 
@@ -16,11 +16,11 @@ pub fn freeData(data: ?*Data) void {
 }
 
 pub fn loadData(filename: [:0]const u8, path: [:0]const u8) !*zmesh.io.zcgltf.Data {
-    const src = std.fs.path.joinZ(allocator, &[_][]const u8{ path, filename }) catch |err| {
+    const src = std.fs.path.joinZ(gpa_allocator, &[_][]const u8{ path, filename }) catch |err| {
         debug.log("cannot create src: {}", .{err});
         return err;
     };
-    defer allocator.free(src);
+    defer gpa_allocator.free(src);
 
     return zmesh.io.parseAndLoadFile(src) catch |err| {
         debug.log("Could not load mesh file {s}", .{filename});
@@ -32,11 +32,11 @@ pub fn loadTexture(texture: ?*zmesh.io.zcgltf.Texture, path: [:0]const u8) ?grap
     if (texture != null) {
         const u = texture.?.image.?.uri;
         if (u) |uri| {
-            const image_path = std.fs.path.joinZ(allocator, &[_][]const u8{ path, std.mem.span(uri) }) catch |err| {
+            const image_path = std.fs.path.joinZ(gpa_allocator, &[_][]const u8{ path, std.mem.span(uri) }) catch |err| {
                 debug.log("cannot create src: {}", .{err});
                 return null;
             };
-            defer allocator.free(image_path);
+            defer gpa_allocator.free(image_path);
 
             var base_img: images.Image = images.loadFile(image_path) catch {
                 debug.log("Assets: Error loading image asset: {s}", .{image_path});
@@ -50,7 +50,7 @@ pub fn loadTexture(texture: ?*zmesh.io.zcgltf.Texture, path: [:0]const u8) ?grap
     return null;
 }
 
-pub fn loadMaterials(data: *zmesh.io.zcgltf.Data, mesh_index: usize, path: [:0]const u8, shader: graphics.Shader, materials: *std.ArrayList(graphics.Material)) void {
+pub fn loadMaterials(allocator: std.mem.Allocator, data: *zmesh.io.zcgltf.Data, mesh_index: usize, path: [:0]const u8, shader: graphics.Shader, materials: *std.ArrayList(graphics.Material)) void {
     const dmesh = data.meshes.?[mesh_index];
     for (0..dmesh.primitives_count) |primitive_index| {
         const primitive = dmesh.primitives[primitive_index];
