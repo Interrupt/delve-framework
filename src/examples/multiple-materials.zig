@@ -82,7 +82,7 @@ fn on_init() !void {
 
     gltf_data = try gltf.loadData(filename, path);
 
-    materials = std.ArrayList(graphics.Material).init(allocator);
+    materials = .empty;
 
     gltf.loadMaterials(gltf_data, 0, path, shader, &materials);
 
@@ -119,11 +119,11 @@ fn on_cleanup() !void {
     for (materials.items) |*m| {
         m.deinit();
     }
-    materials.deinit();
+    materials.deinit(allocator);
     shader.destroy();
 
     gltf.freeData(gltf_data);
 
-    mesh1.?.deinit();
+    mesh1.?.deinit(allocator);
     // mesh2.?.deinit();
 }

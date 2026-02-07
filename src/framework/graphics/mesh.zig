@@ -51,10 +51,10 @@ pub const Mesh = struct {
     zmesh_data: ?*zmesh.io.zcgltf.Data = null,
 
     pub fn initFromData(allocator: std.mem.Allocator, data: *zmesh.io.zcgltf.Data, mesh_index: usize, cfg: MeshConfig) ?Mesh {
-        var bindings_list = std.ArrayList(graphics.Bindings).init(allocator);
+        var bindings_list: std.ArrayList(graphics.Bindings) = .empty;
 
-        var vertices = std.ArrayList(PackedVertex).init(allocator);
-        defer vertices.deinit();
+        var vertices: std.ArrayList(PackedVertex) = .empty;
+        defer vertices.deinit(allocator);
 
         var any_submesh_had_joints: bool = false;
 
@@ -63,24 +63,27 @@ pub const Mesh = struct {
 
         const mesh = data.meshes.?[mesh_index];
         for (0..mesh.primitives_count) |primitive_index| {
-            var mesh_indices = std.ArrayList(u32).init(allocator);
-            var mesh_positions = std.ArrayList([3]f32).init(allocator);
-            var mesh_normals = std.ArrayList([3]f32).init(allocator);
-            var mesh_texcoords = std.ArrayList([2]f32).init(allocator);
-            var mesh_tangents = std.ArrayList([4]f32).init(allocator);
+            var mesh_indices: std.ArrayList(u32) = .empty;
+            var mesh_positions: std.ArrayList([3]f32) = .empty;
+            var mesh_normals: std.ArrayList([3]f32) = .empty;
+            var mesh_texcoords: std.ArrayList([2]f32) = .empty;
+            var mesh_tangents: std.ArrayList([4]f32) = .empty;
 
-            var mesh_joints = std.ArrayList([4]f32).init(allocator);
-            var mesh_weights = std.ArrayList([4]f32).init(allocator);
+            // TODO appendMeshPrimitive does not accept weights and joints anymore
+            // maybe remove?
+            var mesh_joints: std.ArrayList([4]f32) = .empty;
+            var mesh_weights: std.ArrayList([4]f32) = .empty;
 
-            defer mesh_indices.deinit();
-            defer mesh_positions.deinit();
-            defer mesh_normals.deinit();
-            defer mesh_texcoords.deinit();
-            defer mesh_tangents.deinit();
-            defer mesh_joints.deinit();
-            defer mesh_weights.deinit();
+            defer mesh_indices.deinit(allocator);
+            defer mesh_positions.deinit(allocator);
+            defer mesh_normals.deinit(allocator);
+            defer mesh_texcoords.deinit(allocator);
+            defer mesh_tangents.deinit(allocator);
+            defer mesh_joints.deinit(allocator);
+            defer mesh_weights.deinit(allocator);
 
             zmesh.io.appendMeshPrimitive(
+                allocator,
                 data, // *zmesh.io.cgltf.Data
                 @intCast(mesh_index), // mesh index
                 @intCast(primitive_index), // gltf primitive index (submesh index)
@@ -89,8 +92,6 @@ pub const Mesh = struct {
                 &mesh_normals, // normals (optional)
                 &mesh_texcoords, // texcoords (optional)
                 &mesh_tangents, // tangents (optional)
-                &mesh_joints, // joints (optional)
-                &mesh_weights, // weights (optional)
             ) catch {
                 debug.log("Could not process mesh file!", .{});
                 return null;
@@ -107,7 +108,7 @@ pub const Mesh = struct {
                     v_textcoord = mesh_texcoords.items[i][1];
                 }
 
-                vertices.append(.{ .x = vert[0], .y = vert[1], .z = vert[2], .u = u_textcoord, .v = v_textcoord, .color = white_color }) catch {
+                vertices.append(allocator, .{ .x = vert[0], .y = vert[1], .z = vert[2], .u = u_textcoord, .v = v_textcoord, .color = white_color }) catch {
                     debug.log("Could not process mesh file!", .{});
                     return null;
                 };
@@ -117,7 +118,7 @@ pub const Mesh = struct {
             if (mesh_normals.items.len == 0) {
                 for (0..mesh_positions.items.len) |_| {
                     const empty = [3]f32{ 0.0, 0.0, 0.0 };
-                    mesh_normals.append(empty) catch {
+                    mesh_normals.append(allocator, empty) catch {
                         return null;
                     };
                 }
@@ -127,7 +128,7 @@ pub const Mesh = struct {
             if (mesh_tangents.items.len == 0) {
                 for (0..mesh_positions.items.len) |_| {
                     const empty = [4]f32{ 0.0, 0.0, 0.0, 0.0 };
-                    mesh_tangents.append(empty) catch {
+                    mesh_tangents.append(allocator, empty) catch {
                         return null;
                     };
                 }
@@ -159,7 +160,7 @@ pub const Mesh = struct {
                 bindings.set(vertices.items[vertices_start..], mesh_indices.items, mesh_normals.items, mesh_tangents.items, mesh_indices.items.len);
             }
 
-            bindings_list.append(bindings) catch {
+            bindings_list.append(allocator, bindings) catch {
                 return null;
             };
 
@@ -173,11 +174,12 @@ pub const Mesh = struct {
         return createMesh(vertices.items, bindings_list, cfg.materials);
     }
 
-    pub fn deinit(self: *Mesh) void {
+    // TODO store a copy of allocator in mesh
+    pub fn deinit(self: *Mesh, allocator: std.mem.Allocator) void {
         for (self.bindings_list.items) |*b| {
             b.destroy();
         }
-        self.bindings_list.deinit();
+        self.bindings_list.deinit(allocator);
     }
 
     /// Draw this mesh
@@ -279,18 +281,14 @@ pub fn getSkinnedShaderAttributes() []const graphics.ShaderAttribute {
 
 /// MeshBuilder is a helper for making runtime meshes
 pub const MeshBuilder = struct {
-    vertices: std.ArrayList(PackedVertex) = undefined,
-    indices: std.ArrayList(u32) = undefined,
-    normals: std.ArrayList([3]f32) = undefined,
-    tangents: std.ArrayList([4]f32) = undefined,
+    vertices: std.ArrayList(PackedVertex).empty,
+    indices: std.ArrayList(u32).empty,
+    normals: std.ArrayList([3]f32).empty,
+    tangents: std.ArrayList([4]f32).empty,
     allocator: std.mem.Allocator = undefined,
 
     pub fn init(allocator: std.mem.Allocator) MeshBuilder {
         return MeshBuilder{
-            .vertices = std.ArrayList(PackedVertex).init(allocator),
-            .indices = std.ArrayList(u32).init(allocator),
-            .normals = std.ArrayList([3]f32).init(allocator),
-            .tangents = std.ArrayList([4]f32).init(allocator),
             .allocator = allocator,
         };
     }

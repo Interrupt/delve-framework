@@ -75,7 +75,7 @@ pub fn loadMaterials(data: *zmesh.io.zcgltf.Data, mesh_index: usize, path: [:0]c
                 std.debug.print("Failed to create material {}\n", .{err});
                 continue;
             };
-            materials.append(material) catch |err| {
+            materials.append(allocator, material) catch |err| {
                 std.debug.print("Failed to append material {}\n", .{err});
             };
         }
