@@ -68,9 +68,6 @@ pub const Mesh = struct {
             var mesh_normals: std.ArrayList([3]f32) = .empty;
             var mesh_texcoords: std.ArrayList([2]f32) = .empty;
             var mesh_tangents: std.ArrayList([4]f32) = .empty;
-
-            // TODO appendMeshPrimitive does not accept weights and joints anymore
-            // maybe remove?
             var mesh_joints: std.ArrayList([4]f32) = .empty;
             var mesh_weights: std.ArrayList([4]f32) = .empty;
 
@@ -82,7 +79,7 @@ pub const Mesh = struct {
             defer mesh_joints.deinit(allocator);
             defer mesh_weights.deinit(allocator);
 
-            zmesh.io.appendMeshPrimitive(
+            zmeshutils.appendMeshPrimitive(
                 allocator,
                 data, // *zmesh.io.cgltf.Data
                 @intCast(mesh_index), // mesh index
@@ -92,6 +89,8 @@ pub const Mesh = struct {
                 &mesh_normals, // normals (optional)
                 &mesh_texcoords, // texcoords (optional)
                 &mesh_tangents, // tangents (optional)
+                &mesh_joints, // joints (optional)
+                &mesh_weights, // weights (optional)
             ) catch {
                 debug.log("Could not process mesh file!", .{});
                 return null;
