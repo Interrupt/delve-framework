@@ -23,8 +23,26 @@ pub fn libInit() !void {
     texture_handles = std.AutoHashMap(u32, graphics.Texture).init(allocator);
 }
 
-// return a texture handle or -1 if an error occurs
-pub fn get_texture(filename: [*:0]const u8) i64 {
+pub fn libCleanup() !void {
+    debug.log("Assets: cleanup", .{});
+
+    var tex_it = texture_handles.iterator();
+    while (tex_it.next()) |item| {
+        item.value_ptr.destroy();
+    }
+
+    var img_it = image_handles.iterator();
+    while (img_it.next()) |item| {
+        item.value_ptr.deinit();
+    }
+
+    loaded_textures.deinit();
+    image_handles.deinit();
+    texture_handles.deinit();
+}
+
+// return a texture handle or 0 if an error occurs
+pub fn get_texture(filename: [*:0]const u8) u32 {
     const found: ?u32 = loaded_textures.get(filename);
 
     if (found) |texture_handle| {
@@ -41,34 +59,34 @@ pub fn get_texture(filename: [*:0]const u8) i64 {
     debug.log("Assets: Loading Image: {s}...", .{filename});
     const new_img: images.Image = images.loadFile(filename[0..filename_len :0]) catch {
         debug.log("Assets: Error loading image asset: {s}", .{filename});
-        return -1;
+        return 0;
     };
 
-    const new_handle: u32 = texture_handles.count();
+    const new_handle: u32 = texture_handles.count() + 1;
     loaded_textures.put(filename, new_handle) catch {
         debug.log("Assets: Error caching loaded image handle!", .{});
-        return -1;
+        return 0;
     };
 
     image_handles.put(new_handle, new_img) catch {
         debug.log("Assets: Error caching loaded image!", .{});
-        return -1;
+        return 0;
     };
 
     const texture = graphics.Texture.init(new_img);
     texture_handles.put(new_handle, texture) catch {
         debug.log("Assets: Error caching loaded texture!", .{});
-        return -1;
+        return 0;
     };
 
     debug.log("Assets: Loaded image {s} at handle {d}", .{ filename, new_handle });
     return new_handle;
 }
 
-pub fn _getImageFromHandle(handle: i64) ?images.Image {
-    return image_handles.get(@intCast(handle));
+pub fn _getImageFromHandle(handle: u32) ?images.Image {
+    return image_handles.get(handle);
 }
 
-pub fn _getTextureFromHandle(handle: i64) ?graphics.Texture {
-    return texture_handles.get(@intCast(handle));
+pub fn _getTextureFromHandle(handle: u32) ?graphics.Texture {
+    return texture_handles.get(handle);
 }

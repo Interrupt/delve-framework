@@ -111,8 +111,9 @@ pub fn build(b: *std.Build) !void {
         .optimize = optimize,
     });
 
-    // Sokol module (exposed for using shader file outside of delve)
+    // Expose a few modules, so people can grab our dependencies instead of including their own directly
     try b.modules.put("sokol", dep_sokol.module("sokol"));
+    try b.modules.put("zlua", dep_zlua.module("zlua"));
 
     for (build_collection.add_imports) |build_import| {
         delve_mod.addImport(build_import.name, build_import.module);

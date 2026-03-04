@@ -30,7 +30,7 @@ pub fn registerModule(luaFileToRun: [:0]const u8) !void {
 pub fn on_init() !void {
     // start up the scripting manager!
     try debug.registerConsoleCommand("lua", doLuaCommand, "Runs Lua string");
-    try scripting_manager.init();
+    try scripting_manager.init(&[_]scripting_manager.BoundType{});
 }
 
 pub fn on_game_start() void {
