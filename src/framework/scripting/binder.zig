@@ -5,14 +5,9 @@ const zlua = @import("zlua");
 const Lua = zlua.Lua;
 
 pub const BoundType = struct {
-    T: type,
+    Type: type,
     name: [:0]const u8,
-};
-
-pub const BindingConfig = struct {
-    T: type,
-    meta_table_name: [:0]const u8,
-    ignore_functions: []const [:0]const u8,
+    ignore_fns: []const [:0]const u8,
 };
 
 pub fn Registry(comptime entries: []const BoundType) type {
@@ -21,7 +16,7 @@ pub fn Registry(comptime entries: []const BoundType) type {
 
         pub fn getMetaTableName(comptime T: type) [:0]const u8 {
             inline for (registry) |entry| {
-                if (entry.T == T) return entry.name;
+                if (entry.Type == T) return entry.name;
             }
             debug.warning("Type not found in Lua registry! " ++ @typeName(T), .{});
             return "_notFound";
@@ -29,7 +24,7 @@ pub fn Registry(comptime entries: []const BoundType) type {
 
         pub fn isRegistered(comptime T: type) bool {
             inline for (registry) |entry| {
-                if (entry.T == T) return true;
+                if (entry.Type == T) return true;
             }
             return false;
         }
@@ -48,19 +43,19 @@ pub fn Registry(comptime entries: []const BoundType) type {
 
         pub fn bindTypes(luaState: *zlua.Lua) !void {
             inline for (registry) |entry| {
-                try bindType(luaState, entry.T, entry.name);
+                try bindType(luaState, entry);
             }
         }
 
-        pub fn bindType(luaState: *zlua.Lua, comptime config: BindingConfig) !void {
-            const T = config.T;
-            const metaTableName = config.meta_table_name;
+        pub fn bindType(luaState: *zlua.Lua, comptime bound_type: BoundType) !void {
+            const T = bound_type.Type;
+            const meta_table_name = bound_type.name;
 
             const startTop = luaState.getTop();
 
             // Make our new userData and metaTable
             _ = luaState.newUserdata(T, @sizeOf(T));
-            _ = try luaState.newMetatable(metaTableName);
+            _ = try luaState.newMetatable(meta_table_name);
 
             // GC func is required for memory management
             // Wire GC up to our destroy function if found!
@@ -68,7 +63,7 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 // Make our GC function to wire to _gc in lua
                 const gcFunc = struct {
                     fn inner(L: *zlua.Lua) i32 {
-                        const ptr = L.checkUserdata(T, 1, metaTableName);
+                        const ptr = L.checkUserdata(T, 1, meta_table_name);
                         ptr.destroy();
                         return 0;
                     }
@@ -82,7 +77,7 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 // Wire to __index in lua
                 const indexFunc = struct {
                     fn inner(L: *zlua.Lua) i32 {
-                        const ptr = L.checkUserdata(T, 1, metaTableName);
+                        const ptr = L.checkUserdata(T, 1, meta_table_name);
                         return ptr.__index(L);
                     }
                 }.inner;
@@ -101,7 +96,7 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 // Wire to __newindex in lua
                 const newIndexFunc = struct {
                     fn inner(L: *zlua.Lua) i32 {
-                        const ptr = L.checkUserdata(T, 1, metaTableName);
+                        const ptr = L.checkUserdata(T, 1, meta_table_name);
                         return ptr.__newindex(L);
                     }
                 }.inner;
@@ -111,17 +106,18 @@ pub fn Registry(comptime entries: []const BoundType) type {
             }
 
             // Now wire up our functions!
-            const foundFns = comptime findLibraryFunctions(T, [_][:0]const u8{});
-            inline for (foundFns) |foundFunc| {
+            const found_fns = comptime findLibraryFunctions(T, bound_type.ignore_fns);
+            inline for (found_fns) |foundFunc| {
                 luaState.pushClosure(foundFunc.func.?, 0);
                 luaState.setField(-2, foundFunc.name);
             }
 
             // Make this usable with "require" and register our funcs in the library
-            luaState.requireF(metaTableName, zlua.wrap(makeLuaOpenLibFn(foundFns)), true);
+            luaState.requireF(meta_table_name, zlua.wrap(makeLuaOpenLibFn(found_fns)), true);
             luaState.pop(3);
 
-            debug.info("Added lua module: '{s}'", .{metaTableName});
+            debug.log("Bound lua type: '{any}' to '{s}'", .{ T, meta_table_name });
+
             if (startTop != luaState.getTop()) {
                 debug.fatal("Lua binding: leaking stack!", .{});
             }

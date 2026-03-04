@@ -5,6 +5,18 @@ local mouse = require("input.mouse")
 local text = require("text")
 local graphics = require("graphics")
 
+-- Test out binding Zig structs and using them in Lua
+local TestStruct = require("TestStruct")
+local test_binding = TestStruct.new("Hello from Lua!")
+
+test_binding:sayHello()
+local title = test_binding:getMessage()
+
+print(" > Message from Zig: " .. title)
+
+-- Lifecycle functions
+-- The simple Lua module implements a Pico8 like API
+
 function _init()
 	-- initial resolution
 	display.set_resolution(256, 128)
@@ -65,7 +77,7 @@ function _draw()
 	draw.filled_rectangle(box_x, box_y, box_width, box_height, dark_gray)
 	draw.filled_rectangle(box_x + border, box_y + border, box_width - border * 2, box_height - border * 2, white)
 
-	text.draw("hello zig, from lua!", (box_x + 48), (box_y + 17), black)
+	text.draw(title, (box_x + 48), (box_y + 17), black)
 	graphics.blit(textures, 64, 0, 32, 32, x + 24, y + 24, 100, 100)
 
 	draw.filled_circle(270, 400, 50, black)

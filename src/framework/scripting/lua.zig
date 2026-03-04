@@ -5,7 +5,8 @@ const std = @import("std");
 const debug = @import("../debug.zig");
 const mem = @import("../mem.zig");
 
-const Lua = zlua.Lua;
+// Expose the Lua type for easier access
+pub const Lua = zlua.Lua;
 
 // Allocator for the Lua VM
 var lua_arena: std.heap.ArenaAllocator = undefined;

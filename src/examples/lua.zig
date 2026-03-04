@@ -9,6 +9,29 @@ const fps_module = delve.module.fps_counter;
 
 // This example shows how to integrate with lua scripting
 
+pub const TestBindingStruct = struct {
+    message: []const u8,
+
+    pub fn new(in_message: []const u8) TestBindingStruct {
+        return .{ .message = in_message };
+    }
+
+    pub fn sayHello(self: *TestBindingStruct) void {
+        delve.debug.log(" > Test Lua Binding says: {s}", .{self.message});
+    }
+
+    pub fn getMessage(self: *TestBindingStruct) []const u8 {
+        return self.message;
+    }
+
+    pub fn ignoreMe() void {}
+
+    pub fn destroy(self: *TestBindingStruct) void {
+        _ = self;
+        delve.debug.log("TestBindingStruct cleanup called from Lua gc", .{});
+    }
+};
+
 pub fn main() !void {
     // Pick the allocator to use depending on platform
     const builtin = @import("builtin");
@@ -40,15 +63,22 @@ pub fn main() !void {
 }
 
 pub fn lua_test_on_init() !void {
-    try runLuaPrintLine();
-}
-
-pub fn runLuaPrintLine() !void {
     // Get the lua state to interact with Lua manually
     const lua = delve.scripting.lua.getLua();
+
+    // Register some types with Lua so we can interact with them on the Lua side
+    const registry = delve.scripting.binder.Registry(&[_]delve.scripting.binder.BoundType{
+        .{ .Type = TestBindingStruct, .name = "TestStruct", .ignore_fns = &[_][:0]const u8{"ignoreMe"} },
+    });
+    try registry.bindTypes(lua);
+
+    // Load and run a Lua string
+    try runLuaPrintLine(lua);
+}
+
+pub fn runLuaPrintLine(lua: *delve.scripting.lua.Lua) !void {
     const lua_string = "print('This is a print from our new manually compiled lua file!')";
 
-    // Compile the new line
     lua.loadString(lua_string) catch |err| {
         delve.debug.log("{s}", .{try lua.toString(-1)});
         lua.pop(1);

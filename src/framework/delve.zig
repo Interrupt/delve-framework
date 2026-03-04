@@ -24,6 +24,7 @@ pub const platform = struct {
 pub const scripting = struct {
     pub const lua = @import("scripting/lua.zig");
     pub const manager = @import("scripting/manager.zig");
+    pub const binder = @import("scripting/binder.zig");
 };
 
 // module imports
