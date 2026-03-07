@@ -200,7 +200,16 @@ pub fn Registry(comptime entries: []const BoundType) type {
                             .pointer => |p| {
                                 const Child = p.child;
                                 if (p.size == .one and isRegistered(Child)) {
-                                    args[i] = luaState.checkUserdata(Child, lua_idx, getMetaTableName(Child));
+                                    // If we're a registered type, check if we're a light userdata first
+                                    if (luaState.isLightUserdata(lua_idx)) {
+                                        args[i] = luaState.toUserdata(Child, lua_idx) catch {
+                                            debug.fatal("Lua: '{s}': Could not convert arg {any} to userdata {any}", .{ name, lua_idx, param_type });
+                                            return 0;
+                                        };
+                                    } else {
+                                        // Not a light userdata, so must be a full userdata
+                                        args[i] = luaState.checkUserdata(Child, lua_idx, getMetaTableName(Child));
+                                    }
                                 } else {
                                     // Not a registered type, fallback to the default toAny
                                     args[i] = luaState.toAny(param_type, lua_idx) catch {

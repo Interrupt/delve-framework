@@ -16,6 +16,10 @@ pub const TestBindingStruct = struct {
         return .{ .message = in_message };
     }
 
+    pub fn getSelf(self: *TestBindingStruct) *TestBindingStruct {
+        return self;
+    }
+
     pub fn sayHello(self: *TestBindingStruct) void {
         delve.debug.log(" > Test Lua Binding says: {s}", .{self.message});
     }
@@ -28,6 +32,7 @@ pub const TestBindingStruct = struct {
         @compileError("This field should be ignored during binding!");
     }
 
+    // Lua garbage collection will automatically call destroy if found
     pub fn destroy(self: *TestBindingStruct) void {
         _ = self;
         delve.debug.log("TestBindingStruct cleanup called from Lua gc", .{});
@@ -41,6 +46,10 @@ const testBindingScript =
     \\ test_binding:sayHello()
     \\ local title = test_binding:getMessage()
     \\ print(" > Message from Zig: " .. title)
+    \\ -- Test pointer types
+    \\ -- Note that pointer types can't use ':' syntax
+    \\ local test_pointer = test_binding:getSelf() 
+    \\ TestStruct.sayHello(test_pointer)
 ;
 
 pub fn main() !void {
@@ -62,8 +71,7 @@ pub fn main() !void {
     // and _shutdown at the end.
     try lua_module.registerModule("assets/main.lua");
 
-    // Make a new module to run our test lua line!
-    // This will compile and run a print line
+    // Make a new module to test some other Lua functions
     const lua_test_module = delve.modules.Module{
         .name = "lua_test_module",
         .init_fn = lua_test_on_init,
