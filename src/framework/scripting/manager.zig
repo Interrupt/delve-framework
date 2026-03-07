@@ -3,7 +3,9 @@ const fmt = @import("fmt");
 const debug = @import("../debug.zig");
 const binder = @import("binder.zig");
 const lua_util = @import("lua.zig");
+const math = @import("../math.zig");
 const modules = @import("../modules.zig");
+const app = @import("../platform/app.zig");
 const zlua = @import("zlua");
 
 pub const BoundType = binder.BoundType;
@@ -16,11 +18,22 @@ pub const ScriptFn = struct {
     luaFn: zlua.FnReg,
 };
 
-pub fn init(comptime boundTypes: []const binder.BoundType) !void {
+pub fn init() !void {
     // Start lua
     try lua_util.init();
 
-    const registry = binder.Registry(boundTypes);
+    // Make a Lua type registry with some basic types
+    const bound_types = &[_]binder.BoundType{
+        .{ .Type = math.Vec2, .name = "delve.math.Vec2", .ignore_fields = &[_][:0]const u8{} },
+        .{ .Type = math.Vec3, .name = "delve.math.Vec3", .ignore_fields = &[_][:0]const u8{} },
+        .{ .Type = math.Vec4, .name = "delve.math.Vec4", .ignore_fields = &[_][:0]const u8{} },
+        .{ .Type = math.Mat4, .name = "delve.math.Mat4", .ignore_fields = &[_][:0]const u8{} },
+        .{ .Type = math.Quaternion, .name = "delve.math.Quaternion", .ignore_fields = &[_][:0]const u8{} },
+        .{ .Type = app, .name = "delve.platform.App", .ignore_fields = &[_][:0]const u8{} },
+    };
+
+    const registry = binder.Registry(bound_types);
+    try registry.bindTypes(lua_util.getLua());
 
     // Bind all the libraries using some meta programming magic at compile time
     try bindZigLibrary("assets", @import("../api/assets.zig"), registry);
@@ -35,49 +48,6 @@ pub fn init(comptime boundTypes: []const binder.BoundType) !void {
 pub fn deinit() void {
     lua_util.deinit();
 }
-
-// fn isModuleFunction(comptime name: [:0]const u8, comptime in_type: anytype) bool {
-//     // Don't try to bind the script lib lifecycle functions!
-//     if (std.mem.eql(u8, name, "libInit") or std.mem.eql(u8, name, "libTick") or std.mem.eql(u8, name, "libDraw") or std.mem.eql(u8, name, "libCleanup"))
-//         return false;
-//
-//     // Hide some other functions that start with '_'
-//     if (name[0] == '_')
-//         return false;
-//
-//     return @typeInfo(in_type) == .@"fn";
-// }
-
-// fn findLibraryFunctions(comptime module: anytype) []const ScriptFn {
-//     comptime {
-//         // Get all the public declarations in this module
-//         const decls = @typeInfo(module).@"struct".decls;
-//         // filter out only the public functions
-//         var gen_fields: []const std.builtin.Type.Declaration = &[_]std.builtin.Type.Declaration{};
-//         for (decls) |d| {
-//             const field = @field(module, d.name);
-//             if (isModuleFunction(d.name ++ "", @TypeOf(field))) {
-//                 gen_fields = gen_fields ++ .{d};
-//             }
-//         }
-//
-//         var found: []const ScriptFn = &[_]ScriptFn{};
-//         for (gen_fields) |d| {
-//             // convert the name string to be :0 terminated
-//             const field_name: [:0]const u8 = d.name ++ "";
-//
-//             found = found ++ .{wrapFn(field_name, @field(module, d.name))};
-//         }
-//         return found;
-//     }
-// }
-
-// fn wrapFn(name: [:0]const u8, comptime func: anytype) ScriptFn {
-//     return ScriptFn{
-//         .name = name,
-//         .luaFn = makeLuaBinding(name, func),
-//     };
-// }
 
 fn bindZigLibrary(comptime name: [:0]const u8, comptime zigfile: anytype, comptime registry: anytype) !void {
     const found_fns = comptime registry.findLibraryFunctions(zigfile, &functions_to_ignore);

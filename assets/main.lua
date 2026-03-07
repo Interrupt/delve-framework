@@ -4,6 +4,7 @@ local draw = require("draw")
 local mouse = require("input.mouse")
 local text = require("text")
 local graphics = require("graphics")
+local app = require("delve.platform.App")
 
 local title = "Delve Framework Lua!"
 
@@ -47,6 +48,8 @@ function _init()
 end
 
 function _update()
+	local delta_time = app:getCurrentDeltaTime()
+
 	local x, y = mouse.position()
 	table.insert(points, { x = x, y = y })
 
