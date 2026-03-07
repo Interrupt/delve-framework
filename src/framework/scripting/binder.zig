@@ -7,7 +7,7 @@ const Lua = zlua.Lua;
 pub const BoundType = struct {
     Type: type,
     name: [:0]const u8,
-    ignore_fns: []const [:0]const u8,
+    ignore_fields: []const [:0]const u8,
 };
 
 pub fn Registry(comptime entries: []const BoundType) type {
@@ -106,7 +106,7 @@ pub fn Registry(comptime entries: []const BoundType) type {
             }
 
             // Now wire up our functions!
-            const found_fns = comptime findLibraryFunctions(T, bound_type.ignore_fns);
+            const found_fns = comptime findLibraryFunctions(T, bound_type.ignore_fields);
             inline for (found_fns) |foundFunc| {
                 luaState.pushClosure(foundFunc.func.?, 0);
                 luaState.setField(-2, foundFunc.name);

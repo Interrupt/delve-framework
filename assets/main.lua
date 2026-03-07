@@ -5,14 +5,7 @@ local mouse = require("input.mouse")
 local text = require("text")
 local graphics = require("graphics")
 
--- Test out binding Zig structs and using them in Lua
-local TestStruct = require("TestStruct")
-local test_binding = TestStruct.new("Hello from Lua!")
-
-test_binding:sayHello()
-local title = test_binding:getMessage()
-
-print(" > Message from Zig: " .. title)
+local title = "Delve Framework Lua!"
 
 -- Lifecycle functions
 -- The simple Lua module implements a Pico8 like API

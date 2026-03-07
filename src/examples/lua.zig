@@ -7,7 +7,7 @@ var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const lua_module = delve.module.lua_simple;
 const fps_module = delve.module.fps_counter;
 
-// This example shows how to integrate with lua scripting
+// This example shows how to use lua scripting
 
 pub const TestBindingStruct = struct {
     message: []const u8,
@@ -24,13 +24,24 @@ pub const TestBindingStruct = struct {
         return self.message;
     }
 
-    pub fn ignoreMe() void {}
+    pub fn ignoreMe() void {
+        @compileError("This field should be ignored during binding!");
+    }
 
     pub fn destroy(self: *TestBindingStruct) void {
         _ = self;
         delve.debug.log("TestBindingStruct cleanup called from Lua gc", .{});
     }
 };
+
+const testBindingScript =
+    \\ -- Test out binding Zig structs and using them in Lua
+    \\ local TestStruct = require("TestStruct")
+    \\ local test_binding = TestStruct.new("Hello from Lua!")
+    \\ test_binding:sayHello()
+    \\ local title = test_binding:getMessage()
+    \\ print(" > Message from Zig: " .. title)
+;
 
 pub fn main() !void {
     // Pick the allocator to use depending on platform
@@ -66,19 +77,20 @@ pub fn lua_test_on_init() !void {
     // Get the lua state to interact with Lua manually
     const lua = delve.scripting.lua.getLua();
 
-    // Register some types with Lua so we can interact with them on the Lua side
+    // You can register structs with Lua so we can interact with them on the Lua side!
     const registry = delve.scripting.binder.Registry(&[_]delve.scripting.binder.BoundType{
-        .{ .Type = TestBindingStruct, .name = "TestStruct", .ignore_fns = &[_][:0]const u8{"ignoreMe"} },
+        .{ .Type = TestBindingStruct, .name = "TestStruct", .ignore_fields = &[_][:0]const u8{"ignoreMe"} },
     });
     try registry.bindTypes(lua);
 
-    // Load and run a Lua string
-    try runLuaPrintLine(lua);
+    // Load and run a simple Lua command
+    try runLuaString(lua, "print('This is a print from our new manually compiled lua file!')");
+
+    // Run a string that exercises our struct binding
+    try runLuaString(lua, testBindingScript);
 }
 
-pub fn runLuaPrintLine(lua: *delve.scripting.lua.Lua) !void {
-    const lua_string = "print('This is a print from our new manually compiled lua file!')";
-
+pub fn runLuaString(lua: *delve.scripting.lua.Lua, lua_string: [:0]const u8) !void {
     lua.loadString(lua_string) catch |err| {
         delve.debug.log("{s}", .{try lua.toString(-1)});
         lua.pop(1);
