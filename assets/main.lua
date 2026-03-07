@@ -5,11 +5,17 @@ local mouse = require("input.mouse")
 local text = require("text")
 local graphics = require("graphics")
 local app = require("delve.platform.App")
+local Vec2 = require("delve.math.Vec2")
 
 local title = "Delve Framework Lua!"
 
 -- Lifecycle functions
 -- The simple Lua module implements a Pico8 like API
+
+-- Test some builtin types
+local test_vec = Vec2.new(0.5, 110)
+print("test_vec.x: " .. test_vec.x)
+print("test_vec.y: " .. test_vec.y)
 
 function _init()
 	-- initial resolution

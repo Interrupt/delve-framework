@@ -46,6 +46,64 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 try bindType(luaState, entry);
             }
         }
+        // __index is called when Lua gets a value from a table
+        pub fn indexLookupFunc(comptime T: type, luaState: *Lua, meta_table_name: [:0]const u8) i32 {
+            // Get our key
+            const key = luaState.toString(-1) catch |err| {
+                debug.warning("Lua: indexLookupFunc could not get key! {s}: {any}", .{ meta_table_name, err });
+                return 0;
+            };
+
+            // If this is a userdata object, check if it has this property
+            if (luaState.isUserdata(1)) {
+                const ptr = luaState.checkUserdata(T, 1, meta_table_name);
+
+                // Grab this field if we find it
+                inline for (std.meta.fields(T)) |field| {
+                    if (std.mem.eql(u8, key, field.name)) {
+                        const val = @field(ptr, field.name);
+                        const ret_type = @TypeOf(val);
+
+                        // handle registered auto-bound struct types
+                        if (comptime isRegistered(ret_type)) {
+                            // make a new ptr
+                            const new_ptr: *ret_type = @alignCast(luaState.newUserdata(ret_type, @sizeOf(ret_type)));
+
+                            // set its metatable
+                            _ = luaState.getMetatableRegistry(getMetaTableName(ret_type));
+                            _ = luaState.setMetatable(-2);
+
+                            // copy values to our pointer
+                            new_ptr.* = val;
+                            return 1;
+                        }
+
+                        _ = luaState.pushAny(val) catch |err| {
+                            debug.warning("Could not push field {s}: {any}", .{ field.name, err });
+                            return 0;
+                        };
+
+                        return 1;
+                    }
+                }
+            }
+
+            // fallback to our own metatable so that we can still call bound functions like self:ourFunc()
+
+            // get our own metatable
+            luaState.getMetatable(1) catch {
+                debug.log("LuaComponent __index could not get metatable!", .{});
+                return 0;
+            };
+
+            // push the key again
+            luaState.pushValue(2);
+
+            // return metatable[key]
+            _ = luaState.getTable(-2);
+
+            return 1;
+        }
 
         pub fn bindType(luaState: *zlua.Lua, comptime bound_type: BoundType) !void {
             const T = bound_type.Type;
@@ -85,10 +143,14 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 luaState.pushClosure(zlua.wrap(indexFunc), 0);
                 luaState.setField(-2, "__index");
             } else {
-                //If no index func was given, index to ourself
-                //Metatable.__index = metatable
-                //This lets us use 'obj:blah()' method call syntax
-                luaState.pushValue(-1);
+                // If no index func was given, use our own that indexes to ourself
+                const indexFunc = struct {
+                    fn inner(L: *zlua.Lua) i32 {
+                        return indexLookupFunc(T, L, meta_table_name);
+                    }
+                }.inner;
+
+                luaState.pushClosure(zlua.wrap(indexFunc), 0);
                 luaState.setField(-2, "__index");
             }
 
