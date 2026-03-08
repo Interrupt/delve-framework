@@ -16,6 +16,8 @@ local title = "Delve Framework Lua!"
 local test_vec = Vec2.new(0.5, 110)
 print("test_vec.x: " .. test_vec.x)
 print("test_vec.y: " .. test_vec.y)
+print("Vec2.one.x: " .. Vec2.one.x)
+print("Vec2.one.y: " .. Vec2.one.y)
 
 function _init()
 	-- initial resolution
@@ -56,8 +58,8 @@ end
 function _update()
 	local delta_time = app:getCurrentDeltaTime()
 
-	local x, y = mouse.position()
-	table.insert(points, { x = x, y = y })
+	local mouse_pos = mouse.position()
+	table.insert(points, { x = mouse_pos[1], y = mouse_pos[2] })
 
 	if #points > 200 then
 		table.remove(points, 1)
@@ -65,9 +67,10 @@ function _update()
 end
 
 function _draw()
-	local x, y = mouse.position()
-	mouse.button(0)
-	mouse.button(2)
+	local mouse_pos = mouse.position()
+	local x = mouse_pos[1]
+	local y = mouse_pos[2]
+
 	draw.clear(white)
 
 	local border = 5

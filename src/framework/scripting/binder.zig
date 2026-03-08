@@ -50,7 +50,7 @@ pub fn Registry(comptime entries: []const BoundType) type {
         pub fn indexLookupFunc(comptime T: type, luaState: *Lua, meta_table_name: [:0]const u8) i32 {
             // Get our key
             const key = luaState.toString(-1) catch |err| {
-                debug.warning("Lua: indexLookupFunc could not get key! {s}: {any}", .{ meta_table_name, err });
+                debug.fatal("Lua: indexLookupFunc could not get key! {s}: {any}", .{ meta_table_name, err });
                 return 0;
             };
 
@@ -62,28 +62,7 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 inline for (std.meta.fields(T)) |field| {
                     if (std.mem.eql(u8, key, field.name)) {
                         const val = @field(ptr, field.name);
-                        const ret_type = @TypeOf(val);
-
-                        // handle registered auto-bound struct types
-                        if (comptime isRegistered(ret_type)) {
-                            // make a new ptr
-                            const new_ptr: *ret_type = @alignCast(luaState.newUserdata(ret_type, @sizeOf(ret_type)));
-
-                            // set its metatable
-                            _ = luaState.getMetatableRegistry(getMetaTableName(ret_type));
-                            _ = luaState.setMetatable(-2);
-
-                            // copy values to our pointer
-                            new_ptr.* = val;
-                            return 1;
-                        }
-
-                        _ = luaState.pushAny(val) catch |err| {
-                            debug.warning("Could not push field {s}: {any}", .{ field.name, err });
-                            return 0;
-                        };
-
-                        return 1;
+                        return pushAny(luaState, val);
                     }
                 }
             }
@@ -175,7 +154,7 @@ pub fn Registry(comptime entries: []const BoundType) type {
             }
 
             // Make this usable with "require" and register our funcs in the library
-            luaState.requireF(meta_table_name, zlua.wrap(makeLuaOpenLibFn(found_fns)), true);
+            luaState.requireF(meta_table_name, zlua.wrap(makeLuaOpenLibAndBindFn(T, found_fns, bound_type.ignore_fields)), true);
             luaState.pop(3);
 
             debug.log("Bound lua type: '{any}' to '{s}'", .{ T, meta_table_name });
@@ -193,47 +172,19 @@ pub fn Registry(comptime entries: []const BoundType) type {
             return zlua.FnReg{ .name = name, .func = zlua.wrap(bindFuncLua(name, function)) };
         }
 
-        pub fn findLibraryFunctions(comptime module: anytype, ignoreFunctions: []const [:0]const u8) []const zlua.FnReg {
+        pub fn findLibraryFunctions(comptime module: anytype, ignore_fields: []const [:0]const u8) []const zlua.FnReg {
             comptime {
-                // Get all the public declarations in this module
-                const decls = @typeInfo(module).@"struct".decls;
-                // filter out only the public functions
-                var gen_fields: []const std.builtin.Type.Declaration = &[_]std.builtin.Type.Declaration{};
-                for (decls) |d| {
-                    const field = @field(module, d.name);
-                    if (@typeInfo(@TypeOf(field)) == .@"fn") {
-                        gen_fields = gen_fields ++ .{d};
-                    }
-                }
+                const fn_fields = findFunctions(module, ignore_fields);
 
                 var found: []const zlua.FnReg = &[_]zlua.FnReg{};
-                for (gen_fields) |d| {
+                for (fn_fields) |d| {
                     // convert the name string to be :0 terminated
                     const field_name: [:0]const u8 = d.name ++ "";
-
-                    // Might need to ignore some functions by name
-                    if (shouldIgnoreFunction(field_name, ignoreFunctions)) {
-                        continue;
-                    }
-
                     found = found ++ .{makeLuaBinding(field_name, @field(module, d.name))};
                 }
+
                 return found;
             }
-        }
-
-        pub fn shouldIgnoreFunction(fn_name: [:0]const u8, ignoreFunctions: []const [:0]const u8) bool {
-            if (fn_name.len == 0 or fn_name[0] == '_') {
-                return true;
-            }
-
-            for (ignoreFunctions) |toIgnore| {
-                if (std.mem.eql(u8, fn_name, toIgnore)) {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         pub fn bindFuncLua(comptime name: [:0]const u8, comptime function: anytype) fn (lua: *Lua) i32 {
@@ -309,65 +260,74 @@ pub fn Registry(comptime entries: []const BoundType) type {
                         else => @call(.auto, function, args),
                     };
 
-                    const ret_type = @TypeOf(ret_val);
-
-                    // handle registered auto-bound struct types
-                    if (comptime isRegistered(ret_type)) {
-                        // make a new ptr
-                        const ptr: *ret_type = @alignCast(luaState.newUserdata(ret_type, @sizeOf(ret_type)));
-
-                        // set its metatable
-                        _ = luaState.getMetatableRegistry(getMetaTableName(ret_type));
-                        _ = luaState.setMetatable(-2);
-
-                        // copy values to our pointer
-                        ptr.* = ret_val;
-                        return 1;
-                    }
-
-                    switch (@TypeOf(ret_val)) {
-                        std.meta.Tuple(&.{ f32, f32 }) => {
-                            // probably is a way to handle any tuple types
-                            luaState.pushNumber(ret_val[0]);
-                            luaState.pushNumber(ret_val[1]);
-                            return 2;
-                        },
-                        else => {},
-                    }
-
-                    // Push the return value onto the stack
-                    luaState.pushAny(ret_val) catch |err| {
-                        debug.fatal("Error pushing value onto Lua stack! {any}", .{err});
-                        return 0;
-                    };
-
-                    // Should either be one item, or none
-                    switch (ret_type) {
-                        void => {
-                            return 0;
-                        },
-                        else => {
-                            return 1;
-                        },
-                    }
-
-                    @compileError("LUA did not return number of return values correctly!");
+                    return pushAny(luaState, ret_val);
                 }
             }).lua_call;
         }
+
+        // Like ziglua pushAny, but also handling our registered types
+        pub fn pushAny(luaState: *Lua, value: anytype) i32 {
+            const val_type = @TypeOf(value);
+
+            // handle registered auto-bound struct types
+            if (comptime isRegistered(val_type)) {
+                // make a new ptr
+                const ptr: *val_type = @alignCast(luaState.newUserdata(val_type, @sizeOf(val_type)));
+
+                // set its metatable
+                _ = luaState.getMetatableRegistry(getMetaTableName(val_type));
+                _ = luaState.setMetatable(-2);
+
+                // copy values to our pointer
+                ptr.* = value;
+                return 1;
+            }
+
+            // Push the return value onto the stack
+            _ = luaState.pushAny(value) catch |err| {
+                debug.fatal("Error pushing value onto Lua stack! {any}", .{err});
+                return 0;
+            };
+
+            switch (val_type) {
+                void => {
+                    return 0;
+                },
+                else => {
+                    return 1;
+                },
+            }
+        }
+
+        pub fn makeLuaOpenLibFn(lib_funcs: []const zlua.FnReg) fn (*Lua) i32 {
+            return opaque {
+                pub fn inner(luaState: *Lua) i32 {
+                    // Register our new library for this type, with all our funcs!
+                    luaState.newLib(lib_funcs);
+                    return 1;
+                }
+            }.inner;
+        }
+
+        pub fn makeLuaOpenLibAndBindFn(comptime module: anytype, lib_funcs: []const zlua.FnReg, ignore_functions: []const [:0]const u8) fn (*Lua) i32 {
+            return opaque {
+                pub fn inner(luaState: *Lua) i32 {
+                    // Register our new library for this type, with all our funcs!
+                    luaState.newLib(lib_funcs);
+
+                    // Also register our constant fields, like Vec2.one
+                    const found_fields = comptime findFields(module, ignore_functions);
+
+                    inline for (found_fields) |field| {
+                        _ = pushAny(luaState, @field(module, field.name));
+                        luaState.setField(-2, field.name);
+                    }
+
+                    return 1;
+                }
+            }.inner;
+        }
     };
-}
-
-pub fn isModuleFunction(comptime name: [:0]const u8, comptime in_type: anytype) bool {
-    // Don't try to bind the script lib lifecycle functions!
-    if (std.mem.eql(u8, name, "libInit") or std.mem.eql(u8, name, "libTick") or std.mem.eql(u8, name, "libDraw") or std.mem.eql(u8, name, "libCleanup"))
-        return false;
-
-    // Hide some other functions that start with '_'
-    if (name[0] == '_')
-        return false;
-
-    return @typeInfo(in_type) == .@"fn";
 }
 
 pub fn isErrorUnionType(comptime T: type) bool {
@@ -387,26 +347,63 @@ fn hasAnytypeParam(comptime T: type) bool {
     return false;
 }
 
-fn makeFuncRg(funcs: []zlua.CFn) []zlua.FnReg {
-    comptime {
-        const registry = [_]zlua.FnReg{};
+pub fn shouldIgnoreField(field_name: [:0]const u8, ignore_fields: []const [:0]const u8) bool {
+    if (field_name.len == 0 or field_name[0] == '_') {
+        return true;
+    }
 
-        for (funcs) |func| {
-            const newRegFn = zlua.FnReg{ .name = "new", .func = func };
-            registry ++ newRegFn;
+    for (ignore_fields) |toIgnore| {
+        if (std.mem.eql(u8, field_name, toIgnore)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+fn findFunctions(comptime module: anytype, ignore_fields: []const [:0]const u8) []const std.builtin.Type.Declaration {
+    comptime {
+        // Get all the public declarations in this module
+        const decls = @typeInfo(module).@"struct".decls;
+
+        // filter out only the public functions
+        var gen_fields: []const std.builtin.Type.Declaration = &[_]std.builtin.Type.Declaration{};
+        for (decls) |d| {
+            if (shouldIgnoreField(d.name, ignore_fields))
+                continue;
+
+            const field = @field(module, d.name);
+            if (@typeInfo(@TypeOf(field)) != .@"fn")
+                continue;
+
+            gen_fields = gen_fields ++ .{d};
         }
 
-        return registry;
+        return gen_fields;
     }
 }
 
-pub fn makeLuaOpenLibFn(libFuncs: []const zlua.FnReg) fn (*Lua) i32 {
-    return opaque {
-        pub fn inner(luaState: *Lua) i32 {
-            // Register our new library for this type, with all our funcs!
-            luaState.newLib(libFuncs);
+fn findFields(comptime module: anytype, ignore_fields: []const [:0]const u8) []const std.builtin.Type.Declaration {
+    comptime {
+        // Get all the public declarations in this module
+        const decls = @typeInfo(module).@"struct".decls;
 
-            return 1;
+        // filter out only the public constants
+        var gen_fields: []const std.builtin.Type.Declaration = &[_]std.builtin.Type.Declaration{};
+        for (decls) |d| {
+            if (shouldIgnoreField(d.name, ignore_fields))
+                continue;
+
+            const field = @field(module, d.name);
+            if (@typeInfo(@TypeOf(field)) == .@"fn")
+                continue;
+
+            // Now filter out just the contants
+            if (@typeInfo(@TypeOf(&field)).pointer.is_const) {
+                gen_fields = gen_fields ++ .{d};
+            }
         }
-    }.inner;
+
+        return gen_fields;
+    }
 }

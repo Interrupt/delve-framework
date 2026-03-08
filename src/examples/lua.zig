@@ -37,11 +37,14 @@ pub const TestBindingStruct = struct {
         _ = self;
         delve.debug.log("TestBindingStruct cleanup called from Lua gc", .{});
     }
+
+    pub const constant_message: [:0]const u8 = "This is a constant!";
 };
 
 const testBindingScript =
     \\ -- Test out binding Zig structs and using them in Lua
     \\ local TestStruct = require("TestStruct")
+    \\ print(TestStruct.constant_message)
     \\ local test_binding = TestStruct.new("Hello from Lua!")
     \\ test_binding:sayHello()
     \\ local title = test_binding:getMessage()
