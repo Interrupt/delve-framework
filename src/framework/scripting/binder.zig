@@ -285,34 +285,50 @@ pub fn Registry(comptime entries: []const BoundType) type {
         pub fn pushAny(luaState: *Lua, value: anytype) i32 {
             const val_type = @TypeOf(value);
 
-            // handle registered auto-bound struct types
-            if (comptime isRegistered(val_type)) {
-                // make a new ptr
-                const ptr: *val_type = @alignCast(luaState.newUserdata(val_type, @sizeOf(val_type)));
+            // Push the value onto the stack
 
-                // set its metatable
-                _ = luaState.getMetatableRegistry(getMetaTableName(val_type));
-                _ = luaState.setMetatable(-2);
+            switch (@typeInfo(val_type)) {
+                .void => {
+                    return 0;
+                },
+                .array => {
+                    luaState.createTable(0, 0);
+                    for (value, 0..) |index_value, i| {
+                        _ = luaState.pushInteger(@intCast(i + 1));
+                        _ = pushAny(luaState, index_value);
+                        luaState.setTable(-3);
+                    }
+                    return 1;
+                },
+                .vector => |info| {
+                    _ = pushAny(luaState, @as([info.len]info.child, value));
+                    return 1;
+                },
+                .@"struct" => {
+                    // handle our registered auto-bound struct types
+                    if (comptime isRegistered(val_type)) {
+                        // make a new ptr
+                        const ptr: *val_type = @alignCast(luaState.newUserdata(val_type, @sizeOf(val_type)));
 
-                // copy values to our pointer
-                ptr.* = value;
-                return 1;
+                        // set its metatable
+                        _ = luaState.getMetatableRegistry(getMetaTableName(val_type));
+                        _ = luaState.setMetatable(-2);
+
+                        // copy values to our pointer
+                        ptr.* = value;
+                        return 1;
+                    }
+                },
+                else => {},
             }
 
-            // Push the return value onto the stack
+            // Fall back to the ziglua pushAny
             _ = luaState.pushAny(value) catch |err| {
                 debug.fatal("Error pushing value onto Lua stack! {any}", .{err});
                 return 0;
             };
 
-            switch (val_type) {
-                void => {
-                    return 0;
-                },
-                else => {
-                    return 1;
-                },
-            }
+            return 1;
         }
 
         pub fn toAny(luaState: *Lua, comptime T: type, lua_idx: i32) !T {
@@ -331,6 +347,24 @@ pub fn Registry(comptime entries: []const BoundType) type {
                         // Not a registered type, fallback to the default toAny
                         return try luaState.toAny(T, lua_idx);
                     }
+                },
+                .array, .vector => {
+                    const child = std.meta.Child(T);
+                    const arr_len = switch (@typeInfo(T)) {
+                        inline else => |i| i.len,
+                    };
+
+                    var result: [arr_len]child = undefined;
+                    luaState.pushValue(lua_idx);
+                    defer luaState.pop(1);
+
+                    for (0..arr_len) |i| {
+                        _ = luaState.rawGetIndex(-1, @intCast(i + 1));
+                        defer luaState.pop(1);
+                        result[i] = try toAny(luaState, child, -1);
+                    }
+
+                    return result;
                 },
                 else => {
                     if (isRegistered(T)) {
@@ -352,14 +386,14 @@ pub fn Registry(comptime entries: []const BoundType) type {
             }.inner;
         }
 
-        pub fn makeLuaOpenLibAndBindFn(comptime module: anytype, lib_funcs: []const zlua.FnReg, ignore_functions: []const [:0]const u8) fn (*Lua) i32 {
+        pub fn makeLuaOpenLibAndBindFn(comptime module: anytype, lib_funcs: []const zlua.FnReg, ignore_fields: []const [:0]const u8) fn (*Lua) i32 {
             return opaque {
                 pub fn inner(luaState: *Lua) i32 {
                     // Register our new library for this type, with all our funcs!
                     luaState.newLib(lib_funcs);
 
                     // Also register our constant fields, like Vec2.one
-                    const found_fields = comptime findFields(module, ignore_functions);
+                    const found_fields = comptime findFields(module, ignore_fields);
 
                     inline for (found_fields) |field| {
                         _ = pushAny(luaState, @field(module, field.name));
