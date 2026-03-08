@@ -46,6 +46,7 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 try bindType(luaState, entry);
             }
         }
+
         // __index is called when Lua gets a value from a table
         pub fn indexLookupFunc(comptime T: type, luaState: *Lua, meta_table_name: [:0]const u8) i32 {
             // Get our key
@@ -82,6 +83,36 @@ pub fn Registry(comptime entries: []const BoundType) type {
             _ = luaState.getTable(-2);
 
             return 1;
+        }
+
+        // __newindex is called when Lua sets a value on a table
+        pub fn indexSetValueFunc(comptime T: type, luaState: *Lua, meta_table_name: [:0]const u8) i32 {
+            // Get our key
+            const key = luaState.toString(-2) catch |err| {
+                debug.fatal("Lua: indexLookupFunc could not get key! {s}: {any}", .{ meta_table_name, err });
+                return 0;
+            };
+
+            // If this is a userdata object, check if it has this property
+            if (luaState.isUserdata(1)) {
+                const ptr = luaState.checkUserdata(T, 1, meta_table_name);
+
+                // Set this field if we find it
+                inline for (std.meta.fields(T)) |field| {
+                    if (std.mem.eql(u8, key, field.name)) {
+                        const val = toAny(luaState, field.type, -1) catch {
+                            luaState.raiseErrorStr("Could not set field! Should be type %s", .{@typeName(field.type)});
+                            return 0;
+                        };
+
+                        @field(ptr, field.name) = val;
+                        return 1;
+                    }
+                }
+            }
+
+            debug.warning("Lua: {s}: Could not find field '{s}' to set", .{ meta_table_name, key });
+            return 0;
         }
 
         pub fn bindType(luaState: *zlua.Lua, comptime bound_type: BoundType) !void {
@@ -143,6 +174,16 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 }.inner;
 
                 luaState.pushClosure(zlua.wrap(newIndexFunc), 0);
+                luaState.setField(-2, "__newindex");
+            } else {
+                // If no index func was given, use our own that indexes to ourself
+                const indexFunc = struct {
+                    fn inner(L: *zlua.Lua) i32 {
+                        return indexSetValueFunc(T, L, meta_table_name);
+                    }
+                }.inner;
+
+                luaState.pushClosure(zlua.wrap(indexFunc), 0);
                 luaState.setField(-2, "__newindex");
             }
 
@@ -209,36 +250,11 @@ pub fn Registry(comptime entries: []const BoundType) type {
                         const param_type = param.type.?;
                         const lua_idx = i + 1;
 
-                        switch (@typeInfo(param_type)) {
-                            .pointer => |p| {
-                                const Child = p.child;
-                                if (p.size == .one and isRegistered(Child)) {
-                                    // If we're a registered type, check if we're a light userdata first
-                                    if (luaState.isLightUserdata(lua_idx)) {
-                                        args[i] = luaState.toUserdata(Child, lua_idx) catch {
-                                            debug.fatal("Lua: '{s}': Could not convert arg {any} to userdata {any}", .{ name, lua_idx, param_type });
-                                            return 0;
-                                        };
-                                    } else {
-                                        // Not a light userdata, so must be a full userdata
-                                        args[i] = luaState.checkUserdata(Child, lua_idx, getMetaTableName(Child));
-                                    }
-                                } else {
-                                    // Not a registered type, fallback to the default toAny
-                                    args[i] = luaState.toAny(param_type, lua_idx) catch {
-                                        debug.fatal("Lua: '{s}': Could not convert arg {any} to type {any}", .{ name, lua_idx, param_type });
-                                        return 0;
-                                    };
-                                }
-                            },
-                            else => {
-                                // debug.warning("Found param type: {any}", .{param_type});
-                                args[i] = luaState.toAny(param_type, lua_idx) catch {
-                                    debug.fatal("Lua: '{s}': Could not convert arg {any} to type {any}", .{ name, lua_idx, param_type });
-                                    return 0;
-                                };
-                            },
-                        }
+                        args[i] = toAny(luaState, param_type, lua_idx) catch {
+                            debug.warning("Lua: '{s}': Could not bind arg {any} to {any}", .{ name, lua_idx, param_type });
+                            luaState.raiseErrorStr("Could not bind argument! Should be type %s", .{@typeName(param_type)});
+                            return 0;
+                        };
                     }
 
                     if (fn_info.return_type == null) {
@@ -295,6 +311,33 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 },
                 else => {
                     return 1;
+                },
+            }
+        }
+
+        pub fn toAny(luaState: *Lua, comptime T: type, lua_idx: i32) !T {
+            switch (@typeInfo(T)) {
+                .pointer => |p| {
+                    const Child = p.child;
+                    if (p.size == .one and isRegistered(Child)) {
+                        // If we're a registered type, check if we're a light userdata first
+                        if (luaState.isLightUserdata(lua_idx)) {
+                            return try luaState.toUserdata(Child, lua_idx);
+                        } else {
+                            // Not a light userdata, so must be a full userdata
+                            return luaState.checkUserdata(Child, lua_idx, getMetaTableName(Child));
+                        }
+                    } else {
+                        // Not a registered type, fallback to the default toAny
+                        return try luaState.toAny(T, lua_idx);
+                    }
+                },
+                else => {
+                    if (isRegistered(T)) {
+                        return luaState.checkUserdata(T, lua_idx, getMetaTableName(T)).*;
+                    }
+                    // Fallback to the default toAny
+                    return try luaState.toAny(T, lua_idx);
                 },
             }
         }

@@ -13,9 +13,13 @@ local title = "Delve Framework Lua!"
 -- The simple Lua module implements a Pico8 like API
 
 -- Test some builtin types
-local test_vec = Vec2.new(0.5, 110)
+local test_vec = Vec2.new(10.5, 0.5):add(Vec2.new(0.5, 100.0))
 print("test_vec.x: " .. test_vec.x)
 print("test_vec.y: " .. test_vec.y)
+test_vec.x = 10.0
+test_vec.y = 25.0
+print("New test_vec.x: " .. test_vec.x)
+print("New test_vec.y: " .. test_vec.y)
 print("Vec2.one.x: " .. Vec2.one.x)
 print("Vec2.one.y: " .. Vec2.one.y)
 
