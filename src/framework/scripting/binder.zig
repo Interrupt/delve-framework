@@ -304,6 +304,14 @@ pub fn Registry(comptime entries: []const BoundType) type {
                     _ = pushAny(luaState, @as([info.len]info.child, value));
                     return 1;
                 },
+                .optional, .null => {
+                    if (value == null) {
+                        luaState.pushNil();
+                    } else {
+                        _ = pushAny(luaState, value.?);
+                    }
+                    return 1;
+                },
                 .@"struct" => {
                     // handle our registered auto-bound struct types
                     if (comptime isRegistered(val_type)) {
@@ -365,6 +373,13 @@ pub fn Registry(comptime entries: []const BoundType) type {
                     }
 
                     return result;
+                },
+                .optional => {
+                    if (luaState.isNil(lua_idx)) {
+                        return null;
+                    } else {
+                        return try toAny(luaState, @typeInfo(T).optional.child, lua_idx);
+                    }
                 },
                 else => {
                     if (isRegistered(T)) {

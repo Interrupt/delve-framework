@@ -28,6 +28,10 @@ pub const TestBindingStruct = struct {
         return self.message;
     }
 
+    pub fn testOptional(self: ?*TestBindingStruct) ?TestBindingStruct {
+        return self.?.*;
+    }
+
     pub fn ignoreMe() void {
         @compileError("This field should be ignored during binding!");
     }
@@ -47,6 +51,7 @@ const testBindingScript =
     \\ print(TestStruct.constant_message)
     \\ local test_binding = TestStruct.new("Hello from Lua!")
     \\ test_binding:sayHello()
+    \\ test_binding:testOptional()
     \\ local title = test_binding:getMessage()
     \\ print(" > Message from Zig: " .. title)
     \\ -- Test pointer types
