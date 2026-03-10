@@ -23,41 +23,14 @@ pub fn Registry(comptime entries: []const BoundType) type {
 
                 pointer: *T,
 
-                pub fn checkBoxedUserdata(luaState: *Lua, lua_idx: i32) !*T {
+                pub fn checkBoxedUserdata(luaState: *Lua, lua_idx: i32) *T {
                     // First check if this is a boxed pointer, unbox and return if so
                     if (luaState.testUserdata(Self, lua_idx, ptr_metatable_name)) |boxed_ptr| {
-                        debug.log("Unboxing a boxed pointer: *{any}", .{T});
                         return boxed_ptr.*.pointer;
                     } else |_| {}
 
-                    // Not a boxed pointer, check if it's already unboxed
-                    // Could be light or full userdata
-                    if (luaState.isLightUserdata(lua_idx)) {
-                        return try luaState.toUserdata(T, lua_idx);
-                    }
+                    // Not a boxed pointer, should be already unboxed
                     return luaState.checkUserdata(T, lua_idx, in_bound_type.name);
-                }
-
-                pub fn indexLookupFunc(self: *Self, luaState: *Lua, meta_table_name: [:0]const u8) i32 {
-                    debug.log("Boxing for lookup!", .{});
-                    if (luaState.isUserdata(1)) {
-                        luaState.Pop(1);
-                        pushAny(luaState, self.pointer.*);
-                        return bound_type.indexLookupFunc(bound_type.Type, luaState, meta_table_name);
-                    }
-                    debug.fatal("Not a userdata object!", .{});
-                    return 0;
-                }
-
-                pub fn indexSetValueFunc(self: *Self, luaState: *Lua, meta_table_name: [:0]const u8) i32 {
-                    debug.log("Boxing for lookup!", .{});
-                    if (luaState.isUserdata(1)) {
-                        luaState.Pop(1);
-                        pushAny(luaState, self.pointer.*);
-                        return bound_type.indexSetValueFunc(luaState, meta_table_name);
-                    }
-                    debug.fatal("Not a userdata object!", .{});
-                    return 0;
                 }
             };
         }
@@ -112,15 +85,15 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 return 0;
             };
 
-            if (BoxedPointerType.checkBoxedUserdata(luaState, 1)) |ptr| {
-                // Grab this field if we find it
-                inline for (std.meta.fields(T)) |field| {
-                    if (std.mem.eql(u8, key, field.name)) {
-                        const val = @field(ptr, field.name);
-                        return pushAny(luaState, val);
-                    }
+            const ptr = BoxedPointerType.checkBoxedUserdata(luaState, 1);
+
+            // Grab this field if we find it
+            inline for (std.meta.fields(T)) |field| {
+                if (std.mem.eql(u8, key, field.name)) {
+                    const val = @field(ptr, field.name);
+                    return pushAny(luaState, val);
                 }
-            } else |_| {}
+            }
 
             // fallback to our own metatable so that we can still call bound functions like self:ourFunc()
 
@@ -137,16 +110,18 @@ pub fn Registry(comptime entries: []const BoundType) type {
         }
 
         // __newindex is called when Lua sets a value on a table
-        pub fn indexSetValueFunc(comptime T: type, luaState: *Lua, meta_table_name: [:0]const u8) i32 {
+        pub fn indexSetValueFunc(comptime T: type, luaState: *Lua, bound_type: BoundType) i32 {
+            const BoxedPointerType = BoxType(T, bound_type);
+
             // Get our key
             const key = luaState.toString(-2) catch |err| {
-                debug.fatal("Lua: indexLookupFunc could not get key! {s}: {any}", .{ meta_table_name, err });
+                debug.fatal("Lua: indexLookupFunc could not get key! {s}: {any}", .{ bound_type.name, err });
                 return 0;
             };
 
             // If this is a userdata object, check if it has this property
             if (luaState.isUserdata(1)) {
-                const ptr = luaState.checkUserdata(T, 1, meta_table_name);
+                const ptr = BoxedPointerType.checkBoxedUserdata(luaState, 1);
 
                 // Set this field if we find it
                 inline for (std.meta.fields(T)) |field| {
@@ -162,7 +137,7 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 }
             }
 
-            debug.warning("Lua: {s}: Could not find field '{s}' to set", .{ meta_table_name, key });
+            debug.warning("Lua: {s}: Could not find field '{s}' to set", .{ bound_type.name, key });
             return 0;
         }
 
@@ -239,17 +214,25 @@ pub fn Registry(comptime entries: []const BoundType) type {
                     }
                 }.inner;
 
-                luaState.pushClosure(zlua.wrap(newIndexFunc), 0);
+                const wrapped_fn = zlua.wrap(newIndexFunc);
+                luaState.pushClosure(wrapped_fn, 0);
                 luaState.setField(-2, "__newindex");
             } else {
                 // If no index func was given, use our own that indexes to ourself
                 const indexFunc = struct {
                     fn inner(L: *zlua.Lua) i32 {
-                        return indexSetValueFunc(T, L, meta_table_name);
+                        return indexSetValueFunc(T, L, bound_type);
                     }
                 }.inner;
 
-                luaState.pushClosure(zlua.wrap(indexFunc), 0);
+                const wrapped_fn = zlua.wrap(indexFunc);
+
+                // Set on boxed metatable
+                luaState.pushClosure(wrapped_fn, 0);
+                luaState.setField(-4, "__newindex");
+
+                // Set on struct metatable
+                luaState.pushClosure(wrapped_fn, 0);
                 luaState.setField(-2, "__newindex");
             }
 
@@ -439,11 +422,7 @@ pub fn Registry(comptime entries: []const BoundType) type {
                         // If this is a pointer of a bound type, try to unbox it
                         if (getBoundType(Child)) |bound_type| {
                             const BoxedPointerType = BoxType(Child, bound_type);
-                            if (BoxedPointerType.checkBoxedUserdata(luaState, lua_idx)) |boxed_ptr| {
-                                return boxed_ptr;
-                            } else |_| {
-                                debug.fatal("Could not unbox pointer! {any}", .{Child});
-                            }
+                            return BoxedPointerType.checkBoxedUserdata(luaState, lua_idx);
                         }
                     }
 
