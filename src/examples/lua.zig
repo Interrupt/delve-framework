@@ -48,16 +48,17 @@ pub const TestBindingStruct = struct {
 const testBindingScript =
     \\ -- Test out binding Zig structs and using them in Lua
     \\ local TestStruct = require("TestStruct")
-    \\ print(TestStruct.constant_message)
+    // \\ print(TestStruct.constant_message)
     \\ local test_binding = TestStruct.new("Hello from Lua!")
-    \\ test_binding:sayHello()
-    \\ test_binding:testOptional()
-    \\ local title = test_binding:getMessage()
-    \\ print(" > Message from Zig: " .. title)
-    \\ -- Test pointer types
-    \\ -- Note that pointer types can't use ':' syntax
+    // \\ test_binding:sayHello()
+    // \\ test_binding:testOptional()
+    // \\ local title = test_binding:getMessage()
+    // \\ print(" > Message from Zig: " .. title)
+    // \\ -- Test pointer types
+    // \\ -- Note that pointer types can't use ':' syntax
     \\ local test_pointer = test_binding:getSelf() 
     \\ TestStruct.sayHello(test_pointer)
+    \\ test_pointer:sayHello()
 ;
 
 pub fn main() !void {
