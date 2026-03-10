@@ -68,11 +68,11 @@ pub const Vec2 = extern struct {
     }
 
     pub fn angleRadians(self: *const Vec2) f32 {
-        return std.math.atan2(f32, self.y, self.x);
+        return std.math.atan2(self.y, self.x);
     }
 
     pub fn angleDegrees(self: *const Vec2) f32 {
-        return std.math.atan2(f32, self.y, self.x) * (360.0 / (std.math.tau));
+        return std.math.atan2(self.y, self.x) * (360.0 / (std.math.tau));
     }
 
     pub const zero = Vec2.new(0.0, 0.0);
@@ -218,11 +218,11 @@ pub const Vec4 = extern struct {
         return Vec4{ .x = x, .y = y, .z = z, .w = w };
     }
 
-    pub fn add(left: *const Vec4, right: Vec4) Vec3 {
+    pub fn add(left: *const Vec4, right: Vec4) Vec4 {
         return Vec4{ .x = left.x + right.x, .y = left.y + right.y, .z = left.z + right.z, .w = left.w + right.w };
     }
 
-    pub fn sub(left: *const Vec4, right: Vec4) Vec3 {
+    pub fn sub(left: *const Vec4, right: Vec4) Vec4 {
         return Vec4{ .x = left.x - right.x, .y = left.y - right.y, .z = left.z - right.z, .w = left.w - right.w };
     }
 
@@ -629,7 +629,7 @@ pub const Quaternion = struct {
 
     pub fn inv(self: *const Quaternion) Quaternion {
         const result = Quaternion.new(-self.x, -self.y, -self.z, self.w);
-        return result.div(self.dot(self));
+        return result.div(self.dot(self.*));
     }
 
     pub fn lerp(left: Quaternion, right: Quaternion, alpha: f32) Quaternion {
@@ -769,7 +769,7 @@ pub const Quaternion = struct {
     }
 
     pub fn fromAxisAndAngleLH(angle: f32, axis: Vec3) Quaternion {
-        return Quaternion.fromAxisAngle(-angle, axis);
+        return Quaternion.fromAxisAndAngle(-angle, axis);
     }
 };
 
