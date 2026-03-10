@@ -20,7 +20,7 @@ pub const TestBindingStruct = struct {
         return self;
     }
 
-    pub fn sayHello(self: *TestBindingStruct) void {
+    pub fn sayHello(self: TestBindingStruct) void {
         delve.debug.log(" > Test Lua Binding says: {s}", .{self.message});
     }
 

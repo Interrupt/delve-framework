@@ -392,7 +392,6 @@ pub fn Registry(comptime entries: []const BoundType) type {
                             // copy values to our pointer
                             ptr.* = boxed_ptr;
 
-                            debug.log("Boxed pointer of type {any} {s}!", .{ Child, BoxedPointerType.ptr_metatable_name });
                             return 1;
                         }
                     }
@@ -465,9 +464,13 @@ pub fn Registry(comptime entries: []const BoundType) type {
                     }
                 },
                 else => {
-                    if (isRegistered(T)) {
-                        return luaState.checkUserdata(T, lua_idx, getMetaTableName(T)).*;
+                    // Might be a registered type
+                    if (getBoundType(T)) |bound_type| {
+                        // May need to unbox it
+                        const BoxedPointerType = BoxType(T, bound_type);
+                        return BoxedPointerType.checkBoxedUserdata(luaState, lua_idx).*;
                     }
+
                     // Fallback to the default toAny
                     return try luaState.toAny(T, lua_idx);
                 },
