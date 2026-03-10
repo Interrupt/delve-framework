@@ -176,12 +176,16 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 // Wire to __index in lua
                 const indexFunc = struct {
                     fn inner(L: *zlua.Lua) i32 {
-                        const ptr = L.checkUserdata(T, 1, meta_table_name);
+                        const ptr = BoxedPointerType.checkBoxedUserdata(L, 1);
                         return ptr.__index(L);
                     }
                 }.inner;
 
                 const wrapped_fn = zlua.wrap(indexFunc);
+
+                // Set on boxed metatable
+                luaState.pushClosure(wrapped_fn, 0);
+                luaState.setField(-4, "__index");
 
                 // Set on struct metatable
                 luaState.pushClosure(wrapped_fn, 0);
@@ -209,12 +213,18 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 // Wire to __newindex in lua
                 const newIndexFunc = struct {
                     fn inner(L: *zlua.Lua) i32 {
-                        const ptr = L.checkUserdata(T, 1, meta_table_name);
+                        const ptr = BoxedPointerType.checkBoxedUserdata(L, 1);
                         return ptr.__newindex(L);
                     }
                 }.inner;
 
                 const wrapped_fn = zlua.wrap(newIndexFunc);
+
+                // Set on boxed metatable
+                luaState.pushClosure(wrapped_fn, 0);
+                luaState.setField(-4, "__newindex");
+
+                // Set on struct metatable
                 luaState.pushClosure(wrapped_fn, 0);
                 luaState.setField(-2, "__newindex");
             } else {
