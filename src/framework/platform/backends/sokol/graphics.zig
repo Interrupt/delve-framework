@@ -2,6 +2,7 @@ const std = @import("std");
 const debug = @import("../../../debug.zig");
 const graphics = @import("../../graphics.zig");
 const mem = @import("../../../mem.zig");
+const colors = @import("../../../colors.zig");
 const images = @import("../../../images.zig");
 const shaders = @import("../../../graphics/shaders.zig");
 const sokol = @import("sokol");
@@ -11,6 +12,7 @@ const slog = sokol.log;
 const sg = sokol.gfx;
 const sapp = sokol.app;
 const simgui = sokol.imgui;
+const sglue = sokol.glue;
 const debugtext = sokol.debugtext;
 
 const ArrayList = std.array_list.Managed;
@@ -24,6 +26,8 @@ pub const Shader = graphics.Shader;
 // the list of layouts to automatically create Pipelines for
 const common_vertex_layouts = graphics.getCommonVertexLayouts();
 
+var default_pass_action: sg.PassAction = .{};
+
 const ShaderInitError = error{
     ShaderNotFound,
 };
@@ -36,6 +40,86 @@ pub fn init() !void {
     };
     text_desc.fonts[0] = debugtext.fontOric();
     debugtext.setup(text_desc);
+}
+
+pub fn startFrame() void {
+    // reset debug text
+    debugtext.canvas(sapp.widthf() * 0.5, sapp.heightf() * 0.5);
+    debugtext.layer(0);
+
+    // reset to drawing to the swapchain on every frame start
+    sg.beginPass(.{ .action = default_pass_action, .swapchain = sglue.swapchain() });
+}
+
+pub fn endFrame() void {
+    // draw console text on a new layer
+    debugtext.layer(1);
+    debug.drawConsole(false);
+
+    // draw any debug text
+    debugtext.drawLayer(0);
+
+    // draw the console text over other text
+    debug.drawConsoleBackground();
+    debugtext.drawLayer(1);
+
+    // flush to the screen!
+    sg.endPass();
+    sg.commit();
+}
+
+pub fn deinit() void {}
+
+pub fn setClearColor(color: colors.Color) void {
+    default_pass_action.colors[0] = .{
+        .load_action = .CLEAR,
+        .clear_value = .{ .r = color.r, .g = color.g, .b = color.b, .a = color.a },
+    };
+}
+
+pub fn beginPass(render_pass: graphics.RenderPass, clear_color: ?colors.Color) void {
+    var pass_action = sg.PassAction{};
+    pass_action.colors[0] = .{ .load_action = .LOAD, .store_action = .STORE };
+    pass_action.depth = .{
+        .load_action = if (render_pass.config.clear_depth) .CLEAR else .LOAD,
+        .clear_value = 1.0,
+        .store_action = .STORE,
+    };
+    pass_action.stencil = .{
+        .load_action = if (render_pass.config.clear_stencil) .CLEAR else .LOAD,
+        .clear_value = 0.0,
+        .store_action = .STORE,
+    };
+
+    // Don't need to store the end result in some cases
+    if (!render_pass.config.write_color)
+        pass_action.colors[0].store_action = .DONTCARE;
+
+    if (!render_pass.config.write_depth)
+        pass_action.depth.store_action = .DONTCARE;
+
+    if (!render_pass.config.write_stencil)
+        pass_action.stencil.store_action = .DONTCARE;
+
+    if (clear_color != null) {
+        pass_action.colors[0].load_action = .CLEAR;
+        pass_action.colors[0].clear_value = .{ .r = clear_color.?.r, .g = clear_color.?.g, .b = clear_color.?.b, .a = clear_color.?.a };
+    }
+
+    // Attach any render textures
+    var attachments: sg.Attachments = .{};
+    if (render_pass.render_texture_color != null) {
+        attachments.colors[0] = render_pass.render_texture_color.?.sokol_attachment_view.?;
+    }
+    if (render_pass.render_texture_depth != null) {
+        attachments.depth_stencil = render_pass.render_texture_depth.?.sokol_attachment_view.?;
+    }
+
+    sg.beginPass(.{ .action = pass_action, .attachments = attachments });
+}
+
+pub fn endPass() void {
+    sg.endPass();
 }
 
 pub const TextureImpl = struct {
@@ -113,7 +197,7 @@ pub const TextureImpl = struct {
 
     pub fn makeImguiTexture(self: *const TextureImpl) u64 {
         const default_material = graphics.getDefaultMaterial();
-        return simgui.imtextureidWithSampler(self.sokol_view.?, default_material.state.sokol_samplers[0].?);
+        return simgui.imtextureidWithSampler(self.sokol_view.?, default_material.state.impl.sokol_samplers[0].?);
     }
 };
 
@@ -257,7 +341,7 @@ pub const BindingsImpl = struct {
         }
 
         // bind samplers
-        for (material.state.sokol_samplers, 0..) |sampler, i| {
+        for (material.state.impl.sokol_samplers, 0..) |sampler, i| {
             if (sampler) |s|
                 // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
                 // i because in the glsl definitions we have only fs samplers and they are annotated with layout(binding=0)
@@ -333,6 +417,27 @@ pub const BindingsImpl = struct {
 pub const PipelineBinding = struct {
     sokol_pipeline: sg.Pipeline,
     layout: graphics.VertexLayout,
+};
+
+pub const MaterialImpl = struct {
+    // Hold our material samplers
+    sokol_samplers: [5]?sg.Sampler = [_]?sg.Sampler{null} ** 5,
+
+    pub fn init(cfg: graphics.MaterialConfig) !MaterialImpl {
+        var material_impl: MaterialImpl = .{};
+
+        // Make samplers from filter modes
+        for (cfg.samplers, 0..) |sampler_filter, i| {
+            const sampler_desc = convertFilterModeToSamplerDesc(sampler_filter);
+            material_impl.sokol_samplers[i] = sg.makeSampler(sampler_desc);
+        }
+
+        return material_impl;
+    }
+
+    pub fn makeImguiTexture(self: *const Material, texture_idx: usize, sampler_idx: usize) u64 {
+        return simgui.imtextureidWithSampler(self.state.textures[texture_idx].?.impl.sokol_view.?, self.state.impl.sokol_samplers[sampler_idx].?);
+    }
 };
 
 pub const ShaderImpl = struct {
