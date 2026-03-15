@@ -9,6 +9,7 @@ const time = @import("std").time;
 
 // Actual app backend (Sokol, Null, etc)
 const AppBackend = backends.GetAppBackend();
+const GfxBackend = backends.GetGraphicsBackend();
 
 const NS_PER_SECOND: i64 = 1_000_000_000;
 const NS_PER_SECOND_F: f32 = 1_000_000_000.0;
@@ -305,10 +306,10 @@ pub fn exitWithError() void {
 
 // Start a new Imgui frame
 pub fn startImguiFrame() void {
-    AppBackend.startImguiFrame();
+    GfxBackend.startImguiFrame();
 }
 
 // Render Imgui
 pub fn renderImgui() void {
-    AppBackend.renderImgui();
+    GfxBackend.renderImgui();
 }

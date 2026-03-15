@@ -1,5 +1,6 @@
 const std = @import("std");
 const debug = @import("../../../debug.zig");
+const app = @import("../../app.zig");
 const graphics = @import("../../graphics.zig");
 const mem = @import("../../../mem.zig");
 const colors = @import("../../../colors.zig");
@@ -161,6 +162,19 @@ pub fn setDebugTextScale(scale: f32) void {
 /// Returns the current text scale for debug text
 pub fn getDebugTextScale() f32 {
     return state.debug_text_scale;
+}
+
+pub fn startImguiFrame() void {
+    simgui.newFrame(.{
+        .width = AppBackend.getWidth(),
+        .height = AppBackend.getHeight(),
+        .delta_time = app.getCurrentDeltaTime(),
+        .dpi_scale = AppBackend.getDPIScale(),
+    });
+}
+
+pub fn renderImgui() void {
+    simgui.render();
 }
 
 pub const TextureImpl = struct {

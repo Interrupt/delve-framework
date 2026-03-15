@@ -7,6 +7,11 @@ pub fn init() !void {
     debug.log("Sokol null graphics backend starting", .{});
 }
 
+// actual graphics API (openGl, Metal, etc)
+pub fn getBackend() graphics.Backend {
+    return .DUMMY;
+}
+
 pub fn startFrame() void {}
 
 pub fn endFrame() void {}
@@ -48,12 +53,14 @@ pub fn setDebugTextScale(scale: f32) void {
     _ = scale;
 }
 
+pub fn startImguiFrame() void {}
+
+pub fn renderImgui() void {}
+
 /// Returns the current text scale for debug text
 pub fn getDebugTextScale() f32 {
     return 1.0;
 }
-
-pub const BindingsImpl = struct {};
 
 pub var default_shader_impl: ShaderImpl = .{};
 
@@ -87,6 +94,10 @@ pub const ShaderImpl = struct {
     pub fn makeNewInstance(cfg: graphics.ShaderConfig, shader: graphics.Shader) !graphics.Shader {
         _ = cfg;
         return shader;
+    }
+
+    pub fn makeCommonPipelines(self: *graphics.Shader) void {
+        _ = self;
     }
 };
 
@@ -128,5 +139,72 @@ pub const MaterialImpl = struct {
         _ = texture_idx;
         _ = sampler_idx;
         return 0;
+    }
+};
+
+pub const BindingsImpl = struct {
+    pub fn init(cfg: graphics.BindingConfig) graphics.Bindings {
+        return .{
+            .length = 0,
+            .impl = .{},
+            .config = cfg,
+            .vertex_layout = cfg.vertex_layout,
+        };
+    }
+
+    pub fn destroy(self: *graphics.Bindings) void {
+        _ = self;
+    }
+
+    pub fn set(self: *graphics.Bindings, vertices: anytype, indices: anytype, opt_normals: anytype, opt_tangents: anytype, length: usize) void {
+        _ = self;
+        _ = vertices;
+        _ = indices;
+        _ = opt_normals;
+        _ = opt_tangents;
+        _ = length;
+    }
+
+    pub fn setWithJoints(self: *graphics.Bindings, vertices: anytype, indices: anytype, opt_normals: anytype, opt_tangents: anytype, opt_joints: anytype, opt_weights: anytype, length: usize) void {
+        _ = self;
+        _ = vertices;
+        _ = indices;
+        _ = opt_normals;
+        _ = opt_tangents;
+        _ = opt_weights;
+        _ = opt_joints;
+        _ = length;
+    }
+
+    pub fn update(self: *graphics.Bindings, vertices: anytype, indices: anytype, vert_len: usize, index_len: usize) void {
+        _ = self;
+        _ = vertices;
+        _ = indices;
+        _ = vert_len;
+        _ = index_len;
+    }
+
+    /// Sets the texture that will be used to draw this binding
+    pub fn setTexture(self: *graphics.Bindings, texture: graphics.Texture) void {
+        _ = self;
+        _ = texture;
+    }
+
+    pub fn updateFromMaterial(self: *graphics.Bindings, material: *graphics.Material) void {
+        _ = self;
+        _ = material;
+    }
+
+    pub fn resize(self: *graphics.Bindings, vertex_len: usize, index_len: usize) void {
+        _ = self;
+        _ = vertex_len;
+        _ = index_len;
+    }
+
+    pub fn drawSubset(bindings: *graphics.Bindings, start: u32, end: u32, shader: *graphics.Shader) void {
+        _ = bindings;
+        _ = start;
+        _ = end;
+        _ = shader;
     }
 };
