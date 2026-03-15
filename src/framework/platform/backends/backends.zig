@@ -17,7 +17,7 @@ pub const GraphicsBackends = enum {
 };
 
 const picked_app_backend: AppBackends = .Sokol;
-const picked_gfx_backend: GraphicsBackends = .Sokol;
+const picked_gfx_backend: GraphicsBackends = .Null;
 
 pub fn GetAppBackend() type {
     comptime {
