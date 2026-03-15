@@ -8,6 +8,9 @@ const shaders = @import("../../../graphics/shaders.zig");
 const sokol = @import("sokol");
 const shader_default = @import("../../../graphics/shaders/default.glsl.zig");
 
+const backends = @import("../backends.zig");
+const AppBackend = backends.GetAppBackend();
+
 const slog = sokol.log;
 const sg = sokol.gfx;
 const sapp = sokol.app;
@@ -30,6 +33,10 @@ var default_pass_action: sg.PassAction = .{};
 
 const ShaderInitError = error{
     ShaderNotFound,
+};
+
+pub const state = struct {
+    var debug_text_scale: f32 = 1.0;
 };
 
 pub fn init() !void {
@@ -120,6 +127,37 @@ pub fn beginPass(render_pass: graphics.RenderPass, clear_color: ?colors.Color) v
 
 pub fn endPass() void {
     sg.endPass();
+}
+
+/// Sets the debug text drawing color
+pub fn setDebugTextColor(color: colors.Color) void {
+    debugtext.color4f(color.r, color.g, color.b, color.a);
+}
+
+/// Draws debug text on the screen
+pub fn drawDebugText(x: f32, y: f32, str: [:0]const u8) void {
+    debugtext.pos(x * (0.125 / state.debug_text_scale), y * (0.125 / state.debug_text_scale));
+    debugtext.puts(str);
+}
+
+/// Draws a single debug text character
+pub fn drawDebugTextChar(x: f32, y: f32, char: u8) void {
+    // debugtext.pos(x * 0.125, y * 0.125);
+    debugtext.pos(x * (0.125 / state.debug_text_scale), y * (0.125 / state.debug_text_scale));
+    debugtext.putc(char);
+}
+
+/// Sets the scaling used when drawing debug text
+pub fn setDebugTextScale(scale: f32) void {
+    const widthf: f32 = @floatFromInt(AppBackend.getWidth());
+    const heightf: f32 = @floatFromInt(AppBackend.getHeight());
+    debugtext.canvas(widthf / (scale * 2.0), heightf / (scale * 2.0));
+    state.debug_text_scale = scale * 2.0;
+}
+
+/// Returns the current text scale for debug text
+pub fn getDebugTextScale() f32 {
+    return state.debug_text_scale;
 }
 
 pub const TextureImpl = struct {

@@ -9,10 +9,6 @@ const mesh = @import("../graphics/mesh.zig");
 const papp = @import("app.zig");
 const shaders = @import("../graphics/shaders.zig");
 
-const sokol = @import("sokol");
-const sg = sokol.gfx;
-const debugtext = sokol.debugtext;
-
 const ArrayList = std.array_list.Managed;
 
 pub var allocator: std.mem.Allocator = undefined;
@@ -1097,33 +1093,27 @@ pub fn getProjectionOrthoCustom(left: f32, right: f32, bottom: f32, top: f32, ne
 
 /// Sets the debug text drawing color
 pub fn setDebugTextColor(color: Color) void {
-    debugtext.color4f(color.r, color.g, color.b, color.a);
+    GfxBackend.setDebugTextColor(color);
 }
 
 /// Draws debug text on the screen
 pub fn drawDebugText(x: f32, y: f32, str: [:0]const u8) void {
-    debugtext.pos(x * (0.125 / state.debug_text_scale), y * (0.125 / state.debug_text_scale));
-    debugtext.puts(str);
+    GfxBackend.drawDebugText(x, y, str);
 }
 
 /// Draws a single debug text character
 pub fn drawDebugTextChar(x: f32, y: f32, char: u8) void {
-    // debugtext.pos(x * 0.125, y * 0.125);
-    debugtext.pos(x * (0.125 / state.debug_text_scale), y * (0.125 / state.debug_text_scale));
-    debugtext.putc(char);
+    GfxBackend.drawDebugTextChar(x, y, char);
 }
 
 /// Sets the scaling used when drawing debug text
 pub fn setDebugTextScale(scale: f32) void {
-    const widthf: f32 = @floatFromInt(AppBackend.getWidth());
-    const heightf: f32 = @floatFromInt(AppBackend.getHeight());
-    debugtext.canvas(widthf / (scale * 2.0), heightf / (scale * 2.0));
-    state.debug_text_scale = scale * 2.0;
+    GfxBackend.setDebugTextScale(scale);
 }
 
 /// Returns the current text scale for debug text
 pub fn getDebugTextScale() f32 {
-    return state.debug_text_scale;
+    GfxBackend.getDebugTextScale();
 }
 
 /// Draws a rectangle using the slow debug draw setup
@@ -1247,15 +1237,6 @@ pub fn getDefaultShader() Shader {
 /// Gets the default material
 pub fn getDefaultMaterial() Material {
     return state.debug_material;
-}
-
-fn convertFilterModeToSamplerDesc(filter: FilterMode) sg.SamplerDesc {
-    const filter_mode = if (filter == FilterMode.LINEAR) sg.Filter.LINEAR else sg.Filter.NEAREST;
-    return sg.SamplerDesc{
-        .min_filter = filter_mode,
-        .mag_filter = filter_mode,
-        .mipmap_filter = filter_mode,
-    };
 }
 
 // Taken from sokol_zig gfx, uses this to pass untyped data around
