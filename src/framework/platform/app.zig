@@ -1,14 +1,14 @@
 const std = @import("std");
 const app = @import("../app.zig");
+const backends = @import("backends/backends.zig");
 const debug = @import("../debug.zig");
 const gfx = @import("graphics.zig");
 const mem = @import("../mem.zig");
 const modules = @import("../modules.zig");
 const time = @import("std").time;
-const sokol_app_backend = @import("backends/sokol/app.zig");
 
-// Actual app backend, implementation could be switched out here
-const AppBackend = sokol_app_backend.App;
+// Actual app backend (Sokol, Null, etc)
+const AppBackend = backends.GetAppBackend();
 
 const NS_PER_SECOND: i64 = 1_000_000_000;
 const NS_PER_SECOND_F: f32 = 1_000_000_000.0;
@@ -295,7 +295,7 @@ pub fn getFixedTimestepLerp(include_delta: bool) f32 {
 
 /// Exit cleanly
 pub fn exit() void {
-    sokol_app_backend.exit();
+    AppBackend.exit();
 }
 
 /// Exit with an error
@@ -305,10 +305,10 @@ pub fn exitWithError() void {
 
 // Start a new Imgui frame
 pub fn startImguiFrame() void {
-    sokol_app_backend.startImguiFrame();
+    AppBackend.startImguiFrame();
 }
 
 // Render Imgui
 pub fn renderImgui() void {
-    sokol_app_backend.renderImgui();
+    AppBackend.renderImgui();
 }

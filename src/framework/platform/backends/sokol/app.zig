@@ -176,21 +176,21 @@ pub const App = struct {
         }
         return desc.clipboard_size;
     }
+
+    pub fn startImguiFrame() void {
+        simgui.newFrame(.{
+            .width = sapp.width(),
+            .height = sapp.height(),
+            .delta_time = sapp.frameDuration(),
+            .dpi_scale = sapp.dpiScale(),
+        });
+    }
+
+    pub fn renderImgui() void {
+        simgui.render();
+    }
+
+    pub fn exit() void {
+        sapp.quit();
+    }
 };
-
-pub fn startImguiFrame() void {
-    simgui.newFrame(.{
-        .width = sapp.width(),
-        .height = sapp.height(),
-        .delta_time = sapp.frameDuration(),
-        .dpi_scale = sapp.dpiScale(),
-    });
-}
-
-pub fn renderImgui() void {
-    simgui.render();
-}
-
-pub fn exit() void {
-    sapp.quit();
-}

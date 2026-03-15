@@ -1,4 +1,5 @@
 const std = @import("std");
+const backends = @import("backends/backends.zig");
 const colors = @import("../colors.zig");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
@@ -6,7 +7,6 @@ const math = @import("../math.zig");
 const mem = @import("../mem.zig");
 const mesh = @import("../graphics/mesh.zig");
 const papp = @import("app.zig");
-const sokol_gfx_backend = @import("backends/sokol/graphics.zig");
 const shaders = @import("../graphics/shaders.zig");
 
 const sokol = @import("sokol");
@@ -24,6 +24,9 @@ pub var allocator: std.mem.Allocator = undefined;
 // compile built-in shaders via:
 // ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl300es:glsl330:wgsl:metal_macos:metal_ios:metal_sim:hlsl4 -f sokol_zig
 pub const shader_default = @import("../graphics/shaders/default.glsl.zig");
+
+// Actual graphics backend (Sokol, Null, etc)
+const GfxBackend = backends.GetGraphicsBackend();
 
 const Vec2 = math.Vec2;
 const Vec3 = math.Vec3;
@@ -227,7 +230,7 @@ pub const BindingConfig = struct {
 };
 
 /// The actual internal bindings implementation
-pub const BindingsImpl = sokol_gfx_backend.BindingsImpl;
+pub const BindingsImpl = GfxBackend.BindingsImpl;
 
 /// Bindings are a drawable collection of buffers, textures, and samplers
 pub const Bindings = struct {
@@ -335,7 +338,7 @@ pub const ShaderConfig = struct {
 };
 
 /// The actual backend implementation for shaders
-pub const ShaderImpl = sokol_gfx_backend.ShaderImpl;
+pub const ShaderImpl = GfxBackend.ShaderImpl;
 
 pub var next_shader_handle: u32 = 0;
 
@@ -449,30 +452,16 @@ pub const Texture = struct {
     handle: u32,
     is_render_target: bool = false,
 
-    // TODO: Pull the sokol specific stuff out to the backend layer
-    sokol_image: ?sg.Image,
-    sokol_view: ?sg.View,
-    sokol_attachment_view: ?sg.View = null,
+    impl: GfxBackend.TextureImpl,
 
     /// Creates a new texture from an Image
     pub fn init(image: images.Image) Texture {
         defer next_texture_handle += 1;
 
-        var img_desc: sg.ImageDesc = .{
-            .width = @intCast(image.width),
-            .height = @intCast(image.height),
-            .pixel_format = .RGBA8,
-        };
-
-        img_desc.data.mip_levels[0] = sg.asRange(image.data);
-        const sokol_image = sg.makeImage(img_desc);
-        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
-
         return Texture{
             .width = image.width,
             .height = image.height,
-            .sokol_image = sokol_image,
-            .sokol_view = sokol_view,
+            .impl = GfxBackend.TextureImpl.init(image),
             .handle = next_texture_handle,
         };
     }
@@ -481,21 +470,10 @@ pub const Texture = struct {
     pub fn initFromBytes(width: u32, height: u32, image_bytes: anytype) Texture {
         defer next_texture_handle += 1;
 
-        var img_desc: sg.ImageDesc = .{
-            .width = @intCast(width),
-            .height = @intCast(height),
-            .pixel_format = .RGBA8,
-        };
-
-        img_desc.data.mip_levels[0] = sg.asRange(image_bytes);
-        const sokol_image = sg.makeImage(img_desc);
-        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
-
         return Texture{
             .width = width,
             .height = height,
-            .sokol_image = sokol_image,
-            .sokol_view = sokol_view,
+            .impl = GfxBackend.TextureImpl.initFromBytes(width, height, image_bytes),
             .handle = next_texture_handle,
         };
     }
@@ -504,46 +482,22 @@ pub const Texture = struct {
     pub fn initRenderTexture(width: u32, height: u32, is_depth: bool) Texture {
         defer next_texture_handle += 1;
 
-        var img_desc: sg.ImageDesc = .{
-            .usage = .{ .color_attachment = !is_depth, .depth_stencil_attachment = is_depth },
-            .width = @intCast(width),
-            .height = @intCast(height),
-            .sample_count = 1,
-        };
-
-        if (is_depth)
-            img_desc.pixel_format = .DEPTH_STENCIL;
-
-        const sokol_image = sg.makeImage(img_desc);
-        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
-
-        const attachment_view = if (!is_depth) sg.makeView(.{
-            .color_attachment = .{ .image = sokol_image },
-        }) else sg.makeView(.{
-            .depth_stencil_attachment = .{ .image = sokol_image },
-        });
-
         return Texture{
             .width = width,
             .height = height,
-            .sokol_image = sokol_image,
-            .sokol_view = sokol_view,
-            .sokol_attachment_view = attachment_view,
+            .impl = GfxBackend.TextureImpl.initRenderTexture(width, height, is_depth),
             .handle = next_texture_handle,
             .is_render_target = true,
         };
     }
 
     pub fn destroy(self: *Texture) void {
-        if (self.sokol_image == null)
-            return;
-        sg.destroyImage(self.sokol_image.?);
-        self.sokol_image = null;
+        self.impl.destroy();
     }
 
     /// Returns an Imgui Texture ID that can be used with Imgui
     pub fn makeImguiTexture(self: *const Texture) u64 {
-        return simgui.imtextureidWithSampler(self.sokol_view.?, state.debug_material.state.sokol_samplers[0].?);
+        return self.impl.makeImguiTexture();
     }
 };
 
@@ -1068,7 +1022,7 @@ pub const Material = struct {
 
     /// Returns an Imgui Texture ID that can be used Imgui
     pub fn makeImguiTexture(self: *const Material, texture_idx: usize, sampler_idx: usize) u64 {
-        return simgui.imtextureidWithSampler(self.state.textures[texture_idx].?.sokol_view.?, self.state.sokol_samplers[sampler_idx].?);
+        return simgui.imtextureidWithSampler(self.state.textures[texture_idx].?.impl.sokol_view.?, self.state.sokol_samplers[sampler_idx].?);
     }
 };
 
@@ -1088,19 +1042,15 @@ var default_pass_action: sg.PassAction = .{};
 pub fn init() !void {
     debug.log("Graphics subsystem starting", .{});
 
+    // Init the actual graphics backend
+    try GfxBackend.init();
+
     allocator = mem.getAllocator();
 
     // Setup some debug textures
     tex_white = createSolidTexture(0xFFFFFFFF);
     tex_black = createSolidTexture(0xFF000000);
     tex_grey = createSolidTexture(0xFF777777);
-
-    // Setup debug text rendering
-    var text_desc: debugtext.Desc = .{
-        .logger = .{ .func = slog.func },
-    };
-    text_desc.fonts[0] = debugtext.fontOric();
-    debugtext.setup(text_desc);
 
     // Create vertex buffer with debug quad vertices
     const white_color_array = colors.white.toArray();
@@ -1354,9 +1304,14 @@ pub fn createDebugTexture() Texture {
     return Texture.initFromBytes(4, 4, img);
 }
 
-/// Return our default shader
+/// Gets the default shader
 pub fn getDefaultShader() Shader {
     return state.default_shader;
+}
+
+/// Gets the default material
+pub fn getDefaultMaterial() Material {
+    return state.debug_material;
 }
 
 fn convertFilterModeToSamplerDesc(filter: FilterMode) sg.SamplerDesc {
@@ -1409,5 +1364,5 @@ pub fn getCommonVertexLayouts() []const VertexLayout {
 
 /// Returns the backend currently in use
 pub fn getBackend() Backend {
-    return sokol_gfx_backend.getBackend();
+    return GfxBackend.getBackend();
 }

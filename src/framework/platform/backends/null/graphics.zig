@@ -10,7 +10,6 @@ const shader_default = @import("../../../graphics/shaders/default.glsl.zig");
 const slog = sokol.log;
 const sg = sokol.gfx;
 const sapp = sokol.app;
-const simgui = sokol.imgui;
 const debugtext = sokol.debugtext;
 
 const ArrayList = std.array_list.Managed;
@@ -28,94 +27,7 @@ const ShaderInitError = error{
     ShaderNotFound,
 };
 
-pub fn init() !void {
-    debug.log("Sokol graphics backend starting", .{});
-    // Setup debug text rendering
-    var text_desc: debugtext.Desc = .{
-        .logger = .{ .func = slog.func },
-    };
-    text_desc.fonts[0] = debugtext.fontOric();
-    debugtext.setup(text_desc);
-}
-
-pub const TextureImpl = struct {
-    sokol_image: ?sg.Image,
-    sokol_view: ?sg.View,
-    sokol_attachment_view: ?sg.View = null,
-
-    pub fn init(image: images.Image) TextureImpl {
-        var img_desc: sg.ImageDesc = .{
-            .width = @intCast(image.width),
-            .height = @intCast(image.height),
-            .pixel_format = .RGBA8,
-        };
-
-        img_desc.data.mip_levels[0] = sg.asRange(image.data);
-        const sokol_image = sg.makeImage(img_desc);
-        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
-
-        return .{
-            .sokol_image = sokol_image,
-            .sokol_view = sokol_view,
-        };
-    }
-
-    pub fn initFromBytes(width: u32, height: u32, image_bytes: anytype) TextureImpl {
-        var img_desc: sg.ImageDesc = .{
-            .width = @intCast(width),
-            .height = @intCast(height),
-            .pixel_format = .RGBA8,
-        };
-
-        img_desc.data.mip_levels[0] = sg.asRange(image_bytes);
-        const sokol_image = sg.makeImage(img_desc);
-        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
-
-        return .{
-            .sokol_image = sokol_image,
-            .sokol_view = sokol_view,
-        };
-    }
-
-    pub fn initRenderTexture(width: u32, height: u32, is_depth: bool) TextureImpl {
-        var img_desc: sg.ImageDesc = .{
-            .usage = .{ .color_attachment = !is_depth, .depth_stencil_attachment = is_depth },
-            .width = @intCast(width),
-            .height = @intCast(height),
-            .sample_count = 1,
-        };
-
-        if (is_depth)
-            img_desc.pixel_format = .DEPTH_STENCIL;
-
-        const sokol_image = sg.makeImage(img_desc);
-        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
-
-        const attachment_view = if (!is_depth) sg.makeView(.{
-            .color_attachment = .{ .image = sokol_image },
-        }) else sg.makeView(.{
-            .depth_stencil_attachment = .{ .image = sokol_image },
-        });
-
-        return .{
-            .sokol_image = sokol_image,
-            .sokol_view = sokol_view,
-            .sokol_attachment_view = attachment_view,
-        };
-    }
-
-    pub fn destroy(self: *TextureImpl) void {
-        if (self.sokol_image == null)
-            return;
-        sg.destroyImage(self.sokol_image.?);
-        self.sokol_image = null;
-    }
-
-    pub fn makeImguiTexture(self: *const TextureImpl) u64 {
-        const default_material = graphics.getDefaultMaterial();
-        return simgui.imtextureidWithSampler(self.sokol_view.?, default_material.state.sokol_samplers[0].?);
-    }
-};
+pub fn init() !void {}
 
 pub const BindingsImpl = struct {
     sokol_bindings: ?sg.Bindings,
@@ -234,7 +146,7 @@ pub const BindingsImpl = struct {
 
     /// Sets the texture that will be used to draw this binding
     pub fn setTexture(self: *Bindings, texture: Texture) void {
-        if (texture.impl.sokol_image == null)
+        if (texture.sokol_image == null)
             return;
 
         // set the texture to the default fragment shader image slot
@@ -242,7 +154,7 @@ pub const BindingsImpl = struct {
         // 0 because in the glsl definitions we have only fs tex and they are annotated with layout(binding=0)
         // they start at 0
 
-        self.impl.sokol_bindings.?.views[0] = texture.impl.sokol_view.?;
+        self.impl.sokol_bindings.?.views[0] = texture.sokol_view.?;
     }
 
     pub fn updateFromMaterial(self: *Bindings, material: *Material) void {
@@ -252,7 +164,7 @@ pub const BindingsImpl = struct {
                 // i because in the glsl definitions we have only fs tex and they are annotated with layout(binding=0)
                 // they start at 0
 
-                self.impl.sokol_bindings.?.views[i] = material.state.textures[i].?.impl.sokol_view.?;
+                self.impl.sokol_bindings.?.views[i] = material.state.textures[i].?.sokol_view.?;
             }
         }
 
