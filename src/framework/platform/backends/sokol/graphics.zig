@@ -6,6 +6,9 @@ const colors = @import("../../../colors.zig");
 const images = @import("../../../images.zig");
 const shaders = @import("../../../graphics/shaders.zig");
 const sokol = @import("sokol");
+
+// compile built-in shaders via:
+// ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl300es:glsl330:wgsl:metal_macos:metal_ios:metal_sim:hlsl4 -f sokol_zig
 const shader_default = @import("../../../graphics/shaders/default.glsl.zig");
 
 const backends = @import("../backends.zig");
