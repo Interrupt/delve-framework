@@ -164,6 +164,10 @@ pub const App = struct {
         return sapp.height();
     }
 
+    pub fn getDPIScale() f32 {
+        return sapp.dpiScale();
+    }
+
     pub fn captureMouse(captured: bool) void {
         sapp.lockMouse(captured);
     }

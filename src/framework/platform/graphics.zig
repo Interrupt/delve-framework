@@ -11,8 +11,6 @@ const shaders = @import("../graphics/shaders.zig");
 
 const sokol = @import("sokol");
 const sg = sokol.gfx;
-const sapp = sokol.app;
-const sglue = sokol.glue;
 const debugtext = sokol.debugtext;
 
 const ArrayList = std.array_list.Managed;
@@ -23,7 +21,8 @@ pub var allocator: std.mem.Allocator = undefined;
 // ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl300es:glsl330:wgsl:metal_macos:metal_ios:metal_sim:hlsl4 -f sokol_zig
 pub const shader_default = @import("../graphics/shaders/default.glsl.zig");
 
-// Actual graphics backend (Sokol, Null, etc)
+// Actual backends (Sokol, Null, etc)
+const AppBackend = backends.GetAppBackend();
 const GfxBackend = backends.GetGraphicsBackend();
 
 const Vec2 = math.Vec2;
@@ -797,9 +796,6 @@ pub const MaterialState = struct {
     material_params_fs_uniformblock_data: ?MaterialUniformBlock = null,
 
     impl: MaterialImpl = .{},
-
-    // Hold our samplers
-    // sokol_samplers: [5]?sg.Sampler = [_]?sg.Sampler{null} ** 5,
 };
 
 /// A material for drawing, consists of a shader and potentially many textures
@@ -997,8 +993,6 @@ pub const state = struct {
     var in_offscreen_pass: bool = false;
 };
 
-var default_pass_action: sg.PassAction = .{};
-
 /// Initializes the graphics subsystem
 pub fn init() !void {
     debug.log("Graphics subsystem starting", .{});
@@ -1088,10 +1082,12 @@ pub fn getProjectionPerspective(fov: f32, near: f32, far: f32) Mat4 {
 
 /// Returns an orthographic projection matrix for our current app
 pub fn getProjectionOrtho(near: f32, far: f32, flip_y: bool) Mat4 {
+    const widthf: f32 = @floatFromInt(AppBackend.getWidth());
+    const heightf: f32 = @floatFromInt(AppBackend.getHeight());
     if (flip_y) {
-        return Mat4.ortho(0.0, sapp.widthf(), sapp.heightf(), 0.0, near, far);
+        return Mat4.ortho(0.0, widthf, heightf, 0.0, near, far);
     }
-    return Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), near, far);
+    return Mat4.ortho(0.0, widthf, 0.0, heightf, near, far);
 }
 
 /// Returns a custom orthographic projection matrix for our current app
@@ -1119,11 +1115,13 @@ pub fn drawDebugTextChar(x: f32, y: f32, char: u8) void {
 
 /// Sets the scaling used when drawing debug text
 pub fn setDebugTextScale(scale: f32) void {
-    debugtext.canvas(sapp.widthf() / (scale * 2.0), sapp.heightf() / (scale * 2.0));
+    const widthf: f32 = @floatFromInt(AppBackend.getWidth());
+    const heightf: f32 = @floatFromInt(AppBackend.getHeight());
+    debugtext.canvas(widthf / (scale * 2.0), heightf / (scale * 2.0));
     state.debug_text_scale = scale * 2.0;
 }
 
-/// Retursn the current text scale for debug text
+/// Returns the current text scale for debug text
 pub fn getDebugTextScale() f32 {
     return state.debug_text_scale;
 }
@@ -1186,17 +1184,17 @@ pub fn setDebugDrawColorOverride(color: Color) void {
 
 /// Returns the app's display width
 pub fn getDisplayWidth() i32 {
-    return sapp.width();
+    return AppBackend.getWidth();
 }
 
 /// Returns the app's display height
 pub fn getDisplayHeight() i32 {
-    return sapp.height();
+    return AppBackend.getHeight();
 }
 
 /// Returns the pixel DPI scaling used for the app
 pub fn getDisplayDPIScale() f32 {
-    return sapp.dpiScale();
+    return AppBackend.getDPIScale();
 }
 
 /// Draw part of a binding
