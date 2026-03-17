@@ -27,12 +27,6 @@ pub var tex_white: Texture = undefined;
 pub var tex_black: Texture = undefined;
 pub var tex_grey: Texture = undefined;
 
-// TODO: Where should the math library stuff live?
-// Foster puts everything in places like /Spatial or /Graphics
-// Look into using a third party math.zig instead of sokol's
-// A vertex struct with position, color and uv-coords
-// TODO: Stop using packed color and uvs!
-
 pub const Backend = enum(i32) {
     GLCORE,
     GLES3,
