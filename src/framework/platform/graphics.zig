@@ -13,10 +13,6 @@ const ArrayList = std.array_list.Managed;
 
 pub var allocator: std.mem.Allocator = undefined;
 
-// compile built-in shaders via:
-// ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl300es:glsl330:wgsl:metal_macos:metal_ios:metal_sim:hlsl4 -f sokol_zig
-pub const shader_default = @import("../graphics/shaders/default.glsl.zig");
-
 // Actual backends (Sokol, Null, etc)
 const AppBackend = backends.GetAppBackend();
 const GfxBackend = backends.GetGraphicsBackend();
@@ -1133,16 +1129,15 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
     model = model.mul(Mat4.scale(scale_vec));
 
     // make our default shader params
-    const vs_params = shader_default.VsParams{
-        .u_projViewMatrix = proj.mul(view),
-        .u_modelMatrix = model,
-        .u_color = color.toArray(),
-        .u_tex_pan = Vec4.zero.toArray(),
+    const vs_params = VSDefaultUniforms{
+        .projViewMatrix = proj.mul(view),
+        .modelMatrix = model,
+        .in_color = color.toArray(),
+        .texture_pan = Vec4.zero.toArray(),
     };
 
-    const fs_params = shader_default.FsParams{
-        .u_color_override = state.debug_draw_color_override.toArray(),
-        .u_alpha_cutoff = 0.0,
+    const fs_params = FSDefaultUniforms{
+        .in_color_override = state.debug_draw_color_override.toArray(),
     };
 
     // set our default vs/fs shader uniforms to the 0 slots
