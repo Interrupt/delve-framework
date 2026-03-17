@@ -1,5 +1,6 @@
 const std = @import("std");
 const main_app = @import("../../../app.zig");
+const platform = @import("../../app.zig");
 const debug = @import("../../../debug.zig");
 const input = @import("../../input.zig");
 
@@ -25,7 +26,7 @@ pub const App = struct {
     should_quit: bool = false,
 
     pub fn init(cfg: NullAppConfig) void {
-        debug.log("Creating Null App backend", .{});
+        debug.log("Creating Headless App backend", .{});
 
         app = App{
             .on_init_fn = cfg.on_init_fn,
@@ -36,14 +37,26 @@ pub const App = struct {
     }
 
     pub fn deinit() void {
-        debug.log("Null App Backend stopping", .{});
+        debug.log("Headless App Backend stopping", .{});
     }
 
     pub fn startMainLoop(config: main_app.AppConfig) void {
         app_config = config;
 
-        // startup and then shutdown
+        debug.log("Headless app starting main loop", .{});
+
+        // Always set a target fps
+        if (config.target_fps == null) {
+            platform.setTargetFPS(60);
+        }
+
         app.on_init_fn();
+
+        while (!app.should_quit) {
+            // should tick at a fixed rate here
+            app.on_frame_fn();
+        }
+
         app.on_cleanup_fn();
     }
 
@@ -67,5 +80,7 @@ pub const App = struct {
 
     pub fn renderImgui() void {}
 
-    pub fn exit() void {}
+    pub fn exit() void {
+        app.should_quit = true;
+    }
 };

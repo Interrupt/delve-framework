@@ -10,6 +10,12 @@ const log = std.log;
 var target: Build.ResolvedTarget = undefined;
 var optimize: std.builtin.OptimizeMode = undefined;
 
+const Backend = enum {
+    sokol,
+    headless,
+    null,
+};
+
 const ModuleImport = struct {
     module: *Build.Module,
     name: []const u8,
@@ -22,6 +28,15 @@ const BuildCollection = struct {
 pub fn build(b: *std.Build) !void {
     target = b.standardTargetOptions(.{});
     optimize = b.standardOptimizeOption(.{});
+
+    const backend = b.option(
+        Backend,
+        "backend",
+        "Backend for Delve Framework to use. sokol, headless, or null",
+    ) orelse .sokol;
+
+    const options = b.addOptions();
+    options.addOption(Backend, "backend", backend);
 
     const dep_sokol = b.dependency("sokol", .{
         .target = target,
@@ -110,6 +125,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+    delve_mod.addOptions("delve_options", options);
 
     // Expose a few modules, so people can grab our dependencies instead of including their own directly
     try b.modules.put("sokol", dep_sokol.module("sokol"));
@@ -155,6 +171,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
     });
+    root_module.addOptions("delve_options", options);
 
     // Delve Static Library artifact
     const delve_lib = b.addLibrary(.{

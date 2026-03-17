@@ -1,3 +1,5 @@
+const build_options = @import("delve_options");
+
 // Sokol
 pub const sokol_app = @import("sokol/app.zig");
 pub const sokol_graphics = @import("sokol/graphics.zig");
@@ -6,33 +8,29 @@ pub const sokol_graphics = @import("sokol/graphics.zig");
 pub const null_app = @import("null/app.zig");
 pub const null_graphics = @import("null/graphics.zig");
 
-pub const AppBackends = enum {
-    Sokol,
-    Null,
-};
+// Headless
+pub const headless_app = @import("headless/app.zig");
 
-pub const GraphicsBackends = enum {
-    Sokol,
-    Null,
-};
-
-const picked_app_backend: AppBackends = .Sokol;
-const picked_gfx_backend: GraphicsBackends = .Sokol;
+pub fn GetPickedBackend() build_options.Backend {
+    return build_options.backend;
+}
 
 pub fn GetAppBackend() type {
     comptime {
-        return switch (picked_app_backend) {
-            .Sokol => sokol_app.App,
-            .Null => null_app.App,
+        return switch (build_options.backend) {
+            .sokol => sokol_app.App,
+            .headless => headless_app.App,
+            .null => null_app.App,
         };
     }
 }
 
 pub fn GetGraphicsBackend() type {
     comptime {
-        return switch (picked_gfx_backend) {
-            .Sokol => sokol_graphics,
-            .Null => null_graphics,
+        return switch (build_options.backend) {
+            .sokol => sokol_graphics,
+            .headless => null_graphics,
+            .null => null_graphics,
         };
     }
 }

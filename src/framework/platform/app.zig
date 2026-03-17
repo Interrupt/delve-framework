@@ -137,6 +137,7 @@ fn on_cleanup() void {
     modules.stopModules();
     modules.cleanupModules();
     app.stopSubsystems();
+    deinit();
     gfx.deinit();
     debug.deinit();
     mem.deinit();
