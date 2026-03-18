@@ -98,8 +98,8 @@ pub fn on_init() !void {
 
     // Need to flip the textures when drawing an offscreen rendered buffer in OpenGL!
     // Could also use `@glsl_options flip_vert_y` in the shader that actually draws the offscreen textures on the mesh
-    const backend = delve.platform.graphics.getBackend();
-    const is_opengl = (backend == .GLCORE or backend == .GLES3);
+    const gfx_api = delve.platform.graphics.getGraphicsAPI();
+    const is_opengl = (gfx_api == .GLCORE or gfx_api == .GLES3);
     const flip_mod: math.Vec3 = if (!is_opengl) math.Vec3.new(1, 1, 1) else math.Vec3.new(1, -1, 1);
 
     // make a cube

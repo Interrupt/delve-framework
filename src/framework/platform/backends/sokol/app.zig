@@ -164,6 +164,10 @@ pub const App = struct {
         return sapp.height();
     }
 
+    pub fn getDPIScale() f32 {
+        return sapp.dpiScale();
+    }
+
     pub fn captureMouse(captured: bool) void {
         sapp.lockMouse(captured);
     }
@@ -176,21 +180,8 @@ pub const App = struct {
         }
         return desc.clipboard_size;
     }
+
+    pub fn exit() void {
+        sapp.quit();
+    }
 };
-
-pub fn startImguiFrame() void {
-    simgui.newFrame(.{
-        .width = sapp.width(),
-        .height = sapp.height(),
-        .delta_time = sapp.frameDuration(),
-        .dpi_scale = sapp.dpiScale(),
-    });
-}
-
-pub fn renderImgui() void {
-    simgui.render();
-}
-
-pub fn exit() void {
-    sapp.quit();
-}

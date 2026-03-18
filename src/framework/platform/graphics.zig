@@ -1,4 +1,5 @@
 const std = @import("std");
+const backends = @import("backends/backends.zig");
 const colors = @import("../colors.zig");
 const debug = @import("../debug.zig");
 const images = @import("../images.zig");
@@ -6,24 +7,15 @@ const math = @import("../math.zig");
 const mem = @import("../mem.zig");
 const mesh = @import("../graphics/mesh.zig");
 const papp = @import("app.zig");
-const sokol_gfx_backend = @import("backends/sokol/graphics.zig");
 const shaders = @import("../graphics/shaders.zig");
-
-const sokol = @import("sokol");
-const simgui = sokol.imgui;
-const slog = sokol.log;
-const sg = sokol.gfx;
-const sapp = sokol.app;
-const sglue = sokol.glue;
-const debugtext = sokol.debugtext;
 
 const ArrayList = std.array_list.Managed;
 
 pub var allocator: std.mem.Allocator = undefined;
 
-// compile built-in shaders via:
-// ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl300es:glsl330:wgsl:metal_macos:metal_ios:metal_sim:hlsl4 -f sokol_zig
-pub const shader_default = @import("../graphics/shaders/default.glsl.zig");
+// Actual backends (Sokol, Null, Headless, etc)
+const AppBackend = backends.GetAppBackend();
+const GfxBackend = backends.GetGraphicsBackend();
 
 const Vec2 = math.Vec2;
 const Vec3 = math.Vec3;
@@ -31,17 +23,17 @@ const Vec4 = math.Vec4;
 const Mat4 = math.Mat4;
 pub const Color = colors.Color;
 
+// The actual implementations from the graphics backend
+pub const ShaderImpl = GfxBackend.ShaderImpl;
+pub const BindingsImpl = GfxBackend.BindingsImpl;
+pub const TextureImpl = GfxBackend.TextureImpl;
+pub const MaterialImpl = GfxBackend.MaterialImpl;
+
 pub var tex_white: Texture = undefined;
 pub var tex_black: Texture = undefined;
 pub var tex_grey: Texture = undefined;
 
-// TODO: Where should the math library stuff live?
-// Foster puts everything in places like /Spatial or /Graphics
-// Look into using a third party math.zig instead of sokol's
-// A vertex struct with position, color and uv-coords
-// TODO: Stop using packed color and uvs!
-
-pub const Backend = enum(i32) {
+pub const GraphicsAPI = enum(i32) {
     GLCORE,
     GLES3,
     D3D11,
@@ -226,9 +218,6 @@ pub const BindingConfig = struct {
     vertex_layout: VertexLayout = getDefaultVertexLayout(),
 };
 
-/// The actual internal bindings implementation
-pub const BindingsImpl = sokol_gfx_backend.BindingsImpl;
-
 /// Bindings are a drawable collection of buffers, textures, and samplers
 pub const Bindings = struct {
     length: usize,
@@ -333,9 +322,6 @@ pub const ShaderConfig = struct {
     // optionally, take a shader_def
     shader_program_def: ?shaders.ShaderProgram = null,
 };
-
-/// The actual backend implementation for shaders
-pub const ShaderImpl = sokol_gfx_backend.ShaderImpl;
 
 pub var next_shader_handle: u32 = 0;
 
@@ -449,30 +435,16 @@ pub const Texture = struct {
     handle: u32,
     is_render_target: bool = false,
 
-    // TODO: Pull the sokol specific stuff out to the backend layer
-    sokol_image: ?sg.Image,
-    sokol_view: ?sg.View,
-    sokol_attachment_view: ?sg.View = null,
+    impl: TextureImpl,
 
     /// Creates a new texture from an Image
     pub fn init(image: images.Image) Texture {
         defer next_texture_handle += 1;
 
-        var img_desc: sg.ImageDesc = .{
-            .width = @intCast(image.width),
-            .height = @intCast(image.height),
-            .pixel_format = .RGBA8,
-        };
-
-        img_desc.data.mip_levels[0] = sg.asRange(image.data);
-        const sokol_image = sg.makeImage(img_desc);
-        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
-
         return Texture{
             .width = image.width,
             .height = image.height,
-            .sokol_image = sokol_image,
-            .sokol_view = sokol_view,
+            .impl = TextureImpl.init(image),
             .handle = next_texture_handle,
         };
     }
@@ -481,21 +453,10 @@ pub const Texture = struct {
     pub fn initFromBytes(width: u32, height: u32, image_bytes: anytype) Texture {
         defer next_texture_handle += 1;
 
-        var img_desc: sg.ImageDesc = .{
-            .width = @intCast(width),
-            .height = @intCast(height),
-            .pixel_format = .RGBA8,
-        };
-
-        img_desc.data.mip_levels[0] = sg.asRange(image_bytes);
-        const sokol_image = sg.makeImage(img_desc);
-        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
-
         return Texture{
             .width = width,
             .height = height,
-            .sokol_image = sokol_image,
-            .sokol_view = sokol_view,
+            .impl = TextureImpl.initFromBytes(width, height, image_bytes),
             .handle = next_texture_handle,
         };
     }
@@ -504,46 +465,22 @@ pub const Texture = struct {
     pub fn initRenderTexture(width: u32, height: u32, is_depth: bool) Texture {
         defer next_texture_handle += 1;
 
-        var img_desc: sg.ImageDesc = .{
-            .usage = .{ .color_attachment = !is_depth, .depth_stencil_attachment = is_depth },
-            .width = @intCast(width),
-            .height = @intCast(height),
-            .sample_count = 1,
-        };
-
-        if (is_depth)
-            img_desc.pixel_format = .DEPTH_STENCIL;
-
-        const sokol_image = sg.makeImage(img_desc);
-        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
-
-        const attachment_view = if (!is_depth) sg.makeView(.{
-            .color_attachment = .{ .image = sokol_image },
-        }) else sg.makeView(.{
-            .depth_stencil_attachment = .{ .image = sokol_image },
-        });
-
         return Texture{
             .width = width,
             .height = height,
-            .sokol_image = sokol_image,
-            .sokol_view = sokol_view,
-            .sokol_attachment_view = attachment_view,
+            .impl = TextureImpl.initRenderTexture(width, height, is_depth),
             .handle = next_texture_handle,
             .is_render_target = true,
         };
     }
 
     pub fn destroy(self: *Texture) void {
-        if (self.sokol_image == null)
-            return;
-        sg.destroyImage(self.sokol_image.?);
-        self.sokol_image = null;
+        self.impl.destroy();
     }
 
     /// Returns an Imgui Texture ID that can be used with Imgui
     pub fn makeImguiTexture(self: *const Texture) u64 {
-        return simgui.imtextureidWithSampler(self.sokol_view.?, state.debug_material.state.sokol_samplers[0].?);
+        return self.impl.makeImguiTexture();
     }
 };
 
@@ -608,50 +545,13 @@ pub fn beginPass(render_pass: RenderPass, clear_color: ?Color) void {
 
     state.in_offscreen_pass = true;
 
-    var pass_action = sg.PassAction{};
-    pass_action.colors[0] = .{ .load_action = .LOAD, .store_action = .STORE };
-    pass_action.depth = .{
-        .load_action = if (render_pass.config.clear_depth) .CLEAR else .LOAD,
-        .clear_value = 1.0,
-        .store_action = .STORE,
-    };
-    pass_action.stencil = .{
-        .load_action = if (render_pass.config.clear_stencil) .CLEAR else .LOAD,
-        .clear_value = 0.0,
-        .store_action = .STORE,
-    };
-
-    // Don't need to store the end result in some cases
-    if (!render_pass.config.write_color)
-        pass_action.colors[0].store_action = .DONTCARE;
-
-    if (!render_pass.config.write_depth)
-        pass_action.depth.store_action = .DONTCARE;
-
-    if (!render_pass.config.write_stencil)
-        pass_action.stencil.store_action = .DONTCARE;
-
-    if (clear_color != null) {
-        pass_action.colors[0].load_action = .CLEAR;
-        pass_action.colors[0].clear_value = .{ .r = clear_color.?.r, .g = clear_color.?.g, .b = clear_color.?.b, .a = clear_color.?.a };
-    }
-
-    // Attach any render textures
-    var attachments: sg.Attachments = .{};
-    if (render_pass.render_texture_color != null) {
-        attachments.colors[0] = render_pass.render_texture_color.?.sokol_attachment_view.?;
-    }
-    if (render_pass.render_texture_depth != null) {
-        attachments.depth_stencil = render_pass.render_texture_depth.?.sokol_attachment_view.?;
-    }
-
-    sg.beginPass(.{ .action = pass_action, .attachments = attachments });
+    GfxBackend.beginPass(render_pass, clear_color);
 }
 
 /// Ends the current render pass, and resumes the default
 pub fn endPass() void {
     if (state.in_offscreen_pass) {
-        sg.endPass();
+        GfxBackend.endPass();
     } else {
         debug.err("endPass was called when there was no pass to end!", .{});
     }
@@ -878,8 +778,7 @@ pub const MaterialState = struct {
     material_params_vs_uniformblock_data: ?MaterialUniformBlock = null,
     material_params_fs_uniformblock_data: ?MaterialUniformBlock = null,
 
-    // Hold our samplers
-    sokol_samplers: [5]?sg.Sampler = [_]?sg.Sampler{null} ** 5,
+    impl: MaterialImpl = .{},
 };
 
 /// A material for drawing, consists of a shader and potentially many textures
@@ -900,17 +799,12 @@ pub const Material = struct {
             .use_default_params = cfg.use_default_params,
             .material_params_vs_uniformblock_data = MaterialUniformBlock.init(),
             .material_params_fs_uniformblock_data = MaterialUniformBlock.init(),
+            .impl = try MaterialImpl.init(cfg),
         };
 
         var material = Material{
             .state = new_state,
         };
-
-        // Make samplers from filter modes
-        for (cfg.samplers, 0..) |sampler_filter, i| {
-            const sampler_desc = convertFilterModeToSamplerDesc(sampler_filter);
-            material.state.sokol_samplers[i] = sg.makeSampler(sampler_desc);
-        }
 
         // Set textures. ugly!
         if (cfg.texture_0 != null)
@@ -1068,7 +962,7 @@ pub const Material = struct {
 
     /// Returns an Imgui Texture ID that can be used Imgui
     pub fn makeImguiTexture(self: *const Material, texture_idx: usize, sampler_idx: usize) u64 {
-        return simgui.imtextureidWithSampler(self.state.textures[texture_idx].?.sokol_view.?, self.state.sokol_samplers[sampler_idx].?);
+        return MaterialImpl.makeImguiTexture(self, texture_idx, sampler_idx);
     }
 };
 
@@ -1082,11 +976,12 @@ pub const state = struct {
     var in_offscreen_pass: bool = false;
 };
 
-var default_pass_action: sg.PassAction = .{};
-
 /// Initializes the graphics subsystem
 pub fn init() !void {
     debug.log("Graphics subsystem starting", .{});
+
+    // Init the actual graphics backend
+    try GfxBackend.init();
 
     allocator = mem.getAllocator();
 
@@ -1094,13 +989,6 @@ pub fn init() !void {
     tex_white = createSolidTexture(0xFFFFFFFF);
     tex_black = createSolidTexture(0xFF000000);
     tex_grey = createSolidTexture(0xFF777777);
-
-    // Setup debug text rendering
-    var text_desc: debugtext.Desc = .{
-        .logger = .{ .func = slog.func },
-    };
-    text_desc.fonts[0] = debugtext.fontOric();
-    debugtext.setup(text_desc);
 
     // Create vertex buffer with debug quad vertices
     const white_color_array = colors.white.toArray();
@@ -1127,10 +1015,7 @@ pub fn init() !void {
     });
 
     // Set the initial clear color
-    default_pass_action.colors[0] = .{
-        .load_action = .CLEAR,
-        .clear_value = .{ .r = 0.0, .g = 0.0, .b = 0.0, .a = 1 },
-    };
+    setClearColor(colors.black);
 
     debug.log("Graphics subsystem started successfully", .{});
 }
@@ -1146,6 +1031,8 @@ pub fn deinit() void {
     tex_white.destroy();
     tex_black.destroy();
     tex_grey.destroy();
+
+    GfxBackend.deinit();
 }
 
 /// Called at the start of a frame
@@ -1155,42 +1042,19 @@ pub fn startFrame() void {
         endPass();
     }
 
-    // reset debug text
-    debugtext.canvas(sapp.widthf() * 0.5, sapp.heightf() * 0.5);
-    debugtext.layer(0);
-
+    GfxBackend.startFrame();
     state.in_default_pass = true;
-
-    // reset to drawing to the swapchain on every frame start
-    sg.beginPass(.{ .action = default_pass_action, .swapchain = sglue.swapchain() });
 }
 
 /// Called at the end of a frame
 pub fn endFrame() void {
-    // draw console text on a new layer
-    debugtext.layer(1);
-    debug.drawConsole(false);
-
-    // draw any debug text
-    debugtext.drawLayer(0);
-
-    // draw the console text over other text
-    debug.drawConsoleBackground();
-    debugtext.drawLayer(1);
-
-    // flush to the screen!
-    sg.endPass();
-    sg.commit();
-
+    GfxBackend.endFrame();
     state.in_default_pass = false;
 }
 
 /// Sets the clear color on the default pass
 pub fn setClearColor(color: Color) void {
-    default_pass_action.colors[0] = .{
-        .load_action = .CLEAR,
-        .clear_value = .{ .r = color.r, .g = color.g, .b = color.b, .a = color.a },
-    };
+    GfxBackend.setClearColor(color);
 }
 
 /// Returns a perspective projection matrix for our current app
@@ -1201,10 +1065,12 @@ pub fn getProjectionPerspective(fov: f32, near: f32, far: f32) Mat4 {
 
 /// Returns an orthographic projection matrix for our current app
 pub fn getProjectionOrtho(near: f32, far: f32, flip_y: bool) Mat4 {
+    const widthf: f32 = @floatFromInt(AppBackend.getWidth());
+    const heightf: f32 = @floatFromInt(AppBackend.getHeight());
     if (flip_y) {
-        return Mat4.ortho(0.0, sapp.widthf(), sapp.heightf(), 0.0, near, far);
+        return Mat4.ortho(0.0, widthf, heightf, 0.0, near, far);
     }
-    return Mat4.ortho(0.0, sapp.widthf(), 0.0, sapp.heightf(), near, far);
+    return Mat4.ortho(0.0, widthf, 0.0, heightf, near, far);
 }
 
 /// Returns a custom orthographic projection matrix for our current app
@@ -1214,31 +1080,27 @@ pub fn getProjectionOrthoCustom(left: f32, right: f32, bottom: f32, top: f32, ne
 
 /// Sets the debug text drawing color
 pub fn setDebugTextColor(color: Color) void {
-    debugtext.color4f(color.r, color.g, color.b, color.a);
+    GfxBackend.setDebugTextColor(color);
 }
 
 /// Draws debug text on the screen
 pub fn drawDebugText(x: f32, y: f32, str: [:0]const u8) void {
-    debugtext.pos(x * (0.125 / state.debug_text_scale), y * (0.125 / state.debug_text_scale));
-    debugtext.puts(str);
+    GfxBackend.drawDebugText(x, y, str);
 }
 
 /// Draws a single debug text character
 pub fn drawDebugTextChar(x: f32, y: f32, char: u8) void {
-    // debugtext.pos(x * 0.125, y * 0.125);
-    debugtext.pos(x * (0.125 / state.debug_text_scale), y * (0.125 / state.debug_text_scale));
-    debugtext.putc(char);
+    GfxBackend.drawDebugTextChar(x, y, char);
 }
 
 /// Sets the scaling used when drawing debug text
 pub fn setDebugTextScale(scale: f32) void {
-    debugtext.canvas(sapp.widthf() / (scale * 2.0), sapp.heightf() / (scale * 2.0));
-    state.debug_text_scale = scale * 2.0;
+    GfxBackend.setDebugTextScale(scale);
 }
 
-/// Retursn the current text scale for debug text
+/// Returns the current text scale for debug text
 pub fn getDebugTextScale() f32 {
-    return state.debug_text_scale;
+    GfxBackend.getDebugTextScale();
 }
 
 /// Draws a rectangle using the slow debug draw setup
@@ -1258,16 +1120,15 @@ pub fn drawDebugRectangle(tex: Texture, x: f32, y: f32, width: f32, height: f32,
     model = model.mul(Mat4.scale(scale_vec));
 
     // make our default shader params
-    const vs_params = shader_default.VsParams{
-        .u_projViewMatrix = proj.mul(view),
-        .u_modelMatrix = model,
-        .u_color = color.toArray(),
-        .u_tex_pan = Vec4.zero.toArray(),
+    const vs_params = VSDefaultUniforms{
+        .projViewMatrix = proj.mul(view),
+        .modelMatrix = model,
+        .in_color = color.toArray(),
+        .texture_pan = Vec4.zero.toArray(),
     };
 
-    const fs_params = shader_default.FsParams{
-        .u_color_override = state.debug_draw_color_override.toArray(),
-        .u_alpha_cutoff = 0.0,
+    const fs_params = FSDefaultUniforms{
+        .in_color_override = state.debug_draw_color_override.toArray(),
     };
 
     // set our default vs/fs shader uniforms to the 0 slots
@@ -1299,17 +1160,17 @@ pub fn setDebugDrawColorOverride(color: Color) void {
 
 /// Returns the app's display width
 pub fn getDisplayWidth() i32 {
-    return sapp.width();
+    return AppBackend.getWidth();
 }
 
 /// Returns the app's display height
 pub fn getDisplayHeight() i32 {
-    return sapp.height();
+    return AppBackend.getHeight();
 }
 
 /// Returns the pixel DPI scaling used for the app
 pub fn getDisplayDPIScale() f32 {
-    return sapp.dpiScale();
+    return AppBackend.getDPIScale();
 }
 
 /// Draw part of a binding
@@ -1354,18 +1215,14 @@ pub fn createDebugTexture() Texture {
     return Texture.initFromBytes(4, 4, img);
 }
 
-/// Return our default shader
+/// Gets the default shader
 pub fn getDefaultShader() Shader {
     return state.default_shader;
 }
 
-fn convertFilterModeToSamplerDesc(filter: FilterMode) sg.SamplerDesc {
-    const filter_mode = if (filter == FilterMode.LINEAR) sg.Filter.LINEAR else sg.Filter.NEAREST;
-    return sg.SamplerDesc{
-        .min_filter = filter_mode,
-        .mag_filter = filter_mode,
-        .mipmap_filter = filter_mode,
-    };
+/// Gets the default material
+pub fn getDefaultMaterial() Material {
+    return state.debug_material;
 }
 
 // Taken from sokol_zig gfx, uses this to pass untyped data around
@@ -1407,7 +1264,7 @@ pub fn getCommonVertexLayouts() []const VertexLayout {
     };
 }
 
-/// Returns the backend currently in use
-pub fn getBackend() Backend {
-    return sokol_gfx_backend.getBackend();
+/// Returns the graphics api currently in use
+pub fn getGraphicsAPI() GraphicsAPI {
+    return GfxBackend.getGraphicsAPI();
 }

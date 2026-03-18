@@ -1,15 +1,25 @@
 const std = @import("std");
 const debug = @import("../../../debug.zig");
+const app = @import("../../app.zig");
 const graphics = @import("../../graphics.zig");
 const mem = @import("../../../mem.zig");
+const colors = @import("../../../colors.zig");
 const images = @import("../../../images.zig");
 const shaders = @import("../../../graphics/shaders.zig");
 const sokol = @import("sokol");
+
+// compile built-in shaders via:
+// ./sokol-shdc -i assets/shaders/default.glsl -o src/graphics/shaders/default.glsl.zig -l glsl300es:glsl330:wgsl:metal_macos:metal_ios:metal_sim:hlsl4 -f sokol_zig
 const shader_default = @import("../../../graphics/shaders/default.glsl.zig");
+
+const backends = @import("../backends.zig");
+const AppBackend = backends.GetAppBackend();
 
 const slog = sokol.log;
 const sg = sokol.gfx;
 const sapp = sokol.app;
+const simgui = sokol.imgui;
+const sglue = sokol.glue;
 const debugtext = sokol.debugtext;
 
 const ArrayList = std.array_list.Managed;
@@ -23,8 +33,233 @@ pub const Shader = graphics.Shader;
 // the list of layouts to automatically create Pipelines for
 const common_vertex_layouts = graphics.getCommonVertexLayouts();
 
+var default_pass_action: sg.PassAction = .{};
+
 const ShaderInitError = error{
     ShaderNotFound,
+};
+
+pub const state = struct {
+    var debug_text_scale: f32 = 1.0;
+};
+
+pub fn init() !void {
+    debug.log("Sokol graphics backend starting", .{});
+
+    // Setup debug text rendering
+    var text_desc: debugtext.Desc = .{
+        .logger = .{ .func = slog.func },
+    };
+    text_desc.fonts[0] = debugtext.fontOric();
+    debugtext.setup(text_desc);
+}
+
+pub fn getGraphicsAPI() graphics.GraphicsAPI {
+    const backend = sg.queryBackend();
+    return @enumFromInt(@intFromEnum(backend));
+}
+
+pub fn startFrame() void {
+    // reset debug text
+    debugtext.canvas(sapp.widthf() * 0.5, sapp.heightf() * 0.5);
+    debugtext.layer(0);
+
+    // reset to drawing to the swapchain on every frame start
+    sg.beginPass(.{ .action = default_pass_action, .swapchain = sglue.swapchain() });
+}
+
+pub fn endFrame() void {
+    // draw console text on a new layer
+    debugtext.layer(1);
+    debug.drawConsole(false);
+
+    // draw any debug text
+    debugtext.drawLayer(0);
+
+    // draw the console text over other text
+    debug.drawConsoleBackground();
+    debugtext.drawLayer(1);
+
+    // flush to the screen!
+    sg.endPass();
+    sg.commit();
+}
+
+pub fn deinit() void {}
+
+pub fn setClearColor(color: colors.Color) void {
+    default_pass_action.colors[0] = .{
+        .load_action = .CLEAR,
+        .clear_value = .{ .r = color.r, .g = color.g, .b = color.b, .a = color.a },
+    };
+}
+
+pub fn beginPass(render_pass: graphics.RenderPass, clear_color: ?colors.Color) void {
+    var pass_action = sg.PassAction{};
+    pass_action.colors[0] = .{ .load_action = .LOAD, .store_action = .STORE };
+    pass_action.depth = .{
+        .load_action = if (render_pass.config.clear_depth) .CLEAR else .LOAD,
+        .clear_value = 1.0,
+        .store_action = .STORE,
+    };
+    pass_action.stencil = .{
+        .load_action = if (render_pass.config.clear_stencil) .CLEAR else .LOAD,
+        .clear_value = 0.0,
+        .store_action = .STORE,
+    };
+
+    // Don't need to store the end result in some cases
+    if (!render_pass.config.write_color)
+        pass_action.colors[0].store_action = .DONTCARE;
+
+    if (!render_pass.config.write_depth)
+        pass_action.depth.store_action = .DONTCARE;
+
+    if (!render_pass.config.write_stencil)
+        pass_action.stencil.store_action = .DONTCARE;
+
+    if (clear_color != null) {
+        pass_action.colors[0].load_action = .CLEAR;
+        pass_action.colors[0].clear_value = .{ .r = clear_color.?.r, .g = clear_color.?.g, .b = clear_color.?.b, .a = clear_color.?.a };
+    }
+
+    // Attach any render textures
+    var attachments: sg.Attachments = .{};
+    if (render_pass.render_texture_color != null) {
+        attachments.colors[0] = render_pass.render_texture_color.?.sokol_attachment_view.?;
+    }
+    if (render_pass.render_texture_depth != null) {
+        attachments.depth_stencil = render_pass.render_texture_depth.?.sokol_attachment_view.?;
+    }
+
+    sg.beginPass(.{ .action = pass_action, .attachments = attachments });
+}
+
+pub fn endPass() void {
+    sg.endPass();
+}
+
+/// Sets the debug text drawing color
+pub fn setDebugTextColor(color: colors.Color) void {
+    debugtext.color4f(color.r, color.g, color.b, color.a);
+}
+
+/// Draws debug text on the screen
+pub fn drawDebugText(x: f32, y: f32, str: [:0]const u8) void {
+    debugtext.pos(x * (0.125 / state.debug_text_scale), y * (0.125 / state.debug_text_scale));
+    debugtext.puts(str);
+}
+
+/// Draws a single debug text character
+pub fn drawDebugTextChar(x: f32, y: f32, char: u8) void {
+    // debugtext.pos(x * 0.125, y * 0.125);
+    debugtext.pos(x * (0.125 / state.debug_text_scale), y * (0.125 / state.debug_text_scale));
+    debugtext.putc(char);
+}
+
+/// Sets the scaling used when drawing debug text
+pub fn setDebugTextScale(scale: f32) void {
+    const widthf: f32 = @floatFromInt(AppBackend.getWidth());
+    const heightf: f32 = @floatFromInt(AppBackend.getHeight());
+    debugtext.canvas(widthf / (scale * 2.0), heightf / (scale * 2.0));
+    state.debug_text_scale = scale * 2.0;
+}
+
+/// Returns the current text scale for debug text
+pub fn getDebugTextScale() f32 {
+    return state.debug_text_scale;
+}
+
+pub fn startImguiFrame() void {
+    simgui.newFrame(.{
+        .width = AppBackend.getWidth(),
+        .height = AppBackend.getHeight(),
+        .delta_time = app.getCurrentDeltaTime(),
+        .dpi_scale = AppBackend.getDPIScale(),
+    });
+}
+
+pub fn renderImgui() void {
+    simgui.render();
+}
+
+pub const TextureImpl = struct {
+    sokol_image: ?sg.Image,
+    sokol_view: ?sg.View,
+    sokol_attachment_view: ?sg.View = null,
+
+    pub fn init(image: images.Image) TextureImpl {
+        var img_desc: sg.ImageDesc = .{
+            .width = @intCast(image.width),
+            .height = @intCast(image.height),
+            .pixel_format = .RGBA8,
+        };
+
+        img_desc.data.mip_levels[0] = sg.asRange(image.data);
+        const sokol_image = sg.makeImage(img_desc);
+        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
+
+        return .{
+            .sokol_image = sokol_image,
+            .sokol_view = sokol_view,
+        };
+    }
+
+    pub fn initFromBytes(width: u32, height: u32, image_bytes: anytype) TextureImpl {
+        var img_desc: sg.ImageDesc = .{
+            .width = @intCast(width),
+            .height = @intCast(height),
+            .pixel_format = .RGBA8,
+        };
+
+        img_desc.data.mip_levels[0] = sg.asRange(image_bytes);
+        const sokol_image = sg.makeImage(img_desc);
+        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
+
+        return .{
+            .sokol_image = sokol_image,
+            .sokol_view = sokol_view,
+        };
+    }
+
+    pub fn initRenderTexture(width: u32, height: u32, is_depth: bool) TextureImpl {
+        var img_desc: sg.ImageDesc = .{
+            .usage = .{ .color_attachment = !is_depth, .depth_stencil_attachment = is_depth },
+            .width = @intCast(width),
+            .height = @intCast(height),
+            .sample_count = 1,
+        };
+
+        if (is_depth)
+            img_desc.pixel_format = .DEPTH_STENCIL;
+
+        const sokol_image = sg.makeImage(img_desc);
+        const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
+
+        const attachment_view = if (!is_depth) sg.makeView(.{
+            .color_attachment = .{ .image = sokol_image },
+        }) else sg.makeView(.{
+            .depth_stencil_attachment = .{ .image = sokol_image },
+        });
+
+        return .{
+            .sokol_image = sokol_image,
+            .sokol_view = sokol_view,
+            .sokol_attachment_view = attachment_view,
+        };
+    }
+
+    pub fn destroy(self: *TextureImpl) void {
+        if (self.sokol_image == null)
+            return;
+        sg.destroyImage(self.sokol_image.?);
+        self.sokol_image = null;
+    }
+
+    pub fn makeImguiTexture(self: *const TextureImpl) u64 {
+        const default_material = graphics.getDefaultMaterial();
+        return simgui.imtextureidWithSampler(self.sokol_view.?, default_material.state.impl.sokol_samplers[0].?);
+    }
 };
 
 pub const BindingsImpl = struct {
@@ -144,7 +379,7 @@ pub const BindingsImpl = struct {
 
     /// Sets the texture that will be used to draw this binding
     pub fn setTexture(self: *Bindings, texture: Texture) void {
-        if (texture.sokol_image == null)
+        if (texture.impl.sokol_image == null)
             return;
 
         // set the texture to the default fragment shader image slot
@@ -152,7 +387,7 @@ pub const BindingsImpl = struct {
         // 0 because in the glsl definitions we have only fs tex and they are annotated with layout(binding=0)
         // they start at 0
 
-        self.impl.sokol_bindings.?.views[0] = texture.sokol_view.?;
+        self.impl.sokol_bindings.?.views[0] = texture.impl.sokol_view.?;
     }
 
     pub fn updateFromMaterial(self: *Bindings, material: *Material) void {
@@ -162,12 +397,12 @@ pub const BindingsImpl = struct {
                 // i because in the glsl definitions we have only fs tex and they are annotated with layout(binding=0)
                 // they start at 0
 
-                self.impl.sokol_bindings.?.views[i] = material.state.textures[i].?.sokol_view.?;
+                self.impl.sokol_bindings.?.views[i] = material.state.textures[i].?.impl.sokol_view.?;
             }
         }
 
         // bind samplers
-        for (material.state.sokol_samplers, 0..) |sampler, i| {
+        for (material.state.impl.sokol_samplers, 0..) |sampler, i| {
             if (sampler) |s|
                 // TODO we would need to read from glsl the binding value if we need to assign it manually or remove this manual code
                 // i because in the glsl definitions we have only fs samplers and they are annotated with layout(binding=0)
@@ -243,6 +478,27 @@ pub const BindingsImpl = struct {
 pub const PipelineBinding = struct {
     sokol_pipeline: sg.Pipeline,
     layout: graphics.VertexLayout,
+};
+
+pub const MaterialImpl = struct {
+    // Hold our material samplers
+    sokol_samplers: [5]?sg.Sampler = [_]?sg.Sampler{null} ** 5,
+
+    pub fn init(cfg: graphics.MaterialConfig) !MaterialImpl {
+        var material_impl: MaterialImpl = .{};
+
+        // Make samplers from filter modes
+        for (cfg.samplers, 0..) |sampler_filter, i| {
+            const sampler_desc = convertFilterModeToSamplerDesc(sampler_filter);
+            material_impl.sokol_samplers[i] = sg.makeSampler(sampler_desc);
+        }
+
+        return material_impl;
+    }
+
+    pub fn makeImguiTexture(self: *const Material, texture_idx: usize, sampler_idx: usize) u64 {
+        return simgui.imtextureidWithSampler(self.state.textures[texture_idx].?.impl.sokol_view.?, self.state.impl.sokol_samplers[sampler_idx].?);
+    }
 };
 
 pub const ShaderImpl = struct {
@@ -811,9 +1067,4 @@ fn vertexLayoutsAreEql(a: graphics.VertexLayout, b: graphics.VertexLayout) bool 
     }
 
     return true;
-}
-
-pub fn getBackend() graphics.Backend {
-    const backend = sg.queryBackend();
-    return @enumFromInt(@intFromEnum(backend));
 }
