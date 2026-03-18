@@ -45,12 +45,18 @@ pub const state = struct {
 
 pub fn init() !void {
     debug.log("Sokol graphics backend starting", .{});
+
     // Setup debug text rendering
     var text_desc: debugtext.Desc = .{
         .logger = .{ .func = slog.func },
     };
     text_desc.fonts[0] = debugtext.fontOric();
     debugtext.setup(text_desc);
+}
+
+pub fn getGraphicsAPI() graphics.GraphicsAPI {
+    const backend = sg.queryBackend();
+    return @enumFromInt(@intFromEnum(backend));
 }
 
 pub fn startFrame() void {
@@ -1061,9 +1067,4 @@ fn vertexLayoutsAreEql(a: graphics.VertexLayout, b: graphics.VertexLayout) bool 
     }
 
     return true;
-}
-
-pub fn getBackend() graphics.Backend {
-    const backend = sg.queryBackend();
-    return @enumFromInt(@intFromEnum(backend));
 }

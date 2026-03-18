@@ -13,7 +13,7 @@ const ArrayList = std.array_list.Managed;
 
 pub var allocator: std.mem.Allocator = undefined;
 
-// Actual backends (Sokol, Null, etc)
+// Actual backends (Sokol, Null, Headless, etc)
 const AppBackend = backends.GetAppBackend();
 const GfxBackend = backends.GetGraphicsBackend();
 
@@ -23,11 +23,17 @@ const Vec4 = math.Vec4;
 const Mat4 = math.Mat4;
 pub const Color = colors.Color;
 
+// The actual implementations from the graphics backend
+pub const ShaderImpl = GfxBackend.ShaderImpl;
+pub const BindingsImpl = GfxBackend.BindingsImpl;
+pub const TextureImpl = GfxBackend.TextureImpl;
+pub const MaterialImpl = GfxBackend.MaterialImpl;
+
 pub var tex_white: Texture = undefined;
 pub var tex_black: Texture = undefined;
 pub var tex_grey: Texture = undefined;
 
-pub const Backend = enum(i32) {
+pub const GraphicsAPI = enum(i32) {
     GLCORE,
     GLES3,
     D3D11,
@@ -212,9 +218,6 @@ pub const BindingConfig = struct {
     vertex_layout: VertexLayout = getDefaultVertexLayout(),
 };
 
-/// The actual internal bindings implementation
-pub const BindingsImpl = GfxBackend.BindingsImpl;
-
 /// Bindings are a drawable collection of buffers, textures, and samplers
 pub const Bindings = struct {
     length: usize,
@@ -319,9 +322,6 @@ pub const ShaderConfig = struct {
     // optionally, take a shader_def
     shader_program_def: ?shaders.ShaderProgram = null,
 };
-
-/// The actual backend implementation for shaders
-pub const ShaderImpl = GfxBackend.ShaderImpl;
 
 pub var next_shader_handle: u32 = 0;
 
@@ -435,7 +435,7 @@ pub const Texture = struct {
     handle: u32,
     is_render_target: bool = false,
 
-    impl: GfxBackend.TextureImpl,
+    impl: TextureImpl,
 
     /// Creates a new texture from an Image
     pub fn init(image: images.Image) Texture {
@@ -444,7 +444,7 @@ pub const Texture = struct {
         return Texture{
             .width = image.width,
             .height = image.height,
-            .impl = GfxBackend.TextureImpl.init(image),
+            .impl = TextureImpl.init(image),
             .handle = next_texture_handle,
         };
     }
@@ -456,7 +456,7 @@ pub const Texture = struct {
         return Texture{
             .width = width,
             .height = height,
-            .impl = GfxBackend.TextureImpl.initFromBytes(width, height, image_bytes),
+            .impl = TextureImpl.initFromBytes(width, height, image_bytes),
             .handle = next_texture_handle,
         };
     }
@@ -468,7 +468,7 @@ pub const Texture = struct {
         return Texture{
             .width = width,
             .height = height,
-            .impl = GfxBackend.TextureImpl.initRenderTexture(width, height, is_depth),
+            .impl = TextureImpl.initRenderTexture(width, height, is_depth),
             .handle = next_texture_handle,
             .is_render_target = true,
         };
@@ -752,9 +752,6 @@ pub const MaterialUniformBlock = struct {
         }
     }
 };
-
-/// The actual internal bindings implementation
-pub const MaterialImpl = GfxBackend.MaterialImpl;
 
 /// The internal state of a Material
 pub const MaterialState = struct {
@@ -1267,7 +1264,7 @@ pub fn getCommonVertexLayouts() []const VertexLayout {
     };
 }
 
-/// Returns the backend currently in use
-pub fn getBackend() Backend {
-    return GfxBackend.getBackend();
+/// Returns the graphics api currently in use
+pub fn getGraphicsAPI() GraphicsAPI {
+    return GfxBackend.getGraphicsAPI();
 }

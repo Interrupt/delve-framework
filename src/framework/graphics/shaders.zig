@@ -57,8 +57,8 @@ pub fn parseYamlShader(allocator: std.mem.Allocator, file_path: []const u8) !Sha
         return e;
     };
 
-    // find the shader that matches our graphics backend
-    const shader_type = getShaderTypeFromBackend();
+    // find the shader that matches our graphics api
+    const shader_type = getShaderTypeFromAPI();
     for (result.shaders) |shader| {
         if (std.mem.eql(u8, shader.slang, shader_type))
             return shader;
@@ -140,9 +140,9 @@ pub const ShaderSamplerPairs = struct {
 };
 
 // Returns a string version of the backend that we should be looking for
-pub fn getShaderTypeFromBackend() []const u8 {
-    const backend = graphics.getBackend();
-    return switch (backend) {
+pub fn getShaderTypeFromAPI() []const u8 {
+    const graphics_api = graphics.getGraphicsAPI();
+    return switch (graphics_api) {
         .GLCORE => "glsl430",
         .GLES3 => "glsl300es",
         .D3D11 => "hlsl4",

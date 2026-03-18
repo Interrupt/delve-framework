@@ -8,7 +8,7 @@ pub fn init() !void {
 }
 
 // actual graphics API (openGl, Metal, etc)
-pub fn getBackend() graphics.Backend {
+pub fn getGraphicsAPI() graphics.GraphicsAPI {
     return .DUMMY;
 }
 
