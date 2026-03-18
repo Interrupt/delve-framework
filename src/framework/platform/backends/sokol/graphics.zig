@@ -126,10 +126,10 @@ pub fn beginPass(render_pass: graphics.RenderPass, clear_color: ?colors.Color) v
     // Attach any render textures
     var attachments: sg.Attachments = .{};
     if (render_pass.render_texture_color != null) {
-        attachments.colors[0] = render_pass.render_texture_color.?.sokol_attachment_view.?;
+        attachments.colors[0] = render_pass.render_texture_color.?.impl.sokol_attachment_view.?;
     }
     if (render_pass.render_texture_depth != null) {
-        attachments.depth_stencil = render_pass.render_texture_depth.?.sokol_attachment_view.?;
+        attachments.depth_stencil = render_pass.render_texture_depth.?.impl.sokol_attachment_view.?;
     }
 
     sg.beginPass(.{ .action = pass_action, .attachments = attachments });
