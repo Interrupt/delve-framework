@@ -7,7 +7,8 @@ const Lua = zlua.Lua;
 pub const BoundType = struct {
     Type: type,
     name: [:0]const u8,
-    ignore_fields: []const [:0]const u8,
+    ignore_fields: []const [:0]const u8 = &[_][:0]const u8{},
+    mixin: ?type = null,
 };
 
 pub fn Registry(comptime entries: []const BoundType) type {
@@ -70,8 +71,22 @@ pub fn Registry(comptime entries: []const BoundType) type {
         }
 
         pub fn bindTypes(luaState: *zlua.Lua) !void {
+            const start_top = luaState.getTop();
+
+            // Bind our functions first
             inline for (registry) |entry| {
                 try bindType(luaState, entry);
+            }
+
+            // Now add in our static properties to the created libraries
+            inline for (registry) |entry| {
+                try bindStaticProperties(luaState, entry);
+            }
+
+            // make sure we're not leaking stack
+            const end_top = luaState.getTop();
+            if (start_top != end_top) {
+                debug.fatal("Lua bindTypes: leaking stack! s: {d} e: {d}", .{ start_top, end_top });
             }
         }
 
@@ -139,6 +154,33 @@ pub fn Registry(comptime entries: []const BoundType) type {
 
             debug.warning("Lua: {s}: Could not find field '{s}' to set", .{ bound_type.name, key });
             return 0;
+        }
+
+        pub fn bindStaticProperties(luaState: *zlua.Lua, comptime bound_type: BoundType) !void {
+            const meta_table_name = bound_type.name;
+
+            const start_top = luaState.getTop();
+
+            // Get our library
+            _ = try luaState.getGlobal(meta_table_name);
+
+            // Register any constant fields, like Vec2.one
+            const found_fields = comptime findFields(bound_type.Type, bound_type.ignore_fields);
+
+            inline for (found_fields) |field| {
+                const val = @field(bound_type.Type, field.name);
+                _ = pushAny(luaState, val);
+
+                luaState.setField(-2, field.name);
+            }
+
+            // Reset state
+            luaState.pop(1);
+
+            const end_top = luaState.getTop();
+            if (start_top != end_top) {
+                debug.fatal("Lua property binding: leaking stack! s: {d} e: {d}", .{ start_top, end_top });
+            }
         }
 
         pub fn bindType(luaState: *zlua.Lua, comptime bound_type: BoundType) !void {
@@ -247,14 +289,19 @@ pub fn Registry(comptime entries: []const BoundType) type {
             }
 
             // Now wire up our functions!
-            const found_fns = comptime findLibraryFunctions(T, bound_type.ignore_fields);
+            const library_fns = comptime findLibraryFunctions(T, bound_type.ignore_fields);
+
+            // also add in our mixin
+            const mixin_fns = comptime findLibraryFunctionsOpt(bound_type.mixin, bound_type.ignore_fields);
+            const found_fns = library_fns ++ mixin_fns;
+
             inline for (found_fns) |foundFunc| {
                 luaState.pushClosure(foundFunc.func.?, 0);
                 luaState.setField(-2, foundFunc.name);
             }
 
             // Make this usable with "require" and register our funcs in the library
-            luaState.requireF(meta_table_name, zlua.wrap(makeLuaOpenLibAndBindFn(T, found_fns, bound_type.ignore_fields)), true);
+            luaState.requireF(meta_table_name, zlua.wrap(makeLuaOpenLibAndBindFn(found_fns)), true);
             luaState.pop(3);
 
             // Pop boxed metatable
@@ -262,8 +309,9 @@ pub fn Registry(comptime entries: []const BoundType) type {
 
             debug.log("Bound lua type: '{any}' to '{s}'", .{ T, meta_table_name });
 
-            if (startTop != luaState.getTop()) {
-                debug.fatal("Lua binding: leaking stack!", .{});
+            const end_top = luaState.getTop();
+            if (startTop != end_top) {
+                debug.fatal("Lua binding: leaking stack! s: {d} e: {d}", .{ startTop, end_top });
             }
         }
 
@@ -273,6 +321,13 @@ pub fn Registry(comptime entries: []const BoundType) type {
 
         pub fn makeLuaBinding(name: [:0]const u8, comptime function: anytype) zlua.FnReg {
             return zlua.FnReg{ .name = name, .func = zlua.wrap(bindFuncLua(name, function)) };
+        }
+
+        pub fn findLibraryFunctionsOpt(comptime module: ?type, ignore_fields: []const [:0]const u8) []const zlua.FnReg {
+            if (module) |m| {
+                return findLibraryFunctions(m, ignore_fields);
+            }
+            return &[_]zlua.FnReg{};
         }
 
         pub fn findLibraryFunctions(comptime module: anytype, ignore_fields: []const [:0]const u8) []const zlua.FnReg {
@@ -487,19 +542,11 @@ pub fn Registry(comptime entries: []const BoundType) type {
             }.inner;
         }
 
-        pub fn makeLuaOpenLibAndBindFn(comptime module: anytype, lib_funcs: []const zlua.FnReg, ignore_fields: []const [:0]const u8) fn (*Lua) i32 {
+        pub fn makeLuaOpenLibAndBindFn(lib_funcs: []const zlua.FnReg) fn (*Lua) i32 {
             return opaque {
                 pub fn inner(luaState: *Lua) i32 {
                     // Register our new library for this type, with all our funcs!
                     luaState.newLib(lib_funcs);
-
-                    // Also register our constant fields, like Vec2.one
-                    const found_fields = comptime findFields(module, ignore_fields);
-
-                    inline for (found_fields) |field| {
-                        _ = pushAny(luaState, @field(module, field.name));
-                        luaState.setField(-2, field.name);
-                    }
 
                     return 1;
                 }

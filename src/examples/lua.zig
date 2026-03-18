@@ -42,7 +42,26 @@ pub const TestBindingStruct = struct {
         delve.debug.log("TestBindingStruct cleanup called from Lua gc", .{});
     }
 
+    // Test returning another bound type
+    pub fn getCat() Cat {
+        return .{};
+    }
+
     pub const constant_message: [:0]const u8 = "This is a constant!";
+
+    pub const cat: Cat = .{};
+};
+
+pub const Mixin = struct {
+    pub fn testMixin(self: TestBindingStruct) void {
+        delve.debug.log(" > This function was mixed in! Message: {s}", .{self.message});
+    }
+};
+
+pub const Cat = struct {
+    pub fn meow() void {
+        delve.debug.log(" > The cat meows", .{});
+    }
 };
 
 const testBindingScript =
@@ -52,6 +71,8 @@ const testBindingScript =
     \\ local test_binding = TestStruct.new("Hello from Lua!")
     \\ test_binding:sayHello()
     \\ test_binding:testOptional()
+    \\ test_binding:getCat():meow()
+    \\ TestStruct.cat:meow()
     \\ local title = test_binding:getMessage()
     \\ print(" > Message from Zig: " .. title)
     \\ -- Set and get fields
@@ -63,6 +84,7 @@ const testBindingScript =
     \\ test_pointer:sayHello()
     \\ test_pointer.message = "Set from a pointer"
     \\ test_pointer:sayHello()
+    \\ test_pointer:testMixin()
     \\ print("Message: " .. test_pointer.message)
 ;
 
@@ -101,7 +123,8 @@ pub fn lua_test_on_init() !void {
 
     // You can register structs with Lua so we can interact with them on the Lua side!
     const registry = delve.scripting.binder.Registry(&[_]delve.scripting.binder.BoundType{
-        .{ .Type = TestBindingStruct, .name = "TestStruct", .ignore_fields = &[_][:0]const u8{"ignoreMe"} },
+        .{ .Type = TestBindingStruct, .name = "TestStruct", .ignore_fields = &[_][:0]const u8{"ignoreMe"}, .mixin = Mixin },
+        .{ .Type = Cat, .name = "Cat" },
     });
     try registry.bindTypes(lua);
 
