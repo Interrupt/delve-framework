@@ -319,8 +319,8 @@ pub fn Registry(comptime entries: []const BoundType) type {
             luaState.requireF(libraryName, zlua.wrap(makeLuaOpenLibFn(funcs)), true);
         }
 
-        pub fn makeLuaBinding(name: [:0]const u8, comptime function: anytype) zlua.FnReg {
-            return zlua.FnReg{ .name = name, .func = zlua.wrap(bindFuncLua(name, function)) };
+        pub fn makeLuaBinding(name: [:0]const u8, mod_name: [:0]const u8, comptime function: anytype) zlua.FnReg {
+            return zlua.FnReg{ .name = name, .func = zlua.wrap(bindFuncLua(name, mod_name, function)) };
         }
 
         pub fn findLibraryFunctionsOpt(comptime module: ?type, ignore_fields: []const [:0]const u8) []const zlua.FnReg {
@@ -338,17 +338,19 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 for (fn_fields) |d| {
                     // convert the name string to be :0 terminated
                     const field_name: [:0]const u8 = d.name ++ "";
-                    found = found ++ .{makeLuaBinding(field_name, @field(module, d.name))};
+                    found = found ++ .{makeLuaBinding(field_name, @typeName(module), @field(module, d.name))};
                 }
 
                 return found;
             }
         }
 
-        pub fn bindFuncLua(comptime name: [:0]const u8, comptime function: anytype) fn (lua: *Lua) i32 {
+        pub fn bindFuncLua(comptime name: [:0]const u8, comptime mod_name: [:0]const u8, comptime function: anytype) fn (lua: *Lua) i32 {
             return (opaque {
                 pub fn lua_call(luaState: *Lua) i32 {
                     const FnType = @TypeOf(function);
+
+                    const top = luaState.getTop();
 
                     // Can't bind types with anytype, so early out if we see one!
                     if (comptime hasAnytypeParam(FnType)) {
@@ -363,12 +365,23 @@ pub fn Registry(comptime entries: []const BoundType) type {
                     const fn_info = @typeInfo(@TypeOf(function)).@"fn";
                     const params = fn_info.params;
 
+                    // Validate number of args
+                    if (top != params.len) {
+                        const ignore_default = params.len == 0 and top == 1; // could just be our self ref
+
+                        if (!ignore_default) {
+                            debug.warning("Lua: function '{s}:{s}' called with {d} arguments called with {d} instead", .{ mod_name, name, params.len, top });
+                            luaState.raiseErrorStr("Invalid number of arguments to function", .{});
+                            return 0;
+                        }
+                    }
+
                     inline for (params, 0..) |param, i| {
                         const param_type = param.type.?;
                         const lua_idx = i + 1;
 
                         args[i] = toAny(luaState, param_type, lua_idx) catch {
-                            debug.warning("Lua: '{s}': Could not bind arg {any} to {any}", .{ name, lua_idx, param_type });
+                            debug.warning("Lua: '{s}:{s}': Could not bind arg {any} to {any}", .{ mod_name, name, lua_idx, param_type });
                             luaState.raiseErrorStr("Could not bind argument! Should be type %s", .{@typeName(param_type)});
                             return 0;
                         };
