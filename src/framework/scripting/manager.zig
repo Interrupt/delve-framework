@@ -32,7 +32,7 @@ pub fn init() !void {
         .{ .Type = app, .name = "delve.platform.App", .ignore_fields = &[_][:0]const u8{} },
     };
 
-    const registry = binder.Registry(bound_types);
+    const registry = binder.Registry(.{ .entries = bound_types });
     try registry.bindTypes(lua_util.getLua());
 
     // Bind all the libraries using some meta programming magic at compile time
