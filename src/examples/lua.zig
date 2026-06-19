@@ -11,6 +11,7 @@ const fps_module = delve.module.fps_counter;
 
 pub const TestBindingStruct = struct {
     message: []const u8,
+    allocator: std.mem.Allocator = undefined, // should be ignored!
 
     pub fn new(in_message: []const u8) TestBindingStruct {
         return .{ .message = in_message };
@@ -34,6 +35,11 @@ pub const TestBindingStruct = struct {
 
     pub fn ignoreMe() void {
         @compileError("This field should be ignored during binding!");
+    }
+
+    pub fn ignoreMeToo(allocator: std.mem.Allocator) void {
+        _ = allocator;
+        delve.debug.fatal("Should not be callable!", .{});
     }
 
     // Lua garbage collection will automatically call destroy if found
@@ -86,6 +92,10 @@ const testBindingScript =
     \\ test_pointer:sayHello()
     \\ test_pointer:testMixin()
     \\ print("Message: " .. test_pointer.message)
+    \\ -- Test ignored types
+    \\ test_pointer:ignoreMeToo()
+    \\ print(test_pointer.allocator)
+    \\ test_pointer.allocator = "blah"
 ;
 
 pub fn main() !void {
@@ -122,9 +132,12 @@ pub fn lua_test_on_init() !void {
     const lua = delve.scripting.lua.getLua();
 
     // You can register structs with Lua so we can interact with them on the Lua side!
-    const registry = delve.scripting.binder.Registry(&[_]delve.scripting.binder.BoundType{
-        .{ .Type = TestBindingStruct, .name = "TestStruct", .ignore_fields = &[_][:0]const u8{"ignoreMe"}, .mixin = Mixin },
-        .{ .Type = Cat, .name = "Cat" },
+    const registry = delve.scripting.binder.Registry(.{
+        .entries = &[_]delve.scripting.binder.BoundType{
+            .{ .Type = TestBindingStruct, .name = "TestStruct", .ignore_fields = &[_][:0]const u8{"ignoreMe"}, .mixin = Mixin },
+            .{ .Type = Cat, .name = "Cat" },
+        },
+        .ignored_types = &[_]type{std.mem.Allocator},
     });
     try registry.bindTypes(lua);
 

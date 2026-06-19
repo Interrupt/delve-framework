@@ -4,6 +4,10 @@ const debug = @import("../debug.zig");
 const zlua = @import("zlua");
 const Lua = zlua.Lua;
 
+const LuaError = error{
+    SliceNotSupported,
+};
+
 pub const BoundType = struct {
     Type: type,
     name: [:0]const u8,
@@ -11,9 +15,15 @@ pub const BoundType = struct {
     mixin: ?type = null,
 };
 
-pub fn Registry(comptime entries: []const BoundType) type {
+pub const RegistryConfig = struct {
+    entries: []const BoundType,
+    ignored_types: ?[]const type = null,
+};
+
+pub fn Registry(comptime cfg: RegistryConfig) type {
     return struct {
-        pub const registry = entries;
+        pub const registry = cfg.entries;
+        pub const ignored_types = cfg.ignored_types;
 
         // Allow us to box up our bound types
         pub fn BoxType(comptime T: type, comptime in_bound_type: BoundType) type {
@@ -104,9 +114,17 @@ pub fn Registry(comptime entries: []const BoundType) type {
 
             // Grab this field if we find it
             inline for (std.meta.fields(T)) |field| {
+                const should_ignore = comptime shouldIgnoreTypeOrField(field.type, field.name, bound_type.ignore_fields, ignored_types);
+
                 if (std.mem.eql(u8, key, field.name)) {
-                    const val = @field(ptr, field.name);
-                    return pushAny(luaState, val);
+                    if (should_ignore) {
+                        debug.warning("Lua: Cannot get field '{s}' from '{s}' because it is ignored", .{ field.name, bound_type.name });
+                        luaState.pushNil();
+                        return 1;
+                    } else {
+                        const val = @field(ptr, field.name);
+                        return pushAny(luaState, val);
+                    }
                 }
             }
 
@@ -140,14 +158,21 @@ pub fn Registry(comptime entries: []const BoundType) type {
 
                 // Set this field if we find it
                 inline for (std.meta.fields(T)) |field| {
-                    if (std.mem.eql(u8, key, field.name)) {
-                        const val = toAny(luaState, field.type, -1) catch {
-                            luaState.raiseErrorStr("Could not set field! Should be type %s", .{@typeName(field.type)});
-                            return 0;
-                        };
+                    const should_ignore = comptime shouldIgnoreTypeOrField(field.type, field.name, bound_type.ignore_fields, ignored_types);
 
-                        @field(ptr, field.name) = val;
-                        return 1;
+                    if (std.mem.eql(u8, key, field.name)) {
+                        if (should_ignore) {
+                            debug.warning("Lua: Cannot set field '{s}' from '{s}' because it is ignored", .{ field.name, bound_type.name });
+                            return 0;
+                        } else {
+                            const val = toAny(luaState, field.type, -1) catch {
+                                luaState.raiseErrorStr("Could not set field! Should be type %s", .{@typeName(field.type)});
+                                return 0;
+                            };
+
+                            @field(ptr, field.name) = val;
+                            return 1;
+                        }
                     }
                 }
             }
@@ -165,7 +190,7 @@ pub fn Registry(comptime entries: []const BoundType) type {
             _ = try luaState.getGlobal(meta_table_name);
 
             // Register any constant fields, like Vec2.one
-            const found_fields = comptime findFields(bound_type.Type, bound_type.ignore_fields);
+            const found_fields = comptime findFields(bound_type.Type, bound_type.ignore_fields, ignored_types);
 
             inline for (found_fields) |field| {
                 const val = @field(bound_type.Type, field.name);
@@ -354,7 +379,11 @@ pub fn Registry(comptime entries: []const BoundType) type {
 
                     // Can't bind types with anytype, so early out if we see one!
                     if (comptime hasAnytypeParam(FnType)) {
-                        debug.warning("Cannot call bound function with anytype param", .{});
+                        debug.warning("Lua: Cannot call bound function '{s}:{s}' with anytype param", .{ mod_name, name });
+                        return 0;
+                    }
+                    if (comptime hasIgnoredTypeParam(FnType, ignored_types)) {
+                        debug.warning("Lua: Cannot call bound function '{s}:{s}' with ignored type param", .{ mod_name, name });
                         return 0;
                     }
 
@@ -445,6 +474,12 @@ pub fn Registry(comptime entries: []const BoundType) type {
                 .pointer => |p| {
                     const Child = p.child;
                     if (p.size == .one) {
+                        // Explode if this is a const we can't handle!
+                        if (p.is_const) {
+                            debug.fatal("Lua: Cannot push const pointer! Cannot guarantee that references will not be modified", .{});
+                            return 0;
+                        }
+
                         // If this is a pointer of a bound type, box it up
                         if (getBoundType(Child)) |bound_type| {
                             const BoxedPointerType = BoxType(Child, bound_type);
@@ -491,6 +526,16 @@ pub fn Registry(comptime entries: []const BoundType) type {
             return 1;
         }
 
+        fn isTypeString(typeinfo: std.builtin.Type.Pointer) bool {
+            const childinfo = @typeInfo(typeinfo.child);
+            if (typeinfo.child == u8 and typeinfo.size != .one) {
+                return true;
+            } else if (typeinfo.size == .one and childinfo == .array and childinfo.array.child == u8) {
+                return true;
+            }
+            return false;
+        }
+
         pub fn toAny(luaState: *Lua, comptime T: type, lua_idx: i32) !T {
             switch (@typeInfo(T)) {
                 .pointer => |p| {
@@ -503,7 +548,19 @@ pub fn Registry(comptime entries: []const BoundType) type {
                         }
                     }
 
-                    // Fallback to the default toAny
+                    if (comptime isTypeString(p)) {
+                        // Found a string!
+                        const string: [*:0]const u8 = try luaState.toString(lua_idx);
+                        return std.mem.span(string);
+                    } else {
+                        switch (p.size) {
+                            .slice, .many => {
+                                return LuaError.SliceNotSupported;
+                            },
+                            else => {},
+                        }
+                    }
+
                     return try luaState.toAny(T, lua_idx);
                 },
                 .array, .vector => {
@@ -585,17 +642,49 @@ fn hasAnytypeParam(comptime T: type) bool {
     return false;
 }
 
-pub fn shouldIgnoreField(field_name: [:0]const u8, ignore_fields: []const [:0]const u8) bool {
+fn hasIgnoredTypeParam(comptime T: type, comptime ignored_fields: ?[]const type) bool {
+    const fn_info = @typeInfo(T).@"fn";
+
+    inline for (fn_info.params) |p| {
+        if (p.type == null) return true;
+        if (shouldIgnoreType(p.type.?, ignored_fields)) return true;
+    }
+    return false;
+}
+
+fn shouldIgnoreTypeOrField(field_type: type, field_name: [:0]const u8, ignore_fields: []const [:0]const u8, ignore_types: ?[]const type) bool {
+    // Some types should be outright ignored
+    if (shouldIgnoreType(field_type, ignore_types)) {
+        return true;
+    }
+
+    // might still be ignored by name
+    return shouldIgnoreField(field_name, ignore_fields);
+}
+
+fn shouldIgnoreField(field_name: [:0]const u8, ignore_fields: []const [:0]const u8) bool {
+    // Ignore private fields
     if (field_name.len == 0 or field_name[0] == '_') {
         return true;
     }
 
+    // Now check the ignore_fields list
     for (ignore_fields) |toIgnore| {
         if (std.mem.eql(u8, field_name, toIgnore)) {
             return true;
         }
     }
 
+    return false;
+}
+
+fn shouldIgnoreType(comptime T: type, comptime ignored_types: ?[]const type) bool {
+    if (ignored_types) |types| {
+        inline for (types) |t| {
+            if (t == T)
+                return true;
+        }
+    }
     return false;
 }
 
@@ -621,7 +710,7 @@ fn findFunctions(comptime module: anytype, ignore_fields: []const [:0]const u8) 
     }
 }
 
-fn findFields(comptime module: anytype, ignore_fields: []const [:0]const u8) []const std.builtin.Type.Declaration {
+fn findFields(comptime module: anytype, ignore_fields: []const [:0]const u8, ignore_types: ?[]const type) []const std.builtin.Type.Declaration {
     comptime {
         // Get all the public declarations in this module
         const decls = @typeInfo(module).@"struct".decls;
@@ -633,7 +722,12 @@ fn findFields(comptime module: anytype, ignore_fields: []const [:0]const u8) []c
                 continue;
 
             const field = @field(module, d.name);
-            if (@typeInfo(@TypeOf(field)) == .@"fn")
+            const field_type = @TypeOf(field);
+
+            if (@typeInfo(field_type) == .@"fn")
+                continue;
+
+            if (shouldIgnoreType(field_type, ignore_types))
                 continue;
 
             // Now filter out just the contants
