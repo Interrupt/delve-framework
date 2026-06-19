@@ -4,6 +4,10 @@ const debug = @import("../debug.zig");
 const zlua = @import("zlua");
 const Lua = zlua.Lua;
 
+const LuaError = error{
+    SliceNotSupported,
+};
+
 pub const BoundType = struct {
     Type: type,
     name: [:0]const u8,
@@ -522,6 +526,16 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
             return 1;
         }
 
+        fn isTypeString(typeinfo: std.builtin.Type.Pointer) bool {
+            const childinfo = @typeInfo(typeinfo.child);
+            if (typeinfo.child == u8 and typeinfo.size != .one) {
+                return true;
+            } else if (typeinfo.size == .one and childinfo == .array and childinfo.array.child == u8) {
+                return true;
+            }
+            return false;
+        }
+
         pub fn toAny(luaState: *Lua, comptime T: type, lua_idx: i32) !T {
             switch (@typeInfo(T)) {
                 .pointer => |p| {
@@ -534,7 +548,19 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
                         }
                     }
 
-                    // Fallback to the default toAny
+                    if (comptime isTypeString(p)) {
+                        // Found a string!
+                        const string: [*:0]const u8 = try luaState.toString(lua_idx);
+                        return std.mem.span(string);
+                    } else {
+                        switch (p.size) {
+                            .slice, .many => {
+                                return LuaError.SliceNotSupported;
+                            },
+                            else => {},
+                        }
+                    }
+
                     return try luaState.toAny(T, lua_idx);
                 },
                 .array, .vector => {
