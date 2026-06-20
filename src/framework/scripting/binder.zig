@@ -20,6 +20,12 @@ pub const RegistryConfig = struct {
     ignored_types: ?[]const type = null,
 };
 
+// Use LuaRef when binding to pass along a Lua reference without converting it
+// Good for passing through from Lua -> Zig -> Lua in one stack
+pub const LuaRef = struct {
+    lua_idx: i32,
+};
+
 pub fn Registry(comptime cfg: RegistryConfig) type {
     return struct {
         pub const registry = cfg.entries;
@@ -409,6 +415,13 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
                         const param_type = param.type.?;
                         const lua_idx = i + 1;
 
+                        if (param_type == LuaRef) {
+                            args[i] = LuaRef{
+                                .lua_idx = lua_idx,
+                            };
+                            continue;
+                        }
+
                         args[i] = toAny(luaState, param_type, lua_idx) catch {
                             debug.warning("Lua: '{s}:{s}': Could not bind arg {any} to {any}", .{ mod_name, name, lua_idx, param_type });
                             luaState.raiseErrorStr("Could not bind argument! Should be type %s", .{@typeName(param_type)});
@@ -445,6 +458,12 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
             const val_type = @TypeOf(value);
 
             // Push the value onto the stack
+
+            // If it's a LuaRef, just pass forward this index
+            if (val_type == LuaRef) {
+                luaState.pushValue(value.lua_idx);
+                return 1;
+            }
 
             switch (@typeInfo(val_type)) {
                 .void => {
@@ -600,6 +619,54 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
                     return try luaState.toAny(T, lua_idx);
                 },
             }
+        }
+
+        pub fn callGlobalFunction(luaState: *Lua, func_name: [:0]const u8, args: anytype) !void {
+            const top = luaState.getTop();
+            defer luaState.setTop(top);
+
+            _ = try luaState.getGlobal(func_name);
+
+            if (!luaState.isFunction(-1)) {
+                debug.log("Lua callGlobalFunction: global func '{s}' not found!", .{func_name});
+                return;
+            }
+
+            try callFunctionAuto(luaState, args);
+        }
+
+        pub fn callFunctionAuto(luaState: *Lua, args: anytype) !void {
+            const top = luaState.getTop();
+            defer luaState.setTop(top);
+
+            if (!luaState.isFunction(-1)) {
+                debug.log("Lua callFunctionAuto: top of stack is not a function!", .{});
+                return;
+            }
+
+            // Keep track of how much we are pushing onto the Lua stack
+            var count: i32 = 0;
+
+            // Pass all args
+            // Should be an struct tuple, push each field
+            const T = @TypeOf(args);
+            switch (@typeInfo(T)) {
+                .@"struct" => |info| {
+                    if (!info.is_tuple) {
+                        @compileError("callLuaFunction: Expected struct tuple!");
+                    }
+
+                    inline for (info.fields) |field| {
+                        const field_val = @field(args, field.name);
+                        count = count + pushAny(luaState, field_val);
+                    }
+                },
+                else => {
+                    @compileError("callLuaFunction: Expected struct tuple!");
+                },
+            }
+
+            try luaState.protectedCall(.{ .args = count });
         }
 
         pub fn makeLuaOpenLibFn(lib_funcs: []const zlua.FnReg) fn (*Lua) i32 {

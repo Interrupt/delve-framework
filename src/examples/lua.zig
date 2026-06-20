@@ -9,6 +9,15 @@ const fps_module = delve.module.fps_counter;
 
 // This example shows how to use lua scripting
 
+// Setup a registry of our bound types to let us use them in Lua
+const registry = delve.scripting.binder.Registry(.{
+    .entries = &[_]delve.scripting.binder.BoundType{
+        .{ .Type = TestBindingStruct, .name = "TestStruct", .ignore_fields = &[_][:0]const u8{"ignoreMe"}, .mixin = Mixin },
+        .{ .Type = Cat, .name = "Cat" },
+    },
+    .ignored_types = &[_]type{std.mem.Allocator},
+});
+
 pub const TestBindingStruct = struct {
     message: []const u8,
     allocator: std.mem.Allocator = undefined, // should be ignored!
@@ -42,6 +51,17 @@ pub const TestBindingStruct = struct {
         delve.debug.fatal("Should not be callable!", .{});
     }
 
+    // Use a LuaRef to pass along a Lua variable on the stack back to Lua
+    pub fn testLuaPassthrough(self: *TestBindingStruct, test_passthrough: delve.scripting.binder.LuaRef) void {
+        _ = self;
+
+        const lua = delve.scripting.lua.getLua();
+        const str: []const u8 = "hello from zig!";
+        registry.callGlobalFunction(lua, "TestGlobalFunc", .{ str, test_passthrough }) catch {
+            delve.debug.fatal("Could not call TestGlobalFunc in Lua!", .{});
+        };
+    }
+
     // Lua garbage collection will automatically call destroy if found
     pub fn destroy(self: *TestBindingStruct) void {
         _ = self;
@@ -72,6 +92,7 @@ pub const Cat = struct {
 
 const testBindingScript =
     \\ -- Test out binding Zig structs and using them in Lua
+    \\ TestGlobalFunc = function(arg1, arg2) print("TetsGlobalFunc:", arg1, arg2[1]) end
     \\ local TestStruct = require("TestStruct")
     \\ print(TestStruct.constant_message)
     \\ local test_binding = TestStruct.new("Hello from Lua!")
@@ -96,6 +117,7 @@ const testBindingScript =
     \\ test_pointer:ignoreMeToo()
     \\ print(test_pointer.allocator)
     \\ test_pointer.allocator = "blah"
+    \\ test_pointer:testLuaPassthrough({ "hello from lua!" })
 ;
 
 pub fn main() !void {
@@ -132,13 +154,6 @@ pub fn lua_test_on_init() !void {
     const lua = delve.scripting.lua.getLua();
 
     // You can register structs with Lua so we can interact with them on the Lua side!
-    const registry = delve.scripting.binder.Registry(.{
-        .entries = &[_]delve.scripting.binder.BoundType{
-            .{ .Type = TestBindingStruct, .name = "TestStruct", .ignore_fields = &[_][:0]const u8{"ignoreMe"}, .mixin = Mixin },
-            .{ .Type = Cat, .name = "Cat" },
-        },
-        .ignored_types = &[_]type{std.mem.Allocator},
-    });
     try registry.bindTypes(lua);
 
     // Load and run a simple Lua command
