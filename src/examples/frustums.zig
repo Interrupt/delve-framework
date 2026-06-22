@@ -115,7 +115,7 @@ pub fn on_draw() void {
             const bounds = cube_mesh.bounds.translate(cube_pos);
 
             if (frustum.containsBoundingBox(bounds)) {
-                cube_mesh.drawWithMaterial(material_highlight, view_mats, cube_model_matrix);
+                cube_mesh.drawWithMaterials((&material_highlight)[0..1], view_mats, cube_model_matrix);
             } else {
                 cube_mesh.draw(view_mats, cube_model_matrix);
             }
@@ -126,7 +126,10 @@ pub fn on_draw() void {
 }
 
 pub fn on_cleanup() !void {
+    frustum_mesh.materials.deinit();
     frustum_mesh.deinit();
+    cube_mesh.materials.deinit();
+    cube_mesh.deinit();
     material_highlight.deinit();
     material_cube.deinit();
     material_frustum.deinit();

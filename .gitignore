@@ -3,3 +3,4 @@ zig-cache
 zig-out
 .DS_Store
 tools/sokol-shdc
+assets/meshes/multiple-materials

@@ -15,6 +15,8 @@ var cube1: delve.graphics.mesh.Mesh = undefined;
 var cube2: delve.graphics.mesh.Mesh = undefined;
 var cube3: delve.graphics.mesh.Mesh = undefined;
 
+var allocator: std.mem.Allocator = undefined;
+
 var time: f64 = 0.0;
 
 pub fn main() !void {
@@ -60,6 +62,8 @@ pub fn on_init() !void {
         .texture_0 = tex,
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
+
+    allocator = delve.mem.getAllocator();
 
     // create our camera
     camera = delve.graphics.camera.Camera.initThirdPerson(90.0, 0.01, 20.0, 5.0, math.Vec3.up);
@@ -114,4 +118,10 @@ pub fn on_draw() void {
 
 pub fn on_cleanup() !void {
     material.deinit();
+    cube1.materials.deinit();
+    cube1.deinit();
+    cube2.materials.deinit();
+    cube2.deinit();
+    cube3.materials.deinit();
+    cube3.deinit();
 }

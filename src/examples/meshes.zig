@@ -14,6 +14,7 @@ const input = delve.platform.input;
 const math = delve.math;
 const modules = delve.modules;
 const mesh = delve.graphics.mesh;
+const gltf = delve.assets.gltf;
 
 // easy access to some types
 const Vec3 = math.Vec3;
@@ -26,8 +27,10 @@ var time: f32 = 0.0;
 var camera: cam.Camera = undefined;
 
 var mesh_test: ?mesh.Mesh = null;
+var gltf_data: *gltf.Data = undefined;
 var shader: delve.platform.graphics.Shader = undefined;
 var material: graphics.Material = undefined;
+var materials: std.ArrayList(graphics.Material) = undefined;
 
 // This example shows loading and drawing meshes
 
@@ -96,8 +99,16 @@ fn on_init() !void {
         .texture_1 = tex_emissive,
     });
 
+    materials = std.ArrayList(graphics.Material).init(delve.mem.getAllocator());
+    try materials.append(material);
+
+    const path = "assets/meshes/";
+    const filename = "SciFiHelmet.gltf";
+
+    gltf_data = try gltf.loadData(filename, path);
+
     // Load our mesh!
-    mesh_test = mesh.Mesh.initFromFile(delve.mem.getAllocator(), "assets/meshes/SciFiHelmet.gltf", .{ .material = material });
+    mesh_test = mesh.Mesh.initFromData(delve.mem.getAllocator(), gltf_data, 0, .{ .materials = materials });
 }
 
 fn on_tick(delta: f32) void {
@@ -121,7 +132,8 @@ fn on_draw() void {
     model = model.mul(Mat4.rotate(time * 0.6, Vec3.new(0.0, 1.0, 0.0)));
 
     const sin_val = std.math.sin(time * 0.006) + 0.5;
-    mesh_test.?.material.state.params.draw_color = Color.new(sin_val, sin_val, sin_val, 1.0);
+    material.state.params.draw_color = Color.new(sin_val, sin_val, sin_val, 1.0);
+
     mesh_test.?.draw(view_mats, model);
 
     model = Mat4.translate(Vec3.new(-2.0, 0.0, 0.0));
@@ -131,10 +143,14 @@ fn on_draw() void {
 fn on_cleanup() !void {
     debug.log("Mesh example module cleaning up", .{});
 
+    material.deinit();
+    materials.deinit();
+    shader.destroy();
+
+    gltf.freeData(gltf_data);
+
     if (mesh_test == null)
         return;
 
     mesh_test.?.deinit();
-    material.deinit();
-    shader.destroy();
 }
