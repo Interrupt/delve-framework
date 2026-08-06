@@ -1,6 +1,7 @@
 const std = @import("std");
 const Build = std.Build;
 const builtin = @import("builtin");
+const cimgui = @import("cimgui");
 const zlua = @import("zlua");
 const sokol = @import("sokol");
 const system_sdk = @import("system-sdk");
@@ -82,9 +83,8 @@ pub fn build(b: *std.Build) !void {
     });
 
     // inject the cimgui header search path into the sokol C library compile step
-    // dep_sokol.artifact("sokol_clib").addIncludePath(dep_cimgui.path("src"));
-
-    // dep_stb_truetype.artifact("stb_truetype").addIncludePath(b.path("3rdparty/stb_truetype/libs"));
+    const cimgui_conf = cimgui.getConfig(false);
+    dep_sokol.artifact("sokol_clib").root_module.addIncludePath(dep_cimgui.path(cimgui_conf.include_dir));
 
     const sokol_item: ModuleImport = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
     const zlua_item: ModuleImport = .{ .module = dep_zlua.module("zlua"), .name = "zlua" };
