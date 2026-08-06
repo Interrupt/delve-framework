@@ -9,6 +9,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    root_module.link_libc = true;
 
     const lib = b.addLibrary(.{
         .name = "stb_truetype",
@@ -16,15 +17,16 @@ pub fn build(b: *std.Build) void {
         .root_module = root_module,
     });
 
-    lib.addCSourceFile(.{
+    root_module.addCSourceFile(.{
         .file = b.path("src/stb_truetype.c"),
         .flags = &.{
             "-std=c99",
         },
     });
 
-    lib.addIncludePath(b.path("libs"));
-    lib.linkLibC();
+    root_module.addIncludePath(b.path("libs"));
+    // root_module.linkLibC();
+    // lib.linkLibC();
 
     b.installArtifact(lib);
 
@@ -39,8 +41,9 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
-    tests.linkLibrary(lib);
-    tests.addIncludePath(b.path("libs"));
+    root_module.linkLibrary(lib);
+    // tests.linkLibrary(lib);
+    // tests.addIncludePath(b.path("libs"));
     b.installArtifact(tests);
 
     test_step.dependOn(&b.addRunArtifact(tests).step);

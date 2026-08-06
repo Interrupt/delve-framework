@@ -83,9 +83,9 @@ pub fn build(b: *std.Build) !void {
     });
 
     // inject the cimgui header search path into the sokol C library compile step
-    dep_sokol.artifact("sokol_clib").addIncludePath(dep_cimgui.path("src"));
+    // dep_sokol.artifact("sokol_clib").addIncludePath(dep_cimgui.path("src"));
 
-    dep_stb_truetype.artifact("stb_truetype").addIncludePath(b.path("3rdparty/stb_truetype/libs"));
+    // dep_stb_truetype.artifact("stb_truetype").addIncludePath(b.path("3rdparty/stb_truetype/libs"));
 
     const sokol_item: ModuleImport = .{ .module = dep_sokol.module("sokol"), .name = "sokol" };
     const zlua_item: ModuleImport = .{ .module = dep_zlua.module("zlua"), .name = "zlua" };
@@ -128,8 +128,8 @@ pub fn build(b: *std.Build) !void {
     delve_mod.addOptions("delve_options", options);
 
     // Expose a few modules, so people can grab our dependencies instead of including their own directly
-    try b.modules.put("sokol", dep_sokol.module("sokol"));
-    try b.modules.put("zlua", dep_zlua.module("zlua"));
+    try b.modules.put(b.allocator, "sokol", dep_sokol.module("sokol"));
+    try b.modules.put(b.allocator, "zlua", dep_zlua.module("zlua"));
 
     for (build_collection.add_imports) |build_import| {
         delve_mod.addImport(build_import.name, build_import.module);
@@ -154,16 +154,16 @@ pub fn build(b: *std.Build) !void {
         // Ensure that Lua links under EMCC
         const lua_artifact = dep_zlua.artifact("lua");
         lua_artifact.step.dependOn(&dep_sokol.artifact("sokol_clib").step);
-        lua_artifact.addSystemIncludePath(emsdk_include_path);
+        // lua_artifact.addSystemIncludePath(emsdk_include_path);
 
         // add these new system includes to all the libs and modules
         for (build_collection.add_imports) |build_import| {
             build_import.module.addSystemIncludePath(emsdk_include_path);
         }
 
-        for (build_collection.link_libraries) |lib| {
-            lib.addSystemIncludePath(emsdk_include_path);
-        }
+        // for (build_collection.link_libraries) |lib| {
+        //     lib.addSystemIncludePath(emsdk_include_path);
+        // }
     }
 
     const root_module = b.createModule(.{
@@ -252,7 +252,7 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
     }
 
     app.root_module.addImport("delve", delve_module);
-    app.linkLibrary(delve_lib);
+    app.root_module.linkLibrary(delve_lib);
 
     if (target.result.cpu.arch.isWasm()) {
         const dep_sokol = b.dependency("sokol", .{
@@ -291,8 +291,8 @@ pub fn emscriptenLinkStep(b: *Build, app: *Build.Step.Compile, dep_sokol: *Build
     const emsdk = dep_sokol.builder.dependency("emsdk", .{});
 
     // Add the Emscripten system include path for the app too
-    const emsdk_include_path = emsdk.path("upstream/emscripten/cache/sysroot/include");
-    app.addSystemIncludePath(emsdk_include_path);
+    // const emsdk_include_path = emsdk.path("upstream/emscripten/cache/sysroot/include");
+    // app.addSystemIncludePath(emsdk_include_path);
 
     return try sokol.emLinkStep(b, .{
         .lib_main = app,
@@ -375,7 +375,7 @@ fn buildShaders(b: *Build) void {
     // build the yaml reflection versions
     inline for (shaders) |shader| {
         const shader_with_ext = shader ++ ".glsl";
-        fs.cwd().makePath(shaders_dir ++ "built/" ++ shader) catch |err| {
+        std.Io.Dir.cwd().createDirPath(b.graph.io, shaders_dir ++ "built/" ++ shader) catch |err| {
             log.info("Could not create path {}", .{err});
         };
 
