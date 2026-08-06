@@ -35,9 +35,9 @@
             .url = "git+https://github.com/floooh/dcimgui.git#d5fb4e3d27b79062dc5981db3631dadc4f204654",
             .hash = "cimgui-0.1.0-44Clkd6YlAAYULKHDwsDX9EPmka-VAVEjUl-o6ve307E",
         },
-        .system_sdk = .{
-            .path = "3rdparty/system-sdk",
-        },
+        // .system_sdk = .{
+        //     .path = "3rdparty/system-sdk",
+        // },
         .stb_truetype = .{
             .path = "3rdparty/stb_truetype",
         },
