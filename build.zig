@@ -48,8 +48,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
         .lang = .lua54,
-        .additional_system_headers = if (target.result.cpu.arch.isWasm()) getEmsdkSystemIncludePath(dep_sokol).getPath(b) else "",
-        .can_use_jmp = !target.result.cpu.arch.isWasm(),
+        // .additional_system_headers = if (target.result.cpu.arch.isWasm()) getEmsdkSystemIncludePath(dep_sokol).getPath(b) else "",
     });
 
     const dep_zmesh = b.dependency("zmesh", .{
