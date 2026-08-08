@@ -3,6 +3,7 @@ const app = @import("../app.zig");
 const backends = @import("backends/backends.zig");
 const debug = @import("../debug.zig");
 const gfx = @import("graphics.zig");
+const delve_io = @import("../io.zig");
 const mem = @import("../mem.zig");
 const modules = @import("../modules.zig");
 const time = @import("std").time;
@@ -20,6 +21,30 @@ const DeltaTime = struct {
     ns_delta_time: u64,
 };
 
+const Timer = struct {
+    io: std.Io,
+    start_ts: std.Io.Timestamp,
+
+    pub fn start(io: std.Io) Timer {
+        return .{ .io = io, .start_ts = .now(io, .awake) };
+    }
+
+    pub fn read(self: *Timer) u64 {
+        const elapsed = self.start_ts.untilNow(self.io, .awake);
+        return @intCast(elapsed.nanoseconds);
+    }
+
+    pub fn lap(self: *Timer) u64 {
+        const elapsed = self.start_ts.untilNow(self.io, .awake);
+        self.start_ts = .now(self.io, .awake);
+        return @intCast(elapsed.nanoseconds);
+    }
+
+    pub fn reset(self: *Timer) void {
+        self.start_ts = .now(self.io, .awake);
+    }
+};
+
 const state = struct {
     // FPS cap vars, if set
     var target_fps: ?u64 = null;
@@ -31,8 +56,8 @@ const state = struct {
     var fixed_timestep_lerp: f32 = 0.0;
 
     // game loop timers
-    var game_loop_timer: time.Timer = undefined;
-    var fps_update_timer: time.Timer = undefined;
+    var game_loop_timer: Timer = undefined;
+    var fps_update_timer: Timer = undefined;
     var did_limit_fps: bool = false;
 
     // delta time vars
@@ -60,6 +85,9 @@ const state = struct {
 pub fn init() !void {
     debug.log("App platform starting", .{});
 
+    // Create a new single-threaded IO context for our timers
+    const io = delve_io.getIo();
+
     AppBackend.init(.{
         .on_init_fn = on_init,
         .on_cleanup_fn = on_cleanup,
@@ -67,8 +95,8 @@ pub fn init() !void {
         .on_resize_fn = on_resize,
     });
 
-    state.game_loop_timer = try time.Timer.start();
-    state.fps_update_timer = try time.Timer.start();
+    state.game_loop_timer = Timer.start(io);
+    state.fps_update_timer = Timer.start(io);
 }
 
 pub fn deinit() void {
@@ -203,7 +231,7 @@ fn limitFps() bool {
 
     const frame_len_ns = initial_frame_ns + NS_FPS_LIMIT_OVERHEAD;
     if (frame_len_ns < state.target_fps_ns) {
-        std.Thread.sleep(state.target_fps_ns - frame_len_ns);
+        sleep(state.target_fps_ns - frame_len_ns);
     }
 
     // Eat up the rest of the time in a busy loop to ensure consistent frame pacing
@@ -302,7 +330,7 @@ pub fn exit() void {
 
 /// Exit with an error
 pub fn exitWithError() void {
-    std.posix.exit(1);
+    std.posix.system.exit(1);
 }
 
 // Start a new Imgui frame
@@ -313,4 +341,13 @@ pub fn startImguiFrame() void {
 // Render Imgui
 pub fn renderImgui() void {
     GfxBackend.renderImgui();
+}
+
+// Sleep for the given number of nanoseconds
+pub fn sleep(nanoseconds: u64) void {
+    const io = delve_io.getIo();
+    io.sleep(std.Io.Duration.fromNanoseconds(nanoseconds), .awake) catch |err| {
+        debug.fatal("Sleep failed! {any}", .{err});
+        return;
+    };
 }

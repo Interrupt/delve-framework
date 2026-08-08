@@ -6,7 +6,7 @@ const std = @import("std");
 
 var time: f32 = 0.0;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const clear_module = delve.modules.Module{
         .name = "clear_example",
         .init_fn = on_init,
@@ -27,7 +27,7 @@ pub fn main() !void {
 
     try delve.modules.registerModule(clear_module);
 
-    try app.start(app.AppConfig{ .title = "Delve Framework - Clear Example" });
+    try app.start(init.io, app.AppConfig{ .title = "Delve Framework - Clear Example" });
 }
 
 pub fn on_init() !void {

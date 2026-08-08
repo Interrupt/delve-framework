@@ -11,7 +11,7 @@ var allocator: std.mem.Allocator = undefined;
 var zaudio_engine: ?*zaudio.Engine = null;
 
 // list of all the loaded sounds, so that they can be garbage collected when done
-var loaded_sounds: std.AutoArrayHashMap(u64, LoadedSound) = undefined;
+var loaded_sounds: std.array_hash_map.Auto(u64, LoadedSound) = .{};
 var next_sound_idx: u64 = 0;
 
 /// A wrapper around a loaded sound
@@ -200,15 +200,14 @@ pub fn init() !void {
     zaudio.init(allocator);
     zaudio_engine = try zaudio.Engine.create(null);
 
-    loaded_sounds = std.AutoArrayHashMap(u64, LoadedSound).init(allocator);
-
     // Register this subystem as a module to get tick events
     try registerModule();
 }
 
 /// Stops and cleans up the audio subsystem
 pub fn deinit() void {
-    loaded_sounds.deinit();
+    allocator = mem.getAllocator();
+    loaded_sounds.deinit(allocator);
 
     if (zaudio_engine) |engine|
         engine.destroy();
@@ -274,7 +273,8 @@ pub fn loadSound(filename: [:0]const u8, stream: bool) !Sound {
     const handle = next_sound_idx;
     next_sound_idx += 1;
 
-    try loaded_sounds.put(handle, LoadedSound{ .handle = handle, .zaudio_sound = zaudio_sound });
+    allocator = mem.getAllocator();
+    try loaded_sounds.put(allocator, handle, LoadedSound{ .handle = handle, .zaudio_sound = zaudio_sound });
     return Sound{ .handle = next_sound_idx - 1, .is_streaming = stream };
 }
 
