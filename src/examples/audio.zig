@@ -10,27 +10,25 @@ const graphics = delve.platform.graphics;
 const input = delve.platform.input;
 const modules = delve.modules;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 var music_test: ?audio.Sound = null;
 var sound_test: ?audio.Sound = null;
 
 // -- This example shows off the the audio paths --
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     // Pick the allocator to use depending on platform
     if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
         // Web builds hack: use the C allocator to avoid OOM errors
         // See https://github.com/ziglang/zig/issues/19072
         try delve.init(std.heap.c_allocator);
     } else {
-        try delve.init(gpa.allocator());
+        try delve.init(delve.mem.createDefaultAllocator());
     }
 
     try registerModule();
 
     // make sure to set enable_audio to true when starting!
-    try app.start(app.AppConfig{ .title = "Delve Framework - Sprite Batch Example", .enable_audio = true });
+    try app.start(init.io, app.AppConfig{ .title = "Delve Framework - Sprite Batch Example", .enable_audio = true });
 }
 
 pub fn registerModule() !void {
