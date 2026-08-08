@@ -173,9 +173,9 @@ pub fn on_init() !void {
         for (solid.faces.items) |face| {
             var mat_name = ArrayListManaged(u8).init(allocator);
             var tex_path = ArrayListManaged(u8).init(allocator);
-            try mat_name.writer().print("{s}", .{face.texture_name});
+            try mat_name.print("{s}", .{face.texture_name});
             try mat_name.append(0);
-            try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
+            try tex_path.print("assets/textures/{s}.png", .{face.texture_name});
             try tex_path.append(0);
 
             const mat_name_owned = try mat_name.toOwnedSlice();
