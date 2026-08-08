@@ -28,8 +28,6 @@ var cloud_batch: batcher.SpriteBatcher = undefined;
 
 var camera: cam.Camera = undefined;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 pub const module = modules.Module{
     .name = "forest_example",
     .init_fn = on_init,

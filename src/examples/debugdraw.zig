@@ -10,8 +10,6 @@ const input = delve.platform.input;
 const math = delve.math;
 const modules = delve.modules;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 pub const test_asset = @embedFile("static/test_transparent.gif");
 
 var time: f32 = 0.0;

@@ -14,8 +14,6 @@ const fps_module = delve.module.fps_counter;
 
 pub const test_asset = @embedFile("static/test.gif");
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 var texture: graphics.Texture = undefined;
 var test_image: images.Image = undefined;
 

@@ -13,8 +13,6 @@ const modules = delve.modules;
 const fps_module = delve.module.fps_counter;
 const interpolation = delve.utils.interpolation;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 pub const test_asset = @embedFile("static/test.gif");
 
 var texture: graphics.Texture = undefined;

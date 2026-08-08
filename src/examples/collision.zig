@@ -26,8 +26,6 @@ var sprite_batch: batcher.SpriteBatcher = undefined;
 var rect1 = Rect.fromSize(Vec2.new(1, 1)).centered();
 var rect2 = Rect.fromSize(Vec2.new(0.75, 0.4)).centered();
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 // This example shows how to check collision against two rectangles
 
 pub fn main(init: std.process.Init) !void {

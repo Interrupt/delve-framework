@@ -15,21 +15,19 @@ const imgui_example = @import("imgui.zig");
 
 const lua_module = delve.module.lua_simple;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 // This example loads a bunch of the examples to stress test everything!
 // Also a good example of how the module system can be used to compose apps
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     // Pick the allocator to use depending on platform
     const builtin = @import("builtin");
     if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
         // Web builds hack: use the C allocator to avoid OOM errors
         // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(std.heap.c_allocator);
+        try delve.init(init, std.heap.c_allocator);
     } else {
         // Using the default allocator will let us detect memory leaks
-        try delve.init(delve.mem.createDefaultAllocator());
+        try delve.init(init, delve.mem.createDefaultAllocator());
     }
 
     try fps_module.registerModule();

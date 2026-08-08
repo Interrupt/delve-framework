@@ -4,8 +4,6 @@ const std = @import("std");
 
 const imgui = delve.imgui;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 // This example shows how to enable copy-paste in imgui!
 
 const clipboard_size = 200; // Deliberately set low, to demonstrate clipping

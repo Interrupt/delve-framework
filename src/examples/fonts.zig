@@ -9,8 +9,6 @@ const input = delve.platform.input;
 const math = delve.math;
 const modules = delve.modules;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 var font_batch: delve.graphics.batcher.SpriteBatcher = undefined;
 
 // let our example cycle through some fonts

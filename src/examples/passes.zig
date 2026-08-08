@@ -11,8 +11,6 @@ const math = delve.math;
 
 const test_asset = @embedFile("static/test.gif");
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 var camera: delve.graphics.camera.Camera = undefined;
 var camera_offscreen: delve.graphics.camera.Camera = undefined;
 
@@ -30,7 +28,7 @@ var time: f64 = 0.0;
 var offscreen_pass: graphics.RenderPass = undefined;
 var offscreen_pass_2: graphics.RenderPass = undefined;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const example = delve.modules.Module{
         .name = "passes_example",
         .init_fn = on_init,
@@ -45,10 +43,10 @@ pub fn main() !void {
     if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
         // Web builds hack: use the C allocator to avoid OOM errors
         // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(std.heap.c_allocator);
+        try delve.init(init, std.heap.c_allocator);
     } else {
         // Using the default allocator will let us detect memory leaks
-        try delve.init(delve.mem.createDefaultAllocator());
+        try delve.init(init, delve.mem.createDefaultAllocator());
     }
 
     try delve.modules.registerModule(example);

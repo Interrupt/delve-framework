@@ -2,8 +2,6 @@ const std = @import("std");
 const delve = @import("delve");
 const app = delve.app;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 const ArrayListManaged = std.array_list.Managed;
 const graphics = delve.platform.graphics;
 const math = delve.math;
@@ -29,7 +27,7 @@ var on_ground = true;
 
 var gravity: f32 = -0.5;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const example = delve.modules.Module{
         .name = "quakemap_example",
         .init_fn = on_init,
@@ -43,10 +41,10 @@ pub fn main() !void {
     if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
         // Web builds hack: use the C allocator to avoid OOM errors
         // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(std.heap.c_allocator);
+        try delve.init(init, std.heap.c_allocator);
     } else {
         // Using the default allocator will let us detect memory leaks
-        try delve.init(delve.mem.createDefaultAllocator());
+        try delve.init(init, delve.mem.createDefaultAllocator());
     }
 
     try delve.modules.registerModule(example);
