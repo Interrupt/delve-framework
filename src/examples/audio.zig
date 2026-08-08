@@ -20,9 +20,9 @@ pub fn main(init: std.process.Init) !void {
     if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
         // Web builds hack: use the C allocator to avoid OOM errors
         // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(init.io, std.heap.c_allocator);
+        try delve.init(init, std.heap.c_allocator);
     } else {
-        try delve.init(init.io, delve.mem.createDefaultAllocator());
+        try delve.init(init, delve.mem.createDefaultAllocator());
     }
 
     try registerModule();
