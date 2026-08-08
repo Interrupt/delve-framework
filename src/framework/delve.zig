@@ -91,8 +91,11 @@ pub const imgui = @import("cimgui");
 
 // initial setup. Call before any other Delve Framework functions!
 pub fn init(in_io: std.Io, allocator: std.mem.Allocator) !void {
+    // Bare set of systems that need to be initialized first!
     io.init(in_io);
     mem.init(allocator);
+    debug.init();
+
     debug.log("Delve Framework Initialized", .{});
 }
 
