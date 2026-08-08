@@ -45,10 +45,9 @@ pub fn setAssetsPath(path: [:0]const u8) !void {
     assets_path = path;
 }
 
-pub fn start(in_io: std.Io, config: AppConfig) !void {
+pub fn start(config: AppConfig) !void {
     app_config = config;
 
-    io.init(in_io);
     debug.init();
 
     debug.log("Delve Framework Starting!", .{});

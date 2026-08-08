@@ -90,7 +90,8 @@ pub const shaders = struct {
 pub const imgui = @import("cimgui");
 
 // initial setup. Call before any other Delve Framework functions!
-pub fn init(allocator: std.mem.Allocator) !void {
+pub fn init(in_io: std.Io, allocator: std.mem.Allocator) !void {
+    io.init(in_io);
     mem.init(allocator);
     debug.log("Delve Framework Initialized", .{});
 }
