@@ -440,8 +440,8 @@ pub fn open(in_allocator: Allocator, path: []const u8) !MDL {
         .{ .mode = .read_only },
     );
 
-    var read_buffer: [2048]u8 = undefined;
-    var file_reader = file.reader(delve_io, &read_buffer);
+    // As we are just using the readSlice functions, we don't need a buffer here
+    var file_reader = file.reader(delve_io, &.{});
 
     defer file.close(delve_io);
 
