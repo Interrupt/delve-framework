@@ -4,6 +4,7 @@ const colors = @import("../colors.zig");
 const debug = @import("../debug.zig");
 const default_mesh = @import("../graphics/shaders/default-mesh.glsl.zig");
 const images = @import("../images.zig");
+const io = @import("../io.zig");
 const math = @import("../math.zig");
 const mem = @import("../mem.zig");
 const mesh = @import("../graphics/mesh.zig");
@@ -12,7 +13,9 @@ const graphics = @import("../platform/graphics.zig");
 const assert = std.debug.assert;
 const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
-const File = std.fs.File;
+
+const File = std.Io.File;
+const FileReader = std.Io.File.Reader;
 
 pub const MDL = struct {
     frames: []MDLFrameType,
@@ -97,10 +100,12 @@ const MDLFileHeader_ = extern struct {
     flags: u32,
     size: u32,
 
-    pub fn read(file: File) !MDLFileHeader_ {
+    pub fn read(file_reader: *FileReader) !MDLFileHeader_ {
         const size = @sizeOf(MDLFileHeader_);
         var bytes: [size]u8 = undefined;
-        _ = try file.read(&bytes);
+
+        const reader = &file_reader.interface;
+        _ = try reader.readSliceAll(&bytes);
 
         return @bitCast(bytes);
     }
@@ -121,17 +126,19 @@ const MDLSkin_ = struct {
     height: u32,
     pixels: []u8,
 
-    pub fn read(allocator: Allocator, file: File, width: u32, height: u32) !MDLSkin_ {
+    pub fn read(allocator: Allocator, file_reader: *FileReader, width: u32, height: u32) !MDLSkin_ {
+        const reader = &file_reader.interface;
+
         // Skin type
         var bytes: [4]u8 = undefined;
-        _ = try file.read(&bytes);
+        _ = try reader.readSliceAll(&bytes);
         const skin_type: u32 = @bitCast(bytes);
         assert(skin_type == 0);
 
         // Skin pixels
         const size: u32 = width * height;
         const pixels: []u8 = try allocator.alloc(u8, size);
-        _ = try file.read(pixels);
+        _ = try reader.readSliceAll(pixels);
         //defer allocator.free(indexes);
 
         return .{
@@ -168,26 +175,28 @@ const MDLSkinGroup_ = struct {
     pixels: []u8,
     allocator: Allocator,
 
-    pub fn read(allocator: Allocator, file: File, width: u32, height: u32) !MDLSkinGroup_ {
+    pub fn read(allocator: Allocator, file_reader: *FileReader, width: u32, height: u32) !MDLSkinGroup_ {
+        const reader = &file_reader.interface;
+
         // Skin type
         var bytes: [4]u8 = undefined;
-        _ = try file.read(&bytes);
+        _ = try reader.readSliceAll(&bytes);
         const skin_type: u32 = @bitCast(bytes);
         assert(skin_type != 0);
 
         // Skin count
-        _ = try file.read(&bytes);
+        _ = try reader.readSliceAll(&bytes);
         const count: u32 = @bitCast(bytes);
 
         // Skin intervals
         const intervals_buff = try allocator.alloc(u8, count * @sizeOf(f32));
-        _ = try file.read(intervals_buff);
+        _ = try reader.readSliceAll(intervals_buff);
         const intervals: []f32 = try bytesToStructArray(f32, allocator, intervals_buff);
 
         // Skin pixels
         const size: u32 = width * height * count;
         const pixels: []u8 = try allocator.alloc(u8, size);
-        _ = try file.read(pixels);
+        _ = try reader.readSliceAll(pixels);
 
         return .{
             .type = skin_type,
@@ -236,19 +245,21 @@ const MDLFrame_ = struct {
     name: [16]u8,
     vertexes: []TriVertex_,
 
-    pub fn read(allocator: Allocator, file: File, vertex_count: u32) !MDLFrame_ {
+    pub fn read(allocator: Allocator, file_reader: *FileReader, vertex_count: u32) !MDLFrame_ {
+        const reader = &file_reader.interface;
+
         // Frame bounds
-        const min = try TriVertex_.read(file);
-        const max = try TriVertex_.read(file);
+        const min = try TriVertex_.read(file_reader);
+        const max = try TriVertex_.read(file_reader);
 
         // Frame name
         const name: []u8 = try allocator.alloc(u8, 16);
-        _ = try file.read(name);
+        _ = try reader.readSliceAll(name);
 
         // Frame vertices
         const vertbuff = try allocator.alloc(u8, @sizeOf(TriVertex_) * vertex_count);
         defer allocator.free(vertbuff);
-        _ = try file.read(vertbuff);
+        _ = try reader.readSliceAll(vertbuff);
         const trivertexes = try bytesToStructArray(TriVertex_, allocator, vertbuff);
 
         return .{
@@ -267,27 +278,29 @@ const MDLFrameGroup_ = struct {
     intervals: []f32,
     frames: []MDLFrame_,
 
-    pub fn read(allocator: Allocator, file: File, vertex_count: u32) !MDLFrameGroup_ {
+    pub fn read(allocator: Allocator, file_reader: *FileReader, vertex_count: u32) !MDLFrameGroup_ {
+        const reader = &file_reader.interface;
+
         // Frame count
         var bytes: [4]u8 = undefined;
-        _ = try file.read(&bytes);
+        _ = try reader.readSliceAll(&bytes);
         const count: u32 = @bitCast(bytes);
 
         // Frame bounds
-        const min = try TriVertex_.read(file);
-        const max = try TriVertex_.read(file);
+        const min = try TriVertex_.read(file_reader);
+        const max = try TriVertex_.read(file_reader);
 
         debug.log("DEBUG: {}", .{min});
 
         // Frame intervals
         const intervals_buff = try allocator.alloc(u8, count * @sizeOf(f32));
-        _ = try file.read(intervals_buff);
+        _ = try reader.readSliceAll(intervals_buff);
         const intervals: []f32 = try bytesToStructArray(f32, allocator, intervals_buff);
 
         // Frames
         const frames: []MDLFrame_ = try allocator.alloc(MDLFrame_, count);
         for (0..count) |i| {
-            frames[i] = try MDLFrame_.read(allocator, file, vertex_count);
+            frames[i] = try MDLFrame_.read(allocator, file_reader, vertex_count);
         }
 
         return .{
@@ -320,9 +333,11 @@ const TriVertex_ = struct {
     vertex: [3]u8,
     light_index: u8,
 
-    pub fn read(file: File) !TriVertex_ {
+    pub fn read(file_reader: *FileReader) !TriVertex_ {
+        const reader = &file_reader.interface;
+
         var bytes: [4]u8 = undefined;
-        _ = try file.read(&bytes);
+        _ = try reader.readSliceAll(&bytes);
 
         return .{
             .vertex = bytes[0..3].*,
@@ -344,11 +359,9 @@ fn bytesToStructArray(comptime T: type, allocator: Allocator, bytes: []u8) std.m
     return result;
 }
 
-fn peek(file: File, buff: []u8) ![]u8 {
-    const offset = try file.getPos();
-    _ = try file.read(buff);
-    _ = try file.seekTo(offset);
-
+fn peek(file: File, file_reader: *FileReader, buff: []u8) ![]u8 {
+    const offset = file_reader.logicalPos();
+    _ = try file.readPositionalAll(io.getIo(), buff, offset);
     return buff;
 }
 
@@ -418,17 +431,21 @@ fn makeMesh(allocator: Allocator, frame: MDLFrame_, config: MDLMeshBuildConfig_)
 pub fn open(in_allocator: Allocator, path: []const u8) !MDL {
     var arena = ArenaAllocator.init(in_allocator);
     var allocator = arena.allocator();
+    const delve_io = io.getIo();
 
-    var file = try std.fs.cwd().openFile(
+    const cwd = std.Io.Dir.cwd();
+    var file = try cwd.openFile(
+        delve_io,
         path,
-        std.fs.File.OpenFlags{
-            .mode = .read_only,
-        },
+        .{ .mode = .read_only },
     );
 
-    defer file.close();
+    var read_buffer: [2048]u8 = undefined;
+    var file_reader = file.reader(delve_io, &read_buffer);
 
-    const header = try MDLFileHeader_.read(file);
+    defer file.close(delve_io);
+
+    const header = try MDLFileHeader_.read(&file_reader);
     assert(header.version == 6);
 
     const frames = try allocator.alloc(MDLFrameType, header.frame_count);
@@ -438,16 +455,16 @@ pub fn open(in_allocator: Allocator, path: []const u8) !MDL {
 
     // Skins
     for (0..header.skin_count) |i| {
-        _ = try peek(file, &work);
+        _ = try peek(file, &file_reader, &work);
         const skin_type: SkinType = @enumFromInt(@as(u32, @bitCast(work)));
 
         if (skin_type == SkinType.SINGLE) {
-            var skin = try MDLSkin_.read(allocator, file, header.skin_width, header.skin_height);
+            var skin = try MDLSkin_.read(allocator, &file_reader, header.skin_width, header.skin_height);
             const texture = try skin.toTexture(allocator);
             skins[i] = .{ .single = .{ .texture = texture } };
             defer allocator.free(skin.pixels);
         } else if (skin_type == SkinType.GROUP) {
-            const group = try MDLSkinGroup_.read(allocator, file, header.skin_width, header.skin_height);
+            const group = try MDLSkinGroup_.read(allocator, &file_reader, header.skin_width, header.skin_height);
 
             const textures: []graphics.Texture = try allocator.alloc(graphics.Texture, group.count);
             for (0..group.count) |j| {
@@ -471,17 +488,19 @@ pub fn open(in_allocator: Allocator, path: []const u8) !MDL {
         .samplers = &[_]graphics.FilterMode{.NEAREST},
     });
 
+    const reader = &file_reader.interface;
+
     // ST Vertexes
     const stvert_buff: []u8 = try allocator.alloc(u8, @sizeOf(STVertex_) * header.vertex_count);
     defer allocator.free(stvert_buff);
-    _ = try file.read(stvert_buff);
+    _ = try reader.readSliceAll(stvert_buff);
     const stvertices = try bytesToStructArray(STVertex_, allocator, stvert_buff);
     defer allocator.free(stvertices);
 
     // Triangles
     const triangle_buff: []u8 = try allocator.alloc(u8, @sizeOf(Triangle_) * header.triangle_count);
     defer allocator.free(triangle_buff);
-    _ = try file.read(triangle_buff);
+    _ = try reader.readSliceAll(triangle_buff);
     const triangles = try bytesToStructArray(Triangle_, allocator, triangle_buff);
     defer allocator.free(triangles);
 
@@ -507,11 +526,12 @@ pub fn open(in_allocator: Allocator, path: []const u8) !MDL {
 
     // Frames
     for (0..header.frame_count) |i| {
-        _ = try file.read(&work);
+        _ = try reader.readSliceAll(&work);
+
         const frame_type: u32 = @bitCast(work);
 
         if (frame_type == 0) {
-            const frame = try MDLFrame_.read(allocator, file, header.vertex_count);
+            const frame = try MDLFrame_.read(allocator, &file_reader, header.vertex_count);
             const frame_mesh = try makeMesh(allocator, frame, config);
 
             frames[i] = .{
@@ -521,7 +541,7 @@ pub fn open(in_allocator: Allocator, path: []const u8) !MDL {
                 },
             };
         } else {
-            const group = try MDLFrameGroup_.read(allocator, file, header.vertex_count);
+            const group = try MDLFrameGroup_.read(allocator, &file_reader, header.vertex_count);
 
             const group_frames: []MDLFrame = try allocator.alloc(MDLFrame, group.count);
             for (0.., group.frames) |j, frame| {
