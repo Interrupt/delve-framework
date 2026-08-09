@@ -12,16 +12,8 @@ var mdl: delve.utils.quakemdl.MDL = undefined;
 var time: f64 = 0.0;
 
 pub fn main(init: std.process.Init) !void {
-    // Pick the allocator to use depending on platform
-    const builtin = @import("builtin");
-    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
-        // Web builds hack: use the C allocator to avoid OOM errors
-        // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(init, std.heap.c_allocator);
-    } else {
-        // Using the default allocator will let us detect memory leaks
-        try delve.init(init, delve.mem.createDefaultAllocator());
-    }
+    // Using the default allocator will let us detect memory leaks
+    try delve.init(init, delve.mem.createDefaultAllocator());
 
     const example = delve.modules.Module{
         .name = "quakemdl_example",

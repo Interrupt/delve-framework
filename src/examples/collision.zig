@@ -29,16 +29,8 @@ var rect2 = Rect.fromSize(Vec2.new(0.75, 0.4)).centered();
 // This example shows how to check collision against two rectangles
 
 pub fn main(init: std.process.Init) !void {
-    // Pick the allocator to use depending on platform
-    const builtin = @import("builtin");
-    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
-        // Web builds hack: use the C allocator to avoid OOM errors
-        // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(init, std.heap.c_allocator);
-    } else {
-        // Using the default allocator will let us detect memory leaks
-        try delve.init(init, delve.mem.createDefaultAllocator());
-    }
+    // Using the default allocator will let us detect memory leaks
+    try delve.init(init, delve.mem.createDefaultAllocator());
 
     try registerModule();
     try app.start(app.AppConfig{ .title = "Delve Framework - Collision" });

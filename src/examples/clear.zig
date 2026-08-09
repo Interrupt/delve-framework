@@ -14,16 +14,8 @@ pub fn main(init: std.process.Init) !void {
         .on_resize_fn = on_resize,
     };
 
-    // Pick the allocator to use depending on platform
-    const builtin = @import("builtin");
-    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
-        // Web builds hack: use the C allocator to avoid OOM errors
-        // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(init, std.heap.c_allocator);
-    } else {
-        // Using the default allocator will let us detect memory leaks
-        try delve.init(init, delve.mem.createDefaultAllocator());
-    }
+    // Using the default allocator will let us detect memory leaks
+    try delve.init(init, delve.mem.createDefaultAllocator());
 
     try delve.modules.registerModule(clear_module);
 
