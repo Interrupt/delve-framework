@@ -12,16 +12,6 @@
     },
     .dependencies = .{
         .zlua = .{
-            // .url = "git+https://github.com/interrupt/ziglua#134fd6110e860672c32703d9c76588a1d5f6a3fa",
-            // .hash = "zlua-0.1.0-hGRpC1mUBQDugHDyWzXaCjnAwr9wKKArY06QpVOFTFUM",
-            // .url = "git+https://github.com/interrupt/ziglua#9ae39fa50b1ab8427d35f963216116d7bff1e584",
-            // .hash = "zlua-0.1.0-hGRpC1mUBQCNQf4CnmRTM4I7gxE3YpCvZ-p2EarlcyER",
-            // .url = "git+https://github.com/interrupt/ziglua#7c3d84517202e1f3f4bba4256d6eeaaa1a45c2d0",
-            // .hash = "zlua-0.1.0-hGRpC_2UBQCaep7QI_CWCs3cREj5tlWbQBhBUWt_OaB8",
-            // .url = "git+https://github.com/interrupt/ziglua#89826d2c159b49dcf5ea79cca330d0783b21725d",
-            // .hash = "zlua-0.1.0-hGRpC3uUBQBTSXpG0I-9JJmjpQUEctKKWdsAo1S4PrvZ",
-            // .url = "git+https://github.com/interrupt/ziglua#d2cb6191ec20f888ab04ad222c9bcf9b194bfbf2",
-            // .hash = "zlua-0.1.0-hGRpC1mUBQCNQf4CnmRTM4I7gxE3YpCvZ-p2EarlcyER",
             .url = "git+https://github.com/interrupt/ziglua#7647fc2a517d64a85f50295183e312b5b0634201",
             .hash = "zlua-0.1.0-hGRpC1hWBQAhR6kPtfypQ1Awn09a9JWpIuErNKPCMwSq",
         },

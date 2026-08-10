@@ -49,7 +49,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
         .lang = .lua54,
-        // .additional_system_headers = if (target.result.cpu.arch.isWasm()) getEmsdkSystemIncludePath(dep_sokol).getPath(b) else "",
+        .additional_system_headers = if (target.result.cpu.arch.isWasm()) getEmsdkSystemIncludePath(dep_sokol).getPath(b) else "",
     });
 
     const dep_zmesh = b.dependency("zmesh", .{
@@ -143,6 +143,12 @@ pub fn build(b: *std.Build) !void {
         delve_mod.linkLibrary(lib);
     }
 
+    // Create a step to handle installing the Emscripten SDK
+    const sokol_dep = b.dependency("sokol", .{});
+    const emsdk_dep = sokol_dep.builder.dependency("emsdk", .{});
+    const emsdk_install_step = @import("sokol").emSdkInstallStep(b, emsdk_dep, .{});
+    b.step("install-emsdk", "Install Emscripten SDK in zig-pkg").dependOn(emsdk_install_step);
+
     // For web builds, add the Emscripten system headers so C libraries can find the stdlib headers
     if (target.result.cpu.arch.isWasm()) {
         const emsdk_include_path = getEmsdkSystemIncludePath(dep_sokol);
@@ -153,16 +159,16 @@ pub fn build(b: *std.Build) !void {
         // Ensure that Lua links under EMCC
         const lua_artifact = dep_zlua.artifact("lua");
         lua_artifact.step.dependOn(&dep_sokol.artifact("sokol_clib").step);
-        // lua_artifact.addSystemIncludePath(emsdk_include_path);
+        lua_artifact.root_module.addSystemIncludePath(emsdk_include_path);
 
         // add these new system includes to all the libs and modules
         for (build_collection.add_imports) |build_import| {
             build_import.module.addSystemIncludePath(emsdk_include_path);
         }
 
-        // for (build_collection.link_libraries) |lib| {
-        //     lib.addSystemIncludePath(emsdk_include_path);
-        // }
+        for (build_collection.link_libraries) |lib| {
+            lib.root_module.addSystemIncludePath(emsdk_include_path);
+        }
     }
 
     const root_module = b.createModule(.{
@@ -262,6 +268,7 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
 
         // link with emscripten
         const link_step = try emscriptenLinkStep(b, app, dep_sokol);
+        b.getInstallStep().dependOn(&link_step.step);
 
         // and add a run step
         const run = emscriptenRunStep(b, example, dep_sokol);
