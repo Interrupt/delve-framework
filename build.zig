@@ -143,12 +143,6 @@ pub fn build(b: *std.Build) !void {
         delve_mod.linkLibrary(lib);
     }
 
-    // Create a step to handle installing the Emscripten SDK
-    const sokol_dep = b.dependency("sokol", .{});
-    const emsdk_dep = sokol_dep.builder.dependency("emsdk", .{});
-    const emsdk_install_step = @import("sokol").emSdkInstallStep(b, emsdk_dep, .{});
-    b.step("install-emsdk", "Install Emscripten SDK in zig-pkg").dependOn(emsdk_install_step);
-
     // For web builds, add the Emscripten system headers so C libraries can find the stdlib headers
     if (target.result.cpu.arch.isWasm()) {
         const emsdk_include_path = getEmsdkSystemIncludePath(dep_sokol);
@@ -220,6 +214,9 @@ pub fn build(b: *std.Build) !void {
 
     // add the build shaders run step, to update the baked in default shaders
     buildShaders(b);
+
+    // add the emsdk install step, so that emscripten builds can fetch and install the emscripten SDK
+    emsdkInstallStep(b);
 
     // TESTS
     const exe_tests = b.addTest(.{
@@ -329,6 +326,15 @@ pub fn emscriptenRunStep(b: *Build, name: []const u8, dep_sokol: *Build.Dependen
     const emsdk = dep_sokol.builder.dependency("emsdk", .{});
     return sokol.emRunStep(b, .{ .name = name, .emsdk = emsdk });
 }
+
+// Create a step to handle installing the Emscripten SDK
+pub fn emsdkInstallStep(b: *Build) void {
+    const sokol_dep = b.dependency("sokol", .{});
+    const emsdk_dep = sokol_dep.builder.dependency("emsdk", .{});
+    const emsdk_install_step = @import("sokol").emSdkInstallStep(b, emsdk_dep, .{});
+    b.step("install-emsdk", "Install Emscripten SDK in zig-pkg").dependOn(emsdk_install_step);
+}
+
 // Adds a run step to compile shaders, expects the shader compiler in ../sokol-tools-bin/
 fn buildShaders(b: *Build) void {
     const sokol_tools_bin_dir = "../sokol-tools-bin/bin/";
