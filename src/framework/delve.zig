@@ -6,6 +6,7 @@ pub const app = @import("app.zig");
 pub const colors = @import("colors.zig");
 pub const debug = @import("debug.zig");
 pub const images = @import("images.zig");
+pub const io = @import("io.zig");
 pub const fonts = @import("fonts.zig");
 pub const math = @import("math.zig");
 pub const mem = @import("mem.zig");
@@ -89,8 +90,12 @@ pub const shaders = struct {
 pub const imgui = @import("cimgui");
 
 // initial setup. Call before any other Delve Framework functions!
-pub fn init(allocator: std.mem.Allocator) !void {
+pub fn init(process_init: std.process.Init, allocator: std.mem.Allocator) !void {
+    // Bare set of systems that need to be initialized first!
+    io.init(process_init.io);
     mem.init(allocator);
+    debug.init();
+
     debug.log("Delve Framework Initialized", .{});
 }
 

@@ -1,5 +1,4 @@
 const std = @import("std");
-const builtin = @import("builtin");
 const delve = @import("delve");
 const app = delve.app;
 
@@ -10,22 +9,14 @@ const graphics = delve.platform.graphics;
 const input = delve.platform.input;
 const modules = delve.modules;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 var music_test: ?audio.Sound = null;
 var sound_test: ?audio.Sound = null;
 
 // -- This example shows off the the audio paths --
 
-pub fn main() !void {
-    // Pick the allocator to use depending on platform
-    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
-        // Web builds hack: use the C allocator to avoid OOM errors
-        // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(std.heap.c_allocator);
-    } else {
-        try delve.init(gpa.allocator());
-    }
+pub fn main(init: std.process.Init) !void {
+    // Using the default allocator will let us detect memory leaks
+    try delve.init(init, delve.mem.createDefaultAllocator());
 
     try registerModule();
 

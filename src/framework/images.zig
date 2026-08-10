@@ -2,6 +2,7 @@ const std = @import("std");
 const debug = @import("debug.zig");
 const zstbi = @import("zstbi");
 const mem = @import("mem.zig");
+const io = @import("io.zig");
 
 var allocator: std.mem.Allocator = undefined;
 
@@ -10,7 +11,7 @@ pub const Image = zstbi.Image;
 pub fn init() !void {
     allocator = mem.getAllocator();
     debug.log("Image zstbi init", .{});
-    zstbi.init(allocator);
+    zstbi.init(io.getIo(), allocator);
 }
 
 pub fn deinit() void {

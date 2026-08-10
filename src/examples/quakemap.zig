@@ -2,8 +2,6 @@ const std = @import("std");
 const delve = @import("delve");
 const app = delve.app;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 const ArrayListManaged = std.array_list.Managed;
 const graphics = delve.platform.graphics;
 const math = delve.math;
@@ -29,7 +27,7 @@ var on_ground = true;
 
 var gravity: f32 = -0.5;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const example = delve.modules.Module{
         .name = "quakemap_example",
         .init_fn = on_init,
@@ -38,16 +36,8 @@ pub fn main() !void {
         .cleanup_fn = on_cleanup,
     };
 
-    // Pick the allocator to use depending on platform
-    const builtin = @import("builtin");
-    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
-        // Web builds hack: use the C allocator to avoid OOM errors
-        // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(std.heap.c_allocator);
-    } else {
-        // Using the default allocator will let us detect memory leaks
-        try delve.init(delve.mem.createDefaultAllocator());
-    }
+    // Using the default allocator will let us detect memory leaks
+    try delve.init(init, delve.mem.createDefaultAllocator());
 
     try delve.modules.registerModule(example);
     try delve.module.fps_counter.registerModule();
@@ -175,9 +165,9 @@ pub fn on_init() !void {
         for (solid.faces.items) |face| {
             var mat_name = ArrayListManaged(u8).init(allocator);
             var tex_path = ArrayListManaged(u8).init(allocator);
-            try mat_name.writer().print("{s}", .{face.texture_name});
+            try mat_name.print("{s}", .{face.texture_name});
             try mat_name.append(0);
-            try tex_path.writer().print("assets/textures/{s}.png", .{face.texture_name});
+            try tex_path.print("assets/textures/{s}.png", .{face.texture_name});
             try tex_path.append(0);
 
             const mat_name_owned = try mat_name.toOwnedSlice();

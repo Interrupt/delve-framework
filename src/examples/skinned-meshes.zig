@@ -2,8 +2,6 @@ const std = @import("std");
 const delve = @import("delve");
 const app = delve.app;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 // easy access to some imports
 const cam = delve.graphics.camera;
 const colors = delve.colors;
@@ -37,17 +35,9 @@ var anim_idx: usize = 0;
 
 // This example shows loading and drawing animated meshes
 
-pub fn main() !void {
-    // Pick the allocator to use depending on platform
-    const builtin = @import("builtin");
-    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
-        // Web builds hack: use the C allocator to avoid OOM errors
-        // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(std.heap.c_allocator);
-    } else {
-        // Using the default allocator will let us detect memory leaks
-        try delve.init(delve.mem.createDefaultAllocator());
-    }
+pub fn main(init: std.process.Init) !void {
+    // Using the default allocator will let us detect memory leaks
+    try delve.init(init, delve.mem.createDefaultAllocator());
 
     try registerModule();
     try app.start(app.AppConfig{ .title = "Delve Framework - Skinned Mesh Drawing Example", .sampler_pool_size = 1024 });

@@ -1,6 +1,7 @@
 const std = @import("std");
 const debug = @import("debug.zig");
 const images = @import("images.zig");
+const io = @import("io.zig");
 const meshes = @import("graphics/mesh.zig");
 const modules = @import("modules.zig");
 const colors = @import("colors.zig");
@@ -45,11 +46,9 @@ pub fn setAssetsPath(path: [:0]const u8) !void {
 }
 
 pub fn start(config: AppConfig) !void {
-    app_config = config;
-
-    debug.init();
-
     debug.log("Delve Framework Starting!", .{});
+
+    app_config = config;
 
     // App backend init
     try app_backend.init();

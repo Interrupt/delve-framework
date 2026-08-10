@@ -26,21 +26,11 @@ var sprite_batch: batcher.SpriteBatcher = undefined;
 var rect1 = Rect.fromSize(Vec2.new(1, 1)).centered();
 var rect2 = Rect.fromSize(Vec2.new(0.75, 0.4)).centered();
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 // This example shows how to check collision against two rectangles
 
-pub fn main() !void {
-    // Pick the allocator to use depending on platform
-    const builtin = @import("builtin");
-    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
-        // Web builds hack: use the C allocator to avoid OOM errors
-        // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(std.heap.c_allocator);
-    } else {
-        // Using the default allocator will let us detect memory leaks
-        try delve.init(delve.mem.createDefaultAllocator());
-    }
+pub fn main(init: std.process.Init) !void {
+    // Using the default allocator will let us detect memory leaks
+    try delve.init(init, delve.mem.createDefaultAllocator());
 
     try registerModule();
     try app.start(app.AppConfig{ .title = "Delve Framework - Collision" });

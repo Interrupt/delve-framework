@@ -5,6 +5,7 @@ const math = @import("math.zig");
 const mem = @import("mem.zig");
 const gfx = @import("platform/graphics.zig");
 const images = @import("images.zig");
+const io = @import("io.zig");
 const sprites = @import("graphics/sprites.zig");
 const batcher = @import("graphics/batcher.zig");
 
@@ -88,17 +89,11 @@ const LoadFontErrors = error{
 // Load and cache a font to be used later
 pub fn loadFont(font_name: []const u8, file_name: []const u8, tex_size: u32, font_size: f32) !*LoadedFont {
     var allocator = mem.getAllocator();
+    const delve_io = io.getIo();
 
     debug.log("Loading font {s}", .{file_name});
-    const file = try std.fs.cwd().openFile(file_name, .{});
-    defer file.close();
-
-    const stat = try file.stat();
-
-    const font_mem = try allocator.alloc(u8, stat.size);
-
-    _ = try file.pread(font_mem, 0);
-    // debug.log("Loading font with size {d}, read {d}", .{ stat.size, read });
+    const cwd = std.Io.Dir.cwd();
+    const font_mem = try std.Io.Dir.readFileAlloc(cwd, delve_io, file_name, allocator, .unlimited);
 
     // set some sizes for loading
     const font_atlas_size = tex_size;

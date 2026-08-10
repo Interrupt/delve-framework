@@ -437,7 +437,7 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
 
                     // Handle both error union and non-error union function calls
                     const ret_val = switch (@typeInfo(ReturnType)) {
-                        .error_union => |_| blk: {
+                        .error_union => blk: {
                             const val = @call(.auto, function, args) catch |err| {
                                 debug.warning("Error returned from bound Lua function: {any}", .{err});
                                 return 0;

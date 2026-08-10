@@ -9,8 +9,6 @@ const input = delve.platform.input;
 const math = delve.math;
 const modules = delve.modules;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 var font_batch: delve.graphics.batcher.SpriteBatcher = undefined;
 
 // let our example cycle through some fonts
@@ -20,17 +18,9 @@ var time: f64 = 0.0;
 
 var shader_blend: graphics.Shader = undefined;
 
-pub fn main() !void {
-    // Pick the allocator to use depending on platform
-    const builtin = @import("builtin");
-    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
-        // Web builds hack: use the C allocator to avoid OOM errors
-        // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(std.heap.c_allocator);
-    } else {
-        // Using the default allocator will let us detect memory leaks
-        try delve.init(delve.mem.createDefaultAllocator());
-    }
+pub fn main(init: std.process.Init) !void {
+    // Using the default allocator will let us detect memory leaks
+    try delve.init(init, delve.mem.createDefaultAllocator());
 
     try registerModule();
     try app.start(app.AppConfig{ .title = "Delve Framework - Fonts Example" });

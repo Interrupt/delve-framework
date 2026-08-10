@@ -4,12 +4,11 @@ const mem = @import("mem.zig");
 
 const ModuleQueue = std.PriorityQueue(Module, void, compareModules);
 
-var modules: ModuleQueue = undefined;
-var needs_init: bool = true;
+var modules: ModuleQueue = .empty;
 var initialized_modules: bool = false;
 
 // don't put modules in the main list while iterating
-var modules_to_add: ModuleQueue = undefined;
+var modules_to_add: ModuleQueue = .empty;
 
 // Some easy to work with priorities
 pub const Priority = struct {
@@ -53,21 +52,15 @@ fn compareModules(_: void, a: Module, b: Module) std.math.Order {
 }
 
 pub fn deinit() void {
+    const allocator = mem.getAllocator();
     debug.log("Modules system shutting down", .{});
-    modules.deinit();
-    modules_to_add.deinit();
+    modules.deinit(allocator);
+    modules_to_add.deinit(allocator);
 }
 
 /// Registers a module to tie it into the app lifecycle
 pub fn registerModule(module: Module) !void {
-    if (needs_init) {
-        const allocator = mem.getAllocator();
-
-        modules = ModuleQueue.init(allocator, {});
-        modules_to_add = ModuleQueue.init(allocator, {});
-
-        needs_init = false;
-    }
+    const allocator = mem.getAllocator();
 
     // only allow one version of a module to be registered!
     for (modules_to_add.items) |*m| {
@@ -83,7 +76,7 @@ pub fn registerModule(module: Module) !void {
         }
     }
 
-    try modules_to_add.add(module);
+    try modules_to_add.push(allocator, module);
     debug.log("Registered module: {s}", .{module.name});
 
     // Modules registered after initialization should init right away!
@@ -103,10 +96,12 @@ pub fn getModule(module_name: [:0]const u8) ?*Module {
 
 /// Initialize all the modules
 pub fn initModules() void {
+    const allocator = mem.getAllocator();
+
     // Modules could register other modules during init, so make sure to collect them all
     while (modules_to_add.items.len > 0) {
-        while (modules_to_add.removeOrNull()) |module| {
-            modules.add(module) catch {
+        while (modules_to_add.pop()) |module| {
+            modules.push(allocator, module) catch {
                 debug.err("Error adding module to initialize: {s}", .{module.name});
             };
 

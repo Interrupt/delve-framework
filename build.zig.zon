@@ -1,6 +1,6 @@
 .{
     .name = .delve,
-    .version = "0.0.3",
+    .version = "0.0.4",
     .fingerprint = 0xa3185842c6ab2a18,
     .paths = .{
         "src",
@@ -12,40 +12,41 @@
     },
     .dependencies = .{
         .zlua = .{
-            .url = "git+https://github.com/interrupt/ziglua#dbd18db031e7152271bd5addad5383416b6ebfee",
-            .hash = "zlua-0.1.0-hGRpC2hFBQAOzVQRoZUH3TrPbpWLJe3yO1jv2js6p7ra",
+            .url = "git+https://github.com/interrupt/ziglua#7647fc2a517d64a85f50295183e312b5b0634201",
+            .hash = "zlua-0.1.0-hGRpC1hWBQAhR6kPtfypQ1Awn09a9JWpIuErNKPCMwSq",
         },
         .sokol = .{
-            .url = "git+https://github.com/floooh/sokol-zig.git#76d4afd25adfae9666d76a0d324cdb70ad178a88",
-            .hash = "sokol-0.1.0-pb1HK3TYLgCx8lOxdLVWIVDcAzacxO8YDfyw2Er-_2nN",
+            .url = "git+https://github.com/floooh/sokol-zig.git#44a73b9cdd85d93825b316542b201a7fdbd01256",
+            .hash = "sokol-0.1.0-pb1HK5M1PgDJCwY7JVmXM0GoCGzV10divewLbsm5Z1yM",
         },
         .ymlz = .{
             .url = "git+https://github.com/pwbh/ymlz.git#b6479fa848104c57a06e9d93dbe1dac16907f443",
             .hash = "ymlz-0.5.0-TG82aXqrAAC-NtiqbYQC2cNo4Qr9L9LDKEKMYRjtK6vT",
         },
         .zmesh = .{
-            .url = "git+https://github.com/zig-gamedev/zmesh.git#36ec42e7e77b2cade7776eb3e91e3e290293a864",
-            .hash = "zmesh-0.11.0-dev-oO3A5rR7CgCTMzfdKOhWW-OIyL4-7mlxXzBef_62fbHb",
+            .url = "git+https://github.com/zig-gamedev/zmesh.git#11baee8af662580a1cc34a03552f88810f8f8c62",
+            .hash = "zmesh-0.11.0-dev-oO3A5nqTCgDp-F-INyuScGOVTyVZqWg8XPgudQpKbE4o",
         },
         .zaudio = .{
-            .url = "git+https://github.com/zig-gamedev/zaudio.git#dd1f002f8d90fc255409b58b89326813354562e3",
-            .hash = "zaudio-0.11.0-dev-_M-91pBlPwDkibUGXKZxd_I_kEIUMJp6CfhwlX4sBEp-",
+            .url = "git+https://github.com/zig-gamedev/zaudio.git#8d0d7ebffe9008019134b3d202eabc5476aca3a4",
+            .hash = "zaudio-0.11.0-dev-_M-91owyQQD3MVQa4F1xkPgwSFWQi4HhhNfDwKI0PBWX",
         },
         .cimgui = .{
-            .url = "git+https://github.com/floooh/dcimgui.git#d5fb4e3d27b79062dc5981db3631dadc4f204654",
-            .hash = "cimgui-0.1.0-44Clkd6YlAAYULKHDwsDX9EPmka-VAVEjUl-o6ve307E",
+            .url = "git+https://github.com/floooh/dcimgui.git#e2f0e0d93adec02743c55940be23ffe286e857f7",
+            .hash = "cimgui-0.1.0-44ClkR8dmgDqqnfloyLE1bUAtl4zSKTT1wxaHSEC0ikV",
         },
-        .system_sdk = .{
-            .path = "3rdparty/system-sdk",
-        },
+        // .system_sdk = .{
+        //     .path = "3rdparty/system-sdk",
+        // },
         .stb_truetype = .{
             .path = "3rdparty/stb_truetype",
         },
         .zstbi = .{
-            // .url = "git+https://github.com/zig-gamedev/zstbi#2c4b3100ccb7aed90ecc9439030899764e2a8d47",
+            .url = "git+https://github.com/zig-gamedev/zstbi#3813f5f113b26f644cfa01a30155cc76b3526e91",
+            .hash = "zstbi-0.11.0-dev-L0Ea_3GWBwAh7m54XX055vwLKPTPij5hyqyeq92MXPE2",
             // .hash = "zstbi-0.11.0-dev-L0Ea_yaWBwAHwFoCuyjkFyaiSsbjt4UOrkntR0c_nmzz",
             // using custom zstbi build to fix emscripten build bug
-            .path = "3rdparty/zstbi",
+            // .path = "3rdparty/zstbi",
         },
     },
 }

@@ -2,6 +2,7 @@ const std = @import("std");
 const math = std.math;
 const zlua = @import("zlua");
 const debug = @import("../debug.zig");
+const mem = @import("../mem.zig");
 const images = @import("../images.zig");
 const graphics = @import("../platform/graphics.zig");
 
@@ -9,15 +10,13 @@ var loaded_textures: std.AutoHashMap([*:0]const u8, u32) = undefined;
 var image_handles: std.AutoHashMap(u32, images.Image) = undefined;
 var texture_handles: std.AutoHashMap(u32, graphics.Texture) = undefined;
 
-// Allocator for assets
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-var allocator = gpa.allocator();
-
 // TODO: Move the guts of this to a subsystem!
 
 // called automatically when the library is binded
 pub fn libInit() !void {
     debug.log("Assets: initializing", .{});
+
+    const allocator = mem.getAllocator();
     loaded_textures = std.AutoHashMap([*:0]const u8, u32).init(allocator);
     image_handles = std.AutoHashMap(u32, images.Image).init(allocator);
     texture_handles = std.AutoHashMap(u32, graphics.Texture).init(allocator);

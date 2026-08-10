@@ -4,8 +4,6 @@ const std = @import("std");
 
 const imgui = delve.imgui;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 // This example shows how to enable copy-paste in imgui!
 
 const clipboard_size = 200; // Deliberately set low, to demonstrate clipping
@@ -20,17 +18,9 @@ const imgui_module = delve.modules.Module{
 
 var bg_color: [4]f32 = [4]f32{ 0.25, 0.85, 0.55, 1.0 };
 
-pub fn main() !void {
-    // Pick the allocator to use depending on platform
-    const builtin = @import("builtin");
-    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
-        // Web builds hack: use the C allocator to avoid OOM errors
-        // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(std.heap.c_allocator);
-    } else {
-        // Using the default allocator will let us detect memory leaks
-        try delve.init(delve.mem.createDefaultAllocator());
-    }
+pub fn main(init: std.process.Init) !void {
+    // Using the default allocator will let us detect memory leaks
+    try delve.init(init, delve.mem.createDefaultAllocator());
 
     try registerModule();
 
@@ -52,10 +42,9 @@ pub fn on_init() !void {
 
     for (lorem_ipsum, 0..) |c, i| {
         buffer[i] = c;
-        buffer[i+1] = 0;
+        buffer[i + 1] = 0;
     }
 }
-
 
 pub fn on_tick(delta: f32) void {
     _ = delta;
@@ -75,9 +64,9 @@ pub fn on_tick(delta: f32) void {
         imgui.igText("Max clipboard size: %d", delve.platform.app.getClipboardSize().?);
         imgui.igSeparator();
         imgui.igTextUnformatted("Text box - supports copy/paste");
-        
+
         imgui.igPushItemWidth(imgui.igGetWindowWidth() - 28.0); // Fill the window
-        _ = imgui.igInputTextMultilineEx("##ti", &buffer, buffer.len + 1, .{}, imgui.ImGuiInputTextFlags_WordWrap, null, null);
+        _ = imgui.igInputTextMultilineEx("##ti", &buffer, buffer.len + 1, .{ .x = 0, .y = 0 }, imgui.ImGuiInputTextFlags_WordWrap, null, null);
         imgui.igPopItemWidth();
 
         imgui.igText("%d / %d", std.mem.sliceTo(&buffer, 0).len, buffer.len);
@@ -115,10 +104,9 @@ pub fn on_draw() void {
 }
 
 const lorem_ipsum =
-\\Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum commodo 
-\\dapibus tortor, et maximus nulla feugiat ut. Vivamus et velit ac libero 
-\\iaculis euismod.
-\\
-\\Text that is larger than the clipboard buffer will be truncated!
-
+    \\Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum commodo 
+    \\dapibus tortor, et maximus nulla feugiat ut. Vivamus et velit ac libero 
+    \\iaculis euismod.
+    \\
+    \\Text that is larger than the clipboard buffer will be truncated!
 ;

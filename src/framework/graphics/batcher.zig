@@ -40,7 +40,7 @@ const BatcherConfig = struct {
 /// Handles drawing batches of primitive shapes, bucketed by texture / shader
 pub const SpriteBatcher = struct {
     allocator: std.mem.Allocator,
-    batches: std.AutoArrayHashMap(u64, Batcher) = undefined,
+    batches: std.array_hash_map.Auto(u64, Batcher) = .{},
     transform: Mat4 = Mat4.identity,
     draw_color: colors.Color = colors.white,
     config: BatcherConfig = BatcherConfig{},
@@ -55,7 +55,7 @@ pub const SpriteBatcher = struct {
     /// Creates a new SpriteBatcher using the given config
     pub fn init(cfg: BatcherConfig) !SpriteBatcher {
         const allocator = mem.getAllocator();
-        var sprite_batcher = SpriteBatcher{ .allocator = allocator, .batches = std.AutoArrayHashMap(u64, Batcher).init(allocator), .config = cfg };
+        var sprite_batcher = SpriteBatcher{ .allocator = allocator, .config = cfg };
 
         // set initial texture and shader
         const tex = if (cfg.texture != null) cfg.texture.? else graphics.createDebugTexture();
@@ -170,7 +170,7 @@ pub const SpriteBatcher = struct {
             return null;
         };
 
-        self.batches.put(self.current_batch_key, new_batcher) catch {
+        self.batches.put(self.allocator, self.current_batch_key, new_batcher) catch {
             debug.log("Could not add new batch to map for SpriteBatch!", .{});
             return null;
         };
@@ -200,7 +200,7 @@ pub const SpriteBatcher = struct {
         while (it.next()) |batcher| {
             batcher.value_ptr.deinit();
         }
-        self.batches.deinit();
+        self.batches.deinit(self.allocator);
 
         if (self.owned_texture) |*tex| {
             tex.destroy();

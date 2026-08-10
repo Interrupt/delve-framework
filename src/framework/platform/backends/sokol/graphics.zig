@@ -223,15 +223,17 @@ pub const TextureImpl = struct {
     }
 
     pub fn initRenderTexture(width: u32, height: u32, is_depth: bool) TextureImpl {
-        var img_desc: sg.ImageDesc = .{
+        const img_desc: sg.ImageDesc = .{
             .usage = .{ .color_attachment = !is_depth, .depth_stencil_attachment = is_depth },
             .width = @intCast(width),
             .height = @intCast(height),
             .sample_count = 1,
         };
 
-        if (is_depth)
-            img_desc.pixel_format = .DEPTH_STENCIL;
+        // TODO: Do we need to actually manually set a pixel format here anymore?
+        // if (is_depth)
+        //     img_desc.pixel_format = .DEPTH_STENCIL;
+        // debug.log("New render tex: {any}", .{img_desc.pixel_format});
 
         const sokol_image = sg.makeImage(img_desc);
         const sokol_view = sg.makeView(.{ .texture = .{ .image = sokol_image } });
@@ -797,7 +799,7 @@ pub const ShaderImpl = struct {
 
         if (self.cfg.is_depth_pixel_format) {
             debug.log("Creating depth pixel format", .{});
-            pipe_desc.depth.pixel_format = .DEPTH;
+            pipe_desc.depth.pixel_format = .DEPTH_STENCIL;
         }
 
         // Set the vertex attributes

@@ -1,8 +1,9 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 // Hack: keep our GeneralPurposeAllocator internal to the delve framework, as quitting on OSX
 // seems to quit immediately after Sokol cleans up.
-pub var default_gpa = std.heap.GeneralPurposeAllocator(.{ .stack_trace_frames = 16 }){};
+pub var default_gpa = std.heap.DebugAllocator(.{ .stack_trace_frames = 16 }){};
 
 pub var main_allocator: std.mem.Allocator = undefined;
 
@@ -28,5 +29,11 @@ pub fn getAllocator() std.mem.Allocator {
 }
 
 pub fn createDefaultAllocator() std.mem.Allocator {
+    // Web builds hack: use the C allocator to avoid OOM errors
+    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
+        // See https://github.com/ziglang/zig/issues/19072
+        return std.heap.c_allocator;
+    }
+
     return default_gpa.allocator();
 }

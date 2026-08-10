@@ -28,8 +28,6 @@ var cloud_batch: batcher.SpriteBatcher = undefined;
 
 var camera: cam.Camera = undefined;
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-
 pub const module = modules.Module{
     .name = "forest_example",
     .init_fn = on_init,
@@ -42,17 +40,9 @@ pub const module = modules.Module{
 // This is an example of using the sprite batcher to draw a forest!
 // shows off: sprite batches, texture regions, billboarding, cameras
 
-pub fn main() !void {
-    // Pick the allocator to use depending on platform
-    const builtin = @import("builtin");
-    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
-        // Web builds hack: use the C allocator to avoid OOM errors
-        // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(std.heap.c_allocator);
-    } else {
-        // Using the default allocator will let us detect memory leaks
-        try delve.init(delve.mem.createDefaultAllocator());
-    }
+pub fn main(init: std.process.Init) !void {
+    // Using the default allocator will let us detect memory leaks
+    try delve.init(init, delve.mem.createDefaultAllocator());
 
     try registerModule();
     try fps_module.registerModule();

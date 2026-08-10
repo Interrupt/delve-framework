@@ -26,17 +26,9 @@ const imgui_module = delve.modules.Module{
 
 var bg_color: [4]f32 = [4]f32{ 0.25, 0.85, 0.55, 1.0 };
 
-pub fn main() !void {
-    // Pick the allocator to use depending on platform
-    const builtin = @import("builtin");
-    if (builtin.os.tag == .wasi or builtin.os.tag == .emscripten) {
-        // Web builds hack: use the C allocator to avoid OOM errors
-        // See https://github.com/ziglang/zig/issues/19072
-        try delve.init(std.heap.c_allocator);
-    } else {
-        // Using the default allocator will let us detect memory leaks
-        try delve.init(delve.mem.createDefaultAllocator());
-    }
+pub fn main(init: std.process.Init) !void {
+    // Using the default allocator will let us detect memory leaks
+    try delve.init(init, delve.mem.createDefaultAllocator());
 
     try registerModule();
 
@@ -99,17 +91,18 @@ pub fn on_tick(delta: f32) void {
 
     _ = imgui.igSpacing();
 
-    _ = imgui.igImage(
-        .{ ._TexID = imgui_texture_1 },
-        .{ .x = 80, .y = 80 },
-    );
+    // TODO: Why is the sokol image / imgui binding broken? Needs a _TexData now too.
+    // _ = imgui.igImage(
+    //     .{ ._TexID = imgui_texture_1 },
+    //     .{ .x = 80, .y = 80 },
+    // );
 
     _ = imgui.igSpacing();
 
-    _ = imgui.igImage(
-        .{ ._TexID = imgui_texture_2 },
-        .{ .x = 140, .y = 140 },
-    );
+    // _ = imgui.igImage(
+    //     .{ ._TexID = imgui_texture_2 },
+    //     .{ .x = 140, .y = 140 },
+    // );
 
     // end the window
     imgui.igEnd();
