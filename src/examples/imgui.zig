@@ -72,6 +72,11 @@ fn on_cleanup() !void {
     test_material.deinit();
 }
 
+// Helper to turn our TexID into an ImTextureRef to use with igImage
+pub fn imguiTexIdToTexRef(imgui_tex_id: u64) imgui.ImTextureRef {
+    return .{ ._TexData = null, ._TexID = imgui_tex_id };
+}
+
 pub fn on_tick(delta: f32) void {
     _ = delta;
 
@@ -91,18 +96,17 @@ pub fn on_tick(delta: f32) void {
 
     _ = imgui.igSpacing();
 
-    // TODO: Why is the sokol image / imgui binding broken? Needs a _TexData now too.
-    // _ = imgui.igImage(
-    //     .{ ._TexID = imgui_texture_1 },
-    //     .{ .x = 80, .y = 80 },
-    // );
+    _ = imgui.igImage(
+        imguiTexIdToTexRef(imgui_texture_1),
+        .{ .x = 80, .y = 80 },
+    );
 
     _ = imgui.igSpacing();
 
-    // _ = imgui.igImage(
-    //     .{ ._TexID = imgui_texture_2 },
-    //     .{ .x = 140, .y = 140 },
-    // );
+    _ = imgui.igImage(
+        imguiTexIdToTexRef(imgui_texture_2),
+        .{ .x = 140, .y = 140 },
+    );
 
     // end the window
     imgui.igEnd();
