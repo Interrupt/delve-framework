@@ -35,18 +35,12 @@
             .url = "git+https://github.com/floooh/dcimgui.git#e2f0e0d93adec02743c55940be23ffe286e857f7",
             .hash = "cimgui-0.1.0-44ClkR8dmgDqqnfloyLE1bUAtl4zSKTT1wxaHSEC0ikV",
         },
-        // .system_sdk = .{
-        //     .path = "3rdparty/system-sdk",
-        // },
         .stb_truetype = .{
             .path = "3rdparty/stb_truetype",
         },
         .zstbi = .{
             .url = "git+https://github.com/zig-gamedev/zstbi#3813f5f113b26f644cfa01a30155cc76b3526e91",
             .hash = "zstbi-0.11.0-dev-L0Ea_3GWBwAh7m54XX055vwLKPTPij5hyqyeq92MXPE2",
-            // .hash = "zstbi-0.11.0-dev-L0Ea_yaWBwAHwFoCuyjkFyaiSsbjt4UOrkntR0c_nmzz",
-            // using custom zstbi build to fix emscripten build bug
-            // .path = "3rdparty/zstbi",
         },
     },
 }
