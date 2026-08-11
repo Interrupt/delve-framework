@@ -1,10 +1,10 @@
 # Delve Framework
 
-Delve is a simple framework for building games written in Zig using Lua for scripting. Currently targeting `Zig 0.15.x`
+Delve is a simple framework for building games written in Zig using Lua for scripting. Currently targeting `Zig 0.16.x`
 
 *This is in early development and the api is still coming together, so be warned!*
 
-Some examples compiled for web can be seen at https://interrupt.github.io/delve-framework-web-examples
+Some examples compiled for web can be seen at <https://interrupt.github.io/delve-framework-web-examples>
 
 <p align="center">
 <img width="1072" alt="Screen Shot 2024-01-27 at 12 02 33 AM" src="https://github.com/Interrupt/delve-framework/assets/1374/45b64806-7829-4542-80d5-5a892eebf80d">
@@ -42,7 +42,7 @@ Delve will use the `assets/main.lua` Lua file for scripting unless given a new p
 
 Rendering uses the Sokol framework to use modern, cross platform graphics APIs. Supports DirectX 11, OpenGL 3/ES, Metal, and [WebGPU](WebGPU).
 
-https://github.com/user-attachments/assets/ea26efe1-d9b9-4714-bc18-30fe5bc850da
+<https://github.com/user-attachments/assets/ea26efe1-d9b9-4714-bc18-30fe5bc850da>
 
 ## Modules, all the way down
 
@@ -74,18 +74,18 @@ Some example modules are included automatically to exercise some code paths, the
 
 This repository demonstrates how to include and use the Delve Framework in another Zig project using Zig's package manager.
 
-https://github.com/Interrupt/delve-framework-example
-
-
+<https://github.com/Interrupt/delve-framework-example>
 
 ## Examples
 
 List examples (and other build-steps)
+
 ```
 zig build --list-steps
 ```
 
 ### Build and run examples
+
 ```
 zig build run-audio
 zig build run-clear
@@ -117,6 +117,7 @@ zig build --release=small run-forest
 ```
 
 ### Building for web
+
 To build for web, use the `-Dtarget=wasm32-emscripten` build argument.
 
 Building with optmizations is also required in some cases when the Javascript being built is large, that can be rectified with `--release=small`
