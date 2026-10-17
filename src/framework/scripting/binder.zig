@@ -21,9 +21,11 @@ pub const RegistryConfig = struct {
 };
 
 // Use LuaRef when binding to pass along a Lua reference without converting it
-// Good for passing through from Lua -> Zig -> Lua in one stack
+// Good for passing through from Lua -> Zig -> Lua. It remembers the Lua thread (the main state or a coroutine) whose stack
+// the index is on, so the value can still be pushed to another thread when it is passed along
 pub const LuaRef = struct {
     lua_idx: i32,
+    lua_state: *Lua,
 };
 
 pub fn Registry(comptime cfg: RegistryConfig) type {
@@ -418,6 +420,7 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
                         if (param_type == LuaRef) {
                             args[i] = LuaRef{
                                 .lua_idx = lua_idx,
+                                .lua_state = luaState,
                             };
                             continue;
                         }
@@ -461,7 +464,13 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
 
             // If it's a LuaRef, just pass forward this index
             if (val_type == LuaRef) {
-                luaState.pushValue(value.lua_idx);
+                if (value.lua_state == luaState) {
+                    luaState.pushValue(value.lua_idx);
+                } else {
+                    // The value is on the stack of another thread: copy it there, then move the copy over
+                    value.lua_state.pushValue(value.lua_idx);
+                    value.lua_state.xMove(luaState, 1);
+                }
                 return 1;
             }
 
