@@ -247,6 +247,27 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
                 luaState.setField(-2, "__gc");
             }
 
+            // Two boxed pointers are equal when they point at the same thing (each push of a pointer makes a new userdata)
+            {
+                const eqFunc = struct {
+                    fn inner(L: *zlua.Lua) i32 {
+                        const a = L.testUserdata(BoxedPointerType, 1, BoxedPointerType.ptr_metatable_name) catch {
+                            L.pushBoolean(false);
+                            return 1;
+                        };
+                        const b = L.testUserdata(BoxedPointerType, 2, BoxedPointerType.ptr_metatable_name) catch {
+                            L.pushBoolean(false);
+                            return 1;
+                        };
+                        L.pushBoolean(a.pointer == b.pointer);
+                        return 1;
+                    }
+                }.inner;
+
+                luaState.pushClosure(zlua.wrap(eqFunc), 0);
+                luaState.setField(-4, "__eq");
+            }
+
             if (comptime hasIndexFunc(T)) {
                 // Wire to __index in lua
                 const indexFunc = struct {
