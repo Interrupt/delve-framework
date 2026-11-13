@@ -49,7 +49,7 @@ pub fn build(b: *std.Build) !void {
         .target = target,
         .optimize = optimize,
         .lang = .lua54,
-        .additional_system_headers = if (target.result.cpu.arch.isWasm()) getEmsdkSystemIncludePath(dep_sokol).getPath(b) else "",
+        // .additional_system_headers = if (target.result.cpu.arch.isWasm()) getEmsdkSystemIncludePath(dep_sokol).getPath(b) else "",
     });
 
     const dep_zmesh = b.dependency("zmesh", .{
@@ -229,7 +229,7 @@ pub fn build(b: *std.Build) !void {
 
 fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module, delve_lib: *Build.Step.Compile) !void {
     const name: []const u8 = example;
-    var root_source_buffer = [_]u8{undefined} ** 256;
+    var root_source_buffer: [256]u8 = @splat(undefined);
     const root_source_file = try std.fmt.bufPrint(&root_source_buffer, "src/examples/{s}.zig", .{name});
 
     const root_module = b.createModule(.{
@@ -271,17 +271,17 @@ fn buildExample(b: *std.Build, example: []const u8, delve_module: *Build.Module,
         const run = emscriptenRunStep(b, example, dep_sokol);
         run.step.dependOn(&link_step.step);
 
-        var option_buffer = [_]u8{undefined} ** 100;
+        var option_buffer: [100]u8 = @splat(undefined);
         const run_name = try std.fmt.bufPrint(&option_buffer, "run-{s}", .{name});
-        var description_buffer = [_]u8{undefined} ** 200;
+        var description_buffer: [200]u8 = @splat(undefined);
         const descr_name = try std.fmt.bufPrint(&description_buffer, "run {s}", .{name});
         b.step(run_name, descr_name).dependOn(&run.step);
     } else {
         b.installArtifact(app);
         const run = b.addRunArtifact(app);
-        var option_buffer = [_]u8{undefined} ** 100;
+        var option_buffer: [100]u8 = @splat(undefined);
         const run_name = try std.fmt.bufPrint(&option_buffer, "run-{s}", .{name});
-        var description_buffer = [_]u8{undefined} ** 200;
+        var description_buffer: [200]u8 = @splat(undefined);
         const descr_name = try std.fmt.bufPrint(&description_buffer, "run {s}", .{name});
 
         b.step(run_name, descr_name).dependOn(&run.step);
