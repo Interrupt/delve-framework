@@ -42,13 +42,59 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
 
                 pointer: *T,
 
+                // Caches for the metatable and boxed pointer, so they can be re-used
+                pub var ptr_metatable_ref: i32 = zlua.ref_no;
+                pub var value_metatable_ref: i32 = zlua.ref_no;
+                pub var box_cache_ref: i32 = zlua.ref_no;
+
+                pub fn pushPtrMetatable(luaState: *Lua) void {
+                    if (ptr_metatable_ref != zlua.ref_no) {
+                        _ = luaState.rawGetIndex(zlua.registry_index, ptr_metatable_ref);
+                    } else {
+                        _ = luaState.getMetatableRegistry(ptr_metatable_name);
+                    }
+                }
+
+                pub fn pushValueMetatable(luaState: *Lua) void {
+                    if (value_metatable_ref != zlua.ref_no) {
+                        _ = luaState.rawGetIndex(zlua.registry_index, value_metatable_ref);
+                    } else {
+                        _ = luaState.getMetatableRegistry(in_bound_type.name);
+                    }
+                }
+
+                // Which of the type's userdata is at the index, by its metatable: the boxed pointer's, the value's, or neither
+                const ValueKind = enum { boxed, value, other };
+                fn checkKindAt(luaState: *Lua, lua_idx: i32) ValueKind {
+                    if (ptr_metatable_ref == zlua.ref_no or !luaState.isUserdata(lua_idx)) return .other;
+                    luaState.getMetatable(lua_idx) catch return .other;
+                    defer luaState.pop(2);
+                    _ = luaState.rawGetIndex(zlua.registry_index, ptr_metatable_ref);
+                    if (luaState.rawEqual(-1, -2)) return .boxed;
+                    luaState.pop(1);
+                    _ = luaState.rawGetIndex(zlua.registry_index, value_metatable_ref);
+                    return if (luaState.rawEqual(-1, -2)) .value else .other;
+                }
+
+                pub fn toBoxed(luaState: *Lua, lua_idx: i32) ?*Self {
+                    if (checkKindAt(luaState, lua_idx) == .boxed) return luaState.toUserdata(Self, lua_idx) catch null;
+                    return luaState.testUserdata(Self, lua_idx, ptr_metatable_name) catch null;
+                }
+
                 pub fn checkBoxedUserdata(luaState: *Lua, lua_idx: i32) *T {
+                    // (by the metatables' references: a boxed pointer is unboxed, a value is itself)
+                    switch (checkKindAt(luaState, lua_idx)) {
+                        .boxed => if (luaState.toUserdata(Self, lua_idx)) |boxed_ptr| return boxed_ptr.*.pointer else |_| {},
+                        .value => if (luaState.toUserdata(T, lua_idx)) |value_ptr| return value_ptr else |_| {},
+                        .other => {},
+                    }
+
                     // First check if this is a boxed pointer, unbox and return if so
                     if (luaState.testUserdata(Self, lua_idx, ptr_metatable_name)) |boxed_ptr| {
                         return boxed_ptr.*.pointer;
                     } else |_| {}
 
-                    // Not a boxed pointer, should be already unboxed
+                    // Not a boxed pointer, should be already unboxed (or not one of this type at all: this raises the error)
                     return luaState.checkUserdata(T, lua_idx, in_bound_type.name);
                 }
             };
@@ -139,7 +185,7 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
             // fallback to our own metatable so that we can still call bound functions like self:ourFunc()
 
             // get our own metatable
-            _ = luaState.getMetatableRegistry(bound_type.name);
+            BoxedPointerType.pushValueMetatable(luaState);
 
             // push the key again
             luaState.pushValue(2);
@@ -177,6 +223,10 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
                                 luaState.raiseErrorStr("Could not set field! Should be type %s", .{@typeName(field.type)});
                                 return 0;
                             };
+
+                            // a value that owns memory can let go of what it had when Lua puts another in its place
+                            if (comptime std.meta.hasMethod(field.type, "replacedByLua"))
+                                @field(ptr, field.name).replacedByLua(val);
 
                             @field(ptr, field.name) = val;
                             return 1;
@@ -217,6 +267,8 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
         }
 
         pub fn bindType(luaState: *zlua.Lua, comptime bound_type: BoundType) !void {
+            // (a type with many functions and fields, its mixin's too, goes past the default 1000 branches at compile time)
+            @setEvalBranchQuota(20000);
             const T = bound_type.Type;
             const meta_table_name = bound_type.name;
             const BoxedPointerType = BoxType(T, bound_type);
@@ -230,6 +282,20 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
             // Make our new userData and metaTable
             _ = luaState.newUserdata(T, @sizeOf(T));
             _ = try luaState.newMetatable(meta_table_name);
+
+            // (and keep the two metatables by reference: pushing and checking find them by number, not by name)
+            luaState.pushValue(-3);
+            BoxedPointerType.ptr_metatable_ref = try luaState.ref(zlua.registry_index);
+            luaState.pushValue(-1);
+            BoxedPointerType.value_metatable_ref = try luaState.ref(zlua.registry_index);
+
+            // (the boxes of the pointers pushed, by the pointer: the values are weak, so a box nothing else holds is collected)
+            luaState.newTable();
+            luaState.newTable();
+            _ = luaState.pushString("v");
+            luaState.setField(-2, "__mode");
+            _ = luaState.setMetatable(-2);
+            BoxedPointerType.box_cache_ref = try luaState.ref(zlua.registry_index);
 
             // GC func is required for memory management
             // Wire GC up to our destroy function if found!
@@ -251,11 +317,11 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
             {
                 const eqFunc = struct {
                     fn inner(L: *zlua.Lua) i32 {
-                        const a = L.testUserdata(BoxedPointerType, 1, BoxedPointerType.ptr_metatable_name) catch {
+                        const a = BoxedPointerType.toBoxed(L, 1) orelse {
                             L.pushBoolean(false);
                             return 1;
                         };
-                        const b = L.testUserdata(BoxedPointerType, 2, BoxedPointerType.ptr_metatable_name) catch {
+                        const b = BoxedPointerType.toBoxed(L, 2) orelse {
                             L.pushBoolean(false);
                             return 1;
                         };
@@ -534,18 +600,46 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
                             const BoxedPointerType = BoxType(Child, bound_type);
                             const boxed_ptr: BoxedPointerType = .{ .pointer = value };
 
+                            // the box this pointer has already, if it has one
+                            const cached = BoxedPointerType.box_cache_ref != zlua.ref_no;
+                            if (cached) {
+                                _ = luaState.rawGetIndex(zlua.registry_index, BoxedPointerType.box_cache_ref);
+                                if (luaState.rawGetPtr(-1, value) == .userdata) {
+                                    luaState.remove(-2);
+                                    return 1;
+                                }
+                                luaState.pop(1);
+                            }
+
                             // make a new ptr to return
                             const ptr: *BoxedPointerType = @alignCast(luaState.newUserdata(BoxedPointerType, @sizeOf(BoxedPointerType)));
 
                             // set its metatable
-                            _ = luaState.getMetatableRegistry(BoxedPointerType.ptr_metatable_name);
+                            BoxedPointerType.pushPtrMetatable(luaState);
                             _ = luaState.setMetatable(-2);
 
                             // copy values to our pointer
                             ptr.* = boxed_ptr;
 
+                            // (and keep it for the next push of the pointer: stack is cache, box)
+                            if (cached) {
+                                luaState.pushValue(-1);
+                                luaState.rawSetPtr(-3, value);
+                                luaState.remove(-2);
+                            }
+
                             return 1;
                         }
+                    }
+
+                    // A slice (not a string) is pushed as a table, its items pushed as our types too
+                    if (p.size == .slice and !isTypeString(p)) {
+                        luaState.createTable(@intCast(value.len), 0);
+                        for (value, 1..) |item, i| {
+                            _ = pushAny(luaState, item);
+                            luaState.rawSetIndex(-2, @intCast(i));
+                        }
+                        return 1;
                     }
                 },
                 .@"struct" => {
@@ -555,11 +649,26 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
                         const ptr: *val_type = @alignCast(luaState.newUserdata(val_type, @sizeOf(val_type)));
 
                         // set its metatable
-                        _ = luaState.getMetatableRegistry(getMetaTableName(val_type));
+                        BoxType(val_type, getBoundType(val_type).?).pushValueMetatable(luaState);
                         _ = luaState.setMetatable(-2);
 
                         // copy values to our pointer
                         ptr.* = value;
+                        return 1;
+                    }
+
+                    // Any other struct is pushed as a table, its fields pushed as our types too (a bound type in it comes out as itself)
+                    const info = @typeInfo(val_type).@"struct";
+                    if (!info.is_tuple) {
+                        if (@import("builtin").mode == .Debug) {
+                            debug.warning("Lua: pushing a struct that is not a bound type, as a table: {s}", .{@typeName(val_type)});
+                        }
+                        luaState.createTable(0, info.fields.len);
+                        inline for (info.fields) |field| {
+                            if (pushAny(luaState, @field(value, field.name)) == 1) {
+                                luaState.setField(-2, field.name);
+                            }
+                        }
                         return 1;
                     }
                 },
@@ -696,7 +805,11 @@ pub fn Registry(comptime cfg: RegistryConfig) type {
                 },
             }
 
-            try luaState.protectedCall(.{ .args = count });
+            // (the error message is on the top of the stack: log it before the stack is put back)
+            luaState.protectedCall(.{ .args = count }) catch |err| {
+                debug.log("Lua: error calling func: {!s}", .{luaState.toString(-1)});
+                return err;
+            };
         }
 
         pub fn makeLuaOpenLibFn(lib_funcs: []const zlua.FnReg) fn (*Lua) i32 {
@@ -776,6 +889,9 @@ fn shouldIgnoreField(field_name: [:0]const u8, ignore_fields: []const [:0]const 
 }
 
 fn shouldIgnoreType(comptime T: type, comptime ignored_types: ?[]const type) bool {
+    // Lists (std's ArrayList, or a Managed one) can't be set from Lua: making one from a table needs memory, which toAny can't take
+    if (isList(T)) return true;
+
     if (ignored_types) |types| {
         inline for (types) |t| {
             if (t == T)
@@ -783,6 +899,14 @@ fn shouldIgnoreType(comptime T: type, comptime ignored_types: ?[]const type) boo
         }
     }
     return false;
+}
+
+/// Is T a list: a struct with an `items` slice and a `capacity`?
+fn isList(comptime T: type) bool {
+    if (@typeInfo(T) != .@"struct") return false;
+    if (!@hasField(T, "items") or !@hasField(T, "capacity")) return false;
+    const items = @typeInfo(@FieldType(T, "items"));
+    return items == .pointer and items.pointer.size == .slice;
 }
 
 fn findFunctions(comptime module: anytype, ignore_fields: []const [:0]const u8) []const std.builtin.Type.Declaration {
