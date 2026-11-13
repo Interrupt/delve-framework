@@ -254,6 +254,13 @@ pub const TextureImpl = struct {
     pub fn destroy(self: *TextureImpl) void {
         if (self.sokol_image == null)
             return;
+
+        // cleanup any views before the image
+        if (self.sokol_view) |view| sg.destroyView(view);
+        if (self.sokol_attachment_view) |view| sg.destroyView(view);
+        self.sokol_view = null;
+        self.sokol_attachment_view = null;
+
         sg.destroyImage(self.sokol_image.?);
         self.sokol_image = null;
     }
@@ -482,6 +489,8 @@ pub const PipelineBinding = struct {
     layout: graphics.VertexLayout,
 };
 
+var filter_mode_samplers: [@typeInfo(graphics.FilterMode).@"enum".fields.len]?sg.Sampler = @splat(null);
+
 pub const MaterialImpl = struct {
     // Hold our material samplers
     sokol_samplers: [5]?sg.Sampler = [_]?sg.Sampler{null} ** 5,
@@ -489,10 +498,13 @@ pub const MaterialImpl = struct {
     pub fn init(cfg: graphics.MaterialConfig) !MaterialImpl {
         var material_impl: MaterialImpl = .{};
 
-        // Make samplers from filter modes
+        // Get samplers from filter modes.
         for (cfg.samplers, 0..) |sampler_filter, i| {
-            const sampler_desc = convertFilterModeToSamplerDesc(sampler_filter);
-            material_impl.sokol_samplers[i] = sg.makeSampler(sampler_desc);
+            // Samplers can be cached and reused between all materials
+            const cached = &filter_mode_samplers[@intCast(@intFromEnum(sampler_filter))];
+            if (cached.* == null)
+                cached.* = sg.makeSampler(convertFilterModeToSamplerDesc(sampler_filter));
+            material_impl.sokol_samplers[i] = cached.*;
         }
 
         return material_impl;
@@ -796,6 +808,11 @@ pub const ShaderImpl = struct {
             },
             .cull_mode = convertCullMode(self.cfg.cull_mode),
         };
+
+        if (self.cfg.stencil_compare) |compare| {
+            const face: sg.StencilFaceState = .{ .compare = convertCompareFunc(compare) };
+            pipe_desc.stencil = .{ .enabled = true, .front = face, .back = face, .read_mask = 0xff, .ref = self.cfg.stencil_ref };
+        }
 
         if (self.cfg.is_depth_pixel_format) {
             debug.log("Creating depth pixel format", .{});

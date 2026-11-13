@@ -306,6 +306,9 @@ pub const ShaderConfig = struct {
     blend_mode: BlendMode = .NONE,
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
+    // drawn only where the stencil compares so with stencil_ref (null: no stencil test). It writes no stencil
+    stencil_compare: ?CompareFunc = null,
+    stencil_ref: u8 = 0,
     cull_mode: CullMode = .NONE,
     vertex_attributes: []const ShaderAttribute = &[_]ShaderAttribute{
         .{ .name = "pos", .attr_type = .FLOAT3, .binding = .VERT_PACKED },
@@ -573,6 +576,8 @@ pub const MaterialConfig = struct {
     blend_mode: BlendMode = .NONE,
     depth_write_enabled: bool = true,
     depth_compare: CompareFunc = .LESS_EQUAL,
+    stencil_compare: ?CompareFunc = null,
+    stencil_ref: u8 = 0,
 
     // The parent shader to base us on
     shader: ?Shader = null,
@@ -824,6 +829,8 @@ pub const Material = struct {
         shader_config.blend_mode = cfg.blend_mode;
         shader_config.depth_write_enabled = cfg.depth_write_enabled;
         shader_config.depth_compare = cfg.depth_compare;
+        shader_config.stencil_compare = cfg.stencil_compare;
+        shader_config.stencil_ref = cfg.stencil_ref;
 
         if (cfg.shader != null and cfg.own_shader) {
             material.state.shader = cfg.shader.?;
