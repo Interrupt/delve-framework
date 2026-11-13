@@ -424,9 +424,6 @@ pub fn handleKeyDown(keycode: i32) void {
         257 => { // ENTER
             runPendingCommand();
         },
-        259 => { // BACKSPACE
-            handleKeyboardBackspace();
-        },
         else => {},
     }
 }
