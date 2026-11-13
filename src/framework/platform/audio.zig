@@ -10,6 +10,11 @@ var allocator: std.mem.Allocator = undefined;
 // zaudio miniaudio engine
 var zaudio_engine: ?*zaudio.Engine = null;
 
+// zaudio supports reading from a virtual file system if set (eg: a zip archive)
+pub var resource_manager_vfs: ?*zaudio.Vfs = null;
+pub const Vfs = zaudio.Vfs;
+pub const Result = zaudio.Result;
+
 // list of all the loaded sounds, so that they can be garbage collected when done
 var loaded_sounds: std.array_hash_map.Auto(u64, LoadedSound) = .{};
 var next_sound_idx: u64 = 0;
@@ -198,7 +203,14 @@ pub fn init() !void {
     allocator = mem.getAllocator();
 
     zaudio.init(allocator);
-    zaudio_engine = try zaudio.Engine.create(null);
+
+    var config = zaudio.Engine.Config.init();
+    if (resource_manager_vfs) |vfs| {
+        // Create using a virtual file system, if given
+        config.resource_manager_vfs = vfs;
+    }
+
+    zaudio_engine = try zaudio.Engine.create(config);
 
     // Register this subystem as a module to get tick events
     try registerModule();
@@ -355,6 +367,7 @@ pub fn on_cleanup() !void {
             zaudio_sound.destroy();
         }
     }
+    loaded_sounds.clearRetainingCapacity();
 }
 
 // Don't hold onto the result of this! It could be garbage collected
