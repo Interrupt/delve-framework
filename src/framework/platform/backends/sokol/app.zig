@@ -56,6 +56,7 @@ pub const App = struct {
             .buffer_pool_size = app_config.buffer_pool_size, // sokol default is 128
             .shader_pool_size = app_config.shader_pool_size, // sokol default is 64
             .image_pool_size = app_config.image_pool_size, // sokol default is 128
+            .view_pool_size = app_config.view_pool_size, // sokol default is 256
             .pipeline_pool_size = app_config.pipeline_pool_size, // sokol default is 64
             .sampler_pool_size = app_config.sampler_pool_size, // sokol default is 64
         });

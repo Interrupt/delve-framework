@@ -35,6 +35,7 @@ pub const AppConfig = struct {
     shader_pool_size: i32 = 512,
     pipeline_pool_size: i32 = 512,
     image_pool_size: i32 = 256,
+    view_pool_size: i32 = 256,
     sampler_pool_size: i32 = 128,
     pass_pool_size: i32 = 32,
 };
