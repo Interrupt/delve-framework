@@ -152,6 +152,9 @@ pub const Entity = struct {
     }
 };
 
+/// How far in front of another plane a hit point can be and still count as behind it
+const hit_tolerance: f32 = 0.0001;
+
 pub const Solid = struct {
     faces: ArrayList(Face),
     bounds: BoundingBox = undefined,
@@ -410,9 +413,10 @@ pub const Solid = struct {
                         if (idx == h_idx)
                             continue;
 
-                        // check that this hit point is behind the other clip planes
+                        // check that this hit point is behind the other clip planes. A hit on a face can be on the same
+                        // plane as one of the bounds planes (a floor), so be a little forgiving or rounding decides
                         if (planes[h_idx]) |pp| {
-                            if (pp.testPoint(h) == .FRONT) {
+                            if (pp.distanceToPoint(h) > hit_tolerance) {
                                 didhit = false;
                                 break;
                             }
