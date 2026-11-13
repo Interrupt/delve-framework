@@ -5,6 +5,7 @@ const mem = @import("mem.zig");
 const papp = @import("platform/app.zig");
 const text_module = @import("api/text.zig");
 const draw_module = @import("api/draw.zig");
+const delve_io = @import("io.zig");
 
 const ArrayList = std.array_list.Managed;
 
@@ -221,7 +222,13 @@ pub fn fatal(comptime fmt: []const u8, args: anytype) void {
     papp.exitWithError();
 }
 
+// logging can come from other threads, and the log history would be shared
+var log_mutex: std.Io.Mutex = .init;
+
 fn addLogEntry(comptime fmt: []const u8, args: anytype, level: LogLevel) void {
+    log_mutex.lockUncancelable(delve_io.getIo());
+    defer log_mutex.unlock(delve_io.getIo());
+
     if (needs_init)
         init();
 
